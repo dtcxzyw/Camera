@@ -17,6 +17,7 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
     auto info = allocBuffer<Triangle<Out>>(index.size());
     pipeline.run(clipTriangles<Out>, index.size(),cnt.begin(),pos.begin(),out.begin(),index.begin(), info.begin());
     pipeline.sync();
+    constexpr auto tileSize = 32U;
     dim3 grid(*cnt.begin(), calcSize(size.x,tileSize), calcSize(size.y,tileSize));
     dim3 block(tileSize,tileSize);
     pipeline.runDim(drawTriangles<Out, Uniform, FrameBuffer, fs>, grid,block

@@ -25,6 +25,8 @@ GLContext& getContext() {
 GLWindow::GLWindow() {
     auto& context=getContext();
     mWindow = glfwCreateWindow(800, 600, "OpenGL Viewer", nullptr, nullptr);
+    if (!mWindow)
+        throw std::exception("Failed to create a window.");
     context.makeContext(mWindow);
 }
 

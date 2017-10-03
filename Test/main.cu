@@ -31,6 +31,5 @@ int main() {
     catch (const std::exception& e) {
         printf("Error:%s\n", e.what());
     }
-    system("pause");
     return 0;
 }
