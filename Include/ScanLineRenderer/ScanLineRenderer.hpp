@@ -17,11 +17,27 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
     auto info = allocBuffer<Triangle<Out>>(index.size());
     pipeline.run(clipTriangles<Out>, index.size(),cnt.begin(),pos.begin(),out.begin(),index.begin(), info.begin());
     pipeline.sync();
-    constexpr auto tileSize = 32U;
-    dim3 grid(*cnt.begin(), calcSize(size.x,tileSize), calcSize(size.y,tileSize));
-    dim3 block(tileSize,tileSize);
-    pipeline.runDim(drawTriangles<Out, Uniform, FrameBuffer, fs>, grid,block
-        , info.begin(), uniform.begin(), frameBuffer.begin());
+    constexpr auto tileSize = 32U,clipSize=2U,range=tileSize*clipSize;
+    auto num = *cnt.begin();
+    if (num) {
+        auto clipTileX = calcSize(size.x, range), clipTileY = calcSize(size.y, range);
+        auto now = allocBuffer<Triangle<Out>>(index.size());
+        for (unsigned int i = 0; i < clipTileX; ++i)
+            for (unsigned int j = 0; j < clipTileY; ++j) {
+                vec4 rect = { i*range,(i + 1)*range,j*range,(j + 1)*range };
+                pipeline.sync();
+                *cnt.begin() = 0;
+                pipeline.run(clipTile<Out>, num,info.begin(),cnt.begin(), now.begin(),rect);
+                pipeline.sync();
+                auto tcnt = *cnt.begin();
+                if (tcnt) {
+                    dim3 grid(tcnt, clipSize, clipSize);
+                    dim3 block(tileSize, tileSize);
+                    pipeline.runDim(drawTriangles<Out, Uniform, FrameBuffer, fs>, grid, block
+                        , now.begin(), uniform.begin(), frameBuffer.begin(), ivec2(i*range, j*range));
+                }
+            }
+    }
 }
 
 template<typename Uniform, typename FrameBuffer, FSFSF<Uniform,FrameBuffer> fs>

@@ -24,6 +24,8 @@ CUDA inline void calcBase(vec3 a, vec3 b, vec3& w) {
     w.z = -(a.x*w.x + a.y * w.y);
 }
 
+constexpr auto maxv = std::numeric_limits<unsigned int>::max();
+
 template<typename Out>
 CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt, const vec4* ReadOnly pos
     , const Out* ReadOnly out, const uvec3* ReadOnly index, Triangle<Out>* info) {
@@ -33,7 +35,7 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt, const vec4* Re
     vec3 a = pos[idx.x], b = pos[idx.y], c = pos[idx.z];
     if (edgeFunction(a, b, c) > 0.0f
         & (a.z <= 1.0f | b.z <= 1.0f | c.z <= 1.0f) & (a.z >= 0.0f | b.z >= 0.0f | c.z >= 0.0f)) {
-        auto& res = info[atomicInc(cnt, size)];
+        auto& res = info[atomicInc(cnt, maxv)];
         res.rect = { fmin(a.x,fmin(b.x,c.x)),fmax(a.x,fmax(b.x,c.x)),
             fmin(a.y,fmin(b.y,c.y)),fmax(a.y,fmax(b.y,c.y)) };
         calcBase(b, c, res.w[0]);
@@ -48,12 +50,23 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt, const vec4* Re
     }
 }
 
+template<typename Out>
+    CALLABLE void clipTile(unsigned int size, const Triangle<Out>* ReadOnly in,
+        unsigned int* cnt, Triangle<Out>* out,vec4 rect) {
+    auto id = getID();
+    if (id >= size)return;
+    auto range = in[id].rect;
+    if (range.x <= rect.y&range.y >= rect.x&range.z <= rect.w&range.w >= rect.z)
+        out[atomicInc(cnt, maxv)]=in[id];
+}
+
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void drawTriangles(const Triangle<Out>* ReadOnly info,
-        const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer) {
+        const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer,ivec2 offset) {
     auto tri = info[blockIdx.x];
-    ivec2 uv{ blockIdx.y*blockDim.x + threadIdx.x,blockIdx.z*blockDim.y + threadIdx.y };
+    ivec2 uv{offset.x+blockIdx.y*blockDim.x + threadIdx.x,
+        offset.y+blockIdx.z*blockDim.y + threadIdx.y };
     vec2 p{ uv.x,uv.y };
     if ((p.x < tri.rect.x) | (p.x > tri.rect.y) | (p.y < tri.rect.z) | (p.y > tri.rect.w))return;
     vec3 w;

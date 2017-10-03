@@ -30,6 +30,7 @@
     <ClCompile Include="..\..\Src\Base\Image.cpp" />
     <ClCompile Include="..\..\Src\Base\Model.cpp" />
     <ClCompile Include="..\..\Src\Base\Pipeline.cpp" />
+    <CudaCompile Include="..\..\Src\Base\Builtin.cu" />
     <CudaCompile Include="..\..\Src\Interaction\OpenGL.cu">
       <FileType>Document</FileType>
     </CudaCompile>

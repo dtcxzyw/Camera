@@ -6,7 +6,7 @@
 
 bool StaticMesh::load(const std::string & path) {
     Assimp::Importer loader;
-    auto scene = loader.ReadFile(path, aiProcess_Triangulate|
+    auto scene = loader.ReadFile(path, aiProcess_Triangulate |
         aiProcess_JoinIdenticalVertices |
         aiProcess_SortByPType |
         0);
@@ -15,8 +15,10 @@ bool StaticMesh::load(const std::string & path) {
     auto mesh=scene->mMeshes[0];
     {
         std::vector<Vertex> vert(mesh->mNumVertices);
-        for (uint i = 0; i < mesh->mNumVertices; ++i)
+        for (uint i = 0; i < mesh->mNumVertices; ++i) {
             vert[i].pos = *reinterpret_cast<vec3*>(mesh->mVertices + i);
+            vert[i].uv = *reinterpret_cast<vec2*>(mesh->mTextureCoords[0] + i);
+        }
         mVert = share(vert);
     }
     {
@@ -25,6 +27,10 @@ bool StaticMesh::load(const std::string & path) {
             index[i] = *reinterpret_cast<uvec3*>(mesh->mFaces[i].mIndices);
         mIndex = share(index);
     }
+    auto mat = scene->mMaterials[mesh->mMaterialIndex];
+    aiString texp;
+    auto tex = mat->GetTexture(aiTextureType_DIFFUSE, 0, &texp);
+    mTex = builtinLoadRGBA(texp.C_Str());
     loader.FreeScene();
     return true;
 }

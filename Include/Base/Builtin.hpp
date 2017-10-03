@@ -30,36 +30,39 @@ public:
     BuiltinSamplerGPU() {}
     BuiltinSamplerGPU(cudaTextureObject_t texture):mTexture(texture){}
     CUDA T get(vec2 p) const {
-        auto res=tex2D<Type>(mTexture,p.x,p.y);
-        return *reinterpret_cast<T*>(&res);
+        T res;
+        tex2D<Type>(reinterpret_cast<Type*>(&res),mTexture,p.x,p.y);
+        return res;
     }
 private:
     cudaTextureObject_t mTexture;
 };
 
 template<typename T>
-class BuiltinSampler final {
+class BuiltinSampler final:Uncopyable {
 private:
     cudaArray_t mArray;
     using Type = typename Rename<T>::Type;
     cudaTextureObject_t mTexture;
 public:
-    BuiltinSampler(size_t width, size_t height,const T* ptr,
+    BuiltinSampler(size_t width, size_t height,const void* ptr,
         cudaTextureAddressMode am = cudaAddressModeWrap,vec4 borderColor={},
-        cudaTextureFilterMode fm = cudaFilterModeLinear, int anisotropy = 0,
-        bool norm = false, bool sRGB = false){
+        cudaTextureFilterMode fm = cudaFilterModeLinear,unsigned int maxAnisotropy = 0,
+        bool sRGB = false){
         auto desc=cudaCreateChannelDesc<Type>();
-        checkError(cudaMallocArray(&mArray, desc, width, height));
-        checkError(cudaMemcpy2DToArray(mArray, 0, 0, ptr, 0, width, height, cudaMemcpyHostToDevice));
+        checkError(cudaMallocArray(&mArray, &desc, width, height));
+        checkError(cudaMemcpyToArray(mArray, 0, 0, ptr,width*height*sizeof(RGBA)
+            , cudaMemcpyHostToDevice));
         cudaResourceDesc RD;
         RD.res.array.array = mArray;
         RD.resType = cudaResourceType::cudaResourceTypeArray;
         cudaTextureDesc TD;
-        TD.addressMode[0] = TD.addressMode[1] = TD.addressMode[2] = am;
+        memset(&TD, 0, sizeof(TD));
+        TD.addressMode[0] = TD.addressMode[1] = am;
         *reinterpret_cast<vec4*>(TD.borderColor)= borderColor;
         TD.filterMode = fm;
-        TD.maxAnisotropy = anisotropy;
-        TD.normalizedCoords = norm;
+        TD.maxAnisotropy = maxAnisotropy;
+        TD.normalizedCoords = 1;
         TD.readMode = cudaReadModeElementType;
         TD.sRGB = sRGB;
         checkError(cudaCreateTextureObject(&mTexture,&RD,&TD,nullptr));
@@ -94,13 +97,13 @@ private:
 namespace Impl {
     template<typename T>
     CALLABLE void clear(BuiltinRenderTargetGPU<T> rt,T val) {
-        uvec2 p = { blockIdx.x*blockDim.x + threadIdx.x,blockIdx.y*blockDim.y + threadIdx.y };
+        uvec2 p = { blockIdx.x*blockDim.x + threadIdx.x,blockIdx.y*blockDim.y + threadIdx.y};
         rt.set(p, val);
     }
 }
 
 template<typename T>
-class BuiltinRenderTarget final {
+class BuiltinRenderTarget final:Uncopyable {
 private:
     cudaArray_t mArray;
     using Type = typename Rename<T>::Type;
@@ -142,3 +145,7 @@ public:
     }
 };
 
+std::shared_ptr<BuiltinSampler<RGBA>> builtinLoadRGBA(const std::string& path,
+    cudaTextureAddressMode am = cudaAddressModeWrap, vec4 borderColor = {},
+    cudaTextureFilterMode fm = cudaFilterModeLinear,unsigned int maxAnisotropy = 0,
+    bool sRGB = false);

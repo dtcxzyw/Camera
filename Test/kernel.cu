@@ -9,14 +9,13 @@
 
 CUDA void VS(VI in, Uniform uniform, OI& out, vec4& pos) {
     pos = uniform.mat* vec4(in.pos, 1.0f);
+    out.get<coord>() = in.uv;
 }
 
-constexpr float v = 0.7f;
-
 CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& fbo) {
+    uv.y = fbo.mSize.y - uv.y;
     if (fbo.depth.get(uv) > z) {
-        auto g = 1.2f - (z - v) / (1.0f - v);
-        auto color = vec4(g, g, g, 1.0f);
+        auto color = uniform.tex.get(out.get<coord>());
         for (int i = 0; i < 64; ++i) {
             auto fz = fbo.depth.get(uv);
             if (fz > z | (fz==z & fbo.color.get(uv) != color)) {
