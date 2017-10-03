@@ -8,13 +8,16 @@ struct Triangle final {
     vec3 info;
     int flags;
     vec4 rect;
-    vec4 pos[3];
+    mat3 w;
+    vec3 z;
     Out out[3];
 };
 
 CUDA float edgeFunction(vec4 a, vec4 b, vec4 c);
 
-CUDA bool calcWeight(vec4 a, vec4 b, vec4 c, vec4 p, vec3 info,int flag,vec3& w);
+CUDA bool calcWeight(mat3 w0, vec2 p, vec3 info, int flag, vec3& w);
+
+CUDA vec3 calcBase(vec2 a, vec2 b);
 
 template<typename Out>
 CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt, const vec4* ReadOnly pos
@@ -22,19 +25,25 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt, const vec4* Re
     auto id = getID();
     if (id >= size)return;
     auto idx = index[id];
-    auto p0 = pos[idx.x], p1 = pos[idx.y], p2 = pos[idx.z];
-    if (edgeFunction(p0, p1, p2) > 0.0f) {
+    auto a = pos[idx.x], b = pos[idx.y], c = pos[idx.z];
+    bool flag1 = a.z <= 1.0f | b.z <= 1.0f | c.z <= 1.0f;
+    bool flag2 = a.z >= 0.0f | b.z >= 0.0f | c.z >= 0.0f;
+    if (edgeFunction(a, b, c) > 0.0f & flag1 & flag2) {
         auto& res = info[atomicInc(cnt, size)];
-        res.info = { 1.0f / p0.z,1.0f / p1.z,1.0f / p2.z };
+        res.info = { 1.0f / a.z,1.0f / b.z,1.0f / c.z };
         {
-            auto edge0 = p2 - p1, edge1 = p0 - p2, edge2 = p1 - p0;
+            auto edge0 = c - b, edge1 = a - c, edge2 = b - a;
             res.flags |= ((edge0.y == 0.0f & edge0.x > 0.0f) | edge0.y > 0.0f);
             res.flags |= ((edge1.y == 0.0f & edge1.x > 0.0f) | edge1.y > 0.0f) << 1;
             res.flags |= ((edge2.y == 0.0f & edge2.x > 0.0f) | edge2.y > 0.0f) << 2;
         }
-        res.rect = { fmin(p0.x,fmin(p1.x,p2.x)),fmax(p0.x,fmax(p1.x,p2.x)),
-            fmin(p0.y,fmin(p1.y,p2.y)),fmax(p0.y,fmax(p1.y,p2.y)) };
-        res.pos[0] = p0, res.pos[1] = p1, res.pos[2] = p2;
+        res.rect = { fmin(a.x,fmin(b.x,c.x)),fmax(a.x,fmax(b.x,c.x)),
+            fmin(a.y,fmin(b.y,c.y)),fmax(a.y,fmax(b.y,c.y)) };
+        //w.x = edgeFunction(b, c, p), w.y = edgeFunction(c, a, p), w.z = edgeFunction(a, b, p);
+        res.w[0] = calcBase(b, c);
+        res.w[1] = calcBase(c, a);
+        res.w[2] = calcBase(a, b);
+        res.z = { a.z,b.z,c.z };
         res.out[0] = out[idx.x], res.out[1] = out[idx.y], res.out[2] = out[idx.z];
     }
 }
@@ -47,14 +56,13 @@ template<typename Out, typename Uniform, typename FrameBuffer,
         const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer) {
     auto tri = info[blockIdx.x];
     ivec2 uv{ blockIdx.y*tileSize + threadIdx.x,blockIdx.z*tileSize + threadIdx.y };
-    vec4 p{uv.x,uv.y ,0.0f,0.0f };
-    if ((p.x<tri.rect.x)|(p.x>tri.rect.y)|(p.y<tri.rect.z)|(p.y>tri.rect.w))return;
+    vec2 p{ uv.x,uv.y };
+    if ((p.x < tri.rect.x) | (p.x > tri.rect.y) | (p.y < tri.rect.z) | (p.y > tri.rect.w))return;
     vec3 w;
-    auto p0 = tri.pos[0], p1 = tri.pos[1], p2 = tri.pos[2];
-    bool flag = calcWeight(p0, p1, p2, p, tri.info,tri.flags,w);
-    p.z = p0.z*w.x + p1.z*w.y + p2.z*w.z;
-    if (flag & p.z >= 0.0f & p.z <= 1.0f) {
+    bool flag = calcWeight(tri.w, p, tri.info, tri.flags, w);
+    auto z = dot(tri.z, w);
+    if (flag & z >= 0.0f & z <= 1.0f) {
         auto fo = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
-        fs(uv,p.z, fo, *uniform, *frameBuffer);
+        fs(uv, z, fo, *uniform, *frameBuffer);
     }
 }
