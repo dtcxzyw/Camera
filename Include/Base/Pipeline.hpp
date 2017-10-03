@@ -11,13 +11,11 @@ inline uint calcSize(uint a,uint b) {
     return (a+b-1) / b;
 }
 
-class Pipeline final {
+class Pipeline final:Uncopyable {
 private:
     cudaStream_t mStream;
 public:
     Pipeline();
-    Pipeline(const Pipeline&) = delete;
-    Pipeline& operator=(const Pipeline&) = delete;
     ~Pipeline();
 
     void sync();

@@ -21,7 +21,7 @@ int main() {
             glm::mat4 P = perspectiveFov(radians(45.0f), w, h, 0.1f, 200.0f);
             glm::mat4 V = lookAt({ 6.0f,2.0f,0.0f }, vec3{ 0.0f,2.0f,0.0f }, { 0.0f,1.0f,0.0f });
             float now = glfwGetTime();
-            M = rotate(M, (now-t)*0.2f, { 0.0f,1.0f,0.0f });
+            M = rotate(M, (now-t)*2.0f, { 0.0f,1.0f,0.0f });
             t = now;
             Uniform uni { P*V*M,model.mTex->toSampler() };
             auto uniform = share(std::vector<Uniform>({uni}));

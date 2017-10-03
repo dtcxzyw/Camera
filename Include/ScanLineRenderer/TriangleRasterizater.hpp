@@ -51,20 +51,20 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt, const vec4* Re
 }
 
 template<typename Out>
-    CALLABLE void clipTile(unsigned int size, const Triangle<Out>* ReadOnly in,
-        unsigned int* cnt, Triangle<Out>* out,vec4 rect) {
-    auto id = getID();
-    if (id >= size)return;
-    auto range = in[id].rect;
-    if (range.x <= rect.y&range.y >= rect.x&range.z <= rect.w&range.w >= rect.z)
-        out[atomicInc(cnt, maxv)]=in[id];
+    CALLABLE void clipTile(const Triangle<Out>* ReadOnly in,
+        unsigned int* cnt, unsigned int* out,unsigned int len) {
+    auto id = threadIdx.x*blockDim.y + threadIdx.y;
+    auto range = in[blockIdx.x].rect;
+    vec2 begin = { len*threadIdx.x,len*threadIdx.y };
+    if ((range.x <=begin.x+len) &(range.y >= begin.x)&(range.z <= begin.y+len)&(range.w >= begin.y))
+        out[gridDim.x*id+atomicInc(cnt+id, maxv)]=blockIdx.x;
 }
 
-template<typename Out, typename Uniform, typename FrameBuffer,
-    FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void drawTriangles(const Triangle<Out>* ReadOnly info,
+    template<typename Out, typename Uniform, typename FrameBuffer,
+        FSF<Out, Uniform, FrameBuffer> fs>
+        CALLABLE void drawTriangles(const Triangle<Out>* ReadOnly info, const unsigned int* ReadOnly tid,
         const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer,ivec2 offset) {
-    auto tri = info[blockIdx.x];
+    auto tri = info[tid[blockIdx.x]];
     ivec2 uv{offset.x+blockIdx.y*blockDim.x + threadIdx.x,
         offset.y+blockIdx.z*blockDim.y + threadIdx.y };
     vec2 p{ uv.x,uv.y };

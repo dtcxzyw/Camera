@@ -12,29 +12,36 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
     pipeline.run(runVS<Vert, Out, Uniform,FrameBuffer, vs>, vert.size(), vert.begin(), uniform.begin(),
         out.begin(), pos.begin(),frameBuffer.begin());
     auto cnt = allocBuffer<unsigned int>(1);
-    pipeline.sync();
-    *cnt.begin() = 0;
+    cudaMemsetAsync(cnt.begin(), 0, sizeof(unsigned int), pipeline.getId());
     auto info = allocBuffer<Triangle<Out>>(index.size());
-    pipeline.run(clipTriangles<Out>, index.size(),cnt.begin(),pos.begin(),out.begin(),index.begin(), info.begin());
+    pipeline.run(clipTriangles<Out>, index.size(),cnt.begin(),pos.begin(),out.begin()
+        ,index.begin(), info.begin());
     pipeline.sync();
-    constexpr auto tileSize = 32U,clipSize=2U,range=tileSize*clipSize;
     auto num = *cnt.begin();
     if (num) {
+        constexpr auto tileSize = 32U, clipSize = 2U, range = tileSize*clipSize;
         auto clipTileX = calcSize(size.x, range), clipTileY = calcSize(size.y, range);
-        auto now = allocBuffer<Triangle<Out>>(index.size());
+        auto tcnt = allocBuffer<unsigned int>(clipTileX*clipTileY);
+        auto tid = allocBuffer<unsigned int>(num*tcnt.size());
+        std::vector<unsigned int> tsiz(tcnt.size());
+        {
+            cudaMemsetAsync(tcnt.begin(), 0, sizeof(unsigned int)*tcnt.size(), pipeline.getId());
+            dim3 grid(num);
+            dim3 block(clipTileX, clipTileY);
+            pipeline.runDim(clipTile<Out>, grid,block, info.begin(), tcnt.begin(), tid.begin(), range);
+            pipeline.sync();
+            cudaMemcpy(tsiz.data(), tcnt.begin(), sizeof(unsigned int)*tcnt.size(), cudaMemcpyDefault);
+        }
+
         for (unsigned int i = 0; i < clipTileX; ++i)
             for (unsigned int j = 0; j < clipTileY; ++j) {
-                vec4 rect = { i*range,(i + 1)*range,j*range,(j + 1)*range };
-                pipeline.sync();
-                *cnt.begin() = 0;
-                pipeline.run(clipTile<Out>, num,info.begin(),cnt.begin(), now.begin(),rect);
-                pipeline.sync();
-                auto tcnt = *cnt.begin();
-                if (tcnt) {
-                    dim3 grid(tcnt, clipSize, clipSize);
+                auto id = i*clipTileY + j;
+                if (tsiz[id]) {
+                    dim3 grid(tsiz[id], clipSize, clipSize);
                     dim3 block(tileSize, tileSize);
                     pipeline.runDim(drawTriangles<Out, Uniform, FrameBuffer, fs>, grid, block
-                        , now.begin(), uniform.begin(), frameBuffer.begin(), ivec2(i*range, j*range));
+                        ,info.begin(), tid.begin()+num*id, uniform.begin(), frameBuffer.begin()
+                        , ivec2(i*range, j*range));
                 }
             }
     }
