@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Base">
+      <UniqueIdentifier>{36a4e775-4fae-4fdd-8e21-586cebe3142a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ScanLineRenderer">
+      <UniqueIdentifier>{76de8573-926b-496c-8836-7485698092e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Interaction">
+      <UniqueIdentifier>{33bcbec0-5389-4d17-aedf-be73fcf99958}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Include\Base\Common.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Base\DataSet.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Base\Image.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Base\Model.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Base\RenderTarget.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Base\Sampler.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Base\Types.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLine.hpp">
+      <Filter>ScanLineRenderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLineRenderer.hpp">
+      <Filter>ScanLineRenderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\ScanLineRenderer\TriangleRasterizater.hpp">
+      <Filter>ScanLineRenderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Base\Pipeline.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Base\Builtin.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp">
+      <Filter>Interaction</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Src\Base\Image.cpp">
+      <Filter>Base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Base\Common.cpp">
+      <Filter>Base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Base\Model.cpp">
+      <Filter>Base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Base\Pipeline.cpp">
+      <Filter>Base</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\..\Src\ScanLineRenderer\ScanLine.cu">
+      <Filter>ScanLineRenderer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\ScanLineRenderer\TriangleRasterizater.cu">
+      <Filter>ScanLineRenderer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Interaction\OpenGL.cu">
+      <Filter>Interaction</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>

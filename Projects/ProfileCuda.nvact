@@ -1,0 +1,11 @@
+﻿<Model DefinitionId="3a3ca3f4-7ba7-4c09-a182-6ba59bf12599" DisplayName="Analysis Activity" xmlns="clr-namespace:Ark.PropertyModel;assembly=Ark">
+    <Property Name="ActivityType" Value="Profile" />
+    <Property Name="Application" Value="C:\WorkSpace\Camera\Bin\Test_x64.exe" />
+    <Property Name="EnableCudaGpuTaskTrace" Value="True" />
+    <Property Name="EnableCudaTrace" Value="True" />
+    <Property Name="ExperimentsPresetConfiguration" Value="All" />
+    <Property Name="ExtensionsToSynchronize" Value="*;" />
+    <Property Name="InitialReport" Value="CudaSummary" />
+    <Property Name="ProfileOptionCollectModuleInformation" Value="True" />
+    <Property Name="WorkingDirectory" Value="C:\WorkSpace\Camera\Bin\" />
+</Model>

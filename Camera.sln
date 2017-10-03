@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.16
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core", "Projects\Core\Core.vcxproj", "{5F1E8A1F-D76A-422B-931E-A9A3CB901342}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test", "Projects\Test\Test.vcxproj", "{692621FD-3048-4BE1-AF10-F67EAA053452}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6C3FB335-3B76-4DFC-9B28-FC6C182B05C8}"
+	ProjectSection(SolutionItems) = preProject
+		Projects\ProfileCuda.nvact = Projects\ProfileCuda.nvact
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5F1E8A1F-D76A-422B-931E-A9A3CB901342}.Debug|x64.ActiveCfg = Debug|x64
+		{5F1E8A1F-D76A-422B-931E-A9A3CB901342}.Debug|x64.Build.0 = Debug|x64
+		{5F1E8A1F-D76A-422B-931E-A9A3CB901342}.Release|x64.ActiveCfg = Release|x64
+		{5F1E8A1F-D76A-422B-931E-A9A3CB901342}.Release|x64.Build.0 = Release|x64
+		{692621FD-3048-4BE1-AF10-F67EAA053452}.Debug|x64.ActiveCfg = Debug|x64
+		{692621FD-3048-4BE1-AF10-F67EAA053452}.Debug|x64.Build.0 = Debug|x64
+		{692621FD-3048-4BE1-AF10-F67EAA053452}.Release|x64.ActiveCfg = Release|x64
+		{692621FD-3048-4BE1-AF10-F67EAA053452}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {88C0D554-B937-4C67-A62F-52AE30F72AD3}
+	EndGlobalSection
+EndGlobal
