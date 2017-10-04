@@ -7,7 +7,7 @@
 #include <chrono>
 #include <sm_20_intrinsics.h>
 
-CUDA void VS(VI in, Uniform uniform, OI& out, vec4& pos) {
+CUDA void VS(VI in, Uniform uniform, vec4& pos, OI& out) {
     pos = uniform.mat* vec4(in.pos, 1.0f);
     out.get<coord>() = in.uv;
 }
@@ -16,7 +16,7 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
     uv.y = fbo.mSize.y - uv.y;
     if (fbo.depth.get(uv) > z) {
         auto color = uniform.tex.get(out.get<coord>());
-        for (int i = 0; i < 64; ++i) {
+        for (int i = 0; i < 4; ++i) {
             auto fz = fbo.depth.get(uv);
             if (fz > z | (fz==z & fbo.color.get(uv) != color)) {
                 fbo.depth.set(uv, z);

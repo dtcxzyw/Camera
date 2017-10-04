@@ -2,7 +2,7 @@
 #include <Base/Pipeline.hpp>
 
 template<typename Vert, typename Out, typename Uniform>
-using VSF = void(*)(Vert in,Uniform uniform, Out& out, vec4& pos);
+using VSF = void(*)(Vert in,Uniform uniform, vec4& pos,Out& out);
 
 template<typename Out, typename Uniform, typename FrameBuffer>
 using FSF = void(*)(ivec2 uv,float z, Out in, Uniform uniform,
@@ -10,14 +10,13 @@ using FSF = void(*)(ivec2 uv,float z, Out in, Uniform uniform,
 
 CUDA void toNDC(vec4& p,uvec2 size);
 
-template<typename Vert, typename Out, typename Uniform,typename FrameBuffer,
-    VSF<Vert, Out, Uniform> vs>
+template<typename Vert, typename Out, typename Uniform,VSF<Vert, Out, Uniform> vs>
 CALLABLE void runVS(unsigned int size,const Vert* ReadOnly in,const Uniform* ReadOnly u,
-    Out* out,vec4* pos,const FrameBuffer* ReadOnly frameBuffer) {
+    std::pair<vec4,Out>* out,uvec2 fsize) {
     auto i = getID();
     if (i >= size)return;
-    vs(in[i], *u, out[i], pos[i]);
-    toNDC(pos[i],frameBuffer->size());
+    vs(in[i], *u, out[i].first, out[i].second);
+    toNDC(out[i].first, fsize);
 }
 
 template<typename Uniform, typename FrameBuffer>
