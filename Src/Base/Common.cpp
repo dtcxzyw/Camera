@@ -3,32 +3,35 @@
 #include <system_error>
 #include <map>
 #include <mutex>
-#include <queue>
+#include <list>
 
 class MemoryPool final:Singletion {
 private:
-    std::multimap<size_t, void*> mPool;
-    std::queue<size_t> mQueue;
-    size_t mSize;
+    std::multimap<size_t,void*> mPool;
     std::mutex mPoolMutex;
-    MemoryPool() :mSize(0) {}
+    MemoryPool() {}
     friend MemoryPool& getMemoryPool();
-    void release(decltype(mPool)::iterator p) {
-        mSize -= p->first;
-        checkError(cudaFree(p->second));
-        mPool.erase(p);
-    }
-    void blance() {
-        if (mQueue.size()) {
-            auto s = mQueue.front();
-            auto p = mPool.find(s);
-            if (p != mPool.end())release(p);
-            mQueue.pop();
+    void* add(size_t size) {
+        void* ptr;
+        cudaError_t err;
+        while ((err=cudaMallocManaged(&ptr, size))!=cudaSuccess) {
+            if (mPool.size()) {
+                checkError(cudaFree(mPool.begin()->second));
+                mPool.erase(mPool.begin());
+            }
+            else checkError(err);
         }
+        return ptr;
+    }
+    size_t count(size_t x) {
+        for (int i = 40; i >= 0; --i)
+            if (x&(1ULL << i))
+                return 1ULL<<(i+1);
+        return -1;
     }
 public:
-
     void* memAlloc(size_t size) {
+        auto level = count(size);
         std::lock_guard<std::mutex> guard(mPoolMutex);
         auto p = mPool.upper_bound(size-1);
         if (p != mPool.cend()) {
@@ -36,23 +39,12 @@ public:
             mPool.erase(p);
             return ptr;
         }
-        else {
-            void** ptr;
-            cudaError_t error;
-            while ((error=cudaMallocManaged(&ptr, size)) != cudaSuccess) {
-                if (mPool.size()) release(mPool.begin());
-                else checkError(error);
-            }
-            mSize += size;
-            return ptr;
-        }
+        return add(level);
     }
 
     void memFree(void* ptr, size_t size) {
         std::lock_guard<std::mutex> guard(mPoolMutex);
-        mPool.emplace(size, ptr);
-        while (mSize >= (1LL << 30))blance();
-        mQueue.push(size);
+        mPool.emplace(count(size), ptr);
     }
 
     ~MemoryPool() {
