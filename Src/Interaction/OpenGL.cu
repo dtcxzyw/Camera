@@ -68,20 +68,30 @@ GLWindow::GLWindow():mRes(0) {
         throw std::exception("Failed to create a FBO.");
 }
 
-void GLWindow::present(Pipeline& pipeline,const BuiltinRenderTarget<RGBA>& colorbuffer) {
+void GLWindow::present(Pipeline& pipeline,const BuiltinRenderTarget<RGBA>& colorBuffer) {
+    auto data=map(pipeline,colorBuffer.size());
+    checkError(cudaMemcpyArrayToArray(data, 0, 0, colorBuffer.get()
+        , 0, 0, mSize.x*mSize.y * sizeof(RGBA)));
+    unmapAndPresent(pipeline);
+}
+
+cudaArray_t GLWindow::map(Pipeline& pipeline,uvec2 size) {
     getContext().makeContext(mWindow);
-    resize(colorbuffer.size());
+    resize(size);
     checkError(cudaGraphicsMapResources(1, &mRes, pipeline.getId()));
     cudaArray_t data;
     checkError(cudaGraphicsSubResourceGetMappedArray(&data, mRes, 0, 0));
-    checkError(cudaMemcpyArrayToArray(data, 0, 0, colorbuffer.get()
-        , 0, 0, mSize.x*mSize.y * sizeof(RGBA)));
+    return data;
+}
+
+void GLWindow::unmapAndPresent(Pipeline& pipeline) {
+    getContext().makeContext(mWindow);
     checkError(cudaGraphicsUnmapResources(1, &mRes, pipeline.getId()));
     auto frame = size();
-    glBindFramebuffer(GL_READ_FRAMEBUFFER,mFBO);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, mFBO);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(0,0,frame.x,frame.y,0,0,mSize.x,mSize.y
-        ,GL_COLOR_BUFFER_BIT,GL_NEAREST);
+    glBlitFramebuffer(0, 0, frame.x, frame.y, 0, 0, mSize.x, mSize.y
+        , GL_COLOR_BUFFER_BIT, GL_NEAREST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glfwSwapBuffers(mWindow);
 }

@@ -48,6 +48,9 @@
     <ClInclude Include="..\..\Include\IO\Model.hpp">
       <Filter>IO</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\IO\Video.hpp">
+      <Filter>IO</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">

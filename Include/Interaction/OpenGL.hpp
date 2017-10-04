@@ -14,7 +14,9 @@ public:
     GLWindow();
     GLWindow(const GLWindow&) = delete;
     GLWindow& operator=(const GLWindow&) = delete;
-    void present(Pipeline& pipeline,const BuiltinRenderTarget<RGBA>& colorbuffer);
+    void present(Pipeline& pipeline,const BuiltinRenderTarget<RGBA>& colorBuffer);
+    cudaArray_t map(Pipeline& pipeline, uvec2 size);
+    void unmapAndPresent(Pipeline& pipeline);
     bool update();
     void resize(size_t width, size_t height);
     uvec2 size() const;

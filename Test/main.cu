@@ -28,8 +28,9 @@ int main() {
             t = now;
             Uniform uni{ P*V*M };
             auto uniform = share(std::vector<Uniform>({ uni }));
-            kernel(model.mVert, model.mIndex, uniform, FB, pipeline);
-            window.present(pipeline, *FB.colorBuffer);
+            BuiltinRenderTarget<RGBA> RT(window.map(pipeline,size),size);
+            kernel(model.mVert, model.mIndex, uniform, FB,RT.toTarget(),pipeline);
+            window.unmapAndPresent(pipeline);
         }
     }
     catch (const std::exception& e) {

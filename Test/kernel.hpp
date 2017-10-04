@@ -45,5 +45,5 @@ struct Uniform final {
 };
 
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, DataViewer<Uniform> uniform
-    ,FrameBufferCPU& fbo,Pipeline& pipeline);
+    ,FrameBufferCPU& fbo, BuiltinRenderTargetGPU<RGBA> dest, Pipeline& pipeline);
 

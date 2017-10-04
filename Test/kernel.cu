@@ -24,22 +24,24 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
     }
 }
 
-CUDA void post(ivec2 NDC, Uniform uniform, FrameBufferGPU& frameBuffer) {
+CUDA void post(ivec2 NDC, FrameBufferGPU in, BuiltinRenderTargetGPU<RGBA> out) {
     constexpr int rad = 5;
-    constexpr auto base = 5.0f, sub =1.0f-base*((rad*2+1)*(rad*2+1)-1);
+    constexpr auto base = 5.0f, sub =base*(rad*2+1)*(rad*2+1)-1.0f;
     float w = 0.0f;
     for (int i =  - rad; i <= rad; ++i)
         for (int j = - rad; j <=  rad; ++j)
-            w +=frameBuffer.depth.get({NDC.x+i,NDC.y+j })*(i==0&j==0?sub:base);
-    frameBuffer.color.set(NDC, frameBuffer.color.get(NDC)*w);
+            w +=in.depth.get({NDC.x+i,NDC.y+j });
+    w = w*base - sub*in.depth.get(NDC);
+    auto c = in.color.get(NDC);
+    out.set(NDC, c*w);
 }
 
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo,DataViewer<Uniform> uniform,
-    FrameBufferCPU& fbo, Pipeline& pipeline) {
+    FrameBufferCPU& fbo, BuiltinRenderTargetGPU<RGBA> dest,Pipeline& pipeline) {
     fbo.colorRT->clear(pipeline,vec4{ 0.0f,0.0f,0.0f,1.0f });
     fbo.depthRT->clear(pipeline,1.0f);
     renderTriangles<VI, OI, Uniform, FrameBufferGPU, VS, drawPoint>
         (pipeline,vbo, ibo, uniform, fbo.dataGPU,fbo.size);
-    renderFullScreen<Uniform, FrameBufferGPU, post>(pipeline,uniform,fbo.dataGPU,fbo.size);
+    renderFullScreen<FrameBufferGPU, decltype(dest), post>(pipeline,fbo.dataGPU,dest,fbo.size);
 }
 

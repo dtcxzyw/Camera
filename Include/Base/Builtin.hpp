@@ -107,7 +107,7 @@ public:
     BuiltinRenderTargetGPU(){}
     BuiltinRenderTargetGPU(cudaSurfaceObject_t target) :mTarget(target) {}
     CUDA T get(ivec2 p) const {
-        auto res = surf2Dread<Type>(mTarget, p.x*sizeof(Type), p.y, cudaBoundaryModeZero);
+        auto res = surf2Dread<Type>(mTarget, p.x*sizeof(Type), p.y, cudaBoundaryModeClamp);
         return *reinterpret_cast<T*>(&res);
     }
     CUDA void set(ivec2 p,T v) {
@@ -134,12 +134,13 @@ private:
     cudaSurfaceObject_t mTarget;
     uvec2 mSize;
 public:
-    BuiltinRenderTarget(BuiltinArray<T>& array) :mArray(array.get()),mSize(array.size()) {
+    BuiltinRenderTarget(cudaArray_t array,uvec2 size) :mArray(array),mSize(size) {
         cudaResourceDesc RD;
         RD.res.array.array = mArray;
         RD.resType = cudaResourceType::cudaResourceTypeArray;
         checkError(cudaCreateSurfaceObject(&mTarget,&RD));
     }
+    BuiltinRenderTarget(BuiltinArray<T>& array):BuiltinRenderTarget(array.get(),array.size()) {}
     BuiltinRenderTargetGPU<T> toTarget() const {
         return mTarget;
     }

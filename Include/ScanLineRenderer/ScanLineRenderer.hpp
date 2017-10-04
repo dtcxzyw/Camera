@@ -37,7 +37,7 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
 
 template<typename Uniform, typename FrameBuffer, FSFSF<Uniform,FrameBuffer> fs>
 void renderFullScreen(Pipeline& pipeline,DataViewer<Uniform> uniform, 
-    DataViewer<FrameBuffer> frameBuffer, uvec2 size) {
-    pipeline.run(runFSFS<Uniform,FrameBuffer,fs>, size.x*size.y, uniform.begin(), frameBuffer.begin());
+    FrameBuffer frameBuffer, uvec2 size) {
+    pipeline.run(runFSFS<Uniform,FrameBuffer,fs>, size.x*size.y, uniform.begin(), frameBuffer,size.x);
 }
 
