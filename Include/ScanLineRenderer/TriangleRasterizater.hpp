@@ -43,30 +43,31 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt, const vec4* Re
         calcBase(a, b, res.w[2]);
         res.z = { a.z,b.z,c.z };
         res.invz = { 1.0f / a.z,1.0f / b.z,1.0f / c.z };
-        res.flags = ((c.y == b.y & c.x > b.x) | c.y > b.y) | 
-            (((a.y == c.y & a.x > c.x) | a.y > c.y) << 1)|
+        res.flags = ((c.y == b.y & c.x > b.x) | c.y > b.y) |
+            (((a.y == c.y & a.x > c.x) | a.y > c.y) << 1) |
             (((b.y == a.y & b.x > a.x) | b.y > a.y) << 2);
         res.out[0] = out[idx.x], res.out[1] = out[idx.y], res.out[2] = out[idx.z];
     }
 }
 
 template<typename Out>
-    CALLABLE void clipTile(const Triangle<Out>* ReadOnly in,
-        unsigned int* cnt, unsigned int* out,unsigned int len) {
+CALLABLE void clipTile(const Triangle<Out>* ReadOnly in,
+    unsigned int* cnt, unsigned int* out, unsigned int len) {
     auto id = threadIdx.x*blockDim.y + threadIdx.y;
     auto range = in[blockIdx.x].rect;
     vec2 begin = { len*threadIdx.x,len*threadIdx.y };
-    if ((range.x <=begin.x+len) &(range.y >= begin.x)&(range.z <= begin.y+len)&(range.w >= begin.y))
-        out[gridDim.x*id+atomicInc(cnt+id, maxv)]=blockIdx.x;
+    if ((range.x <= begin.x + len) &(range.y >= begin.x)&(range.z <= begin.y + len)&(range.w >= begin.y))
+        out[gridDim.x*id + atomicInc(cnt + id, maxv)] = blockIdx.x;
 }
 
-    template<typename Out, typename Uniform, typename FrameBuffer,
-        FSF<Out, Uniform, FrameBuffer> fs>
-        CALLABLE void drawTriangles(const Triangle<Out>* ReadOnly info, const unsigned int* ReadOnly tid,
-        const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer,ivec2 offset) {
+template<typename Out, typename Uniform, typename FrameBuffer,
+    FSF<Out, Uniform, FrameBuffer> fs>
+    CALLABLE void drawTriangles(const Triangle<Out>* ReadOnly info, const unsigned int* ReadOnly tid,
+        const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer
+        , unsigned int offsetX, unsigned int offsetY) {
     auto tri = info[tid[blockIdx.x]];
-    ivec2 uv{offset.x+blockIdx.y*blockDim.x + threadIdx.x,
-        offset.y+blockIdx.z*blockDim.y + threadIdx.y };
+    ivec2 uv{ offsetX + blockIdx.y*blockDim.x + threadIdx.x,
+        offsetY + blockIdx.z*blockDim.y + threadIdx.y };
     vec2 p{ uv.x,uv.y };
     if ((p.x < tri.rect.x) | (p.x > tri.rect.y) | (p.y < tri.rect.z) | (p.y > tri.rect.w))return;
     vec3 w;
@@ -75,5 +76,22 @@ template<typename Out>
     if (flag & z >= 0.0f & z <= 1.0f) {
         auto fo = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
         fs(uv, z, fo, *uniform, *frameBuffer);
+    }
+}
+
+constexpr auto tileSize = 32U, clipSize = 2U, range = tileSize*clipSize;
+
+template<typename Out, typename Uniform, typename FrameBuffer,
+    FSF<Out, Uniform, FrameBuffer> fs>
+    CALLABLE void drawTile(const unsigned int* ReadOnly tsiz, const Triangle<Out>* ReadOnly info,
+        const unsigned int* ReadOnly tid, const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer,
+        unsigned int num) {
+    auto id = blockIdx.x*gridDim.y + blockIdx.y;
+    if (tsiz[id]) {
+        dim3 grid(tsiz[id], clipSize, clipSize);
+        dim3 block(tileSize, tileSize);
+        drawTriangles<Out, Uniform, FrameBuffer, fs> <<<grid, block >>> (info, 
+            tid + num*id, uniform, frameBuffer, 
+            blockIdx.x*range, blockIdx.y*range);
     }
 }

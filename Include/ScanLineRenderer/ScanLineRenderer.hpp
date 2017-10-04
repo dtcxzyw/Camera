@@ -19,31 +19,21 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
     pipeline.sync();
     auto num = *cnt.begin();
     if (num) {
-        constexpr auto tileSize = 32U, clipSize = 2U, range = tileSize*clipSize;
         auto clipTileX = calcSize(size.x, range), clipTileY = calcSize(size.y, range);
         auto tcnt = allocBuffer<unsigned int>(clipTileX*clipTileY);
         auto tid = allocBuffer<unsigned int>(num*tcnt.size());
-        std::vector<unsigned int> tsiz(tcnt.size());
         {
             cudaMemsetAsync(tcnt.begin(), 0, sizeof(unsigned int)*tcnt.size(), pipeline.getId());
             dim3 grid(num);
             dim3 block(clipTileX, clipTileY);
             pipeline.runDim(clipTile<Out>, grid,block, info.begin(), tcnt.begin(), tid.begin(), range);
-            pipeline.sync();
-            cudaMemcpy(tsiz.data(), tcnt.begin(), sizeof(unsigned int)*tcnt.size(), cudaMemcpyDefault);
         }
-
-        for (unsigned int i = 0; i < clipTileX; ++i)
-            for (unsigned int j = 0; j < clipTileY; ++j) {
-                auto id = i*clipTileY + j;
-                if (tsiz[id]) {
-                    dim3 grid(tsiz[id], clipSize, clipSize);
-                    dim3 block(tileSize, tileSize);
-                    pipeline.runDim(drawTriangles<Out, Uniform, FrameBuffer, fs>, grid, block
-                        ,info.begin(), tid.begin()+num*id, uniform.begin(), frameBuffer.begin()
-                        , ivec2(i*range, j*range));
-                }
-            }
+        {
+            dim3 grid(clipTileX, clipTileY);
+            dim3 block;
+            pipeline.runDim(drawTile<Out, Uniform, FrameBuffer, fs>,grid,block,tcnt.begin(), info.begin(),
+                tid.begin(), uniform.begin(), frameBuffer.begin(),num);
+        }
     }
 }
 

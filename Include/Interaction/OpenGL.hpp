@@ -1,10 +1,15 @@
 #pragma once
 #include <GLFW/glfw3.h>
 #include <Base/Builtin.hpp>
+#include <cuda_gl_interop.h>
 
 class GLWindow {
 protected:
     GLFWwindow* mWindow;
+    GLuint mFBO, mTexture;
+    cudaGraphicsResource_t mRes;
+    uvec2 mSize;
+    void resize(uvec2 size);
 public:
     GLWindow();
     GLWindow(const GLWindow&) = delete;

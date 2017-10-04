@@ -23,9 +23,11 @@ public:
 
     template<cudaFuncCache cache = cudaFuncCachePreferL1, typename Func, typename... Args>
     void run(Func func, unsigned int size, Args... args) {
-        checkError(cudaFuncSetCacheConfig(func, cache));
-        func <<<calcSize(size,blockSize), glm::min(blockSize, size),0, mStream>>> (size, args...);
-        checkError();
+        if (size) {
+            checkError(cudaFuncSetCacheConfig(func, cache));
+            func << <calcSize(size, blockSize), glm::min(blockSize, size), 0, mStream >> > (size, args...);
+            checkError();
+        }
     }
 
     template<cudaFuncCache cache=cudaFuncCachePreferL1,typename Func, typename... Args>
