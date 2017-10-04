@@ -122,7 +122,7 @@ public:
         return mTarget;
     }
     void clear(Pipeline& pipeline,T val) {
-        uint mul = sqrt(getDevice().getProp().maxThreadsPerBlock);
+        uint mul = sqrt(getEnvironment().getProp().maxThreadsPerBlock);
         dim3 grid(calcSize(mSize.x,mul),calcSize(mSize.y,mul));
         dim3 block(mul, mul);
         pipeline.runDim(Impl::clear<T>, grid, block, toTarget(), val);

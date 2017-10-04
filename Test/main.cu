@@ -2,9 +2,10 @@
 #include <system_error>
 #include "kernel.hpp"
 #include <Interaction/OpenGL.hpp>
+#include <thread>
 
 int main() {
-    getDevice().init(0);
+    getEnvironment().init();
     try {
         StaticMesh model;
         model.load("Res/human.obj");
@@ -17,6 +18,8 @@ int main() {
         float t = glfwGetTime();
         while (window.update()) {
             auto size = window.size();
+            if (size.x == 0 || size.y == 0)
+                std::this_thread::yield();
             FB.resize(size.x, size.y);
             float w = size.x, h = size.y;
             glm::mat4 P = perspectiveFov(radians(45.0f), w, h, 0.1f, 20.0f);

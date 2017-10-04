@@ -30,23 +30,6 @@ public:
     Singletion& operator=(Singletion&&) = delete;
 };
 
-class Device final:Singletion{
-private:
-    cudaDeviceProp mProp;
-    int mCurrentId;
-    Device() = default;
-    friend Device& getDevice();
-public:
-    std::vector<cudaDeviceProp> enumDevices();
-    void init(int id);
-    void sync();
-    const cudaDeviceProp& getProp();
-    int getId();
-    ~Device();
-};
-
-Device& getDevice();
-
 void checkError(cudaError_t error);
 void checkError();
 
@@ -57,9 +40,11 @@ public:
     ~Memory();
     char* getPtr() const;
     size_t size() const;
+    int getDevice() const;
 private:
     void* mPtr;
     size_t mSize;
+    int mDevice;
 };
 
 using UniqueMemory = std::unique_ptr<Memory>;
@@ -78,11 +63,6 @@ public:
         if (size == 0)
             mSize = (mMem->size()-offset)/sizeof(T);
     }
-    void copyTo(DataViewer& rhs) const {
-        if (mSize != rhs.mSize)
-            throw std::invalid_argument("The range of rhs must be equal to that of this.");
-        checkError(cudaMemcpy(rhs.begin(), begin(), mSize * sizeof(T),cudaMemcpyDefault));
-    }
     template<typename U>
     DataViewer<U> viewAs() const {
         auto rsize = mSize * sizeof(T);
@@ -90,11 +70,6 @@ public:
             throw std::invalid_argument("T can not cast to U.");
         return DataViewer<U>(mMem,
             reinterpret_cast<char*>(mPtr) - mMem->getPtr(), rsize / sizeof(U));
-    }
-    auto clone() const {
-        DataViewer res{ std::make_shared<Memory>(mSize * sizeof(T)) };
-        copyTo(res);
-        return res;
     }
     T* begin() const {
         return mPtr;

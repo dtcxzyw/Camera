@@ -10,7 +10,6 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
     auto vertex = allocBuffer<std::pair<vec4,Out>>(vert.size());
     pipeline.run(runVS<Vert, Out, Uniform, vs>, vert.size(), vert.begin(), uniform.begin(),
         vertex.begin(),size);
-
     auto cnt = allocBuffer<unsigned int>(1);
     cudaMemsetAsync(cnt.begin(), 0, sizeof(unsigned int), pipeline.getId());
     auto info = allocBuffer<Triangle<Out>>(index.size());
@@ -28,8 +27,8 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
             pipeline.runDim(clipTile<Out>, grid,block, info.begin(), tcnt.begin(), tid.begin(), range);
         }
         {
-            dim3 grid(clipTileX, clipTileY);
-            dim3 block;
+            dim3 grid;
+            dim3 block(clipTileX, clipTileY);
             pipeline.runDim(drawTile<Out, Uniform, FrameBuffer, fs>,grid,block,tcnt.begin(), info.begin(),
                 tid.begin(), uniform.begin(), frameBuffer.begin(),num);
         }

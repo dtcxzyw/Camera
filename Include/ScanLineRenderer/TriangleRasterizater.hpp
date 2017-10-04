@@ -87,11 +87,11 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     CALLABLE void drawTile(const unsigned int* ReadOnly tsiz, const Triangle<Out>* ReadOnly info,
         const unsigned int* ReadOnly tid, const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer,
         unsigned int num) {
-    auto id = blockIdx.x*gridDim.y + blockIdx.y;
+    auto id = threadIdx.x*blockDim.y + threadIdx.y;
     if (tsiz[id]) {
         dim3 grid(tsiz[id], clipSize, clipSize);
         dim3 block(tileSize, tileSize);
         drawTriangles<Out, Uniform, FrameBuffer, fs> <<<grid, block >>> (info, 
-            tid + num*id, uniform, frameBuffer, blockIdx.x*range, blockIdx.y*range);
+            tid + num*id, uniform, frameBuffer, threadIdx.x*range, threadIdx.y*range);
     }
 }

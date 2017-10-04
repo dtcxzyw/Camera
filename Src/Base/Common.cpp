@@ -3,11 +3,14 @@
 
 Memory::Memory(size_t size): mSize(size) {
     checkError(cudaMallocManaged(&mPtr, size));
-    checkError(cudaMemAdvise(mPtr,size,cudaMemAdviseSetReadMostly,getDevice().getId()));
+    checkError(cudaGetDevice(&mDevice));
 }
 
 Memory::Memory(const Memory & rhs):Memory(rhs.size()) {
-    cudaMemcpy(mPtr, rhs.getPtr(), rhs.size(),cudaMemcpyDefault);
+    if (mDevice == rhs.mDevice)
+        cudaMemcpy(mPtr, rhs.getPtr(), mSize, cudaMemcpyDefault);
+    else
+        cudaMemcpyPeer(mPtr, mDevice, rhs.getPtr(), rhs.getDevice(),mSize);
 }
 
 Memory::~Memory() {
@@ -22,51 +25,19 @@ size_t Memory::size() const {
     return mSize;
 }
 
-Device& getDevice() {
-    static Device device;
-    return device;
+int Memory::getDevice() const {
+    return mDevice;
 }
 
 void checkError(cudaError_t error) {
     if (error != cudaSuccess) {
         puts(cudaGetErrorName(error));
         puts(cudaGetErrorString(error));
+        __debugbreak();
         throw std::exception(cudaGetErrorString(error));
     }
 }
 
 void checkError() {
     checkError(cudaGetLastError());
-}
-
-std::vector<cudaDeviceProp> Device::enumDevices() {
-    std::vector<cudaDeviceProp> res;
-    int count;
-    checkError(cudaGetDeviceCount(&count));
-    res.resize(count);
-    for (int i = 0; i < count; ++i)
-        checkError(cudaGetDeviceProperties(&res[i],i));
-    return res;
-}
-
-void Device::init(int id) {
-    mCurrentId = id;
-    checkError(cudaSetDevice(id));
-    checkError(cudaGetDeviceProperties(&mProp,id));
-}
-
-void Device::sync() {
-    checkError(cudaDeviceSynchronize());
-}
-
-Device::~Device() {
-    checkError(cudaDeviceReset());
-}
-
-const cudaDeviceProp & Device::getProp() {
-    return mProp;
-}
-
-int Device::getId() {
-    return mCurrentId;
 }

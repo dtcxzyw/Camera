@@ -1,10 +1,12 @@
 #pragma once
 #include "Common.hpp"
-
-constexpr auto blockSize = 1024U;
+#include <thread>
+#include <future>
+#include <functional>
+#include <map>
 
 inline CUDA uint getID() {
-    return blockIdx.x*blockSize + threadIdx.x;
+    return blockIdx.x*blockDim.x + threadIdx.x;
 }
 
 inline uint calcSize(uint a,uint b) {
@@ -14,6 +16,7 @@ inline uint calcSize(uint a,uint b) {
 class Pipeline final:Uncopyable {
 private:
     cudaStream_t mStream;
+    unsigned int mMaxThread;
 public:
     Pipeline();
     ~Pipeline();
@@ -25,7 +28,7 @@ public:
     void run(Func func, unsigned int size, Args... args) {
         if (size) {
             checkError(cudaFuncSetCacheConfig(func, cache));
-            func << <calcSize(size, blockSize), glm::min(blockSize, size), 0, mStream >> > (size, args...);
+            func << <calcSize(size, mMaxThread), glm::min(mMaxThread, size), 0, mStream >> > (size, args...);
             checkError();
         }
     }
@@ -37,3 +40,22 @@ public:
         checkError();
     }
 };
+
+class GPUInstance;
+
+class Environment final :Singletion {
+private:
+    Environment();
+    friend Environment& getEnvironment();
+    std::vector<std::thread> mThreads;
+    std::map<int,GPUInstance*> mDevices;
+    bool mFlag;
+public:
+    void init();
+    std::future<void> pushTask(std::function<void()>&& deferred);
+    const cudaDeviceProp& getProp() const;
+    ~Environment();
+};
+
+Environment& getEnvironment();
+
