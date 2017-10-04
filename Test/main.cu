@@ -18,8 +18,7 @@ int main() {
         float t = glfwGetTime();
         while (window.update()) {
             auto size = window.size();
-            if (size.x == 0 || size.y == 0)
-                std::this_thread::yield();
+            if (size.x == 0 || size.y == 0)continue;
             FB.resize(size.x, size.y);
             float w = size.x, h = size.y;
             glm::mat4 P = perspectiveFov(radians(45.0f), w, h, 0.1f, 20.0f);

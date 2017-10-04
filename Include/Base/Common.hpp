@@ -36,15 +36,12 @@ void checkError();
 class Memory final:Uncopyable{
 public:
     Memory(size_t size);
-    Memory(const Memory& rhs);
     ~Memory();
     char* getPtr() const;
     size_t size() const;
-    int getDevice() const;
 private:
     void* mPtr;
     size_t mSize;
-    int mDevice;
 };
 
 using UniqueMemory = std::unique_ptr<Memory>;
