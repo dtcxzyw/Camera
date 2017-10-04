@@ -14,28 +14,25 @@
     <ClInclude Include="..\..\Include\Base\Builtin.hpp" />
     <ClInclude Include="..\..\Include\Base\Common.hpp" />
     <ClInclude Include="..\..\Include\Base\DataSet.hpp" />
-    <ClInclude Include="..\..\Include\Base\Image.hpp" />
-    <ClInclude Include="..\..\Include\Base\Model.hpp" />
     <ClInclude Include="..\..\Include\Base\Pipeline.hpp" />
-    <ClInclude Include="..\..\Include\Base\RenderTarget.hpp" />
-    <ClInclude Include="..\..\Include\Base\Sampler.hpp" />
     <ClInclude Include="..\..\Include\Base\Types.hpp" />
     <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp" />
+    <ClInclude Include="..\..\Include\IO\Image.hpp" />
+    <ClInclude Include="..\..\Include\IO\Model.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLine.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLineRenderer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\TriangleRasterizater.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp" />
-    <ClCompile Include="..\..\Src\Base\Image.cpp" />
-    <ClCompile Include="..\..\Src\Base\Model.cpp" />
     <ClCompile Include="..\..\Src\Base\Pipeline.cpp" />
-    <CudaCompile Include="..\..\Src\Base\Builtin.cu" />
+    <ClCompile Include="..\..\Src\IO\Model.cpp" />
     <CudaCompile Include="..\..\Src\Interaction\OpenGL.cu">
       <FileType>Document</FileType>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="..\..\Src\IO\Image.cu" />
     <CudaCompile Include="..\..\Src\ScanLineRenderer\ScanLine.cu" />
     <CudaCompile Include="..\..\Src\ScanLineRenderer\TriangleRasterizater.cu" />
   </ItemGroup>

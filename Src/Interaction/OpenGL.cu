@@ -12,12 +12,16 @@ private:
     friend GLContext& getContext();
 public:
     void makeContext(GLFWwindow* window) {
-        glfwMakeContextCurrent(window);
-        if (!mFlag) {
-            glewExperimental = true;
-            if(glewInit()!=GLEW_NO_ERROR)
-                throw std::exception("Failed to initialize glew.");
-            mFlag = true;
+        GLFWwindow* current = nullptr;
+        if (current != window) {
+            glfwMakeContextCurrent(window);
+            current = window;
+            if (!mFlag) {
+                glewExperimental = true;
+                if (glewInit() != GLEW_NO_ERROR)
+                    throw std::exception("Failed to initialize glew.");
+                mFlag = true;
+            }
         }
     }
     ~GLContext() {
@@ -77,7 +81,7 @@ void GLWindow::present(Pipeline& pipeline,const BuiltinRenderTarget<RGBA>& color
     glBindFramebuffer(GL_READ_FRAMEBUFFER,mFBO);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0,0,frame.x,frame.y,0,0,mSize.x,mSize.y
-        ,GL_COLOR_BUFFER_BIT,GL_LINEAR);
+        ,GL_COLOR_BUFFER_BIT,GL_NEAREST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glfwSwapBuffers(mWindow);
 }

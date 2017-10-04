@@ -20,10 +20,10 @@ CALLABLE void runVS(unsigned int size,const Vert* ReadOnly in,const Uniform* Rea
 }
 
 template<typename Uniform, typename FrameBuffer>
-using FSFSF = void(*)(uvec2 NDC, Uniform uniform, FrameBuffer& frameBuffer);
+using FSFSF = void(*)(ivec2 NDC, Uniform uniform, FrameBuffer& frameBuffer);
 
 template<typename Uniform, typename FrameBuffer,FSFSF<Uniform,FrameBuffer> fs>
-    CALLABLE void runFSFS(unsigned int size,vec4* pos,const Uniform* ReadOnly u,
+    CALLABLE void runFSFS(unsigned int size,const Uniform* ReadOnly u,
         FrameBuffer* frameBuffer) {
     auto i = getID();
     if (i >= size)return;

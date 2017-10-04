@@ -1,21 +1,17 @@
 #include <ScanLineRenderer/ScanLineRenderer.hpp>
 #include "kernel.hpp"
-#include <fstream>
-#include <stb/stb_image.h>
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb/stb_image_write.h>
-#include <chrono>
 #include <sm_20_intrinsics.h>
 
 CUDA void VS(VI in, Uniform uniform, vec4& pos, OI& out) {
     pos = uniform.mat* vec4(in.pos, 1.0f);
-    out.get<coord>() = in.uv;
 }
 
 CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& fbo) {
     uv.y = fbo.mSize.y - uv.y;
     if (fbo.depth.get(uv) > z) {
-        auto color = uniform.tex.get(out.get<coord>());
+        constexpr auto v = 0.5f;
+        auto g =1.5f- (z - v) / (1.0f - v);
+        vec4 color = { g,g,g,1.0f };
         for (int i = 0; i < 4; ++i) {
             auto fz = fbo.depth.get(uv);
             if (fz > z | (fz==z & fbo.color.get(uv) != color)) {
@@ -28,33 +24,22 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
     }
 }
 
-inline int toInt(float x) { return clamp(static_cast<int>(clamp(x,0.0f,1.0f) * 255.0f + 0.5f),0,255); }
-
-void toPNG(RGBA* p,ivec2 size) {
-    std::vector<unsigned char> rgba(size.x*size.y * 4);
-    unsigned char *ptr = rgba.data();
-    for (int i = 0; i < size.x*size.y; ++i) {
-        RGBA c = p[i];
-        *ptr++ = toInt(c.r);
-        *ptr++ = toInt(c.g);
-        *ptr++ = toInt(c.b);
-        *ptr++ = toInt(c.a);
-    }
-    stbi_write_png("output.png", size.x, size.y, STBI_rgb_alpha, rgba.data(),0);
+CUDA void post(ivec2 NDC, Uniform uniform, FrameBufferGPU& frameBuffer) {
+    constexpr int rad = 5;
+    constexpr auto base = 5.0f, sub =1.0f-base*((rad*2+1)*(rad*2+1)-1);
+    float w = 0.0f;
+    for (int i =  - rad; i <= rad; ++i)
+        for (int j = - rad; j <=  rad; ++j)
+            w +=frameBuffer.depth.get({NDC.x+i,NDC.y+j })*(i==0&j==0?sub:base);
+    frameBuffer.color.set(NDC, frameBuffer.color.get(NDC)*w);
 }
 
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo,DataViewer<Uniform> uniform,
     FrameBufferCPU& fbo, Pipeline& pipeline) {
-    using Clock = std::chrono::high_resolution_clock;
-    fbo.colorBuffer->clear(pipeline,vec4{ 0.0f,0.0f,0.0f,1.0f });
-    fbo.depthBuffer->clear(pipeline,1.0f);
-    auto b = Clock::now();
+    fbo.colorRT->clear(pipeline,vec4{ 0.0f,0.0f,0.0f,1.0f });
+    fbo.depthRT->clear(pipeline,1.0f);
     renderTriangles<VI, OI, Uniform, FrameBufferGPU, VS, drawPoint>
         (pipeline,vbo, ibo, uniform, fbo.dataGPU,fbo.size);
-    printf("%.3lf ms\n",
-        std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - b).count() / 1000.0);
-    //auto data = fbo.colorBuffer->download(pipeline);
-    //pipeline.sync();
-    //toPNG(data.begin(), fbo.size);
+    renderFullScreen<Uniform, FrameBufferGPU, post>(pipeline,uniform,fbo.dataGPU,fbo.size);
 }
 

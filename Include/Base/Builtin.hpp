@@ -24,6 +24,35 @@ struct Rename<UV> final {
 };
 
 template<typename T>
+class BuiltinArray final :Uncopyable {
+private:
+    cudaArray_t mArray;
+    using Type = typename Rename<T>::Type;
+    uvec2 mSize;
+public:
+    BuiltinArray(size_t width, size_t height) :mSize(width, height) {
+        auto desc = cudaCreateChannelDesc<Type>();
+        checkError(cudaMallocArray(&mArray, &desc, width, height));
+    }
+    ~BuiltinArray() {
+        checkError(cudaFreeArray(mArray));
+    }
+    DataViewer<T> download(Pipeline& pipeline) const {
+        auto res = allocBuffer<T>(mSize.x*mSize.y);
+        checkError(cudaMemcpyFromArrayAsync(res.begin(), mArray, 0, 0, mSize.x*mSize.y * sizeof(T)
+            , cudaMemcpyDefault, pipeline.getId()));
+        return res;
+    }
+    uvec2 size() const {
+        return mSize;
+    }
+    cudaArray_t get() const {
+        return mArray;
+    }
+};
+
+
+template<typename T>
 class BuiltinSamplerGPU final {
 public:
     using Type = typename Rename<T>::Type;
@@ -45,14 +74,10 @@ private:
     using Type = typename Rename<T>::Type;
     cudaTextureObject_t mTexture;
 public:
-    BuiltinSampler(size_t width, size_t height,const void* ptr,
+    BuiltinSampler(BuiltinArray<T>& array,
         cudaTextureAddressMode am = cudaAddressModeWrap,vec4 borderColor={},
         cudaTextureFilterMode fm = cudaFilterModeLinear,unsigned int maxAnisotropy = 0,
-        bool sRGB = false){
-        auto desc=cudaCreateChannelDesc<Type>();
-        checkError(cudaMallocArray(&mArray, &desc, width, height));
-        checkError(cudaMemcpyToArray(mArray, 0, 0, ptr,width*height*sizeof(RGBA)
-            , cudaMemcpyHostToDevice));
+        bool sRGB = false):mArray(array.get()){
         cudaResourceDesc RD;
         RD.res.array.array = mArray;
         RD.resType = cudaResourceType::cudaResourceTypeArray;
@@ -72,7 +97,6 @@ public:
     }
     ~BuiltinSampler() {
         checkError(cudaDestroyTextureObject(mTexture));
-        checkError(cudaFreeArray(mArray));
     }
 };
 
@@ -110,9 +134,7 @@ private:
     cudaSurfaceObject_t mTarget;
     uvec2 mSize;
 public:
-    BuiltinRenderTarget(size_t width, size_t height) :mSize(width,height) {
-        auto desc = cudaCreateChannelDesc<Type>();
-        checkError(cudaMallocArray(&mArray, &desc, width, height));
+    BuiltinRenderTarget(BuiltinArray<T>& array) :mArray(array.get()),mSize(array.size()) {
         cudaResourceDesc RD;
         RD.res.array.array = mArray;
         RD.resType = cudaResourceType::cudaResourceTypeArray;
@@ -127,25 +149,13 @@ public:
         dim3 block(mul, mul);
         pipeline.runDim(Impl::clear<T>, grid, block, toTarget(), val);
     }
-    DataViewer<T> download(Pipeline& pipeline) const {
-        auto res = allocBuffer<T>(mSize.x*mSize.y);
-        checkError(cudaMemcpyFromArrayAsync(res.begin(),mArray,0,0,mSize.x*mSize.y*sizeof(T)
-            ,cudaMemcpyDefault,pipeline.getId()));
-        return res;
-    }
     uvec2 size() const {
         return mSize;
     }
-    cudaArray_const_t get() const {
+    cudaArray_t get() const {
         return mArray;
     }
     ~BuiltinRenderTarget() {
         checkError(cudaDestroySurfaceObject(mTarget));
-        checkError(cudaFreeArray(mArray));
     }
 };
-
-std::shared_ptr<BuiltinSampler<RGBA>> builtinLoadRGBA(const std::string& path,
-    cudaTextureAddressMode am = cudaAddressModeWrap, vec4 borderColor = {},
-    cudaTextureFilterMode fm = cudaFilterModeLinear,unsigned int maxAnisotropy = 0,
-    bool sRGB = false);
