@@ -112,7 +112,7 @@ public:
     }
     CUDA void set(ivec2 p,T v) {
         auto val = *reinterpret_cast<Type*>(&v);
-        surf2Dwrite(val, mTarget, p.x*sizeof(Type), p.y, cudaBoundaryModeClamp);
+        surf2Dwrite(val, mTarget, p.x*sizeof(Type), p.y, cudaBoundaryModeZero);
     }
 private:
     cudaSurfaceObject_t mTarget;

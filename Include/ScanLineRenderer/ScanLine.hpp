@@ -8,15 +8,32 @@ template<typename Out, typename Uniform, typename FrameBuffer>
 using FSF = void(*)(ivec2 uv,float z, Out in, Uniform uniform,
     FrameBuffer& frameBuffer);
 
-CUDA void toNDC(vec4& p,uvec2 size);
+inline CUDA vec3 toNDC(vec4 p, vec2 size) {
+    return { (0.5f + p.x / p.w*0.5f)*size.x,
+        (0.5f - p.y / p.w*0.5f)*size.y,
+        p.z/p.w + epsilon<float>() };
+}
+
+inline CUDA int checkPoint(vec3 p,vec2 size) {
+    return p.x >= 0.0f & p.x < size.x & p.y >= 0.0f & p.y < size.y & p.z >= 0.0f & p.z <= 1.0f;
+}
+
+template<typename Out>
+struct VertexInfo {
+    vec3 pos;
+    //int flag;
+    Out out;
+};
 
 template<typename Vert, typename Out, typename Uniform,VSF<Vert, Out, Uniform> vs>
 CALLABLE void runVS(unsigned int size,const Vert* ReadOnly in,const Uniform* ReadOnly u,
-    std::pair<vec4,Out>* out,uvec2 fsize) {
+    VertexInfo<Out>* res,vec2 fsize) {
     auto i = getID();
     if (i >= size)return;
-    vs(in[i], *u, out[i].first, out[i].second);
-    toNDC(out[i].first, fsize);
+    vec4 pos;
+    vs(in[i], *u, pos, res[i].out);
+    res[i].pos=toNDC(pos, fsize);
+    //res[i].flag = checkPoint(res[i].p);
 }
 
 template<typename Uniform, typename FrameBuffer>
@@ -29,4 +46,3 @@ template<typename Uniform, typename FrameBuffer,FSFSF<Uniform,FrameBuffer> fs>
     if (i >= size)return;
     fs(ivec2{ i%px,i / px }, *u, frameBuffer);
 }
-

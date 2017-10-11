@@ -17,7 +17,7 @@ CUDA inline float edgeFunction(vec3 a, vec3 b, vec3 c) {
     return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
 
-CUDA bool calcWeight(mat3 w0, vec2 p, vec3 info, int flag, vec3& w);
+CUDA bool calcWeight(mat3 w0, vec2 p, vec3 invz, int flag, vec3& w);
 
 CUDA inline void calcBase(vec3 a, vec3 b, vec3& w) {
     w.x = b.y - a.y, w.y = a.x - b.x;
@@ -28,13 +28,15 @@ constexpr auto maxv = std::numeric_limits<unsigned int>::max();
 
 template<typename Out>
 CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
-    const std::pair<vec4,Out>* ReadOnly vert , const uvec3* ReadOnly index,
-    Triangle<Out>* info) {
+    const VertexInfo<Out>* ReadOnly vert , const uvec3* ReadOnly index,
+    Triangle<Out>* info,vec2 pixel) {
     auto id = getID();
     if (id >= size)return;
     auto idx = index[id];
-    vec3 a = vert[idx.x].first, b = vert[idx.y].first, c = vert[idx.z].first;
-    if (edgeFunction(a, b, c) > 0.0f
+    vec3 a = vert[idx.x].pos, b = vert[idx.y].pos, c = vert[idx.z].pos;
+    if (edgeFunction(a, b, c) >= 0.0f 
+        & (a.x <= pixel.x | b.x <= pixel.x | c.x <= pixel.x) & (a.x >= 0.0f | b.x >= 0.0f | c.x >= 0.0f)
+        & (a.y <= pixel.y | b.y <= pixel.y | c.y <= pixel.y) & (a.y >= 0.0f | b.y >= 0.0f | c.y >= 0.0f)
         & (a.z <= 1.0f | b.z <= 1.0f | c.z <= 1.0f) & (a.z >= 0.0f | b.z >= 0.0f | c.z >= 0.0f)) {
         auto& res = info[atomicInc(cnt, maxv)];
         res.rect = { fmin(a.x,fmin(b.x,c.x)),fmax(a.x,fmax(b.x,c.x)),
@@ -47,7 +49,7 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
         res.flags = ((c.y == b.y & c.x > b.x) | c.y > b.y) |
             (((a.y == c.y & a.x > c.x) | a.y > c.y) << 1) |
             (((b.y == a.y & b.x > a.x) | b.y > a.y) << 2);
-        res.out[0] = vert[idx.x].second, res.out[1] = vert[idx.y].second, res.out[2] = vert[idx.z].second;
+        res.out[0] = vert[idx.x].out, res.out[1] = vert[idx.y].out, res.out[2] = vert[idx.z].out;
     }
 }
 

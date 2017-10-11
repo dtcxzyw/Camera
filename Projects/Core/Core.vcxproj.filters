@@ -64,9 +64,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\Src\ScanLineRenderer\ScanLine.cu">
-      <Filter>ScanLineRenderer</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\Src\ScanLineRenderer\TriangleRasterizater.cu">
       <Filter>ScanLineRenderer</Filter>
     </CudaCompile>

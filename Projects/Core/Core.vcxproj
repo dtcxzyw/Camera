@@ -34,7 +34,6 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\IO\Image.cu" />
-    <CudaCompile Include="..\..\Src\ScanLineRenderer\ScanLine.cu" />
     <CudaCompile Include="..\..\Src\ScanLineRenderer\TriangleRasterizater.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -101,7 +100,7 @@
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <CodeGeneration>compute_52,sm_52</CodeGeneration>
-      <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda </AdditionalOptions>
+      <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda</AdditionalOptions>
       <FastMath>false</FastMath>
     </CudaCompile>
     <CudaLink>
@@ -152,7 +151,7 @@
       <TypeInfo>false</TypeInfo>
       <Warning>W0</Warning>
       <CodeGeneration>compute_52,sm_52</CodeGeneration>
-      <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda </AdditionalOptions>
+      <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda</AdditionalOptions>
     </CudaCompile>
     <CudaLink>
       <GPUDebugInfo>false</GPUDebugInfo>

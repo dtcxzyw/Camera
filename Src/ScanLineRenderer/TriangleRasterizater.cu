@@ -9,9 +9,10 @@ CUDA bool testPoint(mat3 w0, vec2 p, int flag, vec3& w) {
         & (w.z == 0.0f ? (flag & 0b100) : (w.z > 0.0f));
 }
 
-CUDA bool calcWeight(mat3 w0, vec2 p, vec3 info, int flag, vec3& w) {
+CUDA bool calcWeight(mat3 w0, vec2 p, vec3 invz, int flag, vec3& w) {
     bool res = testPoint(w0, p, flag, w);
-    w *= info / dot(info, w);
+    w /= dot(invz, w);
+    w *= invz;
     return res;
 }
 

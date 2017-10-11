@@ -28,7 +28,7 @@ public:
     void run(Func func, unsigned int size, Args... args) {
         if (size) {
             checkError(cudaFuncSetCacheConfig(func, cache));
-            func << <calcSize(size, mMaxThread), glm::min(mMaxThread, size), 0, mStream >> > (size, args...);
+            func <<<calcSize(size, mMaxThread), glm::min(mMaxThread, size), 0, mStream >>> (size, args...);
             checkError();
         }
     }

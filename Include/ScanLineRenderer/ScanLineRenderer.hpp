@@ -7,13 +7,14 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
     VSF<Vert, Out, Uniform> vs, FSF<Out, Uniform, FrameBuffer> fs>
  void renderTriangles(Pipeline& pipeline,DataViewer<Vert> vert, DataViewer<uvec3> index,
         DataViewer<Uniform> uniform, DataViewer<FrameBuffer> frameBuffer,uvec2 size) {
-    auto vertex = allocBuffer<std::pair<vec4,Out>>(vert.size());
+    auto vertex = allocBuffer<VertexInfo<Out>>(vert.size());
     pipeline.run(runVS<Vert, Out, Uniform, vs>, vert.size(), vert.begin(), uniform.begin(),
-        vertex.begin(),size);
+        vertex.begin(),static_cast<vec2>(size));
     auto cnt = allocBuffer<unsigned int>(1);
     cudaMemsetAsync(cnt.begin(), 0, sizeof(unsigned int), pipeline.getId());
     auto info = allocBuffer<Triangle<Out>>(index.size());
-    pipeline.run(clipTriangles<Out>, index.size(),cnt.begin(),vertex.begin(),index.begin(), info.begin());
+    pipeline.run(clipTriangles<Out>, index.size(),cnt.begin(),vertex.begin(),index.begin()
+        , info.begin(),static_cast<vec2>(size));
     pipeline.sync();
     auto num = *cnt.begin();
     if (num) {
