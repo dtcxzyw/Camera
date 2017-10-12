@@ -15,13 +15,18 @@ inline CUDA vec3 toNDC(vec4 p, vec2 size) {
 }
 
 inline CUDA int checkPoint(vec3 p,vec2 size) {
-    return p.x >= 0.0f & p.x < size.x & p.y >= 0.0f & p.y < size.y & p.z >= 0.0f & p.z <= 1.0f;
+    return (p.x >= 0.0f)
+        | (p.x < size.x) << 1
+        | (p.y >= 0.0f) << 2
+        | (p.y < size.y) << 3
+        | (p.z >= 0.0f) << 4
+        | (p.z <= 1.0f) << 5;
 }
 
 template<typename Out>
 struct VertexInfo {
     vec3 pos;
-    //int flag;
+    int flag;
     Out out;
 };
 
@@ -33,7 +38,7 @@ CALLABLE void runVS(unsigned int size,const Vert* ReadOnly in,const Uniform* Rea
     vec4 pos;
     vs(in[i], *u, pos, res[i].out);
     res[i].pos=toNDC(pos, fsize);
-    //res[i].flag = checkPoint(res[i].p);
+    res[i].flag = checkPoint(res[i].pos,fsize);
 }
 
 template<typename Uniform, typename FrameBuffer>

@@ -34,10 +34,8 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     if (id >= size)return;
     auto idx = index[id];
     vec3 a = vert[idx.x].pos, b = vert[idx.y].pos, c = vert[idx.z].pos;
-    if (edgeFunction(a, b, c) >= 0.0f 
-        & (a.x <= pixel.x | b.x <= pixel.x | c.x <= pixel.x) & (a.x >= 0.0f | b.x >= 0.0f | c.x >= 0.0f)
-        & (a.y <= pixel.y | b.y <= pixel.y | c.y <= pixel.y) & (a.y >= 0.0f | b.y >= 0.0f | c.y >= 0.0f)
-        & (a.z <= 1.0f | b.z <= 1.0f | c.z <= 1.0f) & (a.z >= 0.0f | b.z >= 0.0f | c.z >= 0.0f)) {
+    if (edgeFunction(a, b, c) > 0.0f 
+        & (vert[idx.x].flag|vert[idx.y].flag|vert[idx.z].flag)==0b111111) {
         auto& res = info[atomicInc(cnt, maxv)];
         res.rect = { fmin(a.x,fmin(b.x,c.x)),fmax(a.x,fmax(b.x,c.x)),
             fmin(a.y,fmin(b.y,c.y)),fmax(a.y,fmax(b.y,c.y)) };
