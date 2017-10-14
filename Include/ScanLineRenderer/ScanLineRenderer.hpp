@@ -9,8 +9,8 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
  void renderTriangles(Pipeline& pipeline,DataViewer<Vert> vert, DataViewer<uvec3> index,
         DataViewer<Uniform> uniform, DataViewer<FrameBuffer> frameBuffer,uvec2 size) {
     auto vertex = allocBuffer<VertexInfo<Out>>(vert.size());
-    pipeline.run(runVS<Vert, Out, Uniform, vs>, vert.size(), vert.begin(), uniform.begin(),
-        vertex.begin(),static_cast<vec2>(size));
+    pipeline.run(runVS<Vert, Out, Uniform,FrameBuffer,vs,fs,ds>, vert.size(),
+        vert.begin(), uniform.begin(),vertex.begin(),frameBuffer.begin());
     auto cnt = allocBuffer<unsigned int>(1);
     cudaMemsetAsync(cnt.begin(), 0, sizeof(unsigned int), pipeline.getId());
     auto info = allocBuffer<Triangle<Out>>(index.size());

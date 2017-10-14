@@ -5,7 +5,7 @@ template<typename Vert, typename Out, typename Uniform>
 using VSF = void(*)(Vert in,Uniform uniform, vec4& pos,Out& out);
 
 template<typename Out, typename Uniform, typename FrameBuffer>
-using FSF = void(*)(ivec2 uv,unsigned int z, Out in, Uniform uniform,
+using FSF = void(*)(ivec2 uv,float z, Out in, Uniform uniform,
     FrameBuffer& frameBuffer);
 
 inline CUDA vec3 toNDC(vec4 p, vec2 size) {
@@ -30,15 +30,24 @@ struct VertexInfo {
     Out out;
 };
 
-template<typename Vert, typename Out, typename Uniform,VSF<Vert, Out, Uniform> vs>
+template<typename Vert, typename Out, typename Uniform,typename FrameBuffer,
+    VSF<Vert, Out, Uniform> vs,FSF<Out, Uniform, FrameBuffer> fs,
+    FSF<Out, Uniform, FrameBuffer> ds>
 CALLABLE void runVS(unsigned int size,const Vert* ReadOnly in,const Uniform* ReadOnly u,
-    VertexInfo<Out>* res,vec2 fsize) {
+    VertexInfo<Out>* res,FrameBuffer* frameBuffer) {
     auto i = getID();
     if (i >= size)return;
     vec4 pos;
-    vs(in[i], *u, pos, res[i].out);
-    res[i].pos=toNDC(pos, fsize);
-    res[i].flag = checkPoint(res[i].pos,fsize);
+    auto& vert = res[i];
+    vs(in[i], *u, pos, vert.out);
+    auto fsize = frameBuffer->size();
+    vert.pos=toNDC(pos, fsize);
+    vert.flag = checkPoint(vert.pos,fsize);
+    if (vert.flag == 0b111111) {
+        ivec2 uv(vert.pos.x, vert.pos.y);
+        ds(uv, vert.pos.z, vert.out, *u, *frameBuffer);
+        fs(uv, vert.pos.z, vert.out, *u, *frameBuffer);
+    }
 }
 
 template<typename Uniform, typename FrameBuffer>
@@ -51,3 +60,4 @@ template<typename Uniform, typename FrameBuffer,FSFSF<Uniform,FrameBuffer> fs>
     if (i >= size)return;
     fs(ivec2{ i%px,i / px }, *u, frameBuffer);
 }
+

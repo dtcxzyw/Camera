@@ -72,7 +72,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     auto z = dot(tri.z, w);
     if (flag & z >= 0.0f & z < 1.0f) {
         auto fo = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
-        fs(uv, z*std::numeric_limits<unsigned int>::max(), fo, *uniform, *frameBuffer);
+        fs(uv, z, fo, *uniform, *frameBuffer);
     }
 }
 

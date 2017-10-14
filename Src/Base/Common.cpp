@@ -31,7 +31,7 @@ private:
     }
 public:
     void* memAlloc(size_t size) {
-        auto level = count(size);
+        auto level =size>(1ULL<<20)?size:count(size);
         std::lock_guard<std::mutex> guard(mPoolMutex);
         auto p = mPool.upper_bound(size-1);
         if (p != mPool.cend()) {
