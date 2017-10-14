@@ -20,6 +20,7 @@
     <ClInclude Include="..\..\Include\IO\Image.hpp" />
     <ClInclude Include="..\..\Include\IO\Model.hpp" />
     <ClInclude Include="..\..\Include\IO\Video.hpp" />
+    <ClInclude Include="..\..\Include\ScanLineRenderer\DepthBuffer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLine.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLineRenderer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\TriangleRasterizater.hpp" />

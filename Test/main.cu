@@ -12,9 +12,9 @@ int main() {
         FrameBufferCPU FB;
         GLWindow window;
         Pipeline pipeline;
-        glm::mat4 V = lookAt({ 10.0f,3.0f,0.0f }, vec3{ 0.0f,3.0f,0.0f }, { 0.0f,1.0f,0.0f });
+        glm::mat4 V = lookAt({ 10.0f,3.0f,0.0f }, vec3{ 0.0f,4.5f,0.0f }, { 0.0f,1.0f,0.0f });
         glm::mat4 M;
-        M = scale(M, vec3(1.0f, 1.0f, 1.0f)*30.0f);
+        M = scale(M, vec3(1.0f, 1.0f, 1.0f)*40.0f);
         float t = glfwGetTime();
         while (window.update()) {
             auto size = window.size();

@@ -9,7 +9,6 @@ struct Triangle final {
     mat3 w;
     vec3 z;
     vec3 invz;
-    int flags;
     Out out[3];
 };
 
@@ -17,7 +16,7 @@ CUDA inline float edgeFunction(vec3 a, vec3 b, vec3 c) {
     return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
 
-CUDA bool calcWeight(mat3 w0, vec2 p, vec3 invz, int flag, vec3& w);
+CUDA bool calcWeight(mat3 w0, vec2 p, vec3 invz, vec3& w);
 
 CUDA inline void calcBase(vec3 a, vec3 b, vec3& w) {
     w.x = b.y - a.y, w.y = a.x - b.x;
@@ -44,9 +43,6 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
         calcBase(a, b, res.w[2]);
         res.z = { a.z,b.z,c.z };
         res.invz = { 1.0f / a.z,1.0f / b.z,1.0f / c.z };
-        res.flags = ((c.y == b.y & c.x > b.x) | c.y > b.y) |
-            (((a.y == c.y & a.x > c.x) | a.y > c.y) << 1) |
-            (((b.y == a.y & b.x > a.x) | b.y > a.y) << 2);
         res.out[0] = vert[idx.x].out, res.out[1] = vert[idx.y].out, res.out[2] = vert[idx.z].out;
     }
 }
@@ -72,11 +68,11 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     vec2 p{ uv.x,uv.y };
     if ((p.x < tri.rect.x) | (p.x > tri.rect.y) | (p.y < tri.rect.z) | (p.y > tri.rect.w))return;
     vec3 w;
-    bool flag = calcWeight(tri.w, p, tri.invz, tri.flags, w);
+    bool flag = calcWeight(tri.w, p, tri.invz, w);
     auto z = dot(tri.z, w);
-    if (flag & z >= 0.0f & z <= 1.0f) {
+    if (flag & z >= 0.0f & z < 1.0f) {
         auto fo = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
-        fs(uv, z, fo, *uniform, *frameBuffer);
+        fs(uv, z*std::numeric_limits<unsigned int>::max(), fo, *uniform, *frameBuffer);
     }
 }
 

@@ -5,7 +5,7 @@ template<typename Vert, typename Out, typename Uniform>
 using VSF = void(*)(Vert in,Uniform uniform, vec4& pos,Out& out);
 
 template<typename Out, typename Uniform, typename FrameBuffer>
-using FSF = void(*)(ivec2 uv,float z, Out in, Uniform uniform,
+using FSF = void(*)(ivec2 uv,unsigned int z, Out in, Uniform uniform,
     FrameBuffer& frameBuffer);
 
 inline CUDA vec3 toNDC(vec4 p, vec2 size) {

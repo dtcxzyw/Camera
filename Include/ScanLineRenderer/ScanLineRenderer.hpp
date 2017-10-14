@@ -4,7 +4,8 @@
 #include <ScanLineRenderer/TriangleRasterizater.hpp>
 
 template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
-    VSF<Vert, Out, Uniform> vs, FSF<Out, Uniform, FrameBuffer> fs>
+    VSF<Vert, Out, Uniform> vs, FSF<Out, Uniform, FrameBuffer> fs
+    ,FSF<Out,Uniform,FrameBuffer> ds>
  void renderTriangles(Pipeline& pipeline,DataViewer<Vert> vert, DataViewer<uvec3> index,
         DataViewer<Uniform> uniform, DataViewer<FrameBuffer> frameBuffer,uvec2 size) {
     auto vertex = allocBuffer<VertexInfo<Out>>(vert.size());
@@ -26,6 +27,12 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
             dim3 grid(num);
             dim3 block(clipTileX, clipTileY);
             pipeline.runDim(clipTile<Out>, grid,block, info.begin(), tcnt.begin(), tid.begin(), range);
+        }
+        {
+            dim3 grid;
+            dim3 block(clipTileX, clipTileY);
+            pipeline.runDim(drawTile<Out, Uniform, FrameBuffer, ds>, grid, block, tcnt.begin(), info.begin(),
+                tid.begin(), uniform.begin(), frameBuffer.begin(), num);
         }
         {
             dim3 grid;

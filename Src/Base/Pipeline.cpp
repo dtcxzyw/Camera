@@ -3,6 +3,7 @@
 #include <mutex>
 #include <atomic>
 #include <set>
+using namespace std::chrono_literals;
 
 Pipeline::Pipeline() {
     checkError(cudaStreamCreate(&mStream));
@@ -57,7 +58,10 @@ public:
         std::function<void()> func;
         {
             std::lock_guard<std::mutex> guard(mQueueMutex);
-            if (mQueue.empty())return;
+            if (mQueue.empty()) {
+                std::this_thread::sleep_for(10us);
+                return;
+            }
             func = std::move(mQueue.front());
             mQueue.pop();
         }
