@@ -13,6 +13,9 @@
     <Filter Include="IO">
       <UniqueIdentifier>{fc4ca51a-fd89-4683-82dd-97a9720a7c13}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PBR">
+      <UniqueIdentifier>{521edfdb-b420-4450-b0d7-80698fe6aedc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Include\Base\Common.hpp">
@@ -53,6 +56,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\ScanLineRenderer\DepthBuffer.hpp">
       <Filter>ScanLineRenderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\PBR\PBRFunctions.hpp">
+      <Filter>PBR</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
