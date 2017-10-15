@@ -1,9 +1,5 @@
 #pragma once
 #include "Common.hpp"
-#include <thread>
-#include <future>
-#include <functional>
-#include <map>
 
 inline CUDA uint getID() {
     return blockIdx.x*blockDim.x + threadIdx.x;
@@ -41,18 +37,13 @@ public:
     }
 };
 
-class GPUInstance;
-
 class Environment final :Singletion {
 private:
     Environment();
     friend Environment& getEnvironment();
-    std::vector<std::thread> mThreads;
-    std::map<int,GPUInstance*> mDevices;
-    bool mFlag;
+    cudaDeviceProp mProp;
 public:
     void init();
-    std::future<void> pushTask(std::function<void()>&& deferred);
     const cudaDeviceProp& getProp() const;
     ~Environment();
 };
