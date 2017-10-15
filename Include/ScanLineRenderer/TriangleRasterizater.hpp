@@ -33,17 +33,18 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     if (id >= size)return;
     auto idx = index[id];
     vec3 a = vert[idx.x].pos, b = vert[idx.y].pos, c = vert[idx.z].pos;
-    if (edgeFunction(a, b, c) > 6.0f
+    Triangle<Out> res;
+    res.rect = { fmin(a.x,fmin(b.x,c.x)),fmax(a.x,fmax(b.x,c.x)),
+        fmin(a.y,fmin(b.y,c.y)),fmax(a.y,fmax(b.y,c.y)) };
+    if (edgeFunction(a, b, c) > 0.5f & fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z)> 1.0f
         & (vert[idx.x].flag|vert[idx.y].flag|vert[idx.z].flag)==0b111111) {
-        auto& res = info[atomicInc(cnt, maxv)];
-        res.rect = { fmin(a.x,fmin(b.x,c.x)),fmax(a.x,fmax(b.x,c.x)),
-            fmin(a.y,fmin(b.y,c.y)),fmax(a.y,fmax(b.y,c.y)) };
         calcBase(b, c, res.w[0]);
         calcBase(c, a, res.w[1]);
         calcBase(a, b, res.w[2]);
         res.z = { a.z,b.z,c.z };
         res.invz = { 1.0f / a.z,1.0f / b.z,1.0f / c.z };
         res.out[0] = vert[idx.x].out, res.out[1] = vert[idx.y].out, res.out[2] = vert[idx.z].out;
+        info[atomicInc(cnt, maxv)] = res;
     }
 }
 

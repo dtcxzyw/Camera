@@ -21,7 +21,7 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
 
 CUDA void post(ivec2 NDC, FrameBufferGPU in, BuiltinRenderTargetGPU<RGBA> out) {
     constexpr int rad = 5;
-    constexpr auto base = 7.0f, sub =base*(rad*2+1)*(rad*2+1)-1.0f;
+    constexpr auto base = 5.0f, sub =base*(rad*2+1)*(rad*2+1)-1.0f;
     float w = 0.0f;
     for (int i =  - rad; i <= rad; ++i)
         for (int j = - rad; j <=  rad; ++j)

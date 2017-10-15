@@ -14,7 +14,7 @@ int main() {
         FrameBufferCPU FB;
         GLWindow window;
         Pipeline pipeline;
-        glm::mat4 V = lookAt({ 15.0f,3.0f,0.0f }, vec3{ 0.0f,0.0f,0.0f }, { 0.0f,1.0f,0.0f });
+        glm::mat4 V = lookAt({ 15.0f,0.0f,0.0f }, vec3{ 0.0f,0.0f,0.0f }, { 0.0f,1.0f,0.0f });
         glm::mat4 M;
         M = scale(M, vec3(1.0f, 1.0f, 1.0f)*10.0f);
         float t = glfwGetTime();
