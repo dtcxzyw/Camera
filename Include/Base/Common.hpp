@@ -24,9 +24,7 @@ class Singletion:Uncopyable {
 protected:
     Singletion()=default;
 public:
-    Singletion(const Singletion&) = delete;
     Singletion(Singletion&&) = delete;
-    Singletion& operator=(const Singletion&) = delete;
     Singletion& operator=(Singletion&&) = delete;
 };
 

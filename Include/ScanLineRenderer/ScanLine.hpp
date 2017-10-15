@@ -45,8 +45,11 @@ CALLABLE void runVS(unsigned int size,const Vert* ReadOnly in,const Uniform* Rea
     vert.flag = checkPoint(vert.pos,fsize);
     if (vert.flag == 0b111111) {
         ivec2 uv(vert.pos.x, vert.pos.y);
-        ds(uv, vert.pos.z, vert.out, *u, *frameBuffer);
-        fs(uv, vert.pos.z, vert.out, *u, *frameBuffer);
+        for(int i=0;i<2;++i)
+            for (int j = 0; j < 2; ++j) {
+                ds(uv + ivec2{i, j}, vert.pos.z, vert.out, *u, *frameBuffer);
+                fs(uv + ivec2{ i,j }, vert.pos.z, vert.out, *u, *frameBuffer);
+            }
     }
 }
 
