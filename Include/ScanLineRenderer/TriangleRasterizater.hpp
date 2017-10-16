@@ -36,7 +36,7 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     Triangle<Out> res;
     res.rect = { fmin(a.x,fmin(b.x,c.x)),fmax(a.x,fmax(b.x,c.x)),
         fmin(a.y,fmin(b.y,c.y)),fmax(a.y,fmax(b.y,c.y)) };
-    if (edgeFunction(a, b, c) > 0.5f & fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z)> 1.0f
+    if (edgeFunction(a, b, c) > 0.0f //& fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z)> 0.5f
         & (vert[idx.x].flag|vert[idx.y].flag|vert[idx.z].flag)==0b111111) {
         calcBase(b, c, res.w[0]);
         calcBase(c, a, res.w[1]);

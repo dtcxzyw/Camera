@@ -13,16 +13,14 @@ bool StaticMesh::load(const std::string & path) {
         return false;
     auto mesh=scene->mMeshes[0];
     {
-        std::vector<Vertex> vert(mesh->mNumVertices);
+        mVert = allocBuffer<Vertex>(mesh->mNumVertices);
         for (uint i = 0; i < mesh->mNumVertices; ++i)
-            vert[i].pos = *reinterpret_cast<vec3*>(mesh->mVertices + i);
-        mVert = share(vert);
+            mVert[i].pos = *reinterpret_cast<vec3*>(mesh->mVertices + i);
     }
     {
-        std::vector<uvec3> index(mesh->mNumFaces);
+        mIndex = allocBuffer<uvec3>(mesh->mNumFaces);
         for (uint i = 0; i < mesh->mNumFaces; ++i)
-            index[i] = *reinterpret_cast<uvec3*>(mesh->mFaces[i].mIndices);
-        mIndex = share(index);
+            mIndex[i] = *reinterpret_cast<uvec3*>(mesh->mFaces[i].mIndices);
     }
     loader.FreeScene();
     return true;

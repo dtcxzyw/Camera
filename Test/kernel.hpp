@@ -27,11 +27,11 @@ struct FrameBufferCPU final {
         colorBuffer = std::make_unique<BuiltinArray<RGBA>>(width, height);
         colorRT = std::make_unique <BuiltinRenderTarget<RGBA>>(*colorBuffer);
         depthBuffer = std::make_unique<DepthBuffer<unsigned int>>(uvec2(width, height));
-        FrameBufferGPU data;
+        dataGPU = allocBuffer<FrameBufferGPU>(1);
+        auto& data=dataGPU[0];
         data.color = colorRT->toTarget();
         data.depth = depthBuffer->toBuffer();
-        data.mSize = size= { width,height };
-        dataGPU = share(std::vector<FrameBufferGPU>{ data });
+        data.mSize = size = { width,height };
     }
 };
  

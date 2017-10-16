@@ -1,7 +1,7 @@
 #pragma once
 #include "Common.hpp"
 
-inline CUDA uint getID() {
+inline CUDA unsigned int getID() {
     return blockIdx.x*blockDim.x + threadIdx.x;
 }
 
@@ -35,6 +35,21 @@ public:
         func <<<grid, block,0, mStream >>> (args...);
         checkError();
     }
+
+    template<typename T>
+    auto share(const T* data, size_t size) {
+        auto rsize = size * sizeof(T);
+        auto sm = std::make_shared<Memory>(rsize);
+        checkError(cudaMemcpyAsync(sm->getPtr(), data, rsize, cudaMemcpyDefault,mStream));
+        return DataViewer<T>(sm);
+    }
+
+    template<typename C>
+    auto share(const C& c) {
+        using T = std::decay_t<decltype(*c.data()) >;
+        return share(c.data(), c.size());
+    }
+
 };
 
 class Environment final :Singletion {

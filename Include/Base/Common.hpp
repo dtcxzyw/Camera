@@ -88,20 +88,6 @@ auto allocBuffer(size_t size) {
     return DataViewer<T>(std::make_shared<Memory>(size * sizeof(T)));
 }
 
-template<typename T>
-HOST auto share(const T* data,size_t size) {
-    auto rsize = size * sizeof(T);
-    auto sm = std::make_shared<Memory>(rsize);
-    checkError(cudaMemcpy(sm->getPtr(), data, rsize, cudaMemcpyDefault));
-    return DataViewer<T>(sm);
-}
-
-template<typename C>
-HOST auto share(const C& c) {
-    using T = std::decay_t<decltype(*c.data()) > ;
-    return share(c.data(), c.size());
-}
-
 namespace {
     template<typename T, typename Deleter>
     struct RAII final {

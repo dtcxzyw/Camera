@@ -44,13 +44,9 @@ CALLABLE void runVS(unsigned int size,const Vert* ReadOnly in,const Uniform* Rea
     vert.pos=toNDC(pos, fsize);
     vert.flag = checkPoint(vert.pos,fsize);
     if (vert.flag == 0b111111) {
-        const float off[2] = { -0.5f,0.5f };
-        for (int i = 0; i < 2; ++i) 
-            for (int j = 0; j < 2; ++j) {
-                ivec2 uv(vert.pos.x + off[i],vert.pos.y + off[j]);
-                ds(uv, vert.pos.z, vert.out, *u, *frameBuffer);
-                fs(uv, vert.pos.z, vert.out, *u, *frameBuffer);
-            }
+        ivec2 uv(vert.pos.x + 0.5f, vert.pos.y + 0.5f);
+        ds(uv, vert.pos.z, vert.out, *u, *frameBuffer);
+        fs(uv, vert.pos.z, vert.out, *u, *frameBuffer);
     }
 }
 
