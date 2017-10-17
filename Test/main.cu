@@ -31,7 +31,14 @@ int main() {
             printf("\r%.2f ms          ", (now - t)*1000.0f);
             t = now;
             auto uniform = allocBuffer<Uniform>(1);
-            uniform[0] = { P*V*M };
+            Uniform u;
+            u.VP = P*V;
+            u.M = M;
+            u.color = {1.0f,0.8f,1.0f};
+            u.dir = normalize(vec3{ 1.0f,1.0f,1.0f });
+            u.cp = { 10.0f,4.0f,0.0f };
+            u.roughness = 0.5f;
+            uniform[0] = u;
             BuiltinRenderTarget<RGBA> RT(window.map(pipeline,size),size);
             kernel(model.mVert, model.mIndex, uniform, FB,RT.toTarget(),pipeline);
             window.unmapAndPresent(pipeline);

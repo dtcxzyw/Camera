@@ -45,6 +45,6 @@ inline CUDA float cookTorrance(float diff, float D, float F, float G, float ndi,
     return diff + D*F*G / (4.0f*fmax(ndi,0.0f)*fmax(ndo,0.0f)+epsilon<float>());
 }
 
-inline CUDA float calcWeight(float diff, float D, float F, float G, float ndi, float ndo,float dis2) {
+inline CUDA float calcWeight(float diff, float D, float F, float G, float ndi, float ndo,float dis2=1.0f) {
     return pi<float>()*cookTorrance(diff, D, F, G, ndi, ndo)*ndi / dis2;
 }

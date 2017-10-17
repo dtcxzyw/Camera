@@ -5,7 +5,10 @@
 #include <IO/Model.hpp> 
 
 using VI = StaticMesh::Vertex;
-using OI = EmptyArg;
+enum OutInfo {
+    pos,normal
+};
+using OI = Args<Var(pos,vec3),Var(normal,vec3)>;
  
 struct FrameBufferGPU final {
     BuiltinRenderTargetGPU<RGBA> color;
@@ -36,7 +39,12 @@ struct FrameBufferCPU final {
 };
  
 struct Uniform final {
-    ALIGN mat4 mat;
+    ALIGN mat4 VP;
+    ALIGN mat4 M;
+    ALIGN vec3 cp;
+    ALIGN vec3 dir;
+    ALIGN vec3 color;
+    ALIGN float roughness;
 };
 
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, DataViewer<Uniform> uniform

@@ -1,12 +1,15 @@
 #include <ScanLineRenderer/ScanLineRenderer.hpp>
 #include "kernel.hpp"
+#include <PBR/PBRFunctions.hpp>
 
-CUDA void VS(VI in, Uniform uniform, vec4& pos, OI& out) {
-    pos = uniform.mat* vec4(in.pos, 1.0f);
+CUDA void VS(VI in, Uniform uniform, vec4& NDC, OI& out) {
+    auto wp =uniform.M*vec4(in.pos, 1.0f);
+    out.get<pos>() = wp;
+    out.get<normal>() = in.normal;
+    NDC = uniform.VP*wp;
 }
 
-constexpr auto maxdu = std::numeric_limits<unsigned int>::max();
-constexpr float maxd = maxdu;
+constexpr float maxdu = std::numeric_limits<unsigned int>::max();
 
 CUDA void setPoint(ivec2 uv,float z, OI out, Uniform uniform, FrameBufferGPU& fbo) {
     fbo.depth.set(uv, z*maxdu);
@@ -14,22 +17,24 @@ CUDA void setPoint(ivec2 uv,float z, OI out, Uniform uniform, FrameBufferGPU& fb
 
 CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& fbo) {
     if (fbo.depth.get(uv) ==static_cast<unsigned int>(z*maxdu)) {
-        vec4 color = { 1.0f,1.0f,1.0f,1.0f };
-        fbo.color.set(uv, color);
+        auto p = out.get<pos>();
+        vec3 nd = out.get<normal>();
+        auto in = uniform.dir;
+        auto out = normalize(uniform.cp - p);
+        auto h = calcHalf(in, out);
+        auto ndi = dot(nd, in);
+        auto ndo = dot(nd, out);
+        auto idh = dot(in, h);
+        vec4 c = { 1.0f,1.0f,1.0f,1.0f };
+        auto diff = diffuse(ndi,ndo,idh,uniform.roughness);
+        
     }
 }
 
 CUDA void post(ivec2 NDC, FrameBufferGPU in, BuiltinRenderTargetGPU<RGBA> out) {
-    constexpr int rad = 5;
-    constexpr auto base = 5.0f, sub =base*(rad*2+1)*(rad*2+1)-1.0f;
-    float w = 0.0f;
-    for (int i =  - rad; i <= rad; ++i)
-        for (int j = - rad; j <=  rad; ++j)
-            w +=in.depth.get({NDC.x+j,NDC.y+i })/maxd;
-    w = w*base - sub*(in.depth.get(NDC)/maxd);
     auto c = in.color.get(NDC);
     NDC.y = in.mSize.y-1 - NDC.y;
-    out.set(NDC, c*w);
+    out.set(NDC, c);
 }
 
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo,DataViewer<Uniform> uniform,
