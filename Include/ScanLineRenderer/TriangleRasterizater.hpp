@@ -16,7 +16,19 @@ CUDA inline float edgeFunction(vec3 a, vec3 b, vec3 c) {
     return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
 
-CUDA bool calcWeight(mat3 w0, vec2 p, vec3 invz, vec3& w);
+CUDA inline bool testPoint(mat3 w0, vec2 p, vec3& w) {
+    w.x = w0[0].x*p.x + w0[0].y*p.y + w0[0].z;
+    w.y = w0[1].x*p.x + w0[1].y*p.y + w0[1].z;
+    w.z = w0[2].x*p.x + w0[2].y*p.y + w0[2].z;
+    return w.x >= 0.0f&w.y >= 0.0f&w.z >= 0.0f;
+}
+
+CUDA inline bool calcWeight(mat3 w0, vec2 p, vec3 invz, vec3& w) {
+    bool res = testPoint(w0, p, w);
+    w /= dot(invz, w);
+    w *= invz;
+    return res;
+}
 
 CUDA inline void calcBase(vec3 a, vec3 b, vec3& w) {
     w.x = b.y - a.y, w.y = a.x - b.x;
@@ -28,7 +40,7 @@ constexpr auto maxv = std::numeric_limits<unsigned int>::max();
 template<typename Out>
 CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     const VertexInfo<Out>* ReadOnly vert , const uvec3* ReadOnly index,
-    Triangle<Out>* info,vec2 pixel) {
+    Triangle<Out>* info) {
     auto id = getID();
     if (id >= size)return;
     auto idx = index[id];
@@ -36,8 +48,9 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     Triangle<Out> res;
     res.rect = { fmin(a.x,fmin(b.x,c.x)),fmax(a.x,fmax(b.x,c.x)),
         fmin(a.y,fmin(b.y,c.y)),fmax(a.y,fmax(b.y,c.y)) };
-    if (edgeFunction(a, b, c) > 0.0f //& fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z)> 0.5f
-        & (vert[idx.x].flag|vert[idx.y].flag|vert[idx.z].flag)==0b111111) {
+    auto S = edgeFunction(a, b, c);
+    if (S > 0.0f & (vert[idx.x].flag|vert[idx.y].flag|vert[idx.z].flag)==0b111111
+        & (S>=1.0f|fmax(res.rect.y-res.rect.x,res.rect.w-res.rect.z)>=1.0f)) {
         calcBase(b, c, res.w[0]);
         calcBase(c, a, res.w[1]);
         calcBase(a, b, res.w[2]);
@@ -71,7 +84,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     vec3 w;
     bool flag = calcWeight(tri.w, p, tri.invz, w);
     auto z = dot(tri.z, w);
-    if (flag & z >= 0.0f & z < 1.0f) {
+    if (flag & z >= 0.0f & z <= 1.0f) {
         auto fo = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
         fs(uv, z, fo, *uniform, *frameBuffer);
     }

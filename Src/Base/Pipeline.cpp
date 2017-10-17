@@ -23,7 +23,8 @@ void Environment::init() {
     int cnt;
     checkError(cudaGetDeviceCount(&cnt));
     cudaDeviceProp prop;
-    int id=-1,maxwell=0,size=0;
+    int id = -1, maxwell = 0;
+    size_t size = 0;
     for (int i = 0; i < cnt; ++i) {
         checkError(cudaGetDeviceProperties(&prop, i));
         int ver = prop.major * 10000 + prop.minor;

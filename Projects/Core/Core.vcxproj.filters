@@ -73,9 +73,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\Src\ScanLineRenderer\TriangleRasterizater.cu">
-      <Filter>ScanLineRenderer</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\Src\Interaction\OpenGL.cu">
       <Filter>Interaction</Filter>
     </CudaCompile>

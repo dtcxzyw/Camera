@@ -36,7 +36,6 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\IO\Image.cu" />
-    <CudaCompile Include="..\..\Src\ScanLineRenderer\TriangleRasterizater.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5F1E8A1F-D76A-422B-931E-A9A3CB901342}</ProjectGuid>
