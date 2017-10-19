@@ -34,10 +34,15 @@ int main() {
             Uniform u;
             u.VP = P*V;
             u.M = M;
-            u.color = {1.0f,0.8f,1.0f};
-            u.dir = normalize(vec3{ 1.0f,1.0f,1.0f });
+            u.invM = mat3(transpose(inverse(M)));
+            u.lc = { 1.0f,1.0f,1.0f };
+            u.color = {1.0f,0.84f,0.0f};
             u.cp = { 10.0f,4.0f,0.0f };
-            u.roughness = 0.5f;
+            u.dir = normalize(u.cp);
+            u.roughness = 0.3f;
+            u.f0 = { 1.00f, 0.71f, 0.29f };
+            u.albedo = 0.3f;
+            u.metallic = 1.0f;
             uniform[0] = u;
             BuiltinRenderTarget<RGBA> RT(window.map(pipeline,size),size);
             kernel(model.mVert, model.mIndex, uniform, FB,RT.toTarget(),pipeline);

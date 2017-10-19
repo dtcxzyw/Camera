@@ -41,10 +41,15 @@ struct FrameBufferCPU final {
 struct Uniform final {
     ALIGN mat4 VP;
     ALIGN mat4 M;
+    ALIGN mat3 invM;
     ALIGN vec3 cp;
     ALIGN vec3 dir;
+    ALIGN vec3 lc;
     ALIGN vec3 color;
     ALIGN float roughness;
+    ALIGN vec3 f0;
+    ALIGN float albedo;
+    ALIGN float metallic;
 };
 
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, DataViewer<Uniform> uniform

@@ -43,11 +43,6 @@ CALLABLE void runVS(unsigned int size,const Vert* ReadOnly in,const Uniform* Rea
     auto fsize = frameBuffer->size();
     vert.pos=toNDC(pos, fsize);
     vert.flag = checkPoint(vert.pos,fsize);
-    if (vert.flag == 0b111111) {
-        ivec2 uv(vert.pos.x + 0.5f, vert.pos.y + 0.5f);
-        ds(uv, vert.pos.z, vert.out, *u, *frameBuffer);
-        fs(uv, vert.pos.z, vert.out, *u, *frameBuffer);
-    }
 }
 
 template<typename Uniform, typename FrameBuffer>
