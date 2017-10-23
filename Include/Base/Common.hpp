@@ -5,6 +5,7 @@
 #include <vector>
 #include <tuple>
 #define CUDA __device__
+#define CUDAInline inline CUDA
 #define HOST __host__
 #define BOTH CUDA HOST
 #define CALLABLE __global__

@@ -16,6 +16,9 @@
     <Filter Include="PBR">
       <UniqueIdentifier>{521edfdb-b420-4450-b0d7-80698fe6aedc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PostProcess">
+      <UniqueIdentifier>{1425f13e-a513-43dc-872f-5d1d7e56a655}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Include\Base\Common.hpp">
@@ -57,8 +60,11 @@
     <ClInclude Include="..\..\Include\ScanLineRenderer\DepthBuffer.hpp">
       <Filter>ScanLineRenderer</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\PBR\PBRFunctions.hpp">
+    <ClInclude Include="..\..\Include\PBR\BRDF.hpp">
       <Filter>PBR</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\PostProcess\HDR.hpp">
+      <Filter>PostProcess</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

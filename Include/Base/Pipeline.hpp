@@ -1,7 +1,7 @@
 #pragma once
 #include "Common.hpp"
 
-inline CUDA unsigned int getID() {
+CUDAInline unsigned int getID() {
     return blockIdx.x*blockDim.x + threadIdx.x;
 }
 

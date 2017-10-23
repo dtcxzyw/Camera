@@ -1,12 +1,13 @@
 #include <ScanLineRenderer/ScanLineRenderer.hpp>
 #include "kernel.hpp"
-#include <PBR/PBRFunctions.hpp>
+#include <PBR/BRDF.hpp>
+#include <device_functions.h>
 
 CUDA void VS(VI in, Uniform uniform, vec4& NDC, OI& out) {
     auto wp =uniform.M*vec4(in.pos, 1.0f);
     out.get<pos>() = wp;
-    out.get<normal>() =uniform.invM*in.normal;
     NDC = uniform.VP*wp;
+    out.get<normal>() =uniform.invM*in.normal;
 }
 
 constexpr float maxdu = std::numeric_limits<unsigned int>::max();
@@ -27,12 +28,14 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
         auto idh = dot(in, h);
         auto diff = disneyDiffuse(ndi,ndo,idh,uniform.roughness);
         auto G = smithG(ndi,ndo,0.5f+0.5f*uniform.roughness);
-        auto F = fresnelSchlick(uniform.f0, idh);
+        auto F = fresnelSchlick(uniform.f0,fmax(idh,0.0f));
         auto D = GGXD(ndo, uniform.roughness*uniform.roughness);
-        auto wSpec = calcWeight(diff, D, F, G, ndi, ndo);
-        auto wDiff = (1.0f - F)*(1.0f-uniform.metallic)*uniform.albedo/pi<float>();
-        auto w = (wSpec + wDiff)*uniform.lc;
-        fbo.color.set(uv, { uniform.color*w,1.0f });
+        auto wSpec = cookTorrance(diff, D, F, G, ndi, ndo);
+        auto wDiff = (1.0f - F)*(1.0f-uniform.metallic)*uniform.albedo*one_over_pi<float>();
+        auto w = (wSpec + wDiff)*uniform.lc*fmax(ndi,0.0f);
+        auto res = uniform.color*w;
+        res = convertLinearToSRGB(res);
+        fbo.color.set(uv, {res,1.0f });
     }
 }
 

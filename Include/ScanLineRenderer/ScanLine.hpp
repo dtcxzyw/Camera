@@ -8,13 +8,13 @@ template<typename Out, typename Uniform, typename FrameBuffer>
 using FSF = void(*)(ivec2 uv,float z, Out in, Uniform uniform,
     FrameBuffer& frameBuffer);
 
-inline CUDA vec3 toNDC(vec4 p, vec2 size) {
+CUDAInline vec3 toNDC(vec4 p, vec2 size) {
     return { (0.5f + p.x / p.w*0.5f)*size.x,
         (0.5f - p.y / p.w*0.5f)*size.y,
         p.z/p.w + epsilon<float>() };
 }
 
-inline CUDA int checkPoint(vec3 p,vec2 size) {
+CUDAInline int checkPoint(vec3 p,vec2 size) {
     return (p.x >= 0.0f)
         | (p.x < size.x) << 1
         | (p.y >= 0.0f) << 2

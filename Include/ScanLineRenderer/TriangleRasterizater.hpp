@@ -12,25 +12,25 @@ struct Triangle final {
     Out out[3];
 };
 
-CUDA inline float edgeFunction(vec3 a, vec3 b, vec3 c) {
+CUDAInline float edgeFunction(vec3 a, vec3 b, vec3 c) {
     return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
 
-CUDA inline bool testPoint(mat3 w0, vec2 p, vec3& w) {
+CUDAInline bool testPoint(mat3 w0, vec2 p, vec3& w) {
     w.x = w0[0].x*p.x + w0[0].y*p.y + w0[0].z;
     w.y = w0[1].x*p.x + w0[1].y*p.y + w0[1].z;
     w.z = w0[2].x*p.x + w0[2].y*p.y + w0[2].z;
     return w.x >= 0.0f&w.y >= 0.0f&w.z >= 0.0f;
 }
 
-CUDA inline bool calcWeight(mat3 w0, vec2 p, vec3 invz, vec3& w) {
+CUDAInline bool calcWeight(mat3 w0, vec2 p, vec3 invz, vec3& w) {
     bool res = testPoint(w0, p, w);
     w /= dot(invz, w);
     w *= invz;
     return res;
 }
 
-CUDA inline void calcBase(vec3 a, vec3 b, vec3& w) {
+CUDAInline void calcBase(vec3 a, vec3 b, vec3& w) {
     w.x = b.y - a.y, w.y = a.x - b.x;
     w.z = -(a.x*w.x + a.y * w.y);
 }
