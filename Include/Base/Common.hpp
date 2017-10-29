@@ -76,8 +76,11 @@ public:
     decltype(auto) operator[](size_t i) {
         return *(mPtr + i);
     }
-    decltype(auto) operator[](size_t i) const {
-        return *(mPtr + i);
+    decltype(auto) operator->() {
+        return mPtr;
+    }
+    decltype(auto) operator*() {
+        return *mPtr;
     }
     size_t size() const {
         return mSize;
@@ -85,23 +88,12 @@ public:
 };
 
 template<typename T>
-auto allocBuffer(size_t size) {
+auto allocBuffer(size_t size=1) {
     return DataViewer<T>(std::make_shared<Memory>(size * sizeof(T)));
 }
 
-namespace {
-    template<typename T, typename Deleter>
-    struct RAII final {
-        const T id;
-        RAII(T v) :id(v) {}
-        ~RAII() {
-            Deleter::destory(id);
-        }
-    };
-}
-
 template<typename T>
-CUDA void swap(T& a, T& b) {
+CUDAInline void swap(T& a, T& b) {
     T c = a;
     a = b;
     b = c;

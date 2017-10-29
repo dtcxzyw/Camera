@@ -11,7 +11,7 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
     auto vertex = allocBuffer<VertexInfo<Out>>(vert.size());
     pipeline.run(runVS<Vert, Out, Uniform,FrameBuffer,vs,fs,ds>, vert.size(),
         vert.begin(), uniform.begin(),vertex.begin(),frameBuffer.begin());
-    auto cnt = allocBuffer<unsigned int>(1);
+    auto cnt = allocBuffer<unsigned int>();
     cudaMemsetAsync(cnt.begin(), 0, sizeof(unsigned int), pipeline.getId());
     auto info = allocBuffer<Triangle<Out>>(index.size());
     pipeline.run(clipTriangles<Out>, index.size(),cnt.begin(),vertex.begin(),index.begin(),

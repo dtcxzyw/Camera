@@ -3,6 +3,7 @@
 #include <Base/Builtin.hpp>
 #include <ScanLineRenderer/DepthBuffer.hpp>
 #include <IO/Model.hpp> 
+#include <PostProcess/ToneMapping.hpp>
 
 using VI = StaticMesh::Vertex;
 enum OutInfo {
@@ -48,10 +49,16 @@ struct Uniform final {
     ALIGN vec3 color;
     ALIGN float roughness;
     ALIGN vec3 f0;
-    ALIGN float albedo;
-    ALIGN float metallic;
+};
+
+struct PostUniform final {
+    ALIGN FrameBufferGPU in;
+    ALIGN float lum;
+    ALIGN float* sum;
 };
 
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, DataViewer<Uniform> uniform
-    ,FrameBufferCPU& fbo, BuiltinRenderTargetGPU<RGBA> dest, Pipeline& pipeline);
+    ,FrameBufferCPU& fbo,DataViewer<PostUniform> post,
+    BuiltinRenderTargetGPU<RGBA> dest, Pipeline& pipeline);
+
 

@@ -63,7 +63,7 @@
     <ClInclude Include="..\..\Include\PBR\BRDF.hpp">
       <Filter>PBR</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\PostProcess\HDR.hpp">
+    <ClInclude Include="..\..\Include\PostProcess\ToneMapping.hpp">
       <Filter>PostProcess</Filter>
     </ClInclude>
   </ItemGroup>

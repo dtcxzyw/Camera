@@ -21,7 +21,7 @@
     <ClInclude Include="..\..\Include\IO\Model.hpp" />
     <ClInclude Include="..\..\Include\IO\Video.hpp" />
     <ClInclude Include="..\..\Include\PBR\BRDF.hpp" />
-    <ClInclude Include="..\..\Include\PostProcess\HDR.hpp" />
+    <ClInclude Include="..\..\Include\PostProcess\ToneMapping.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\DepthBuffer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLine.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLineRenderer.hpp" />

@@ -27,30 +27,31 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
         auto ndo = dot(nd, out);
         auto idh = dot(in, h);
         auto diff = disneyDiffuse(ndi,ndo,idh,uniform.roughness);
-        auto G = smithG(ndi,ndo,0.5f+0.5f*uniform.roughness);
-        auto F = fresnelSchlick(uniform.f0,fmax(idh,0.0f));
         auto D = GGXD(ndo, uniform.roughness*uniform.roughness);
-        auto wSpec = cookTorrance(diff, D, F, G, ndi, ndo);
-        auto wDiff = (1.0f - F)*(1.0f-uniform.metallic)*uniform.albedo*one_over_pi<float>();
-        auto w = (wSpec + wDiff)*uniform.lc*fmax(ndi,0.0f);
-        auto res = uniform.color*w;
-        res = convertLinearToSRGB(res);
+        auto F = fresnelSchlick(uniform.f0,fmax(idh,0.0f));
+        auto G = smithG(ndi, ndo, 0.5f + 0.5f*uniform.roughness);
+        auto w = cookTorrance(diff, D, F, G, ndi, ndo);
+        auto res = uniform.color*uniform.lc*w*fmax(ndi, 0.0f);
         fbo.color.set(uv, {res,1.0f });
     }
 }
 
-CUDA void post(ivec2 NDC, FrameBufferGPU in, BuiltinRenderTargetGPU<RGBA> out) {
-    vec3 c = in.color.get(NDC);
-    NDC.y = in.mSize.y-1 - NDC.y;
+CUDA void post(ivec2 NDC, PostUniform uni, BuiltinRenderTargetGPU<RGBA> out) {
+    RGB c = uni.in.color.get(NDC);
+    auto lum = luminosity(c);
+    if(lum>0.0f)atomicAdd(uni.sum,log(lum));
+    c = ACES(c,uni.lum);
+    NDC.y = uni.in.mSize.y- 1 - NDC.y;
     out.set(NDC, { c,1.0f });
 }
 
-void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo,DataViewer<Uniform> uniform,
-    FrameBufferCPU& fbo, BuiltinRenderTargetGPU<RGBA> dest,Pipeline& pipeline) {
+void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, DataViewer<Uniform> uniform
+    , FrameBufferCPU& fbo, DataViewer<PostUniform> puni,
+    BuiltinRenderTargetGPU<RGBA> dest, Pipeline& pipeline) {
     fbo.colorRT->clear(pipeline,vec4{ 0.0f,0.0f,0.0f,1.0f });
     fbo.depthBuffer->clear(pipeline);
     renderTriangles<VI, OI, Uniform, FrameBufferGPU, VS, drawPoint,setPoint>
         (pipeline,vbo, ibo, uniform, fbo.dataGPU,fbo.size);
-    renderFullScreen<FrameBufferGPU, decltype(dest), post>(pipeline,fbo.dataGPU,dest,fbo.size);
+    renderFullScreen<PostUniform, decltype(dest), post>(pipeline,puni,dest,fbo.size);
 }
 
