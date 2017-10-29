@@ -12,6 +12,7 @@ int main() {
         model.load("Res/bunny.ply");
         printf("vertices %d ,triangles: %d\n", static_cast<int>(model.mVert.size()),
             static_cast<int>(model.mIndex.size()));
+        MERLBRDFData brdf("Res/steel.binary");
         FrameBufferCPU FB;
         GLWindow window;
         Pipeline pipeline;

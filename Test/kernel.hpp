@@ -4,6 +4,7 @@
 #include <ScanLineRenderer/DepthBuffer.hpp>
 #include <IO/Model.hpp> 
 #include <PostProcess/ToneMapping.hpp>
+#include <PBR/DataDrivenBRDF.hpp>
 
 using VI = StaticMesh::Vertex;
 enum OutInfo {

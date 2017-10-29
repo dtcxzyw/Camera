@@ -21,6 +21,7 @@
     <ClInclude Include="..\..\Include\IO\Model.hpp" />
     <ClInclude Include="..\..\Include\IO\Video.hpp" />
     <ClInclude Include="..\..\Include\PBR\BRDF.hpp" />
+    <ClInclude Include="..\..\Include\PBR\DataDrivenBRDF.hpp" />
     <ClInclude Include="..\..\Include\PostProcess\ToneMapping.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\DepthBuffer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLine.hpp" />
@@ -34,6 +35,7 @@
     <CudaCompile Include="..\..\Src\Interaction\OpenGL.cu">
       <FileType>Document</FileType>
     </CudaCompile>
+    <CudaCompile Include="..\..\Src\PBR\DataDrivenBRDF.cu" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\IO\Image.cu" />
