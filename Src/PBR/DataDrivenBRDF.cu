@@ -3,7 +3,7 @@
 
 BRDFSampler::BRDFSampler(const vec3* ReadOnly data):mData(data) {}
 
-MERLBRDFData::MERLBRDFData(const std::string & path) {
+MERLBRDFData::MERLBRDFData(const std::string& path) {
     std::ifstream in(path, std::ios::binary);
     if (!in.is_open())
         throw std::exception("Failed to load the BRDF database.");

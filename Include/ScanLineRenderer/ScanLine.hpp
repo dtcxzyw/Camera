@@ -30,17 +30,15 @@ struct VertexInfo {
     Out out;
 };
 
-template<typename Vert, typename Out, typename Uniform,typename FrameBuffer,
-    VSF<Vert, Out, Uniform> vs,FSF<Out, Uniform, FrameBuffer> fs,
-    FSF<Out, Uniform, FrameBuffer> ds>
+template<typename Vert, typename Out, typename Uniform,
+    VSF<Vert, Out, Uniform> vs>
 CALLABLE void runVS(unsigned int size,const Vert* ReadOnly in,const Uniform* ReadOnly u,
-    VertexInfo<Out>* res,FrameBuffer* frameBuffer) {
+    VertexInfo<Out>* res,vec2 fsize) {
     auto i = getID();
     if (i >= size)return;
     vec4 pos;
     auto& vert = res[i];
     vs(in[i], *u, pos, vert.out);
-    auto fsize = frameBuffer->size();
     vert.pos=toNDC(pos, fsize);
     vert.flag = checkPoint(vert.pos,fsize);
 }
