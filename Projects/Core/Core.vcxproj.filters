@@ -69,6 +69,9 @@
     <ClInclude Include="..\..\Include\PBR\DataDrivenBRDF.hpp">
       <Filter>PBR</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Base\Constant.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">
@@ -90,6 +93,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\Src\PBR\DataDrivenBRDF.cu">
       <Filter>PBR</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Base\Constant.cu">
+      <Filter>Base</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

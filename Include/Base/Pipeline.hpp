@@ -5,10 +5,6 @@ CUDAInline unsigned int getID() {
     return blockIdx.x*blockDim.x + threadIdx.x;
 }
 
-inline uint calcSize(uint a,uint b) {
-    return (a+b-1) / b;
-}
-
 class Pipeline final:Uncopyable {
 private:
     cudaStream_t mStream;

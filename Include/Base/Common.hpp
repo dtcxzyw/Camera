@@ -99,3 +99,8 @@ CUDAInline void swap(T& a, T& b) {
     b = c;
 }
 
+template<typename T>
+inline auto calcSize(T a, T b) {
+    return (a + b - 1) / b;
+}
+

@@ -3,6 +3,7 @@
 #include "kernel.hpp"
 #include <Interaction/OpenGL.hpp>
 #include <thread>
+#include <Base/Constant.hpp>
 using namespace std::chrono_literals;
 
 int main() {
