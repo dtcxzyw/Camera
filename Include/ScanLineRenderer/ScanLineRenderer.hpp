@@ -7,10 +7,10 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
     VSF<Vert, Out, Uniform> vs, FSF<Out, Uniform, FrameBuffer> fs
     ,FSF<Out,Uniform,FrameBuffer> ds>
  void renderTriangles(Pipeline& pipeline,DataViewer<Vert> vert, DataViewer<uvec3> index,
-        DataViewer<Uniform> uniform, DataViewer<FrameBuffer> frameBuffer,uvec2 size) {
+        const Uniform* uniform, FrameBuffer* frameBuffer,uvec2 size) {
     auto vertex = allocBuffer<VertexInfo<Out>>(vert.size());
     pipeline.run(runVS<Vert, Out, Uniform,vs>, vert.size(),
-        vert.begin(), uniform.begin(),vertex.begin(),static_cast<vec2>(size));
+        vert.begin(), uniform,vertex.begin(),static_cast<vec2>(size));
     auto cnt = allocBuffer<unsigned int>();
     cudaMemsetAsync(cnt.begin(), 0, sizeof(unsigned int), pipeline.getId());
     auto info = allocBuffer<Triangle<Out>>(index.size());
@@ -32,20 +32,20 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
             dim3 grid;
             dim3 block(clipTileX, clipTileY);
             pipeline.runDim(drawTile<Out, Uniform, FrameBuffer, ds>, grid, block, tcnt.begin(), info.begin(),
-                tid.begin(), uniform.begin(), frameBuffer.begin(), num);
+                tid.begin(), uniform, frameBuffer, num);
         }
         {
             dim3 grid;
             dim3 block(clipTileX, clipTileY);
             pipeline.runDim(drawTile<Out, Uniform, FrameBuffer, fs>,grid,block,tcnt.begin(), info.begin(),
-                tid.begin(), uniform.begin(), frameBuffer.begin(),num);
+                tid.begin(), uniform, frameBuffer,num);
         }
     }
 }
 
 template<typename Uniform, typename FrameBuffer, FSFSF<Uniform,FrameBuffer> fs>
-void renderFullScreen(Pipeline& pipeline,DataViewer<Uniform> uniform, 
+void renderFullScreen(Pipeline& pipeline,const Uniform* uniform, 
     FrameBuffer frameBuffer, uvec2 size) {
-    pipeline.run(runFSFS<Uniform,FrameBuffer,fs>, size.x*size.y, uniform.begin(), frameBuffer,size.x);
+    pipeline.run(runFSFS<Uniform,FrameBuffer,fs>, size.x*size.y, uniform, frameBuffer,size.x);
 }
 

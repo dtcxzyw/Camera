@@ -45,13 +45,13 @@ CUDA void post(ivec2 NDC, PostUniform uni, BuiltinRenderTargetGPU<RGBA> out) {
     out.set(NDC, { c,1.0f });
 }
 
-void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, DataViewer<Uniform> uniform
-    , FrameBufferCPU& fbo, DataViewer<PostUniform> puni,
+void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const Uniform* uniform
+    , FrameBufferCPU& fbo, const PostUniform* puni,
     BuiltinRenderTargetGPU<RGBA> dest, Pipeline& pipeline) {
     fbo.colorRT->clear(pipeline,vec4{ 0.0f,0.0f,0.0f,1.0f });
     fbo.depthBuffer->clear(pipeline);
     renderTriangles<VI, OI, Uniform, FrameBufferGPU, VS, drawPoint,setPoint>
-        (pipeline,vbo, ibo, uniform, fbo.dataGPU,fbo.size);
+        (pipeline,vbo, ibo, uniform, fbo.dataGPU.get(),fbo.size);
     renderFullScreen<PostUniform, decltype(dest), post>(pipeline,puni,dest,fbo.size);
 }
 

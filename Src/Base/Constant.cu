@@ -2,7 +2,7 @@
 #include <algorithm>
 
 namespace Impl {
-    __constant__ unsigned char memory[blockNum][blockSize];
+    __constant__ unsigned char memory[blockNum*blockSize];
 
     class SegTree final {
     private:

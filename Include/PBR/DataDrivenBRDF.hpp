@@ -100,6 +100,7 @@ class BRDFSampler final {
 private:
     const vec3* ReadOnly mData;
 public:
+    BRDFSampler() = default;
     BRDFSampler(const vec3* ReadOnly data);
     CUDAInline RGB get(vec3 in, vec3 out,vec3 half,vec3 normal) const {
         return mData[Impl::lookupBRDF(in, out, half, normal)];

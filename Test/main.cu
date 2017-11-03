@@ -1,9 +1,8 @@
-#include <stdio.h>
+#include <cstdio>
 #include <system_error>
 #include "kernel.hpp"
 #include <Interaction/OpenGL.hpp>
 #include <thread>
-#include <Base/Constant.hpp>
 using namespace std::chrono_literals;
 
 int main() {
@@ -13,7 +12,6 @@ int main() {
         model.load("Res/bunny.ply");
         printf("vertices %d ,triangles: %d\n", static_cast<int>(model.mVert.size()),
             static_cast<int>(model.mIndex.size()));
-        MERLBRDFData brdf("Res/steel.binary");
         FrameBufferCPU FB;
         GLWindow window;
         Pipeline pipeline;
@@ -21,14 +19,15 @@ int main() {
         glm::mat4 M;
         M = scale(M, vec3(1.0f, 1.0f, 1.0f)*40.0f);
         float t = glfwGetTime(),lum=1.0f,last=1.0f;
+        Constant<Uniform> uniform;
+        Constant<PostUniform> puni;
         while (window.update()) {
-            pipeline.sync();
             auto size = window.size();
             if (size.x == 0 || size.y == 0) {
                 std::this_thread::sleep_for(1ms);
                 continue;
             }
-            FB.resize(size.x, size.y);
+            FB.resize(size.x, size.y,pipeline);
             float w = size.x, h = size.y;
             glm::mat4 P = perspectiveFov(radians(45.0f), w, h, 1.0f, 20.0f);
             float now = glfwGetTime();
@@ -36,7 +35,6 @@ int main() {
             M = rotate(M, delta*0.2f, { 0.0f,1.0f,0.0f });
             printf("\r%.2f ms          ", delta*1000.0f);
             t = now;
-            auto uniform = allocBuffer<Uniform>();
             Uniform u;
             u.VP = P*V;
             u.M = M;
@@ -47,18 +45,19 @@ int main() {
             u.dir = normalize(u.cp);
             u.roughness = 0.5f;
             u.f0 = { 1.00f, 0.71f, 0.29f };
-            uniform[0] = u;
+            uniform.set(u, pipeline);
             BuiltinRenderTarget<RGBA> RT(window.map(pipeline,size),size);
-            auto post = allocBuffer<PostUniform>();
             auto sum = allocBuffer<float>();
             *sum = 0.0f;
-            post->in = *FB.dataGPU;
+            PostUniform post;
+            post.in = FB.data;
             auto tw = powf(0.2f, delta);
             auto nlum = lum*(1.0f - tw) + last*tw;
             last = nlum;
-            post->lum =calcLum(nlum);
-            post->sum = sum.begin();
-            kernel(model.mVert, model.mIndex, uniform, FB, post,RT.toTarget(), pipeline);
+            post.lum =calcLum(nlum);
+            post.sum = sum.begin();
+            puni.set(post, pipeline);
+            kernel(model.mVert, model.mIndex, uniform.get(), FB, puni.get(),RT.toTarget(), pipeline);
             window.unmapAndPresent(pipeline);
             pipeline.sync();
             lum =*sum/(w*h);

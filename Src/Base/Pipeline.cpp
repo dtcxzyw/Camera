@@ -1,7 +1,7 @@
 #include <Base/Pipeline.hpp>
 
 Pipeline::Pipeline() {
-    checkError(cudaStreamCreate(&mStream));
+    checkError(cudaStreamCreateWithFlags(&mStream,cudaStreamNonBlocking));
     mMaxThread = getEnvironment().getProp().maxThreadsPerBlock;
 }
 
