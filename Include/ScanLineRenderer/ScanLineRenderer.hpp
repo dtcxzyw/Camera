@@ -11,13 +11,15 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
     auto vertex = allocBuffer<VertexInfo<Out>>(vert.size());
     pipeline.run(runVS<Vert, Out, Uniform,vs>, vert.size(),
         vert.begin(), uniform,vertex.begin(),static_cast<vec2>(size));
-    auto cnt = allocBuffer<unsigned int>();
+    auto cnt = allocBuffer<unsigned int>(2);
     cudaMemsetAsync(cnt.begin(), 0, sizeof(unsigned int), pipeline.getId());
     auto info = allocBuffer<Triangle<Out>>(index.size());
+    auto micro = allocBuffer<Triangle<Out>>(index.size());
     pipeline.run(clipTriangles<Out>, index.size(),cnt.begin(),vertex.begin(),index.begin(),
-        info.begin(),static_cast<vec2>(size));
+        info.begin(),micro.begin(),static_cast<vec2>(size));
     pipeline.sync();
-    auto num = *cnt.begin();
+    auto num = cnt[0];
+    auto microNum = cnt[1];
     if (num) {
         auto clipTileX = calcSize(size.x, range), clipTileY = calcSize(size.y, range);
         auto tcnt = allocBuffer<unsigned int>(clipTileX*clipTileY);
@@ -40,6 +42,12 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
             pipeline.runDim(drawTile<Out, Uniform, FrameBuffer, fs>,grid,block,tcnt.begin(), info.begin(),
                 tid.begin(), uniform, frameBuffer,num);
         }
+    }
+    if (microNum) {
+        dim3 grid(microNum);
+        dim3 block(microSize+1, microSize+1);
+        pipeline.runDim(drawMicro<Out, Uniform, FrameBuffer, fs>, grid, block,micro.begin(),
+            uniform, frameBuffer);
     }
 }
 
