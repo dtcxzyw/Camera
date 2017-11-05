@@ -19,7 +19,6 @@ MERLBRDFData::MERLBRDFData(const std::string& path) {
         mData[i].r = static_cast<float>(brdf[i])*rfac;
         mData[i].g = static_cast<float>(brdf[i+size])*gfac;
         mData[i].b = static_cast<float>(brdf[i + size * 2])*bfac;
-        mData[i] = clamp(mData[i],0.0f,1.0f);
     }
 }
 

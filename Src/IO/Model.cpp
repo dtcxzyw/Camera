@@ -9,7 +9,10 @@ bool StaticMesh::load(const std::string & path) {
         aiProcess_JoinIdenticalVertices |
         aiProcess_SortByPType |
         aiProcess_GenSmoothNormals |
-        aiProcess_GenUVCoords);
+        aiProcess_GenUVCoords|
+        aiProcess_CalcTangentSpace|
+        aiProcess_FixInfacingNormals
+    );
 
     if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE)
         return false;
@@ -19,6 +22,9 @@ bool StaticMesh::load(const std::string & path) {
         for (uint i = 0; i < mesh->mNumVertices; ++i) {
             mVert[i].pos = *reinterpret_cast<vec3*>(mesh->mVertices + i);
             mVert[i].normal = *reinterpret_cast<vec3*>(mesh->mNormals + i);
+            //mVert[i].uv = *reinterpret_cast<UV*>(mesh->mTextureCoords[0] + i);
+            //mVert[i].tangent = *reinterpret_cast<vec3*>(mesh->mTangents+i);
+            //mVert[i].biTangent = *reinterpret_cast<vec3*>(mesh->mBitangents + i);
         }
     }
     {

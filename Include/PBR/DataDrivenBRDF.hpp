@@ -23,9 +23,7 @@ The implementation is based on http://people.csail.mit.edu/wojciech/BRDFDatabase
 */
 
 constexpr auto rth = 90, rtd = 90, rpd = 360, size = rth *rtd *rpd / 2;
-constexpr auto rfac = 1.0f / 1500.0f;
-constexpr auto gfac = 1.15f / 1500.0f;
-constexpr auto bfac = 1.66f / 1500.0f;
+constexpr auto rfac = 1.0f / 1500.0f,gfac = 1.15f / 1500.0f,bfac=1.66f / 1500.0f;
 
 namespace Impl {
 
@@ -40,14 +38,13 @@ namespace Impl {
     }
 
     // convert standard coordinates to half vector/difference vector coordinates
-    CUDAInline void std2half(vec3 in, vec3 out, vec3 half, vec3 normal,
+    CUDAInline void std2half(vec3 in, vec3 out, vec3 half, vec3 normal,vec3 bin,
         float& thalf, float& phalf, float& tdiff, float& pdiff) {
 
         // compute  theta_half, fi_half
         thalf = acos(half[2]);
         phalf = atan2(half[1], half[0]);
 
-        auto bin = normalize(cross(normal, vec3{ 0.0f,1.0f,0.0f }));
         // compute diff vector
         vec3 temp=rotateVector(in, normal, -phalf);
         vec3 diff=rotateVector(temp, bin, -thalf);
@@ -84,11 +81,11 @@ namespace Impl {
     }
 
     // Given a pair of incoming/outgoing angles, look up the BRDF.
-    CUDAInline int lookupBRDF(vec3 in, vec3 out, vec3 half, vec3 normal) {
+    CUDAInline int lookupBRDF(vec3 in, vec3 out, vec3 half, vec3 normal,vec3 bin) {
         // Convert to halfangle / difference angle coordinates
         float thalf, phalf, tdiff, pdiff;
 
-        std2half(in,out,half,normal,thalf, phalf, tdiff, pdiff);
+        std2half(in,out,half,normal,bin,thalf, phalf, tdiff, pdiff);
 
         // Find index.
         // Note that phi_half is ignored, since isotropic BRDFs are assumed
@@ -102,8 +99,8 @@ private:
 public:
     BRDFSampler() = default;
     BRDFSampler(const vec3* ReadOnly data);
-    CUDAInline RGB get(vec3 in, vec3 out,vec3 half,vec3 normal) const {
-        return mData[Impl::lookupBRDF(in, out, half, normal)];
+    CUDAInline RGB get(vec3 in, vec3 out,vec3 half,vec3 normal,vec3 bin) const {
+        return mData[Impl::lookupBRDF(in, out, half, normal,bin)];
     }
 };
 

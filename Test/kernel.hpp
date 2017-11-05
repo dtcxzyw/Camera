@@ -5,6 +5,7 @@
 #include <IO/Model.hpp> 
 #include <PostProcess/ToneMapping.hpp>
 #include <Base/Constant.hpp>
+#include <PBR/DataDrivenBRDF.hpp>
 
 using VI = StaticMesh::Vertex;
 enum OutInfo {
@@ -50,6 +51,7 @@ struct Uniform final {
     ALIGN vec3 color;
     ALIGN float roughness;
     ALIGN vec3 f0;
+    ALIGN BRDFSampler sampler;
 };
 
 struct PostUniform final {
