@@ -12,7 +12,7 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
     pipeline.run(runVS<Vert, Out, Uniform,vs>, vert.size(),
         vert.begin(), uniform,vertex.begin(),static_cast<vec2>(size));
     auto cnt = allocBuffer<unsigned int>(2);
-    cudaMemsetAsync(cnt.begin(), 0, sizeof(unsigned int), pipeline.getId());
+    cudaMemsetAsync(cnt.begin(), 0, sizeof(unsigned int)*cnt.size(), pipeline.getId());
     auto info = allocBuffer<Triangle<Out>>(index.size());
     auto micro = allocBuffer<Triangle<Out>>(index.size());
     pipeline.run(clipTriangles<Out>, index.size(),cnt.begin(),vertex.begin(),index.begin(),
@@ -46,6 +46,8 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
     if (microNum) {
         dim3 grid(microNum);
         dim3 block(microSize+1, microSize+1);
+        pipeline.runDim(drawMicro<Out, Uniform, FrameBuffer, ds>, grid, block, micro.begin(),
+            uniform, frameBuffer);
         pipeline.runDim(drawMicro<Out, Uniform, FrameBuffer, fs>, grid, block,micro.begin(),
             uniform, frameBuffer);
     }

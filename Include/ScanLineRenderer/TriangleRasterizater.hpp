@@ -49,15 +49,16 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     Triangle<Out> res;
     res.rect = { fmax(0.0f,fmin(a.x,fmin(b.x,c.x))),fmin(fsize.x,fmax(a.x,fmax(b.x,c.x))),
         fmax(0.0f,fmin(a.y,fmin(b.y,c.y))),fmin(fsize.y,fmax(a.y,fmax(b.y,c.y))) };
-    auto S = edgeFunction(a, b, c);
-    if (S > 0.0f & (vert[idx.x].flag|vert[idx.y].flag|vert[idx.z].flag)==0b111111) {
+    auto tsize = fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z);
+    if ((edgeFunction(a, b, c) > 0.0f) & ((vert[idx.x].flag|vert[idx.y].flag|vert[idx.z].flag)==0b111111)
+        & (tsize>0.5f)) {
         calcBase(b, c, res.w[0]);
         calcBase(c, a, res.w[1]);
         calcBase(a, b, res.w[2]);
         res.z = { a.z,b.z,c.z };
         res.invz = { 1.0f / a.z,1.0f / b.z,1.0f / c.z };
         res.out[0] = vert[idx.x].out, res.out[1] = vert[idx.y].out, res.out[2] = vert[idx.z].out;
-        if (fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z) >= microSizef)
+        if (tsize >= microSizef)
             info[atomicInc(cnt, maxv)] = res;
         else
             micro[atomicInc(cnt + 1, maxv)] = res;
@@ -66,13 +67,13 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
 
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CUDA void drawPoint(Triangle<Out> tri, ivec2 uv,vec2 p, Uniform uni,FrameBuffer& framebuffer) {
+    CUDA void drawPoint(Triangle<Out> tri, ivec2 uv,vec2 p, Uniform uni,FrameBuffer& frameBuffer) {
     vec3 w;
     bool flag = calcWeight(tri.w, p, tri.invz, w);
     auto z = dot(tri.z, w);
     if (flag & z >= 0.0f & z <= 1.0f) {
         auto fo = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
-        fs(uv, z, fo, *uniform, *frameBuffer);
+        fs(uv, z, fo, uni, frameBuffer);
     }
 }
 
@@ -80,8 +81,8 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void drawMicro(const Triangle<Out>* ReadOnly info,
         const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer) {
-    auto tri = info[tid[blockIdx.x]];
-    ivec2 uv{tri.rect.x+threadIdx.x,tri.rect.y+threadIdx.y };
+    auto tri = info[blockIdx.x];
+    ivec2 uv{tri.rect.x+threadIdx.x,tri.rect.z+threadIdx.y};
     vec2 p{ uv.x,uv.y };
     drawPoint<Out, Uniform, FrameBuffer, fs>(tri, uv, p, *uniform, *frameBuffer);
 }
