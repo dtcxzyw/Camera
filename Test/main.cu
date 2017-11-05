@@ -18,7 +18,8 @@ int main() {
         FrameBufferCPU FB;
         GLWindow window;
         Pipeline pipeline;
-        glm::mat4 V = lookAt({ 10.0f,0.0f,0.0f }, vec3{ 0.0f,0.0f,0.0f }, { 0.0f,1.0f,0.0f });
+        vec3 cp = { 10.0f,0.0f,0.0f };
+        glm::mat4 V = lookAt(cp, vec3{ 0.0f,0.0f,0.0f }, { 0.0f,1.0f,0.0f });
         glm::mat4 M;
         M = scale(M, vec3(1.0f, 1.0f, 1.0f)*10.0f);
         float t = glfwGetTime(),lum=1.0f,last=1.0f;
@@ -44,7 +45,7 @@ int main() {
             u.invM = mat3(transpose(inverse(M)));
             u.lc = vec3(5.0f);
             u.color = {1.0f,0.84f,0.0f};
-            u.cp = { 10.0f,4.0f,0.0f };
+            u.cp = cp;
             u.dir = normalize(u.cp);
             u.roughness = 0.5f;
             u.f0 = { 1.00f, 0.71f, 0.29f };

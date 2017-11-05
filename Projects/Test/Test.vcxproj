@@ -92,8 +92,9 @@
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <CodeGeneration>compute_52,sm_52</CodeGeneration>
-      <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda</AdditionalOptions>
+      <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda </AdditionalOptions>
       <FastMath>false</FastMath>
+      <MaxRegCount>64</MaxRegCount>
     </CudaCompile>
     <CudaLink>
       <AdditionalDependencies>
@@ -140,7 +141,8 @@
       <TypeInfo>false</TypeInfo>
       <Warning>W0</Warning>
       <CodeGeneration>compute_52,sm_52</CodeGeneration>
-      <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda</AdditionalOptions>
+      <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda </AdditionalOptions>
+      <MaxRegCount>64</MaxRegCount>
     </CudaCompile>
     <CudaLink>
       <GPUDebugInfo>false</GPUDebugInfo>

@@ -11,45 +11,58 @@ template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
     auto vertex = allocBuffer<VertexInfo<Out>>(vert.size());
     pipeline.run(runVS<Vert, Out, Uniform,vs>, vert.size(),
         vert.begin(), uniform,vertex.begin(),static_cast<vec2>(size));
-    auto cnt = allocBuffer<unsigned int>(2);
+    auto cnt = allocBuffer<unsigned int>(7);
     cudaMemsetAsync(cnt.begin(), 0, sizeof(unsigned int)*cnt.size(), pipeline.getId());
-    auto info = allocBuffer<Triangle<Out>>(index.size());
-    auto micro = allocBuffer<Triangle<Out>>(index.size());
+    auto info = allocBuffer<Triangle<Out>>(7*index.size());
     pipeline.run(clipTriangles<Out>, index.size(),cnt.begin(),vertex.begin(),index.begin(),
-        info.begin(),micro.begin(),static_cast<vec2>(size));
+        info.begin(),static_cast<vec2>(size));
     pipeline.sync();
-    auto num = cnt[0];
-    auto microNum = cnt[1];
+    unsigned int microNum[6];
+    for (auto i = 0; i < 6; ++i)
+        microNum[i] = cnt[i];
+    auto num = cnt[6];
+
+    for (auto i = 0; i<6; ++i)
+        if (microNum[i]) {
+            dim3 grid(microNum[i]);
+            dim3 block(1 << i, 1 << i);
+            auto tri = info.begin() + i*index.size();
+            pipeline.runDim(drawMicro<Out, Uniform, FrameBuffer, ds>, grid, block, tri,
+                uniform, frameBuffer);
+        }
+
+    for (auto i = 0; i<6; ++i)
+        if (microNum[i]) {
+            dim3 grid(microNum[i]);
+            dim3 block(1 << i, 1 << i);
+            auto tri = info.begin() + i*index.size();
+            pipeline.runDim(drawMicro<Out, Uniform, FrameBuffer, fs>, grid, block, tri,
+                uniform, frameBuffer);
+        }
+
     if (num) {
         auto clipTileX = calcSize(size.x, range), clipTileY = calcSize(size.y, range);
         auto tcnt = allocBuffer<unsigned int>(clipTileX*clipTileY);
         auto tid = allocBuffer<unsigned int>(num*tcnt.size());
+        auto tri = info.begin() + 6 * index.size();
         {
             cudaMemsetAsync(tcnt.begin(), 0, sizeof(unsigned int)*tcnt.size(), pipeline.getId());
             dim3 grid(num);
             dim3 block(clipTileX, clipTileY);
-            pipeline.runDim(clipTile<Out>, grid,block, info.begin(), tcnt.begin(), tid.begin(), range);
+            pipeline.runDim(clipTile<Out>, grid,block, tri, tcnt.begin(), tid.begin(), range);
         }
         {
             dim3 grid;
             dim3 block(clipTileX, clipTileY);
-            pipeline.runDim(drawTile<Out, Uniform, FrameBuffer, ds>, grid, block, tcnt.begin(), info.begin(),
+            pipeline.runDim(drawTile<Out, Uniform, FrameBuffer, ds>, grid, block, tcnt.begin(),tri,
                 tid.begin(), uniform, frameBuffer, num);
         }
         {
             dim3 grid;
             dim3 block(clipTileX, clipTileY);
-            pipeline.runDim(drawTile<Out, Uniform, FrameBuffer, fs>,grid,block,tcnt.begin(), info.begin(),
+            pipeline.runDim(drawTile<Out, Uniform, FrameBuffer, fs>,grid,block,tcnt.begin(), tri,
                 tid.begin(), uniform, frameBuffer,num);
         }
-    }
-    if (microNum) {
-        dim3 grid(microNum);
-        dim3 block(microSize+1, microSize+1);
-        pipeline.runDim(drawMicro<Out, Uniform, FrameBuffer, ds>, grid, block, micro.begin(),
-            uniform, frameBuffer);
-        pipeline.runDim(drawMicro<Out, Uniform, FrameBuffer, fs>, grid, block,micro.begin(),
-            uniform, frameBuffer);
     }
 }
 

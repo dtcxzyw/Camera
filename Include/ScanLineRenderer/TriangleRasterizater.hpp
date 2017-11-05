@@ -35,13 +35,17 @@ CUDAInline void calcBase(vec3 a, vec3 b, vec3& w) {
     w.z = -(a.x*w.x + a.y * w.y);
 }
 
-constexpr auto maxv = std::numeric_limits<unsigned int>::max(),microSize = 4U;
+constexpr auto maxv = std::numeric_limits<unsigned int>::max(),microSize = 31U;
 constexpr float microSizef = microSize;
+
+CUDAInline int calcSize(float size) {
+    return static_cast<int>(ceil(log2f(fmin(size,50.0f)+1)));
+}
 
 template<typename Out>
 CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     const VertexInfo<Out>* ReadOnly vert , const uvec3* ReadOnly index,
-    Triangle<Out>* info,Triangle<Out>* micro,vec2 fsize) {
+    Triangle<Out>* info,vec2 fsize) {
     auto id = getID();
     if (id >= size)return;
     auto idx = index[id];
@@ -58,16 +62,14 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
         res.z = { a.z,b.z,c.z };
         res.invz = { 1.0f / a.z,1.0f / b.z,1.0f / c.z };
         res.out[0] = vert[idx.x].out, res.out[1] = vert[idx.y].out, res.out[2] = vert[idx.z].out;
-        if (tsize >= microSizef)
-            info[atomicInc(cnt, maxv)] = res;
-        else
-            micro[atomicInc(cnt + 1, maxv)] = res;
+        auto x=calcSize(tsize);
+        info[x*size+atomicInc(cnt+x, maxv)] = res;
     }
 }
 
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CUDA void drawPoint(Triangle<Out> tri, ivec2 uv,vec2 p, Uniform uni,FrameBuffer& frameBuffer) {
+    CUDAInline void drawPoint(Triangle<Out> tri, ivec2 uv,vec2 p, Uniform uni,FrameBuffer& frameBuffer) {
     vec3 w;
     bool flag = calcWeight(tri.w, p, tri.invz, w);
     auto z = dot(tri.z, w);
@@ -77,6 +79,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     }
 }
 
+//1,2,4,8,16,32
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void drawMicro(const Triangle<Out>* ReadOnly info,
