@@ -38,10 +38,6 @@ CUDAInline void calcBase(vec3 a, vec3 b, vec3& w) {
 constexpr auto maxv = std::numeric_limits<unsigned int>::max(),microSize = 31U;
 constexpr float microSizef = microSize;
 
-CUDAInline int calcSize(float size) {
-    return static_cast<int>(ceil(log2f(fmin(size,50.0f)+1)));
-}
-
 template<typename Out>
 CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     const VertexInfo<Out>* ReadOnly vert , const uvec3* ReadOnly index,
@@ -62,7 +58,7 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
         res.z = { a.z,b.z,c.z };
         res.invz = { 1.0f / a.z,1.0f / b.z,1.0f / c.z };
         res.out[0] = vert[idx.x].out, res.out[1] = vert[idx.y].out, res.out[2] = vert[idx.z].out;
-        auto x=calcSize(tsize);
+        auto x= static_cast<int>(ceil(log2f(fmin(tsize+1.0f, 50.0f))));
         info[x*size+atomicInc(cnt+x, maxv)] = res;
     }
 }

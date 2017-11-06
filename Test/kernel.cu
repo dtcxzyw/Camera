@@ -25,15 +25,15 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
         auto in = uniform.dir;
         auto out = normalize(uniform.cp - p);
         auto h = calcHalf(in, out);
-        auto ndi = fmax(dot(nd, in),0.0f);
-        auto ndo = fmax(dot(nd, out),0.0f);
-        auto idh = fmax(dot(in, h),0.0f);
+        auto ndi = dot(nd, in);
+        auto ndo = dot(nd, out);
+        auto idh = dot(in, h);
         auto diff = disneyDiffuse(ndi,ndo,idh,uniform.roughness);
         auto D = GGXD(ndo, uniform.roughness*uniform.roughness);
         auto F = fresnelSchlick(uniform.f0,fmax(idh,0.0f));
         auto G = smithG(ndi, ndo, 0.5f + 0.5f*uniform.roughness);
         auto w = cookTorrance(diff, D, F, G, ndi, ndo);
-        auto res = uniform.color*uniform.lc*w*ndi;
+        auto res = uniform.color*uniform.lc*w*fmax(ndi,0.0f);
         //auto res = uniform.sampler.get(in,out,h,nd,tangent)*uniform.lc;
         fbo.color.set(uv, {res,1.0f });
     }
