@@ -2,7 +2,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
-std::shared_ptr<BuiltinArray<RGBA>> loadRGBA(const std::string& path) {
+std::shared_ptr<BuiltinArray<RGBA>> loadRGBA(const std::string& path,Pipeline& pipeline) {
     stbi_set_flip_vertically_on_load(true);
     int w, h, channel;
     auto p = stbi_loadf(path.c_str(), &w, &h, &channel, STBI_rgb_alpha);

@@ -50,8 +50,7 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     res.rect = { fmax(0.0f,fmin(a.x,fmin(b.x,c.x))),fmin(fsize.x,fmax(a.x,fmax(b.x,c.x))),
         fmax(0.0f,fmin(a.y,fmin(b.y,c.y))),fmin(fsize.y,fmax(a.y,fmax(b.y,c.y))) };
     auto tsize = fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z);
-    if ((edgeFunction(a, b, c) > 0.0f) & ((vert[idx.x].flag|vert[idx.y].flag|vert[idx.z].flag)==0b111111)
-        & (tsize>0.5f)) {
+    if ((edgeFunction(a, b, c) > 0.0f) & ((vert[idx.x].flag|vert[idx.y].flag|vert[idx.z].flag)==0b111111)) {
         calcBase(b, c, res.w[0]);
         calcBase(c, a, res.w[1]);
         calcBase(a, b, res.w[2]);

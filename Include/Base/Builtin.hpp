@@ -63,6 +63,11 @@ public:
         tex2D<Type>(reinterpret_cast<Type*>(&res),mTexture,p.x,p.y);
         return res;
     }
+    CUDA T getCubeMap(vec3 p) const {
+        T res;
+        texCubemap<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y, p.z);
+        return res;
+    }
 private:
     cudaTextureObject_t mTexture;
 };
@@ -158,5 +163,33 @@ public:
     }
     ~BuiltinRenderTarget() {
         checkError(cudaDestroySurfaceObject(mTarget));
+    }
+};
+
+template<typename T>
+class BuiltinCubeMap final:Uncopyable {
+private:
+    using Type = typename Rename<T>::Type;
+    cudaArray_t mArray;
+    cudaTextureObject_t mTexture;
+public:
+    BuiltinCubeMap(size_t size) {
+        auto desc = cudaCreateChannelDesc<Type>();
+        cudaExtent extent{ size,size,6 };
+        checkError(cudaMalloc3DArray(&mArray,desc,extent,cudaArrayCubemap));
+        cudaResourceDesc RD;
+        RD.resType = cudaResourceTypeArray;
+        RD.res.array = mArray;
+        cudaTextureDesc TD;
+        TD.filterMode = cudaFilterModeLinear;
+        TD.normalizedCoords = 1;
+        TD.readMode = cudaReadModeElementType;
+        checkError(cudaCreateTextureObject(&mTexture,&RD,&TD,nullptr));
+    }
+    cudaArray_t get() const {
+        return mArray;
+    }
+    BuiltinSamplerGPU<T> toSampler() const {
+        return mTexture;
     }
 };
