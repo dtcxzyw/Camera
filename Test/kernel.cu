@@ -2,6 +2,14 @@
 #include "kernel.hpp"
 #include <PBR/BRDF.hpp>
 #include <device_functions.h>
+#include <ScanLineRenderer/Primitive.hpp>
+
+CUDA void GS(VI* in, Uniform uniform,Queue<VI> out) {
+    auto dab = in[0].pos - in[1].pos, dcb = in[2].pos - in[1].pos;
+    auto off = normalize(cross(dcb,dab))*0.01f;
+    for (int i = 0; i < 3; ++i)in[i].pos += off;
+    out.push<3>(in);
+}
 
 CUDA void VS(VI in, Uniform uniform, vec4& NDC, OI& out) {
     auto wp =uniform.M*vec4(in.pos, 1.0f);
@@ -53,9 +61,10 @@ void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const Uniform* uniform
     BuiltinRenderTargetGPU<RGBA> dest, Pipeline& pipeline) {
     fbo.colorRT->clear(pipeline,vec4{ 0.0f,0.0f,0.0f,1.0f });
     fbo.depthBuffer->clear(pipeline);
-    auto vert = calcVertex<VI,OI,Uniform,VS>(pipeline,vbo,uniform,fbo.size);
-    renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU,setPoint , drawPoint>
-        (pipeline, vert, ibo, uniform, fbo.dataGPU.get(), fbo.size);
+    auto prim = genTriangle<SharedIndex, VI, Uniform, GS>(pipeline, vbo,ibo,uniform);
+    auto vert = calcVertex<VI, OI, Uniform, VS>(pipeline, prim,uniform,fbo.size);
+    renderTriangles<UniqueIndex, OI, Uniform, FrameBufferGPU, setPoint, drawPoint>
+        (pipeline, vert, prim.size()/3, uniform, fbo.dataGPU.get(), fbo.size);
     renderFullScreen<PostUniform, decltype(dest), post>(pipeline,puni,dest,fbo.size);
 }
 

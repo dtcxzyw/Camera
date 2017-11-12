@@ -61,7 +61,7 @@ MemoryPool& getMemoryPool() {
 Memory::Memory(size_t size): mSize(size),mPtr(getMemoryPool().memAlloc(size)) {}
 
 Memory::~Memory() {
-    getMemoryPool().memFree(mPtr, mSize);
+    getMemoryPool().memFree(mPtr,mSize);
 }
 
 char * Memory::getPtr() const {
