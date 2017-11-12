@@ -179,7 +179,7 @@ public:
         checkError(cudaMalloc3DArray(&mArray,desc,extent,cudaArrayCubemap));
         cudaResourceDesc RD;
         RD.resType = cudaResourceTypeArray;
-        RD.res.array = mArray;
+        RD.res.array.array = mArray;
         cudaTextureDesc TD;
         TD.filterMode = cudaFilterModeLinear;
         TD.normalizedCoords = 1;

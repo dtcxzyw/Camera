@@ -6,9 +6,9 @@
 CUDA void VS(VI in, Uniform uniform, vec4& NDC, OI& out) {
     auto wp =uniform.M*vec4(in.pos, 1.0f);
     out.get<pos>() = wp;
-    NDC = uniform.VP*wp;
-    out.get<normal>() =uniform.invM*in.normal;
+    out.get<normal>() = uniform.invM*in.normal;
     //out.get<bin>() = uniform.invM*in.tangent;
+    NDC = uniform.VP*wp;
 }
 
 constexpr float maxdu = std::numeric_limits<unsigned int>::max();
@@ -53,8 +53,9 @@ void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const Uniform* uniform
     BuiltinRenderTargetGPU<RGBA> dest, Pipeline& pipeline) {
     fbo.colorRT->clear(pipeline,vec4{ 0.0f,0.0f,0.0f,1.0f });
     fbo.depthBuffer->clear(pipeline);
-    renderTriangles<VI, OI, Uniform, FrameBufferGPU, VS, drawPoint,setPoint>
-        (pipeline,vbo, ibo, uniform, fbo.dataGPU.get(),fbo.size);
+    auto vert = calcVertex<VI,OI,Uniform,VS>(pipeline,vbo,uniform,fbo.size);
+    renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU,setPoint , drawPoint>
+        (pipeline, vert, ibo, uniform, fbo.dataGPU.get(), fbo.size);
     renderFullScreen<PostUniform, decltype(dest), post>(pipeline,puni,dest,fbo.size);
 }
 

@@ -3,18 +3,22 @@
 #include <ScanLineRenderer/ScanLine.hpp>
 #include <ScanLineRenderer/TriangleRasterizater.hpp>
 
-template<typename Vert, typename Out, typename Uniform, typename FrameBuffer,
-    VSF<Vert, Out, Uniform> vs, FSF<Out, Uniform, FrameBuffer> fs
-    ,FSF<Out,Uniform,FrameBuffer> ds>
- void renderTriangles(Pipeline& pipeline,DataViewer<Vert> vert, DataViewer<uvec3> index,
-        const Uniform* uniform, FrameBuffer* frameBuffer,uvec2 size) {
+template<typename Vert,typename Out,typename Uniform,VSF<Vert,Out,Uniform> vs>
+auto calcVertex(Pipeline& pipeline, DataViewer<Vert> vert,const Uniform* uniform, uvec2 size) {
     auto vertex = allocBuffer<VertexInfo<Out>>(vert.size());
-    pipeline.run(runVS<Vert, Out, Uniform,vs>, vert.size(),
-        vert.begin(), uniform,vertex.begin(),static_cast<vec2>(size));
+    pipeline.run(runVS<Vert, Out, Uniform, vs>, vert.size(),
+        vert.begin(), uniform, vertex.begin(), static_cast<vec2>(size));
+    return vertex;
+}
+
+template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
+    FSF<Out, Uniform, FrameBuffer> ds,FSF<Out, Uniform, FrameBuffer> fs>
+ void renderTriangles(Pipeline& pipeline,DataViewer<VertexInfo<Out>> vert,
+     Index index, const Uniform* uniform, FrameBuffer* frameBuffer,uvec2 size) {
     auto cnt = allocBuffer<unsigned int>(7);
     checkError(cudaMemsetAsync(cnt.begin(), 0, sizeof(unsigned int)*cnt.size(), pipeline.getId()));
     auto info = allocBuffer<Triangle<Out>>(7*index.size());
-    pipeline.run(clipTriangles<Out>, index.size(),cnt.begin(),vertex.begin(),index.begin(),
+    pipeline.run(clipTriangles<Index,Out>, index.size(),cnt.begin(),vert.begin(),index,
         info.begin(),static_cast<vec2>(size));
     pipeline.sync();
     unsigned int triNum[7];

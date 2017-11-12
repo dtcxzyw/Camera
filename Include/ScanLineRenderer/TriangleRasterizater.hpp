@@ -12,6 +12,44 @@ struct Triangle final {
     Out out[3];
 };
 
+class UniqueIndexHelper final {
+private:
+    const unsigned int off;
+public:
+    CUDA UniqueIndexHelper(unsigned int x) :off(x*3) {}
+    CUDA unsigned int operator[](unsigned int x) {
+        return off + x;
+    }
+};
+
+class UniqueIndex final {
+private:
+    const unsigned int mSize;
+public:
+    UniqueIndex(unsigned int size):mSize(size){}
+    auto size() const {
+        return mSize;
+    }
+    CUDA UniqueIndexHelper operator[](unsigned int off) const {
+        return off;
+    }
+};
+
+class SharedIndex final{
+private:
+    const uvec3* ReadOnly const mPtr;
+    const unsigned int mSize;
+public:
+    SharedIndex(const uvec3* ReadOnly idx,unsigned int size) :mPtr(idx),mSize(size) {}
+    SharedIndex(DataViewer<uvec3> ibo):mPtr(ibo.begin()),mSize(ibo.size()){}
+    auto size() const {
+        return mSize;
+    }
+    CUDA auto operator[](unsigned int off) const {
+        return mPtr[off];
+    }
+};
+
 CUDAInline float edgeFunction(vec3 a, vec3 b, vec3 c) {
     return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
@@ -38,25 +76,25 @@ CUDAInline void calcBase(vec3 a, vec3 b, vec3& w) {
 constexpr auto maxv = std::numeric_limits<unsigned int>::max(),microSize = 31U;
 constexpr float microSizef = microSize;
 
-template<typename Out>
+template<typename Index,typename Out>
 CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
-    const VertexInfo<Out>* ReadOnly vert , const uvec3* ReadOnly index,
+    const VertexInfo<Out>* ReadOnly vert , Index index,
     Triangle<Out>* info,vec2 fsize) {
     auto id = getID();
     if (id >= size)return;
     auto idx = index[id];
-    vec3 a = vert[idx.x].pos, b = vert[idx.y].pos, c = vert[idx.z].pos;
+    vec3 a = vert[idx[0]].pos, b = vert[idx[1]].pos, c = vert[idx[2]].pos;
     Triangle<Out> res;
     res.rect = { fmax(0.0f,fmin(a.x,fmin(b.x,c.x))),fmin(fsize.x,fmax(a.x,fmax(b.x,c.x))),
         fmax(0.0f,fmin(a.y,fmin(b.y,c.y))),fmin(fsize.y,fmax(a.y,fmax(b.y,c.y))) };
     auto tsize = fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z);
-    if ((edgeFunction(a, b, c) > 0.0f) & ((vert[idx.x].flag|vert[idx.y].flag|vert[idx.z].flag)==0b111111)) {
+    if ((edgeFunction(a, b, c) > 0.0f) & ((vert[idx[0]].flag|vert[idx[1]].flag|vert[idx[2]].flag)==0b111111)) {
         calcBase(b, c, res.w[0]);
         calcBase(c, a, res.w[1]);
         calcBase(a, b, res.w[2]);
         res.z = { a.z,b.z,c.z };
         res.invz = { 1.0f / a.z,1.0f / b.z,1.0f / c.z };
-        res.out[0] = vert[idx.x].out, res.out[1] = vert[idx.y].out, res.out[2] = vert[idx.z].out;
+        res.out[0] = vert[idx[0]].out, res.out[1] = vert[idx[1]].out, res.out[2] = vert[idx[2]].out;
         auto x= static_cast<int>(ceil(log2f(fmin(tsize+1.0f, 50.0f))));
         info[x*size+atomicInc(cnt+x, maxv)] = res;
     }

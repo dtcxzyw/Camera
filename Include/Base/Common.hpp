@@ -3,7 +3,8 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include <vector>
-#include <tuple>
+#include <cassert>
+
 #define CUDA __device__
 #define CUDAInline inline CUDA
 #define HOST __host__
@@ -58,14 +59,6 @@ public:
         :mMem(memory),mPtr(reinterpret_cast<T*>(memory->getPtr() + offset)),mSize(size) {
         if (size == 0)
             mSize = (mMem->size()-offset)/sizeof(T);
-    }
-    template<typename U>
-    DataViewer<U> viewAs() const {
-        auto rsize = mSize * sizeof(T);
-        if (rsize%sizeof(U))
-            throw std::invalid_argument("T can not cast to U.");
-        return DataViewer<U>(mMem,
-            reinterpret_cast<char*>(mPtr) - mMem->getPtr(), rsize / sizeof(U));
     }
     T* begin() const {
         return mPtr;

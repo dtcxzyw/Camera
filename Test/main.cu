@@ -13,8 +13,6 @@ int main() {
         printf("vertices %d ,triangles: %d\n", static_cast<int>(model.mVert.size()),
             static_cast<int>(model.mIndex.size()));
 
-        MERLBRDFData brdf("Res/steel.binary");
-
         FrameBufferCPU FB;
         GLWindow window;
         Pipeline pipeline;
@@ -49,7 +47,6 @@ int main() {
             u.dir = normalize(lp);
             u.roughness = 0.5f;
             u.f0 = { 1.00f, 0.71f, 0.29f };
-            u.sampler = brdf.toSampler();
             uniform.set(u, pipeline);
             BuiltinRenderTarget<RGBA> RT(window.map(pipeline,size),size);
             auto sum = allocBuffer<float>();
