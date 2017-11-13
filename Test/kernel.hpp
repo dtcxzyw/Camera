@@ -50,6 +50,7 @@ struct Uniform final {
     ALIGN vec3 color;
     ALIGN float roughness;
     ALIGN vec3 f0;
+    ALIGN float time;
 };
 
 struct PostUniform final {

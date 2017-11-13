@@ -47,6 +47,7 @@ int main() {
             u.dir = normalize(lp);
             u.roughness = 0.5f;
             u.f0 = { 1.00f, 0.71f, 0.29f };
+            u.time = now;
             uniform.set(u, pipeline);
             BuiltinRenderTarget<RGBA> RT(window.map(pipeline,size),size);
             auto sum = allocBuffer<float>();
