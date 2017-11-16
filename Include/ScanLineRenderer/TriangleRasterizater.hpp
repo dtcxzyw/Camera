@@ -73,8 +73,7 @@ CUDAInline void calcBase(vec3 a, vec3 b, vec3& w) {
     w.z = -(a.x*w.x + a.y * w.y);
 }
 
-constexpr auto maxv = std::numeric_limits<unsigned int>::max(),microSize = 31U;
-constexpr float microSizef = microSize;
+constexpr auto maxv = std::numeric_limits<unsigned int>::max();
 
 template<typename Index,typename Out>
 CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,

@@ -6,7 +6,7 @@
 
 CUDA void GS(VI* in, Uniform uniform,Queue<VI,3> out) {
     auto dab = in[0].pos - in[1].pos, dcb = in[2].pos - in[1].pos;
-    auto off = normalize(cross(dcb,dab))*(sin(uniform.time)+1.0f)*0.01f;
+    auto off = normalize(cross(dcb,dab))*uniform.off;
     for (int i = 0; i < 3; ++i)in[i].pos += off;
     out.push(in);
 }
@@ -36,11 +36,11 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
         auto ndi = dot(nd, in);
         auto ndo = dot(nd, out);
         auto idh = dot(in, h);
-        auto diff = disneyDiffuse(ndi,ndo,idh,uniform.roughness);
-        auto D = GGXD(ndo, uniform.roughness*uniform.roughness);
-        auto F = fresnelSchlick(uniform.f0,fmax(idh,0.0f));
-        auto G = smithG(ndi, ndo, 0.5f + 0.5f*uniform.roughness);
-        auto w = cookTorrance(diff, D, F, G, ndi, ndo);
+        auto diff =uniform.color * disneyDiffuse(ndi,ndo,idh,uniform.roughness);
+        auto D = GGXD(ndo, uniform.roughness);
+        auto F = fresnelSchlick(uniform.f0,ndo);
+        auto G = smithG(ndi, ndo, uniform.roughness);
+        auto w =diff+ cookTorrance(D, F, G, ndi, ndo);
         auto res = uniform.color*uniform.lc*w*fmax(ndi,0.0f);
         //auto res = uniform.sampler.get(in,out,h,nd,tangent)*uniform.lc;
         fbo.color.set(uv, {res,1.0f });
@@ -61,7 +61,7 @@ void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const Uniform* uniform
     BuiltinRenderTargetGPU<RGBA> dest, Pipeline& pipeline) {
     fbo.colorRT->clear(pipeline,vec4{ 0.0f,0.0f,0.0f,1.0f });
     fbo.depthBuffer->clear(pipeline);
-    auto prim = genPrimitive<3,SharedIndex, VI, Uniform, GS>(pipeline, vbo,ibo,uniform);
+    auto prim = genPrimitive<3,3,SharedIndex, VI, Uniform, GS>(pipeline, vbo,ibo,uniform);
     auto vert = calcVertex<VI, OI, Uniform, VS>(pipeline, prim,uniform,fbo.size);
     renderTriangles<UniqueIndex, OI, Uniform, FrameBufferGPU, setPoint, drawPoint>
         (pipeline, vert, prim.size()/3, uniform, fbo.dataGPU.get(), fbo.size);

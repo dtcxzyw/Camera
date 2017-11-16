@@ -5,26 +5,27 @@ CUDAInline glm::vec3 calcHalf(glm::vec3 in, glm::vec3 out) {
     return glm::normalize(in + out);
 }
 
-CUDAInline vec3 fresnelSchlick(vec3 f0, float idh) {
-    float sidh = 1.0f - idh;
-    float sidh2 = sidh*sidh;
-    return f0 + (1.0f - f0)*(sidh*sidh2*sidh2);
+//Real Shading in Unreal Engine 4
+CUDAInline vec3 fresnelSchlick(vec3 f0, float ndo) {
+    auto k = powf(2.0f, (-5.55473f*ndo-6.98316f)*ndo);
+    return f0 + (1.0f - f0)*k;
 }
 
-CUDAInline float GGXD(float ndh, float a) {
-    float snh = sin(acos(ndh));
-    float root = a / (a*a*ndh*ndh + snh*snh);
+CUDAInline float GGXD(float ndh, float roughness) {
+    auto a = roughness*roughness;
+    auto root = a / ((a*a-1.0f)*ndh*ndh+1.0f);
     return one_over_pi<float>()*root*root;
 }
 
-CUDAInline float GGXG(float ndo, float a) {
-    auto k = a*a / 8.0f;
+CUDAInline float GGXG(float ndo, float k) {
     auto div = ndo * (1.0f - k) + k;
     return ndo / div;
 }
 
-CUDAInline float smithG(float ndi, float ndo, float a) {
-    return GGXG(ndi, a) * GGXG(ndo, a);
+CUDAInline float smithG(float ndi, float ndo, float roughness) {
+    auto alpha = roughness + 1.0f;
+    auto k = alpha*alpha / 8.0f;
+    return GGXG(ndi, k) * GGXG(ndo, k);
 }
 
 CUDAInline float lambertian() {
@@ -42,6 +43,6 @@ CUDAInline float disneyDiffuse(float ndi, float ndo, float idh, float roughness)
         *(1.0f + fd90sub1*coso*coso2*coso2);
 }
 
-CUDAInline vec3 cookTorrance(float diff, float D, vec3 F, float G, float ndi, float ndo) {
-    return diff + F*(D*G / (4.0f*ndi*ndo+epsilon<float>()));
+CUDAInline vec3 cookTorrance(float D, vec3 F, float G, float ndi, float ndo) {
+    return F*(D*G / (4.0f*ndi*ndo+epsilon<float>()));
 }

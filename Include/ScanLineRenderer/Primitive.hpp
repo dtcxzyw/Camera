@@ -18,28 +18,28 @@ public:
 template<typename Vert, typename Uniform,unsigned int size>
 using GSF = void(*)(Vert* in, Uniform uniform,Queue<Vert,size> queue);
 
-template<unsigned int vsiz,typename Index, typename Vert, typename Uniform
-    , GSF<Vert, Uniform,vsiz> gs>
+template<unsigned int inv,unsigned int outv,typename Index, typename Vert, typename Uniform
+    , GSF<Vert, Uniform,outv> gs>
 CALLABLE void GTHelper(unsigned int size, const Vert* ReadOnly vert, Index idx,
-    const Uniform* ReadOnly uniform,Queue<Vert,vsiz> queue) {
+    const Uniform* ReadOnly uniform,Queue<Vert,outv> queue) {
     auto id = getID();
     if (id >= size)return;
-    Vert in[vsiz];
-    for (int i = 0; i < vsiz; ++i)in[i] = vert[idx[id][i]];
+    Vert in[inv];
+    for (int i = 0; i < inv; ++i)in[i] = vert[idx[id][i]];
     gs(in, *uniform, queue);
 }
 
-template<unsigned int size,typename Index,typename Vert,typename Uniform
-    ,GSF<Vert,Uniform,size> gs>
+template<unsigned int inv,unsigned int outv,typename Index,typename Vert,typename Uniform
+    ,GSF<Vert,Uniform,outv> gs>
 auto genPrimitive(Pipeline& pipeline,DataViewer<Vert> vert,Index idx,const Uniform* uniform
     ,unsigned int outSize=0U) {
     if (outSize == 0U)outSize = idx.size();
-    outSize *= size;
+    outSize *= outv;
     auto res = allocBuffer<Vert>(outSize);
     auto cnt = allocBuffer<unsigned int>();
     checkError(cudaMemsetAsync(cnt.begin(),0,sizeof(unsigned int),pipeline.getId()));
-    pipeline.run(GTHelper<size,Index, Vert, Uniform, gs>, idx.size(), vert.begin(), idx, uniform
-        , Queue<Vert,size>{cnt.begin(),res.begin()});
+    pipeline.run(GTHelper<inv,outv,Index, Vert, Uniform, gs>, idx.size(), vert.begin(), idx, uniform
+        , Queue<Vert,outv>{cnt.begin(),res.begin()});
     pipeline.sync();
     res.scale(*cnt);
     return res;

@@ -29,7 +29,7 @@ int main() {
                 std::this_thread::sleep_for(1ms);
                 continue;
             }
-            FB.resize(size.x, size.y,pipeline);
+            FB.resize(size.x, size.y, pipeline);
             float w = size.x, h = size.y;
             glm::mat4 P = perspectiveFov(radians(45.0f), w, h, 1.0f, 20.0f);
             float now = glfwGetTime();
@@ -42,12 +42,12 @@ int main() {
             u.M = M;
             u.invM = mat3(transpose(inverse(M)));
             u.lc = vec3(5.0f);
-            u.color = {1.0f,0.84f,0.0f};
+            u.color = {1.000f, 0.766f, 0.336f};
             u.cp = cp;
             u.dir = normalize(lp);
             u.roughness = 0.5f;
             u.f0 = { 1.00f, 0.71f, 0.29f };
-            u.time = now;
+            u.off = (sin(now) + 1.0f)*0.01f;
             uniform.set(u, pipeline);
             BuiltinRenderTarget<RGBA> RT(window.map(pipeline,size),size);
             auto sum = allocBuffer<float>();
