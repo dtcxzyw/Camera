@@ -19,6 +19,9 @@
     <Filter Include="PostProcess">
       <UniqueIdentifier>{1425f13e-a513-43dc-872f-5d1d7e56a655}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Interaction\IMGUI">
+      <UniqueIdentifier>{3940d887-bf99-457d-8239-8c36a3bfdd9b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Include\Base\Common.hpp">
@@ -78,6 +81,18 @@
     <ClInclude Include="..\..\Include\PBR\PhotorealisticRendering.hpp">
       <Filter>PBR</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\ThirdParty\IMGUI\imconfig.h">
+      <Filter>Interaction\IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\ThirdParty\IMGUI\imgui.h">
+      <Filter>Interaction\IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_impl_glfw_gl3.h">
+      <Filter>Interaction\IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_internal.h">
+      <Filter>Interaction\IMGUI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">
@@ -88,6 +103,15 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\IO\Model.cpp">
       <Filter>IO</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\IMGUI\imgui.cpp">
+      <Filter>Interaction\IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_impl_glfw_gl3.cpp">
+      <Filter>Interaction\IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_draw.cpp">
+      <Filter>Interaction\IMGUI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

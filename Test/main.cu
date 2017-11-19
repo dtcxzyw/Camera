@@ -1,20 +1,37 @@
 #include <cstdio>
 #include <system_error>
-#include "kernel.hpp"
 #include <Interaction/OpenGL.hpp>
+#include "kernel.hpp"
 #include <PBR/PhotorealisticRendering.hpp>
 #include <thread>
 using namespace std::chrono_literals;
 
+auto f = 50.0f, roughness = 0.5f,light=5.0f,off=0.0f;
+StaticMesh model;
+
+void renderGUI(IMGUIWindow& window) {
+    window.newFrame();
+    ImGui::Begin("Debug");
+    ImGui::SetWindowPos({ 0, 0 });
+    ImGui::SetWindowSize({ 500,200 });
+    ImGui::SetWindowFontScale(1.5f);
+    ImGui::Text("vertices %d, triangles: %d\n", static_cast<int>(model.mVert.size()),
+        static_cast<int>(model.mIndex.size()));
+    ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
+    ImGui::SliderFloat("focal length",&f,15.0f,150.0f,"%.1f");
+    ImGui::SliderFloat("roughness", &roughness, 0.01f, 0.99f);
+    ImGui::SliderFloat("light", &light, 0.0f, 10.0f, "%.1f");
+    ImGui::SliderFloat("off", &off, 0.0f, 1.0f);
+    ImGui::End();
+    window.renderGUI();
+}
+
 int main() {
     getEnvironment().init();
     try {
-        StaticMesh model;
         model.load("Res/bunny.obj");
-        printf("vertices %d ,triangles: %d\n", static_cast<int>(model.mVert.size()),
-            static_cast<int>(model.mIndex.size()));
         FrameBufferCPU FB;
-        GLWindow window;
+        IMGUIWindow window;
         Pipeline pipeline;
         vec3 cp = { 10.0f,0.0f,0.0f },lp = { 10.0f,4.0f,0.0f };
         auto V = lookAt(cp, { 0.0f,0.0f,0.0f }, { 0.0f,1.0f,0.0f });
@@ -31,25 +48,23 @@ int main() {
             }
             FB.resize(size.x, size.y, pipeline);
             float w = size.x, h = size.y;
-            auto fov = toFOV(36.0f*24.0f,50.0f);
+            auto fov = toFOV(36.0f*24.0f,f);
             glm::mat4 P = perspectiveFov(fov, w, h, 1.0f, 20.0f);
             float now = glfwGetTime();
             float delta = now - t;
             M = rotate(M, delta*0.2f, { 0.0f,1.0f,0.0f });
-            printf("\r%f %.2f ms          ",degrees(fov),delta*1000.0f);
             t = now;
             Uniform u;
             u.VP = P*V;
             u.M = M;
             u.invM = mat3(transpose(inverse(M)));
-            u.lc = vec3(5.0f);
+            u.lc = vec3(light);
             u.color = {1.000f, 0.766f, 0.336f};
             u.cp = cp;
             u.dir = normalize(lp);
-            u.roughness = 0.5f;
+            u.roughness = roughness;
             u.f0 = { 1.00f, 0.71f, 0.29f };
-            //u.off = (sin(now) + 1.0f)*0.01f;
-            u.off = 0.0f;
+            u.off = off*0.02f;
             uniform.set(u, pipeline);
             BuiltinRenderTarget<RGBA> RT(window.map(pipeline,size),size);
             auto sum = allocBuffer<float>();
@@ -59,11 +74,13 @@ int main() {
             auto tw = powf(0.2f, delta);
             auto nlum = lum*(1.0f - tw) + last*tw;
             last = nlum;
-            post.lum =calcLum(nlum);
+            post.lum = fmax(calcLum(nlum),0.1f);
             post.sum = sum.begin();
             puni.set(post, pipeline);
             kernel(model.mVert, model.mIndex, uniform.get(), FB, puni.get(),RT.toTarget(), pipeline);
             window.unmapAndPresent(pipeline);
+            renderGUI(window);
+            window.swapBuffers();
             pipeline.sync();
             lum =*sum/(w*h);
         }

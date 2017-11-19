@@ -1,5 +1,6 @@
 #include <GL/glew.h>
 #include <Interaction/OpenGL.hpp>
+#include <IMGUI/imgui_impl_glfw_gl3.h>
 #include <exception>
 
 class GLContext final:Singletion {
@@ -8,6 +9,9 @@ private:
     GLContext():mFlag(false) {
         if (!glfwInit())
             throw std::exception("Failed to initialize glfw.");
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     }
     friend GLContext& getContext();
 public:
@@ -93,6 +97,9 @@ void GLWindow::unmapAndPresent(Pipeline& pipeline) {
     glBlitFramebuffer(0, 0, frame.x, frame.y, 0, 0, mSize.x, mSize.y
         , GL_COLOR_BUFFER_BIT, GL_NEAREST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+}
+
+void GLWindow::swapBuffers() {
     glfwSwapBuffers(mWindow);
 }
 
@@ -118,4 +125,17 @@ GLWindow::~GLWindow() {
     if(mRes)checkError(cudaGraphicsUnregisterResource(mRes));
     glDeleteTextures(1, &mTexture);
     glfwDestroyWindow(mWindow);
+}
+
+IMGUIWindow::IMGUIWindow() {
+    if (!ImGui_ImplGlfwGL3_Init(mWindow,true))
+        throw std::exception("Failed to setup ImGui binding.");
+}
+
+void IMGUIWindow::newFrame() {
+    ImGui_ImplGlfwGL3_NewFrame();
+}
+
+IMGUIWindow::~IMGUIWindow() {
+    ImGui_ImplGlfwGL3_Shutdown();
 }

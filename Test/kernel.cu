@@ -50,7 +50,7 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
 
 CUDA void post(ivec2 NDC, PostUniform uni, BuiltinRenderTargetGPU<RGBA> out) {
     RGB c = uni.in.color.get(NDC);
-    auto lum = luminosity(c);
+    auto lum =luminosity(c);
     if(lum>0.0f)atomicAdd(uni.sum,log(lum));
     c = ACES(c,uni.lum);
     NDC.y = uni.in.mSize.y- 1 - NDC.y;
