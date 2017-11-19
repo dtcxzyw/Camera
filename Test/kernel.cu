@@ -4,10 +4,12 @@
 #include <device_functions.h>
 #include <ScanLineRenderer/Primitive.hpp>
 
-CUDA void GS(VI* in, Uniform uniform,Queue<VI,3> out) {
+CUDA void GS(VI* in, Uniform uniform,Queue<VI,2> out) {
     auto dab = in[0].pos - in[1].pos, dcb = in[2].pos - in[1].pos;
     auto off = normalize(cross(dcb,dab))*uniform.off;
-    for (int i = 0; i < 3; ++i)in[i].pos += off;
+    auto p = (in[0].pos + in[1].pos + in[2].pos)/3.0f;
+    in[0].pos = p;
+    in[1].pos = p + off;
     out.push(in);
 }
 
@@ -48,6 +50,11 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
     }
 }
 
+CUDA void drawHair(ivec2 uv, float z, OI out, Uniform uniform, FrameBufferGPU& fbo) {
+    if (fbo.depth.get(uv) == static_cast<unsigned int>(z*maxdu))
+        fbo.color.set(uv, vec4(1.0f));
+}
+
 CUDA void post(ivec2 NDC, PostUniform uni, BuiltinRenderTargetGPU<RGBA> out) {
     RGB c = uni.in.color.get(NDC);
     auto lum =luminosity(c);
@@ -62,10 +69,13 @@ void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const Uniform* uniform
     BuiltinRenderTargetGPU<RGBA> dest, Pipeline& pipeline) {
     fbo.colorRT->clear(pipeline,vec4{ 0.0f,0.0f,0.0f,1.0f });
     fbo.depthBuffer->clear(pipeline);
-    auto prim = genPrimitive<3,3,SharedIndex, VI, Uniform, GS>(pipeline, vbo,ibo,uniform);
-    auto vert = calcVertex<VI, OI, Uniform, VS>(pipeline, prim,uniform,fbo.size);
-    renderTriangles<UniqueIndex, OI, Uniform, FrameBufferGPU, setPoint, drawPoint>
-        (pipeline, vert, prim.size()/3, uniform, fbo.dataGPU.get(), fbo.size);
+    auto vert = calcVertex<VI, OI, Uniform, VS>(pipeline, vbo, uniform, fbo.size);
+    renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU, setPoint, drawPoint>
+        (pipeline, vert, ibo, uniform, fbo.dataGPU.get(), fbo.size);
+    auto prim = genPrimitive<3,2,SharedIndex, VI, Uniform, GS>(pipeline, vbo,ibo,uniform);
+    auto pv= calcVertex<VI, OI, Uniform, VS>(pipeline, prim, uniform, fbo.size);
+    renderLines<OI, Uniform, FrameBufferGPU, setPoint, drawHair>(pipeline, pv, uniform
+        , fbo.dataGPU.get(), fbo.size);
     renderFullScreen<PostUniform, decltype(dest), post>(pipeline,puni,dest,fbo.size);
 }
 

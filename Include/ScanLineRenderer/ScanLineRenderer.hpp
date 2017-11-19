@@ -1,7 +1,8 @@
 #pragma once
 #include <Base/Pipeline.hpp>
-#include <ScanLineRenderer/ScanLine.hpp>
-#include <ScanLineRenderer/TriangleRasterizater.hpp>
+#include "ScanLine.hpp"
+#include "LineRasterizer.hpp"
+#include "TriangleRasterizer.hpp"
 
 template<typename Vert,typename Out,typename Uniform,VSF<Vert,Out,Uniform> vs>
 auto calcVertex(Pipeline& pipeline, DataViewer<Vert> vert,const Uniform* uniform, uvec2 size) {
@@ -9,6 +10,60 @@ auto calcVertex(Pipeline& pipeline, DataViewer<Vert> vert,const Uniform* uniform
     pipeline.run(runVS<Vert, Out, Uniform, vs>, vert.size(),
         vert.begin(), uniform, vertex.begin(), static_cast<vec2>(size));
     return vertex;
+}
+
+template< typename Out, typename Uniform, typename FrameBuffer,
+    FSF<Out, Uniform, FrameBuffer> fs>
+CALLABLE void drawPointHelper(unsigned int size,const VertexInfo<Out>* ReadOnly vert,
+    const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer, uvec2 fsize) {
+    auto id = getID();
+    if (id >= size)return;
+    auto p = vert[id];
+    if (p.flag == 0b111111)
+        fs({ p.pos.x,p.pos.y },p.pos.z,p.out,*uniform,*frameBuffer);
+}
+
+template< typename Out, typename Uniform, typename FrameBuffer,
+    FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
+    void renderPoints(Pipeline& pipeline, DataViewer<VertexInfo<Out>> vert,
+        const Uniform* uniform,FrameBuffer* frameBuffer, uvec2 size) {
+    pipeline.run(drawPointHelper<Out, Uniform, FrameBuffer, ds>,vert.size(),vert.begin(),uniform,frameBuffer,size);
+    pipeline.run(drawPointHelper<Out, Uniform, FrameBuffer, fs>,vert.size(), vert.begin(), uniform, frameBuffer, size);
+}
+
+template< typename Out, typename Uniform, typename FrameBuffer,
+    FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
+    void renderLines(Pipeline& pipeline, DataViewer<VertexInfo<Out>> vert,
+        const Uniform* uniform, FrameBuffer* frameBuffer, uvec2 size) {
+    auto cnt = allocBuffer<unsigned int>(7);
+    checkError(cudaMemsetAsync(cnt.begin(), 0, sizeof(unsigned int)*cnt.size(), pipeline.getId()));
+    auto lsiz = vert.size() / 2;
+    auto info = allocBuffer<Line<Out>>(9 * lsiz);
+    pipeline.run(sortLines<Out>, lsiz, cnt.begin(), vert.begin(),info.begin(), static_cast<vec2>(size));
+    pipeline.sync();
+    unsigned int lineNum[9];
+    for (auto i = 0; i < 9; ++i)
+        lineNum[i] = cnt[i];
+
+    {
+        for (auto i = 0; i < 9; ++i)
+            if (lineNum[i]) {
+                dim3 grid(lineNum[i]);
+                dim3 block(1<<i);
+                auto base = info.begin() + i*lsiz;
+                pipeline.runDim(drawMicroL<Out, Uniform, FrameBuffer, ds>, grid, block, base,
+                    uniform, frameBuffer,1<<i);
+            }
+
+        for (auto i = 0; i < 9; ++i)
+            if (lineNum[i]) {
+                dim3 grid(lineNum[i]);
+                dim3 block(1 << i);
+                auto base = info.begin() + i*lsiz;
+                pipeline.runDim(drawMicroL<Out, Uniform, FrameBuffer, fs>, grid, block, base,
+                    uniform, frameBuffer,1<<i);
+            }
+    }
 }
 
 template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
@@ -24,13 +79,14 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     unsigned int triNum[7];
     for (auto i = 0; i < 7; ++i)
         triNum[i] = cnt[i];
+    
     {
         for (auto i = 0; i < 6; ++i)
             if (triNum[i]) {
                 dim3 grid(triNum[i]);
                 dim3 block(1 << i, 1 << i);
                 auto tri = info.begin() + i*index.size();
-                pipeline.runDim(drawMicro<Out, Uniform, FrameBuffer, ds>, grid, block, tri,
+                pipeline.runDim(drawMicroT<Out, Uniform, FrameBuffer, ds>, grid, block, tri,
                     uniform, frameBuffer);
             }
 
@@ -39,7 +95,7 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
                 dim3 grid(triNum[i]);
                 dim3 block(1 << i, 1 << i);
                 auto tri = info.begin() + i*index.size();
-                pipeline.runDim(drawMicro<Out, Uniform, FrameBuffer, fs>, grid, block, tri,
+                pipeline.runDim(drawMicroT<Out, Uniform, FrameBuffer, fs>, grid, block, tri,
                     uniform, frameBuffer);
             }
     }

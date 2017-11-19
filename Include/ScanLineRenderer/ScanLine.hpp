@@ -30,8 +30,7 @@ struct VertexInfo {
     Out out;
 };
 
-template<typename Vert, typename Out, typename Uniform,
-    VSF<Vert, Out, Uniform> vs>
+template<typename Vert, typename Out, typename Uniform,VSF<Vert, Out, Uniform> vs>
 CALLABLE void runVS(unsigned int size,const Vert* ReadOnly in,const Uniform* ReadOnly u,
     VertexInfo<Out>* res,vec2 fsize) {
     auto i = getID();
@@ -54,3 +53,42 @@ template<typename Uniform, typename FrameBuffer,FSFSF<Uniform,FrameBuffer> fs>
     fs(ivec2{ i%px,i / px }, *u, frameBuffer);
 }
 
+class UniqueIndexHelper final {
+private:
+    const unsigned int off;
+public:
+    CUDA UniqueIndexHelper(unsigned int x) :off(x * 3) {}
+    CUDA unsigned int operator[](unsigned int x) {
+        return off + x;
+    }
+};
+
+class UniqueIndex final {
+private:
+    const unsigned int mSize;
+public:
+    UniqueIndex(unsigned int size) :mSize(size) {}
+    auto size() const {
+        return mSize;
+    }
+    CUDA UniqueIndexHelper operator[](unsigned int off) const {
+        return off;
+    }
+};
+
+class SharedIndex final {
+private:
+    const uvec3* ReadOnly const mPtr;
+    const unsigned int mSize;
+public:
+    SharedIndex(const uvec3* ReadOnly idx, unsigned int size) :mPtr(idx), mSize(size) {}
+    SharedIndex(DataViewer<uvec3> ibo) :mPtr(ibo.begin()), mSize(ibo.size()) {}
+    auto size() const {
+        return mSize;
+    }
+    CUDA auto operator[](unsigned int off) const {
+        return mPtr[off];
+    }
+};
+
+constexpr auto maxv = std::numeric_limits<unsigned int>::max();
