@@ -22,9 +22,62 @@ CALLABLE void sortLines(unsigned int size, unsigned int* cnt,
         res.rect = { fmax(0.0f,fmin(res.pa.x,res.pb.x)),fmin(fsize.x,fmax(res.pa.x,res.pb.x)),
             fmax(0.0f,fmin(res.pa.y,res.pb.y)),fmin(fsize.y,fmax(res.pa.y,res.pb.y)) };
         res.oa = vert[a].out, res.ob = vert[b].out;
-        auto len = distance(res.pa, res.pb);
-        auto x = static_cast<int>(ceil(log2f(fmin(len + 1.0f, 300.0f))));
+        auto len = distance(vec2(res.pa), vec2(res.pb));
+        auto x = static_cast<int>(ceil(log2f(fmin(len + 1.0f, 700.0f))));
         info[x*size + atomicInc(cnt + x, maxv)] = res;
+    }
+}
+
+template<typename Out>
+CUDAInline void calcX(Line<Out>& line, float x) {
+    auto k = (line.pa.y - line.pb.y) / (line.pa.x - line.pb.x);
+    auto b =line.pa.y-line.pa.x*k;
+    auto y = k*x + b;
+    auto len = distance2(vec2(line.pa), vec2(line.pb));
+    auto dis = distance2(vec2(line.pa),vec2(x,y));
+    auto w = sqrtf(dis/len);
+    line.pa = { x,y, line.pa.z*(1.0f - w) + line.pb.z*w };
+    line.oa = line.oa*(1.0f - w) + line.ob*w;
+}
+
+template<typename Out>
+CUDAInline void calcY(Line<Out>& line, float y) {
+    auto k = (line.pa.x - line.pb.x) / (line.pa.y - line.pb.y);
+    auto b = line.pa.x - line.pa.y*k;
+    auto x = k*y + b;
+    auto len = distance2(vec2(line.pa), vec2(line.pb));
+    auto dis = distance2(vec2(line.pa), vec2(x, y));
+    auto w = sqrtf(dis / len);
+    line.pa = { x,y, line.pa.z*(1.0f - w) + line.pb.z*w };
+    line.oa = line.oa*(1.0f - w) + line.ob*w;
+}
+
+template<typename Out>
+CALLABLE void cutLines(unsigned int size, unsigned int* cnt,
+    const Line<Out>* ReadOnly data, Line<Out>* out, vec2 fsize, float len) {
+    auto id = getID();
+    if (id >= size)return;
+    auto line=data[id];
+    if (line.pa.x < 0.0f)calcX(line, 0.0f);
+    if (line.pa.y < 0.0f)calcY(line,0.0f);
+    if (line.pa.x > fsize.x)calcX(line, fsize.x);
+    if (line.pa.y > fsize.y)calcY(line, fsize.y);
+    swap(line.pa, line.pb);
+    swap(line.oa, line.ob);
+    if (line.pa.x < 0.0f)calcX(line, 0.0f);
+    if (line.pa.y < 0.0f)calcY(line, 0.0f);
+    if (line.pa.x > fsize.x)calcX(line, fsize.x);
+    if (line.pa.y > fsize.y)calcY(line, fsize.y);
+    auto clen= distance(vec2(line.pa), vec2(line.pb));
+    float delta = len/clen;
+    for (float w = 0.0f; w < 1.0f;w+=delta) {
+        Line<Out> res;
+        res.pa = res.pa*(1.0f - w) + res.pb*w;
+        res.oa = res.oa*(1.0f - w) + res.ob*w;
+        float wb = w + delta;
+        res.pb = res.pa*(1.0f - wb) + res.pb*wb;
+        res.ob = res.oa*(1.0f - wb) + res.ob*wb;
+        out[atomicInc(cnt, maxv)] = res;
     }
 }
 
@@ -38,7 +91,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     }
 }
 
-//1...256
+//1...512
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void drawMicroL(const Line<Out>* ReadOnly info,
