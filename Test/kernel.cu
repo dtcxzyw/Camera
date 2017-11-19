@@ -36,9 +36,10 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
         auto ndi = dot(nd, in);
         auto ndo = dot(nd, out);
         auto idh = dot(in, h);
+        auto odh = dot(out, h);
         auto diff =uniform.color * disneyDiffuse(ndi,ndo,idh,uniform.roughness);
         auto D = GGXD(ndo, uniform.roughness);
-        auto F = fresnelSchlick(uniform.f0,ndo);
+        auto F = fresnelSchlick(uniform.f0,odh);
         auto G = smithG(ndi, ndo, uniform.roughness);
         auto w =diff+ cookTorrance(D, F, G, ndi, ndo);
         auto res = uniform.color*uniform.lc*w*fmax(ndi,0.0f);

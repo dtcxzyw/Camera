@@ -75,6 +75,9 @@
     <ClInclude Include="..\..\Include\ScanLineRenderer\Primitive.hpp">
       <Filter>ScanLineRenderer</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\PBR\PhotorealisticRendering.hpp">
+      <Filter>PBR</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">

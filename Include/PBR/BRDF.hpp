@@ -6,8 +6,8 @@ CUDAInline glm::vec3 calcHalf(glm::vec3 in, glm::vec3 out) {
 }
 
 //Real Shading in Unreal Engine 4
-CUDAInline vec3 fresnelSchlick(vec3 f0, float ndo) {
-    auto k = powf(2.0f, (-5.55473f*ndo-6.98316f)*ndo);
+CUDAInline vec3 fresnelSchlick(vec3 f0, float odh) {
+    auto k = powf(2.0f, (-5.55473f*odh-6.98316f)*odh);
     return f0 + (1.0f - f0)*k;
 }
 
