@@ -6,14 +6,14 @@
 #include <thread>
 using namespace std::chrono_literals;
 
-auto f = 50.0f, roughness = 0.5f,light=5.0f,off=0.0f;
+auto f = 50.0f, roughness = 0.5f,light=5.0f,metallic=0.01f,ao=0.05f;
 StaticMesh model;
 
 void renderGUI(IMGUIWindow& window) {
     window.newFrame();
     ImGui::Begin("Debug");
     ImGui::SetWindowPos({ 0, 0 });
-    ImGui::SetWindowSize({ 500,200 });
+    ImGui::SetWindowSize({ 500,300 });
     ImGui::SetWindowFontScale(1.5f);
     ImGui::StyleColorsDark();
     ImGui::Text("vertices %d, triangles: %d\n", static_cast<int>(model.mVert.size()),
@@ -21,8 +21,9 @@ void renderGUI(IMGUIWindow& window) {
     ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
     ImGui::SliderFloat("focal length",&f,15.0f,150.0f,"%.1f");
     ImGui::SliderFloat("roughness", &roughness, 0.01f, 0.99f);
+    ImGui::SliderFloat("metallic", &metallic, 0.01f, 0.99f);
+    ImGui::SliderFloat("ao", &ao, 0.001f, 0.09f);
     ImGui::SliderFloat("light", &light, 0.0f, 10.0f, "%.1f");
-    ImGui::SliderFloat("off", &off, 0.0f, 1.0f);
     ImGui::End();
     window.renderGUI();
 }
@@ -60,16 +61,17 @@ int main() {
             u.M = M;
             u.invM = mat3(transpose(inverse(M)));
             u.lc = vec3(light);
-            u.color = {1.000f, 0.766f, 0.336f};
+            u.albedo = {1.000f, 0.766f, 0.336f};
             u.cp = cp;
             u.dir = normalize(lp);
             u.roughness = roughness;
-            u.f0 = { 1.00f, 0.71f, 0.29f };
-            u.off = off*0.02f;
+            u.metallic = metallic;
+            u.ao = ao;
             uniform.set(u, pipeline);
             BuiltinRenderTarget<RGBA> RT(window.map(pipeline,size),size);
-            auto sum = allocBuffer<float>();
-            *sum = 0.0f;
+            auto sum = allocBuffer<std::pair<float,unsigned int>>();
+            sum->first = 0.0f;
+            sum->second = 0;
             PostUniform post;
             post.in = FB.data;
             auto tw = powf(0.2f, delta);
@@ -83,7 +85,7 @@ int main() {
             renderGUI(window);
             window.swapBuffers();
             pipeline.sync();
-            lum =*sum/(w*h);
+            lum =sum->first/sum->second;
         }
     }
     catch (const std::exception& e) {

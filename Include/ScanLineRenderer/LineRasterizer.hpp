@@ -58,16 +58,12 @@ CALLABLE void cutLines(unsigned int size, unsigned int* cnt,
     auto id = getID();
     if (id >= size)return;
     auto line=data[id];
-    if (line.pa.x < 0.0f)calcX(line, 0.0f);
-    if (line.pa.y < 0.0f)calcY(line,0.0f);
-    if (line.pa.x > fsize.x)calcX(line, fsize.x);
-    if (line.pa.y > fsize.y)calcY(line, fsize.y);
+    calcX(line,fmax(0.0f,fmin(line.pa.x,fsize.x)));
+    calcY(line, fmax(0.0f, fmin(line.pa.y, fsize.y)));
     swap(line.pa, line.pb);
     swap(line.oa, line.ob);
-    if (line.pa.x < 0.0f)calcX(line, 0.0f);
-    if (line.pa.y < 0.0f)calcY(line, 0.0f);
-    if (line.pa.x > fsize.x)calcX(line, fsize.x);
-    if (line.pa.y > fsize.y)calcY(line, fsize.y);
+    calcX(line, fmax(0.0f, fmin(line.pa.x, fsize.x)));
+    calcY(line, fmax(0.0f, fmin(line.pa.y, fsize.y)));
     auto clen= distance(vec2(line.pa), vec2(line.pb));
     float delta = len/clen;
     for (float w = 0.0f; w < 1.0f;w+=delta) {

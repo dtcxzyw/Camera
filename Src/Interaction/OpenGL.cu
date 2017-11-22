@@ -19,6 +19,7 @@ public:
         GLFWwindow* current = nullptr;
         if (current != window) {
             glfwMakeContextCurrent(window);
+            glDisable(GL_FRAMEBUFFER_SRGB);
             current = window;
             if (!mFlag) {
                 glewExperimental = true;
@@ -133,9 +134,11 @@ IMGUIWindow::IMGUIWindow() {
 }
 
 void IMGUIWindow::newFrame() {
+    getContext().makeContext(mWindow);
     ImGui_ImplGlfwGL3_NewFrame();
 }
 
 IMGUIWindow::~IMGUIWindow() {
+    getContext().makeContext(mWindow);
     ImGui_ImplGlfwGL3_Shutdown();
 }

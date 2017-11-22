@@ -47,16 +47,16 @@ struct Uniform final {
     ALIGN vec3 cp;
     ALIGN vec3 dir;
     ALIGN vec3 lc;
-    ALIGN vec3 color;
+    ALIGN vec3 albedo;
     ALIGN float roughness;
-    ALIGN vec3 f0;
-    ALIGN float off;
+    ALIGN float metallic;
+    ALIGN float ao;
 };
 
 struct PostUniform final {
     ALIGN FrameBufferGPU in;
     ALIGN float lum;
-    ALIGN float* sum;
+    ALIGN std::pair<float, unsigned int>* sum;
 };
 
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const Uniform* uniform

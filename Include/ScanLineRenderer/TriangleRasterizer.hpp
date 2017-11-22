@@ -76,9 +76,11 @@ template<typename Out, typename Uniform, typename FrameBuffer,
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void drawMicroT(const Triangle<Out>* ReadOnly info,
-        const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer) {
-    auto tri = info[blockIdx.x];
-    ivec2 uv{ tri.rect.x + threadIdx.x,tri.rect.z + threadIdx.y };
+        const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer,unsigned int size) {
+    auto id = blockIdx.x*blockDim.x + threadIdx.x;
+    if (id >= size)return;
+    auto tri = info[id];
+    ivec2 uv{ tri.rect.x + threadIdx.y,tri.rect.z + threadIdx.z };
     vec2 p{ uv.x,uv.y };
     drawPoint<Out, Uniform, FrameBuffer, fs>(tri, uv, p, *uniform, *frameBuffer);
 }

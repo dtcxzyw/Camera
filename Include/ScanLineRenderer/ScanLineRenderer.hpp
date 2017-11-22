@@ -47,7 +47,6 @@ template< typename Out, typename Uniform, typename FrameBuffer,
 
     if (lineNum[10]) {
         auto num = lineNum[10];
-        printf("%d \n", num);
         auto base = info.begin() + 9 * lsiz;
         pipeline.run(cutLines<Out>, num, &cnt[9], base + lsiz, base, size, 1 << 9);
         pipeline.sync();
@@ -90,20 +89,24 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     {
         for (auto i = 0; i < 6; ++i)
             if (triNum[i]) {
-                dim3 grid(triNum[i]);
-                dim3 block(1 << i, 1 << i);
+                auto bsiz = 1U << i;
+                auto num = max(1U, 128U / (bsiz*bsiz));
+                dim3 grid(calcSize(triNum[i],num));
+                dim3 block(num,bsiz, bsiz);
                 auto tri = info.begin() + i*index.size();
                 pipeline.runDim(drawMicroT<Out, Uniform, FrameBuffer, ds>, grid, block, tri,
-                    uniform, frameBuffer);
+                    uniform, frameBuffer,triNum[i]);
             }
 
         for (auto i = 0; i < 6; ++i)
             if (triNum[i]) {
-                dim3 grid(triNum[i]);
-                dim3 block(1 << i, 1 << i);
+                auto bsiz = 1U << i;
+                auto num =max(1U,128U / (bsiz*bsiz));
+                dim3 grid(calcSize(triNum[i], num));
+                dim3 block(num, bsiz, bsiz);
                 auto tri = info.begin() + i*index.size();
                 pipeline.runDim(drawMicroT<Out, Uniform, FrameBuffer, fs>, grid, block, tri,
-                    uniform, frameBuffer);
+                    uniform, frameBuffer,triNum[i]);
             }
     }
 

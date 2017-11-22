@@ -46,3 +46,5 @@ CUDAInline float disneyDiffuse(float ndi, float ndo, float idh, float roughness)
 CUDAInline vec3 cookTorrance(float D, vec3 F, float G, float ndi, float ndo) {
     return F*(D*G / (4.0f*ndi*ndo+epsilon<float>()));
 }
+
+

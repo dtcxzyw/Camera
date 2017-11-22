@@ -2,16 +2,19 @@
 #include "kernel.hpp"
 #include <PBR/BRDF.hpp>
 #include <device_functions.h>
+#include <device_atomic_functions.h>
 #include <ScanLineRenderer/Primitive.hpp>
 
-CUDA void GS(VI* in, Uniform uniform,Queue<VI,2> out) {
+/*
+CUDA void GS(VI* in, Uniform uniform, Queue<VI, 2> out) {
     auto dab = in[0].pos - in[1].pos, dcb = in[2].pos - in[1].pos;
-    auto off = normalize(cross(dcb,dab))*uniform.off;
-    auto p = (in[0].pos + in[1].pos + in[2].pos)/3.0f;
+    auto off = normalize(cross(dcb, dab))*uniform.off;
+    auto p = (in[0].pos + in[1].pos + in[2].pos) / 3.0f;
     in[0].pos = p;
     in[1].pos = p + off;
     out.push(in);
 }
+*/
 
 CUDA void VS(VI in, Uniform uniform, vec4& NDC, OI& out) {
     auto wp =uniform.M*vec4(in.pos, 1.0f);
@@ -39,12 +42,14 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
         auto ndo = dot(nd, out);
         auto idh = dot(in, h);
         auto odh = dot(out, h);
-        auto diff =uniform.color * disneyDiffuse(ndi,ndo,idh,uniform.roughness);
         auto D = GGXD(ndo, uniform.roughness);
-        auto F = fresnelSchlick(uniform.f0,odh);
+        auto f0 = mix(vec3(0.04f),uniform.albedo,uniform.metallic);
+        auto F = fresnelSchlick(f0,odh);
         auto G = smithG(ndi, ndo, uniform.roughness);
+        auto diff =disneyDiffuse(ndi, ndo, idh, uniform.roughness)*(1.0f-uniform.metallic)
+            *(1.0f-F)*uniform.albedo;
         auto w =diff+ cookTorrance(D, F, G, ndi, ndo);
-        auto res = uniform.color*uniform.lc*w*fmax(ndi,0.0f);
+        auto res =uniform.lc*w*fmax(ndi,0.0f)+uniform.albedo*uniform.ao;
         //auto res = uniform.sampler.get(in,out,h,nd,tangent)*uniform.lc;
         fbo.color.set(uv, {res,1.0f });
     }
@@ -58,8 +63,11 @@ CUDA void drawHair(ivec2 uv, float z, OI out, Uniform uniform, FrameBufferGPU& f
 CUDA void post(ivec2 NDC, PostUniform uni, BuiltinRenderTargetGPU<RGBA> out) {
     RGB c = uni.in.color.get(NDC);
     auto lum =luminosity(c);
-    if(lum>0.0f)atomicAdd(uni.sum,log(lum));
-    c = ACES(c,uni.lum);
+    if (lum > 0.0f) {
+        atomicAdd(&uni.sum->first, fmin(log(lum), 5.0f));
+        atomicInc(&uni.sum->second, maxv);
+    }
+    c = pow(ACES(c,uni.lum),vec3(1.0f/2.2f));
     NDC.y = uni.in.mSize.y- 1 - NDC.y;
     out.set(NDC, { c,1.0f });
 }
@@ -72,10 +80,12 @@ void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const Uniform* uniform
     auto vert = calcVertex<VI, OI, Uniform, VS>(pipeline, vbo, uniform, fbo.size);
     renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU, setPoint, drawPoint>
         (pipeline, vert, ibo, uniform, fbo.dataGPU.get(), fbo.size);
-    auto prim = genPrimitive<3,2,SharedIndex, VI, Uniform, GS>(pipeline, vbo,ibo,uniform);
+    /*
+    auto prim = genPrimitive<3,2,SharedIndex, VI, Uniform, GS>(pipeline, vbo,ibo,uniform,ibo.size());
     auto pv= calcVertex<VI, OI, Uniform, VS>(pipeline, prim, uniform, fbo.size);
     renderLines<OI, Uniform, FrameBufferGPU, setPoint, drawHair>(pipeline, pv, uniform
         , fbo.dataGPU.get(), fbo.size);
+        */
     renderFullScreen<PostUniform, decltype(dest), post>(pipeline,puni,dest,fbo.size);
 }
 

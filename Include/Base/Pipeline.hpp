@@ -30,6 +30,10 @@ public:
         checkError();
     }
 
+    unsigned int getMaxBlockSize() const {
+        return mMaxThread;
+    }
+
     template<typename T>
     auto share(const T* data, size_t size) {
         auto rsize = size * sizeof(T);
