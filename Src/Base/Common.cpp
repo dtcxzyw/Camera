@@ -1,50 +1,58 @@
 #include <Base/Common.hpp>
 #include <Base/Pipeline.hpp>
 #include <system_error>
-#include <map>
+#include <vector>
 
 class MemoryPool final:Singletion {
 private:
-    std::multimap<size_t,void*> mPool;
+    std::vector<void*> mPool[42];
     MemoryPool() {}
     friend MemoryPool& getMemoryPool();
-    void* add(size_t size) {
+    void* add(size_t level) {
+        auto size = 1<<level;
         void* ptr;
         cudaError_t err;
         while ((err=cudaMallocManaged(&ptr, size))!=cudaSuccess) {
-            if (mPool.size()) {
-                checkError(cudaFree(mPool.begin()->second));
-                mPool.erase(mPool.begin());
+            auto flag = true;
+            for (auto&& p : mPool) {
+                if (p.size()) {
+                    flag = false;
+                    checkError(cudaFree(p.back()));
+                    p.pop_back();
+                    break;
+                }
             }
-            else checkError(err);
+            if(flag) checkError(err);
         }
         return ptr;
     }
     size_t count(size_t x) {
         for (int i = 40; i >= 0; --i)
             if (x&(1ULL << i))
-                return 1ULL<<(i+1);
+                return i+1;
         return -1;
     }
 public:
     void* memAlloc(size_t size) {
         auto level =count(size);
-        auto p = mPool.lower_bound(size);
-        if (p != mPool.cend()) {
-            auto ptr = p->second;
-            mPool.erase(p);
+        if (mPool[level].size()) {
+            auto ptr = mPool[level].back();
+            mPool[level].pop_back();
             return ptr;
         }
         return add(level);
     }
 
     void memFree(void* ptr, size_t size) {
-        mPool.emplace(count(size), ptr);
+        mPool[count(size)].push_back(ptr);
     }
 
     ~MemoryPool() {
-        for (auto&& x : mPool)
-            checkError(cudaFree(x.second));
+        for (auto&& p : mPool) {
+            for (auto&& ptr : p)
+                checkError(cudaFree(ptr));
+            p.clear();
+        }
     }
 };
 

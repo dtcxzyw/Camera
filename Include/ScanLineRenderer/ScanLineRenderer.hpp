@@ -86,7 +86,8 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     for (auto i = 0; i < 7; ++i)
         triNum[i] = cnt[i];
     auto all = cnt[7];
-    auto tri = allocBuffer<Triangle<Out>>(index.size());
+    if (all == 0)return;
+    auto tri = allocBuffer<Triangle<Out>>(all);
     auto off = 0U;
     for (int i = 0; i < 7; ++i) {
         offset[i] = off;

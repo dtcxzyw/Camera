@@ -69,7 +69,6 @@ public:
     ~Event();
 };
 
-
 class Environment final :Singletion {
 private:
     Environment();
