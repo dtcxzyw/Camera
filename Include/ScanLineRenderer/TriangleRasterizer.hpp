@@ -56,8 +56,20 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
         res.out[0] = vert[idx[0]].out, res.out[1] = vert[idx[1]].out, res.out[2] = vert[idx[2]].out;
         auto tsize = fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z);
         auto x = static_cast<int>(ceil(log2f(fmin(tsize + 1.0f, 50.0f))));
-        info[x*size + atomicInc(cnt + x, maxv)] = res;
+        atomicInc(cnt + x, maxv);
+        info[atomicInc(cnt+7, maxv)] = res;
     }
+}
+
+template<typename Out>
+CALLABLE void sortTriangles(unsigned int size,const Triangle<Out>* ReadOnly info,
+    Triangle<Out>* out,unsigned int* head) {
+    auto id = getID();
+    if (id >= size)return;
+    auto tri = info[id];
+    auto tsize = fmax(tri.rect.y - tri.rect.x, tri.rect.w - tri.rect.z);
+    auto x = static_cast<int>(ceil(log2f(fmin(tsize + 1.0f, 50.0f))));
+    out[atomicInc(head + x, maxv)] = tri;
 }
 
 template<typename Out, typename Uniform, typename FrameBuffer,
@@ -76,14 +88,12 @@ template<typename Out, typename Uniform, typename FrameBuffer,
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void drawMicroT(const Triangle<Out>* ReadOnly info,
-        const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer,unsigned int size) {
-    auto id = blockIdx.x*blockDim.x + threadIdx.x;
-    if (id >= size)return;
-    auto tri = info[id];
-    ivec2 uv{ tri.rect.x + threadIdx.y,tri.rect.z + threadIdx.z };
+        const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer) {
+    auto tri = info[blockIdx.x];
+    ivec2 uv{ tri.rect.x + threadIdx.x,tri.rect.z + threadIdx.y };
     vec2 p{ uv.x,uv.y };
     drawPoint<Out, Uniform, FrameBuffer, fs>(tri, uv, p, *uniform, *frameBuffer);
-}
+} 
 
 template<typename Out>
 CALLABLE void clipTile(const Triangle<Out>* ReadOnly in,

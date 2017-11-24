@@ -31,7 +31,7 @@ private:
 public:
     DepthBuffer(uvec2 size) :mSize(size),mData(allocBuffer<T>(size.x*size.y)) {}
     void clear(Pipeline& pipeline) {
-        checkError(cudaMemsetAsync(mData.begin(),0xff,mData.size()*sizeof(T),pipeline.getId()));
+        pipeline.memset(mData, 0xff);
     }
     DepthBufferGPU<T> toBuffer() {
         return { mData.begin(),{mSize.x-1,mSize.y-1,mSize.x} };

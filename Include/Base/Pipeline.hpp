@@ -44,11 +44,31 @@ public:
 
     template<typename C>
     auto share(const C& c) {
-        using T = std::decay_t<decltype(*c.data()) >;
-        return share(c.data(), c.size());
+        using T = std::decay_t<decltype(*std::data(c)) >;
+        return share(std::data(c), std::size(c));
     }
 
+    template<typename T>
+    void memset(DataViewer<T> data,int val=0) {
+        checkError(cudaMemsetAsync(data.begin(),val,data.size()*sizeof(T),mStream));
+    }
+
+    template<typename T>
+    void copy(DataViewer<T> data) {
+        return share(data.begin(), data.size());
+    }
 };
+
+class Event final :Uncopyable {
+private:
+    cudaEvent_t mEvent;
+public:
+    Event(Pipeline& pipeline);
+    void wait();
+    void wait(Pipeline& pipeline);
+    ~Event();
+};
+
 
 class Environment final :Singletion {
 private:

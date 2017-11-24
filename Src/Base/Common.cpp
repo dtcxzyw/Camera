@@ -2,13 +2,10 @@
 #include <Base/Pipeline.hpp>
 #include <system_error>
 #include <map>
-#include <mutex>
-#include <list>
 
 class MemoryPool final:Singletion {
 private:
     std::multimap<size_t,void*> mPool;
-    std::mutex mPoolMutex;
     MemoryPool() {}
     friend MemoryPool& getMemoryPool();
     void* add(size_t size) {
@@ -32,7 +29,6 @@ private:
 public:
     void* memAlloc(size_t size) {
         auto level =count(size);
-        std::lock_guard<std::mutex> guard(mPoolMutex);
         auto p = mPool.lower_bound(size);
         if (p != mPool.cend()) {
             auto ptr = p->second;
@@ -43,7 +39,6 @@ public:
     }
 
     void memFree(void* ptr, size_t size) {
-        std::lock_guard<std::mutex> guard(mPoolMutex);
         mPool.emplace(count(size), ptr);
     }
 
@@ -54,7 +49,7 @@ public:
 };
 
 MemoryPool& getMemoryPool() {
-    static MemoryPool pool;
+    thread_local static MemoryPool pool;
     return pool;
 }
 

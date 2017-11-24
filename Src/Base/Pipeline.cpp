@@ -53,3 +53,20 @@ Environment& getEnvironment() {
     static Environment env;
     return env;
 }
+
+Event::Event(Pipeline& pipeline) {
+    checkError(cudaEventCreateWithFlags(&mEvent, cudaEventDisableTiming));
+    checkError(cudaEventRecord(mEvent, pipeline.getId()));
+}
+
+void Event::wait() {
+    checkError(cudaEventSynchronize(mEvent));
+}
+
+void Event::wait(Pipeline & pipeline) {
+    checkError(cudaStreamWaitEvent(pipeline.getId(), mEvent, 0));
+}
+
+Event::~Event() {
+    checkError(cudaEventDestroy(mEvent));
+}
