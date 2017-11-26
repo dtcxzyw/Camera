@@ -94,13 +94,16 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     drawPoint<Out, Uniform, FrameBuffer, fs>(tri, uv, p, *uniform, *frameBuffer);
 } 
 
+constexpr auto tileSize = 32U;
+
 template<typename Out>
 CALLABLE void clipTile(const Triangle<Out>* ReadOnly in,
-    unsigned int* cnt, unsigned int* out, unsigned int len) {
+    unsigned int* cnt, unsigned int* out) {
     auto id = threadIdx.x*blockDim.y + threadIdx.y;
     auto range = in[blockIdx.x].rect;
-    vec2 begin = { len*threadIdx.x,len*threadIdx.y };
-    if ((range.x <= begin.x + len) &(range.y >= begin.x)&(range.z <= begin.y + len)&(range.w >= begin.y))
+    vec2 begin = { tileSize*threadIdx.x,tileSize*threadIdx.y };
+    if ((range.x <= begin.x + tileSize) &(range.y >= begin.x)&
+        (range.z <= begin.y + tileSize)&(range.w >= begin.y))
         out[gridDim.x*id + atomicInc(cnt + id, maxv)] = blockIdx.x;
 }
 
@@ -117,8 +120,6 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     drawPoint<Out, Uniform, FrameBuffer, fs>(tri, uv, p, *uniform, *frameBuffer);
 }
 
-constexpr auto tileSize = 16U, clipSize = 2U, range = tileSize*clipSize;
-
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void drawTile(const unsigned int* ReadOnly tsiz, const Triangle<Out>* ReadOnly info,
@@ -126,9 +127,9 @@ template<typename Out, typename Uniform, typename FrameBuffer,
         unsigned int num) {
     auto id = threadIdx.x*blockDim.y + threadIdx.y;
     if (tsiz[id]) {
-        dim3 grid(tsiz[id], clipSize, clipSize);
+        dim3 grid(tsiz[id]);
         dim3 block(tileSize, tileSize);
         drawTriangles<Out, Uniform, FrameBuffer, fs> << <grid, block >> > (info,
-            tid + num*id, uniform, frameBuffer, threadIdx.x*range, threadIdx.y*range);
+            tid + num*id, uniform, frameBuffer, threadIdx.x*tileSize, threadIdx.y*tileSize);
     }
 }

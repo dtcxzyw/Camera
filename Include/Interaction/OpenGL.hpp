@@ -4,18 +4,39 @@
 #include <Base/Builtin.hpp>
 #include <cuda_gl_interop.h>
 
+class Image final :Uncopyable {
+private:
+    GLuint mTexture;
+    cudaGraphicsResource_t mRes;
+    uvec2 mSize;
+public:
+    Image();
+    ~Image();
+    uvec2 size() const;
+    void resize(uvec2 size);
+    cudaArray_t bind(Stream& stream);
+    void unbind(Stream& stream);
+    GLuint get() const;
+};
+
+using SharedImage = std::shared_ptr<Image>;
+
+class SwapChain final:Uncopyable {
+private:
+    std::vector<SharedImage> mImages;
+public:
+    SwapChain(size_t size);
+    SharedImage pop();
+    void push(SharedImage image);
+};
+
 class GLWindow:Uncopyable {
 protected:
     GLFWwindow* mWindow;
-    GLuint mFBO, mTexture;
-    cudaGraphicsResource_t mRes;
-    uvec2 mSize;
-    void resize(uvec2 size);
+    GLuint mFBO;
 public:
     GLWindow();
-    void present(Stream& stream,const BuiltinRenderTarget<RGBA>& colorBuffer);
-    cudaArray_t map(Stream& stream, uvec2 size);
-    void unmapAndPresent(Stream& stream);
+    void present(SharedImage image);
     void swapBuffers();
     bool update();
     void resize(size_t width, size_t height);

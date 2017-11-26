@@ -34,6 +34,7 @@ int main() {
         model.load("Res/bunny.obj");
         FrameBufferCPU FB;
         IMGUIWindow window;
+        SwapChain swapChain(1);
         Stream stream;
         vec3 cp = { 10.0f,0.0f,0.0f },lp = { 10.0f,4.0f,0.0f };
         auto V = lookAt(cp, { 0.0f,0.0f,0.0f }, { 0.0f,1.0f,0.0f });
@@ -48,6 +49,8 @@ int main() {
                 std::this_thread::sleep_for(1ms);
                 continue;
             }
+            auto image = swapChain.pop();
+            image->resize(size);
             FB.resize(size.x, size.y, stream);
             float w = size.x, h = size.y;
             auto fov = toFOV(36.0f*24.0f,f);
@@ -68,7 +71,7 @@ int main() {
             u.metallic = metallic;
             u.ao = ao;
             uniform.set(u, stream);
-            BuiltinRenderTarget<RGBA> RT(window.map(stream,size),size);
+            BuiltinRenderTarget<RGBA> RT(image->bind(stream),size);
             auto sum = allocBuffer<std::pair<float,unsigned int>>();
             sum->first = 0.0f;
             sum->second = 0;
@@ -81,7 +84,9 @@ int main() {
             post.sum = sum.begin();
             puni.set(post, stream);
             kernel(model.mVert, model.mIndex, uniform.get(), FB, puni.get(),RT.toTarget(), stream);
-            window.unmapAndPresent(stream);
+            image->unbind(stream);
+            window.present(image);
+            swapChain.push(image);
             renderGUI(window);
             window.swapBuffers();
             stream.sync();

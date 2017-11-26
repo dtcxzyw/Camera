@@ -107,7 +107,7 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
 
     if (triNum[6]) {
         auto num = triNum[6];
-        auto clipTileX = calcSize(size.x, range), clipTileY = calcSize(size.y, range);
+        auto clipTileX = calcSize(size.x, tileSize), clipTileY = calcSize(size.y, tileSize);
         auto tcnt = allocBuffer<unsigned int>(clipTileX*clipTileY);
         auto tid = allocBuffer<unsigned int>(num*tcnt.size());
         auto ptri =  tri.begin() +offset[6];
@@ -115,7 +115,7 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
         {
             stream.memset(tcnt);
             dim3 grid(num);
-            stream.runDim(clipTile<Out>, grid, block, ptri, tcnt.begin(), tid.begin(), range);
+            stream.runDim(clipTile<Out>, grid, block, ptri, tcnt.begin(), tid.begin());
         }
         {
             dim3 grid;

@@ -16,7 +16,6 @@
     <ClInclude Include="..\..\Include\Base\Constant.hpp" />
     <ClInclude Include="..\..\Include\Base\DataSet.hpp" />
     <ClInclude Include="..\..\Include\Base\Pipeline.hpp" />
-    <ClInclude Include="..\..\Include\Base\SoA.hpp" />
     <ClInclude Include="..\..\Include\Base\Types.hpp" />
     <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp" />
     <ClInclude Include="..\..\Include\IO\Image.hpp" />

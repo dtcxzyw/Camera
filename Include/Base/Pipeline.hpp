@@ -80,7 +80,7 @@ public:
     Stage(const std::function<Out(In, Stream&)>& func) :mFunc(func) {}
     void push(In input) { mInputBuffer.push_back(input); }
     void update() {
-
+         
     }
 };
 

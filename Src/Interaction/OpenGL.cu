@@ -39,63 +39,25 @@ GLContext& getContext() {
     return context;
 }
 
-void GLWindow::resize(uvec2 size) {
-    if (size != mSize) {
-        if (mRes) { 
-            checkError(cudaGraphicsUnregisterResource(mRes));
-            mRes = 0;
-        }
-        glBindTexture(GL_TEXTURE_2D, mTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,size.x,size.y
-            ,0,GL_RGBA,GL_UNSIGNED_BYTE,nullptr);
-        checkError(cudaGraphicsGLRegisterImage(&mRes, mTexture, GL_TEXTURE_2D
-            , cudaGraphicsRegisterFlagsSurfaceLoadStore));
-        mSize = size;
-    }
-}
-
-GLWindow::GLWindow():mRes(0) {
+GLWindow::GLWindow() {
     auto& context=getContext();
     mWindow = glfwCreateWindow(800, 600, "OpenGL Viewer", nullptr, nullptr);
     if (!mWindow)
         throw std::exception("Failed to create a window.");
     context.makeContext(mWindow);
     glfwSwapInterval(0);
-    glGenTextures(1, &mTexture);
-    resize(size());
     glGenFramebuffers(1, &mFBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D
-        , mTexture, 0);
-    auto res = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    glBindFramebuffer(GL_FRAMEBUFFER,0);
-    if(res!=GL_FRAMEBUFFER_COMPLETE)
-        throw std::exception("Failed to create a FBO.");
 }
 
-void GLWindow::present(Stream& stream,const BuiltinRenderTarget<RGBA>& colorBuffer) {
-    auto data=map(stream,colorBuffer.size());
-    checkError(cudaMemcpyArrayToArray(data, 0, 0, colorBuffer.get()
-        , 0, 0, mSize.x*mSize.y * sizeof(RGBA)));
-    unmapAndPresent(stream);
-}
-
-cudaArray_t GLWindow::map(Stream& stream,uvec2 size) {
+void GLWindow::present(SharedImage image) {
     getContext().makeContext(mWindow);
-    resize(size);
-    checkError(cudaGraphicsMapResources(1, &mRes, stream.getId()));
-    cudaArray_t data;
-    checkError(cudaGraphicsSubResourceGetMappedArray(&data, mRes, 0, 0));
-    return data;
-}
-
-void GLWindow::unmapAndPresent(Stream& stream) {
-    getContext().makeContext(mWindow);
-    checkError(cudaGraphicsUnmapResources(1, &mRes, stream.getId()));
-    auto frame = size();
     glBindFramebuffer(GL_READ_FRAMEBUFFER, mFBO);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D
+        , image->get(), 0);
+    auto isiz = image->size();
+    auto frame = size();
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(0, 0, frame.x, frame.y, 0, 0, mSize.x, mSize.y
+    glBlitFramebuffer(0, 0, frame.x, frame.y, 0, 0, isiz.x, isiz.y
         , GL_COLOR_BUFFER_BIT, GL_NEAREST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 }
@@ -123,8 +85,6 @@ uvec2 GLWindow::size() const {
 
 GLWindow::~GLWindow() {
     glDeleteFramebuffers(1, &mFBO);
-    if(mRes)checkError(cudaGraphicsUnregisterResource(mRes));
-    glDeleteTextures(1, &mTexture);
     glfwDestroyWindow(mWindow);
 }
 
@@ -141,4 +101,63 @@ void IMGUIWindow::newFrame() {
 IMGUIWindow::~IMGUIWindow() {
     getContext().makeContext(mWindow);
     ImGui_ImplGlfwGL3_Shutdown();
+}
+
+Image::Image():mRes(0) {
+    glGenTextures(1, &mTexture);
+}
+
+Image::~Image() {
+    if(mRes)checkError(cudaGraphicsUnregisterResource(mRes));
+    glDeleteTextures(1, &mTexture);
+}
+
+uvec2 Image::size() const {
+    return mSize;
+}
+
+void Image::resize(uvec2 size) {
+    if (mSize != size) {
+        if (mRes) {
+            checkError(cudaGraphicsUnregisterResource(mRes));
+            mRes = 0;
+        }
+        glBindTexture(GL_TEXTURE_2D, mTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, size.x, size.y
+            , 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        checkError(cudaGraphicsGLRegisterImage(&mRes, mTexture, GL_TEXTURE_2D
+            , cudaGraphicsRegisterFlagsSurfaceLoadStore));
+        mSize = size;
+    }
+}
+
+cudaArray_t Image::bind(Stream & stream) {
+    checkError(cudaGraphicsMapResources(1, &mRes, stream.getId()));
+    cudaArray_t data;
+    checkError(cudaGraphicsSubResourceGetMappedArray(&data, mRes, 0, 0));
+    return data;
+}
+
+void Image::unbind(Stream & stream) {
+    checkError(cudaGraphicsUnmapResources(1, &mRes, stream.getId()));
+}
+
+GLuint Image::get() const {
+    return mTexture;
+}
+
+SwapChain::SwapChain(size_t size) {
+    for (size_t i = 0; i < size; ++i)
+        mImages.emplace_back(std::make_shared<Image>());
+}
+
+SharedImage SwapChain::pop() {
+    if (mImages.empty())return nullptr;
+    auto res = mImages.back();
+    mImages.pop_back();
+    return res;
+}
+
+void SwapChain::push(SharedImage image) {
+    mImages.emplace_back(image);
 }

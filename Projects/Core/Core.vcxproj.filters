@@ -96,9 +96,6 @@
     <ClInclude Include="..\..\Include\ScanLineRenderer\LineRasterizer.hpp">
       <Filter>ScanLineRenderer</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Base\SoA.hpp">
-      <Filter>Base</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">
