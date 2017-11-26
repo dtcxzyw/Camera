@@ -1,10 +1,13 @@
 #pragma once
 #include "Common.hpp"
 #include <functional>
+#include <deque>
 
 CUDAInline unsigned int getID() {
     return blockIdx.x*blockDim.x + threadIdx.x;
 }
+
+class Event;
 
 class Stream final:Uncopyable {
 private:
@@ -16,6 +19,7 @@ public:
 
     void sync();
     cudaStream_t getId() const;
+    cudaError_t query() const;
 
     template<typename Func, typename... Args>
     void run(Func func, unsigned int size, Args... args) {
@@ -58,6 +62,8 @@ public:
     void copy(DataViewer<T> data) {
         return share(data.begin(), data.size());
     }
+
+    void wait(Event& event);
 };
 
 class Event final :Uncopyable {
@@ -66,24 +72,51 @@ private:
 public:
     Event(Stream& stream);
     void wait();
-    void wait(Stream& stream);
+    cudaEvent_t get();
     ~Event();
 };
 
-template<typename In, typename Out>
-class Stage final :Uncopyable {
+using SharedEvent = std::shared_ptr<Event>;
+
+template<typename Task>
+class Pipeline final :Uncopyable {
 private:
-    std::function<Out(In, Stream&)> mFunc;
-    Stream mPipe;
-    std::vector<In> mInputBuffer;
+    std::deque<std::pair<Task,SharedEvent>> mTasks;
+    std::vector<std::function<void(Task&, Stream&)>> mStages;
+    std::vector<Stream> mStreams;
+    std::function<Task()> mBegin;
+    std::function<void(Task&)> mEnd;
 public:
-    Stage(const std::function<Out(In, Stream&)>& func) :mFunc(func) {}
-    void push(In input) { mInputBuffer.push_back(input); }
+    Pipeline(std::function<Task()>&& begin):mBegin(std::move(begin)){}
+    Pipeline& operator=(Pipeline&&) = default;
+    Pipeline& then(std::function<void(Task&, Stream&)>&& stage) {
+        mStages.emplace_back(std::move(stage));
+        return *this;
+    }
+    Pipeline& end(std::function<void(Task&)>&& end) {
+        mEnd = std::move(end);
+        mStages.resize(mStages.size());
+        return *this;
+    }
     void update() {
-         
+        if (mStreams.empty())throw std::exception("This pipeline is incomplete.");
+        if (mTasks.size() == mStreams.size()) {
+            mStreams.back().sync();
+            mEnd(mTasks.back().first);
+            mTasks.pop_back();
+        }
+        unsigned int idx = 0;
+        for (auto&& task:mTasks) {
+            ++idx;
+            mStreams[idx].wait(task.second);
+            mStages[idx](task.first, mStreams[idx]);
+            task.second = std::make_shared<Event>(mStreams[idx]);
+        }
+        mTasks.emplace_front(std::make_pair(mBegin()));
+        mStages.front()(mTasks.front().first,mStreams.front());
+        mTasks.front().second=std::make_shared<Event>(mStreams.front());
     }
 };
-
 
 class Environment final :Singletion {
 private:

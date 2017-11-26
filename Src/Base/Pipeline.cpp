@@ -17,6 +17,14 @@ cudaStream_t Stream::getId() const {
     return mStream;
 }
 
+cudaError_t Stream::query() const {
+    return cudaStreamQuery(mStream);
+}
+
+void Stream::wait(Event & event) {
+    checkError(cudaStreamWaitEvent(mStream,event.get(),0));
+}
+
 Environment::Environment(){}
 
 void Environment::init() {
@@ -63,8 +71,8 @@ void Event::wait() {
     checkError(cudaEventSynchronize(mEvent));
 }
 
-void Event::wait(Stream & stream) {
-    checkError(cudaStreamWaitEvent(stream.getId(), mEvent, 0));
+cudaEvent_t Event::get() {
+    return mEvent;
 }
 
 Event::~Event() {
