@@ -30,8 +30,8 @@ private:
     uvec2 mSize;
 public:
     DepthBuffer(uvec2 size) :mSize(size),mData(allocBuffer<T>(size.x*size.y)) {}
-    void clear(Pipeline& pipeline) {
-        pipeline.memset(mData, 0xff);
+    void clear(Stream& stream) {
+        stream.memset(mData, 0xff);
     }
     DepthBufferGPU<T> toBuffer() {
         return { mData.begin(),{mSize.x-1,mSize.y-1,mSize.x} };

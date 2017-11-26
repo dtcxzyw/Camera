@@ -37,7 +37,7 @@ namespace Impl {
             return DataSet<Others...>::getImpl(Tag<Enum, name>{});
         }
     public:
-        CUDA DataSet() {};
+        CUDA DataSet() = default;
         CUDA DataSet(T first,DataSet<Others...> others):data(first),DataSet<Others...>(others){}
         template<Enum name>
         CUDA auto& get() {

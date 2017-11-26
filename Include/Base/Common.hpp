@@ -10,7 +10,7 @@
 #define HOST __host__
 #define BOTH CUDA HOST
 #define CALLABLE __global__
-#define ALIGN __align__(16)
+#define ALIGN __align__(4)
 #define ReadOnly __restrict__
 #include "Types.hpp"
 

@@ -5,7 +5,7 @@ namespace Impl {
     constexpr auto blockNum = 512U, blockSize = 32U;
     void* constantAlloc(unsigned int size);
     void constantFree(void* address,unsigned int size);
-    void constantSet(void* dest,const void* src,unsigned int size,cudaStream_t pipeline);
+    void constantSet(void* dest,const void* src,unsigned int size,cudaStream_t stream);
 }
 
 template<typename T>
@@ -26,8 +26,8 @@ public:
         return mAddress;
     }
 
-    void set(const T& rhs,Pipeline& pipeline) {
-        Impl::constantSet(mAddress, &rhs,sizeof(T),pipeline.getId());
+    void set(const T& rhs,Stream& stream) {
+        Impl::constantSet(mAddress, &rhs,sizeof(T),stream.getId());
     }
 
     ~Constant() {

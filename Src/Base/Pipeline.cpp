@@ -1,19 +1,19 @@
 #include <Base/Pipeline.hpp>
 
-Pipeline::Pipeline() {
+Stream::Stream() {
     checkError(cudaStreamCreateWithFlags(&mStream,cudaStreamNonBlocking));
     mMaxThread = getEnvironment().getProp().maxThreadsPerBlock;
 }
 
-Pipeline::~Pipeline() {
+Stream::~Stream() {
     checkError(cudaStreamDestroy(mStream));
 }
 
-void Pipeline::sync() {
+void Stream::sync() {
     checkError(cudaStreamSynchronize(mStream));
 }
 
-cudaStream_t Pipeline::getId() const {
+cudaStream_t Stream::getId() const {
     return mStream;
 }
 
@@ -54,17 +54,17 @@ Environment& getEnvironment() {
     return env;
 }
 
-Event::Event(Pipeline& pipeline) {
+Event::Event(Stream& stream) {
     checkError(cudaEventCreateWithFlags(&mEvent, cudaEventDisableTiming));
-    checkError(cudaEventRecord(mEvent, pipeline.getId()));
+    checkError(cudaEventRecord(mEvent, stream.getId()));
 }
 
 void Event::wait() {
     checkError(cudaEventSynchronize(mEvent));
 }
 
-void Event::wait(Pipeline & pipeline) {
-    checkError(cudaStreamWaitEvent(pipeline.getId(), mEvent, 0));
+void Event::wait(Stream & stream) {
+    checkError(cudaStreamWaitEvent(stream.getId(), mEvent, 0));
 }
 
 Event::~Event() {

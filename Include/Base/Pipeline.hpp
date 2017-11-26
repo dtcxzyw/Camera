@@ -1,17 +1,18 @@
 #pragma once
 #include "Common.hpp"
+#include <functional>
 
 CUDAInline unsigned int getID() {
     return blockIdx.x*blockDim.x + threadIdx.x;
 }
 
-class Pipeline final:Uncopyable {
+class Stream final:Uncopyable {
 private:
     cudaStream_t mStream;
     unsigned int mMaxThread;
 public:
-    Pipeline();
-    ~Pipeline();
+    Stream();
+    ~Stream();
 
     void sync();
     cudaStream_t getId() const;
@@ -19,7 +20,7 @@ public:
     template<typename Func, typename... Args>
     void run(Func func, unsigned int size, Args... args) {
         if (size) {
-            func <<<calcSize(size, mMaxThread), glm::min(mMaxThread, size), 0, mStream >>> (size, args...);
+            func <<<calcSize(size, mMaxThread), mMaxThread, 0, mStream >>> (size, args...);
             checkError();
         }
     }
@@ -63,11 +64,26 @@ class Event final :Uncopyable {
 private:
     cudaEvent_t mEvent;
 public:
-    Event(Pipeline& pipeline);
+    Event(Stream& stream);
     void wait();
-    void wait(Pipeline& pipeline);
+    void wait(Stream& stream);
     ~Event();
 };
+
+template<typename In, typename Out>
+class Stage final :Uncopyable {
+private:
+    std::function<Out(In, Stream&)> mFunc;
+    Stream mPipe;
+    std::vector<In> mInputBuffer;
+public:
+    Stage(const std::function<Out(In, Stream&)>& func) :mFunc(func) {}
+    void push(In input) { mInputBuffer.push_back(input); }
+    void update() {
+
+    }
+};
+
 
 class Environment final :Singletion {
 private:

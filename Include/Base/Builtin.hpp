@@ -37,10 +37,10 @@ public:
     ~BuiltinArray() {
         checkError(cudaFreeArray(mArray));
     }
-    DataViewer<T> download(Pipeline& pipeline) const {
+    DataViewer<T> download(Stream& stream) const {
         auto res = allocBuffer<T>(mSize.x*mSize.y);
         checkError(cudaMemcpyFromArrayAsync(res.begin(), mArray, 0, 0, mSize.x*mSize.y * sizeof(T)
-            , cudaMemcpyDefault, pipeline.getId()));
+            , cudaMemcpyDefault, stream.getId()));
         return res;
     }
     uvec2 size() const {
@@ -56,7 +56,7 @@ template<typename T>
 class BuiltinSamplerGPU final {
 public:
     using Type = typename Rename<T>::Type;
-    BuiltinSamplerGPU() {}
+    CUDA BuiltinSamplerGPU() = default;
     BuiltinSamplerGPU(cudaTextureObject_t texture):mTexture(texture){}
     CUDA T get(vec2 p) const {
         T res;
@@ -109,7 +109,7 @@ template<typename T>
 class BuiltinRenderTargetGPU final {
 public:
     using Type = typename Rename<T>::Type;
-    BuiltinRenderTargetGPU(){}
+    CUDA BuiltinRenderTargetGPU() = default;
     BuiltinRenderTargetGPU(cudaSurfaceObject_t target) :mTarget(target) {}
     CUDA T get(ivec2 p) const {
         auto res = surf2Dread<Type>(mTarget, p.x*sizeof(Type), p.y, cudaBoundaryModeClamp);
@@ -149,11 +149,11 @@ public:
     BuiltinRenderTargetGPU<T> toTarget() const {
         return mTarget;
     }
-    void clear(Pipeline& pipeline,T val) {
+    void clear(Stream& stream,T val) {
         uint mul = sqrt(getEnvironment().getProp().maxThreadsPerBlock);
         dim3 grid(calcSize(mSize.x,mul),calcSize(mSize.y,mul));
         dim3 block(mul, mul);
-        pipeline.runDim(Impl::clear<T>, grid, block, toTarget(), val);
+        stream.runDim(Impl::clear<T>, grid, block, toTarget(), val);
     }
     uvec2 size() const {
         return mSize;

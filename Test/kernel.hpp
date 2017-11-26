@@ -28,7 +28,7 @@ struct FrameBufferCPU final {
     uvec2 size;
     Constant<FrameBufferGPU> dataGPU;
     FrameBufferGPU data;
-    void resize(size_t width, size_t height,Pipeline& pipeline) {
+    void resize(size_t width, size_t height,Stream& stream) {
         if (size.x == width && size.y == height)return;
         colorBuffer = std::make_unique<BuiltinArray<RGBA>>(width, height);
         colorRT = std::make_unique <BuiltinRenderTarget<RGBA>>(*colorBuffer);
@@ -36,7 +36,7 @@ struct FrameBufferCPU final {
         data.color = colorRT->toTarget();
         data.depth = depthBuffer->toBuffer();
         data.mSize = size = { width,height };
-        dataGPU.set(data,pipeline);
+        dataGPU.set(data,stream);
     }
 };
  
@@ -61,6 +61,6 @@ struct PostUniform final {
 
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const Uniform* uniform
     ,FrameBufferCPU& fbo,const PostUniform* post,
-    BuiltinRenderTargetGPU<RGBA> dest, Pipeline& pipeline);
+    BuiltinRenderTargetGPU<RGBA> dest, Stream& stream);
 
 

@@ -31,16 +31,16 @@ CALLABLE void GTHelper(unsigned int size, const Vert* ReadOnly vert, Index idx,
 
 template<unsigned int inv,unsigned int outv,typename Index,typename Vert,typename Uniform
     ,GSF<Vert,Uniform,outv> gs>
-auto genPrimitive(Pipeline& pipeline,DataViewer<Vert> vert,Index idx,const Uniform* uniform
+auto genPrimitive(Stream& stream,DataViewer<Vert> vert,Index idx,const Uniform* uniform
     ,unsigned int outSize=0U) {
     if (outSize == 0U)outSize = idx.size();
     outSize *= outv;
     auto res = allocBuffer<Vert>(outSize);
     auto cnt = allocBuffer<unsigned int>();
-    checkError(cudaMemsetAsync(cnt.begin(),0,sizeof(unsigned int),pipeline.getId()));
-    pipeline.run(GTHelper<inv,outv,Index, Vert, Uniform, gs>, idx.size(), vert.begin(), idx, uniform
+    checkError(cudaMemsetAsync(cnt.begin(),0,sizeof(unsigned int),stream.getId()));
+    stream.run(GTHelper<inv,outv,Index, Vert, Uniform, gs>, idx.size(), vert.begin(), idx, uniform
         , Queue<Vert,outv>{cnt.begin(),res.begin()});
-    pipeline.sync();
+    stream.sync();
     res.scale(*cnt);
     return res;
 }

@@ -34,7 +34,7 @@ int main() {
         model.load("Res/bunny.obj");
         FrameBufferCPU FB;
         IMGUIWindow window;
-        Pipeline pipeline;
+        Stream stream;
         vec3 cp = { 10.0f,0.0f,0.0f },lp = { 10.0f,4.0f,0.0f };
         auto V = lookAt(cp, { 0.0f,0.0f,0.0f }, { 0.0f,1.0f,0.0f });
         glm::mat4 M;
@@ -48,7 +48,7 @@ int main() {
                 std::this_thread::sleep_for(1ms);
                 continue;
             }
-            FB.resize(size.x, size.y, pipeline);
+            FB.resize(size.x, size.y, stream);
             float w = size.x, h = size.y;
             auto fov = toFOV(36.0f*24.0f,f);
             glm::mat4 P = perspectiveFov(fov, w, h, 1.0f, 20.0f);
@@ -67,8 +67,8 @@ int main() {
             u.roughness = roughness;
             u.metallic = metallic;
             u.ao = ao;
-            uniform.set(u, pipeline);
-            BuiltinRenderTarget<RGBA> RT(window.map(pipeline,size),size);
+            uniform.set(u, stream);
+            BuiltinRenderTarget<RGBA> RT(window.map(stream,size),size);
             auto sum = allocBuffer<std::pair<float,unsigned int>>();
             sum->first = 0.0f;
             sum->second = 0;
@@ -79,12 +79,12 @@ int main() {
             last = nlum;
             post.lum = fmax(calcLum(nlum),0.1f);
             post.sum = sum.begin();
-            puni.set(post, pipeline);
-            kernel(model.mVert, model.mIndex, uniform.get(), FB, puni.get(),RT.toTarget(), pipeline);
-            window.unmapAndPresent(pipeline);
+            puni.set(post, stream);
+            kernel(model.mVert, model.mIndex, uniform.get(), FB, puni.get(),RT.toTarget(), stream);
+            window.unmapAndPresent(stream);
             renderGUI(window);
             window.swapBuffers();
-            pipeline.sync();
+            stream.sync();
             lum =sum->first/sum->second;
         }
     }

@@ -3,7 +3,6 @@
 #include <math_functions.hpp>
 #include <device_atomic_functions.h>
 
-
 template<typename Out>
 struct Triangle final {
     vec4 rect;
@@ -62,7 +61,7 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
 }
 
 template<typename Out>
-CALLABLE void sortTriangles(unsigned int size,const Triangle<Out>* ReadOnly info,
+CALLABLE void sortTriangles(unsigned int size,const Triangle<Out>* info,
     Triangle<Out>* out,unsigned int* head) {
     auto id = getID();
     if (id >= size)return;
