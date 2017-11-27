@@ -72,6 +72,7 @@ CUDA void post(ivec2 NDC, PostUniform uni, BuiltinRenderTargetGPU<RGBA> out) {
     out.set(NDC, { c,1.0f });
 }
 
+/*
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const Uniform* uniform
     , FrameBufferCPU& fbo, const PostUniform* puni,
     BuiltinRenderTargetGPU<RGBA> dest, Stream& stream) {
@@ -80,12 +81,42 @@ void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const Uniform* uniform
     auto vert = calcVertex<VI, OI, Uniform, VS>(stream, vbo, uniform, fbo.size);
     renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU, setPoint, drawPoint>
         (stream, vert, ibo, uniform, fbo.dataGPU.get(), fbo.size);
-    /*
     auto prim = genPrimitive<3,2,SharedIndex, VI, Uniform, GS>(stream, vbo,ibo,uniform,ibo.size());
     auto pv= calcVertex<VI, OI, Uniform, VS>(stream, prim, uniform, fbo.size);
     renderLines<OI, Uniform, FrameBufferGPU, setPoint, drawHair>(stream, pv, uniform
         , fbo.dataGPU.get(), fbo.size);
-        */
     renderFullScreen<PostUniform, decltype(dest), post>(stream,puni,dest,fbo.size);
 }
+*/
 
+void init(Task & task, Stream & stream) {
+    task.uniform.set(task.uni, stream);
+    auto size = task.image->size();
+    task.FB.resize(size.x, size.y, stream);
+    task.sum = allocBuffer<std::pair<float, unsigned int>>();
+    task.sum->first = 0.0f;
+    task.sum->second = 1;
+    PostUniform post;
+    post.in = task.FB.data;
+    post.lum = task.lum;
+    post.sum = task.sum.begin();
+    task.puni.set(post, stream);
+    task.FB.depthBuffer->clear(stream);
+    task.FB.colorRT->clear(stream, {});
+}
+
+void calcVert(Task & task, Stream & stream) {
+    task.vi= calcVertex<VI, OI, Uniform, VS>(stream, task.mesh->mVert, task.uniform.get(), task.FB.size);
+}
+
+void render(Task & task, Stream & stream) {
+    renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU, setPoint, drawPoint>
+        (stream, task.vi, task.mesh->mIndex, task.uniform.get(), task.FB.dataGPU.get(), task.FB.size);
+}
+
+void postprocess(Task & task, Stream & stream) {
+    BuiltinRenderTarget<RGBA> dest(task.image->bind(stream),task.image->size());
+    renderFullScreen<PostUniform, BuiltinRenderTargetGPU<RGBA>, post>(stream, task.puni.get(), dest.toTarget(), task.FB.size);
+    stream.sync();
+    task.image->unbind(stream);
+}

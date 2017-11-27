@@ -14,8 +14,8 @@ auto calcVertex(Stream& stream, DataViewer<Vert> vert, const Uniform* uniform, u
 
 template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void drawPointHelper(unsigned int size, const VertexInfo<Out>* ReadOnly vert,
-        const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer, uvec2 fsize) {
+    CALLABLE void drawPointHelper(unsigned int size, const VertexInfo<Out>* ReadOnlyCache vert,
+        const Uniform* ReadOnlyCache uniform, FrameBuffer* frameBuffer, uvec2 fsize) {
     auto id = getID();
     if (id >= size)return;
     auto p = vert[id];

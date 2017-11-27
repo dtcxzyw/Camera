@@ -15,6 +15,8 @@ private:
     unsigned int mMaxThread;
 public:
     Stream();
+    Stream(Stream&& rhs);
+    Stream& operator=(Stream&& rhs);
     ~Stream();
 
     void sync();
@@ -87,15 +89,18 @@ private:
     std::function<Task()> mBegin;
     std::function<void(Task&)> mEnd;
 public:
-    Pipeline(std::function<Task()>&& begin):mBegin(std::move(begin)){}
+    Pipeline(std::function<Task()> begin):mBegin(std::move(begin)){}
+    Pipeline(Pipeline&&) = default;
     Pipeline& operator=(Pipeline&&) = default;
-    Pipeline& then(std::function<void(Task&, Stream&)>&& stage) {
+    Pipeline& then(std::function<void(Task&, Stream&)> stage) {
+        if(!mStreams.empty())throw std::exception("This pipeline is complete.");
         mStages.emplace_back(std::move(stage));
         return *this;
     }
-    Pipeline& end(std::function<void(Task&)>&& end) {
+    Pipeline& end(std::function<void(Task&)> end) {
+        if (!mStreams.empty())throw std::exception("This pipeline is complete.");
         mEnd = std::move(end);
-        mStages.resize(mStages.size());
+        mStreams.resize(mStages.size());
         return *this;
     }
     void update() {
@@ -108,11 +113,11 @@ public:
         unsigned int idx = 0;
         for (auto&& task:mTasks) {
             ++idx;
-            mStreams[idx].wait(task.second);
+            mStreams[idx].wait(*task.second);
             mStages[idx](task.first, mStreams[idx]);
             task.second = std::make_shared<Event>(mStreams[idx]);
         }
-        mTasks.emplace_front(std::make_pair(mBegin()));
+        mTasks.emplace_front(mBegin(),nullptr);
         mStages.front()(mTasks.front().first,mStreams.front());
         mTasks.front().second=std::make_shared<Event>(mStreams.front());
     }

@@ -12,7 +12,7 @@ struct Line final {
 
 template<typename Out>
 CALLABLE void sortLines(unsigned int size, unsigned int* cnt,
-    const VertexInfo<Out>* ReadOnly vert, Line<Out>* info, vec2 fsize) {
+    const VertexInfo<Out>* ReadOnlyCache vert, Line<Out>* info, vec2 fsize) {
     auto id = getID();
     if (id >= size)return;
     auto a = id << 1, b = id << 1 | 1;
@@ -54,7 +54,7 @@ CUDAInline void calcY(Line<Out>& line, float y) {
 
 template<typename Out>
 CALLABLE void cutLines(unsigned int size, unsigned int* cnt,
-    const Line<Out>* ReadOnly data, Line<Out>* out, vec2 fsize, float len) {
+    const Line<Out>* ReadOnlyCache data, Line<Out>* out, vec2 fsize, float len) {
     auto id = getID();
     if (id >= size)return;
     auto line=data[id];
@@ -90,8 +90,8 @@ template<typename Out, typename Uniform, typename FrameBuffer,
 //1...512
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void drawMicroL(const Line<Out>* ReadOnly info,
-        const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer, float len) {
+    CALLABLE void drawMicroL(const Line<Out>* ReadOnlyCache info,
+        const Uniform* ReadOnlyCache uniform, FrameBuffer* frameBuffer, float len) {
     auto line = info[blockIdx.x];
     auto w = threadIdx.x / len;
     drawPoint<Out,Uniform,FrameBuffer,fs>(line, w, *uniform, *frameBuffer);

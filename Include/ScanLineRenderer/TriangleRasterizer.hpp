@@ -37,7 +37,7 @@ CUDAInline void calcBase(vec3 a, vec3 b, vec3& w) {
 
 template<typename Index, typename Out>
 CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
-    const VertexInfo<Out>* ReadOnly vert, Index index,
+    const VertexInfo<Out>* ReadOnlyCache vert, Index index,
     Triangle<Out>* info, vec2 fsize) {
     auto id = getID();
     if (id >= size)return;
@@ -86,8 +86,8 @@ template<typename Out, typename Uniform, typename FrameBuffer,
 //1,2,4,8,16,32
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void drawMicroT(const Triangle<Out>* ReadOnly info,
-        const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer) {
+    CALLABLE void drawMicroT(const Triangle<Out>* ReadOnlyCache info,
+        const Uniform* ReadOnlyCache uniform, FrameBuffer* frameBuffer) {
     auto tri = info[blockIdx.x];
     ivec2 uv{ tri.rect.x + threadIdx.x,tri.rect.z + threadIdx.y };
     vec2 p{ uv.x,uv.y };
@@ -97,7 +97,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
 constexpr auto tileSize = 32U;
 
 template<typename Out>
-CALLABLE void clipTile(const Triangle<Out>* ReadOnly in,
+CALLABLE void clipTile(const Triangle<Out>* ReadOnlyCache in,
     unsigned int* cnt, unsigned int* out) {
     auto id = threadIdx.x*blockDim.y + threadIdx.y;
     auto range = in[blockIdx.x].rect;
@@ -109,8 +109,8 @@ CALLABLE void clipTile(const Triangle<Out>* ReadOnly in,
 
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void drawTriangles(const Triangle<Out>* ReadOnly info, const unsigned int* ReadOnly tid,
-        const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer
+    CALLABLE void drawTriangles(const Triangle<Out>* ReadOnlyCache info, const unsigned int* ReadOnlyCache tid,
+        const Uniform* ReadOnlyCache uniform, FrameBuffer* frameBuffer
         , unsigned int offsetX, unsigned int offsetY) {
     auto tri = info[tid[blockIdx.x]];
     ivec2 uv{ offsetX + blockIdx.y*blockDim.x + threadIdx.x,
@@ -122,8 +122,8 @@ template<typename Out, typename Uniform, typename FrameBuffer,
 
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void drawTile(const unsigned int* ReadOnly tsiz, const Triangle<Out>* ReadOnly info,
-        const unsigned int* ReadOnly tid, const Uniform* ReadOnly uniform, FrameBuffer* frameBuffer,
+    CALLABLE void drawTile(const unsigned int* ReadOnlyCache tsiz, const Triangle<Out>* ReadOnlyCache info,
+        const unsigned int* ReadOnlyCache tid, const Uniform* ReadOnlyCache uniform, FrameBuffer* frameBuffer,
         unsigned int num) {
     auto id = threadIdx.x*blockDim.y + threadIdx.y;
     if (tsiz[id]) {

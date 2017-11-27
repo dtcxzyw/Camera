@@ -1,7 +1,7 @@
 #include <PBR/DataDrivenBRDF.hpp>
 #include <fstream>
 
-BRDFSampler::BRDFSampler(const vec3* ReadOnly data):mData(data) {}
+BRDFSampler::BRDFSampler(const vec3* ReadOnlyCache data):mData(data) {}
 
 MERLBRDFData::MERLBRDFData(const std::string& path) {
     std::ifstream in(path, std::ios::binary);

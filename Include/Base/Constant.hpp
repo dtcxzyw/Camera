@@ -22,6 +22,19 @@ public:
         set(rhs);
     }
 
+    Constant(Constant&& rhs):mAddress(nullptr) {
+        std::swap(mAddress, rhs.mAddress);
+    }
+
+    Constant& operator=(Constant&& rhs) {
+        if (this != &rhs) {
+            Impl::constantFree(mAddress,sizeof(T));
+            mAddress = nullptr;
+            std::swap(mAddress, rhs.mAddress);
+        }
+        return *this;
+    }
+
     T* get() const {
         return mAddress;
     }
@@ -31,6 +44,6 @@ public:
     }
 
     ~Constant() {
-        Impl::constantFree(mAddress,sizeof(T));
+        if(mAddress)Impl::constantFree(mAddress,sizeof(T));
     }
 };

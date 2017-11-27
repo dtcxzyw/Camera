@@ -95,10 +95,10 @@ namespace Impl {
 
 class BRDFSampler final {
 private:
-    const vec3* ReadOnly mData;
+    const vec3* ReadOnlyCache mData;
 public:
     BRDFSampler() = default;
-    BRDFSampler(const vec3* ReadOnly data);
+    BRDFSampler(const vec3* ReadOnlyCache data);
     CUDAInline RGB get(vec3 in, vec3 out,vec3 half,vec3 normal,vec3 bin) const {
         return mData[Impl::lookupBRDF(in, out, half, normal,bin)];
     }

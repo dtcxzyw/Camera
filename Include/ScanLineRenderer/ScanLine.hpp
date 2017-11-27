@@ -31,7 +31,7 @@ struct VertexInfo {
 };
 
 template<typename Vert, typename Out, typename Uniform,VSF<Vert, Out, Uniform> vs>
-CALLABLE void runVS(unsigned int size,const Vert* ReadOnly in,const Uniform* ReadOnly u,
+CALLABLE void runVS(unsigned int size,const Vert* ReadOnlyCache in,const Uniform* ReadOnlyCache u,
     VertexInfo<Out>* res,vec2 fsize) {
     auto i = getID();
     if (i >= size)return;
@@ -46,7 +46,7 @@ template<typename Uniform, typename FrameBuffer>
 using FSFSF = void(*)(ivec2 NDC, Uniform uniform, FrameBuffer frameBuffer);
 
 template<typename Uniform, typename FrameBuffer,FSFSF<Uniform,FrameBuffer> fs>
-    CALLABLE void runFSFS(unsigned int size,const Uniform* ReadOnly u,
+    CALLABLE void runFSFS(unsigned int size,const Uniform* ReadOnlyCache u,
         FrameBuffer frameBuffer,unsigned px) {
     auto i = getID();
     if (i >= size)return;
@@ -78,10 +78,10 @@ public:
 
 class SharedIndex final {
 private:
-    const uvec3* ReadOnly const mPtr;
+    const uvec3* ReadOnlyCache const mPtr;
     const unsigned int mSize;
 public:
-    SharedIndex(const uvec3* ReadOnly idx, unsigned int size) :mPtr(idx), mSize(size) {}
+    SharedIndex(const uvec3* ReadOnlyCache idx, unsigned int size) :mPtr(idx), mSize(size) {}
     SharedIndex(DataViewer<uvec3> ibo) :mPtr(ibo.begin()), mSize(ibo.size()) {}
     auto size() const {
         return mSize;

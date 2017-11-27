@@ -11,7 +11,7 @@
 #define BOTH CUDA HOST
 #define CALLABLE __global__
 #define ALIGN __align__(4)
-#define ReadOnly __restrict__
+#define ReadOnlyCache __restrict__
 #include "Types.hpp"
 
 struct Uncopyable {
