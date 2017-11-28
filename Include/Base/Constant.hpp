@@ -11,7 +11,7 @@ namespace Impl {
 template<typename T>
 class Constant final:Uncopyable {
 private:
-    T* const mAddress;
+    T* mAddress;
 public:
     Constant():mAddress(static_cast<T*>(Impl::constantAlloc(sizeof(T)))) {
         if (!mAddress)
@@ -22,15 +22,15 @@ public:
         set(rhs);
     }
 
-    Constant(Constant&& rhs):mAddress(nullptr) {
-        std::swap(mAddress, rhs.mAddress);
+    Constant(Constant&& rhs):mAddress(rhs.mAddress) {
+        rhs.mAddress = nullptr;
     }
 
     Constant& operator=(Constant&& rhs) {
         if (this != &rhs) {
             Impl::constantFree(mAddress,sizeof(T));
-            mAddress = nullptr;
-            std::swap(mAddress, rhs.mAddress);
+            mAddress = rhs.mAddress;
+           rhs.mAddress=nullptr;
         }
         return *this;
     }

@@ -67,7 +67,9 @@ int main() {
         }).then(init).then(calcVert).then(render).then(postprocess).end([&](Task& task) {
             window.present(task.image);
             swapChain.push(task.image);
-            lum = task.sum->first / task.sum->second;
+            std::pair<float, unsigned int> data;
+            checkError(cudaMemcpy(&data,task.sum.begin(),sizeof(data),cudaMemcpyDefault));
+            lum = data.first / (data.second+0.1f);
         }));
         while (window.update()) {
             auto size = window.size();

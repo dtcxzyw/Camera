@@ -61,7 +61,7 @@ public:
     }
 
     template<typename T>
-    void copy(DataViewer<T> data) {
+    auto copy(DataViewer<T> data) {
         return share(data.begin(), data.size());
     }
 

@@ -94,8 +94,7 @@ void init(Task & task, Stream & stream) {
     auto size = task.image->size();
     task.FB.resize(size.x, size.y, stream);
     task.sum = allocBuffer<std::pair<float, unsigned int>>();
-    task.sum->first = 0.0f;
-    task.sum->second = 1;
+    stream.memset(task.sum);
     PostUniform post;
     post.in = task.FB.data;
     post.lum = task.lum;
