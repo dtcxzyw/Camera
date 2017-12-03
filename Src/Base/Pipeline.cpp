@@ -26,7 +26,7 @@ void Stream::sync() {
     checkError(cudaStreamSynchronize(mStream));
 }
 
-cudaStream_t Stream::getId() const {
+cudaStream_t Stream::getID() const {
     return mStream;
 }
 
@@ -77,7 +77,7 @@ Environment& getEnvironment() {
 
 Event::Event(Stream& stream) {
     checkError(cudaEventCreateWithFlags(&mEvent, cudaEventDisableTiming));
-    checkError(cudaEventRecord(mEvent, stream.getId()));
+    checkError(cudaEventRecord(mEvent, stream.getID()));
 }
 
 void Event::wait() {

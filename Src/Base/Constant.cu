@@ -103,6 +103,7 @@ namespace Impl {
         auto off = (static_cast<unsigned char*>(address)-getAddress())/blockSize+1;
         getPool().returnSpace(off, req);
     }
+
     void constantSet(void* dest, const void * src, unsigned int size, cudaStream_t stream) {
         checkError(cudaMemcpyToSymbolAsync(memory,src,size,
             static_cast<unsigned char*>(dest)-getAddress(),cudaMemcpyHostToDevice,stream));

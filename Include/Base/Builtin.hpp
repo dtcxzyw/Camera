@@ -40,7 +40,7 @@ public:
     DataViewer<T> download(Stream& stream) const {
         auto res = allocBuffer<T>(mSize.x*mSize.y);
         checkError(cudaMemcpyFromArrayAsync(res.begin(), mArray, 0, 0, mSize.x*mSize.y * sizeof(T)
-            , cudaMemcpyDefault, stream.getId()));
+            , cudaMemcpyDefault, stream.getID()));
         return res;
     }
     uvec2 size() const {

@@ -82,7 +82,7 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     stream.run(clipTriangles<Index, Out>, index.size(), cnt.begin(), vert.begin(), index,
         info.begin(), static_cast<vec2>(size));
     unsigned int triNum[8],offset[7];
-    checkError(cudaMemcpyAsync(triNum,cnt.begin(),sizeof(triNum),cudaMemcpyDefault,stream.getId()));
+    checkError(cudaMemcpyAsync(triNum,cnt.begin(),sizeof(triNum),cudaMemcpyDefault,stream.getID()));
     auto all = triNum[7];
     if (all == 0)return;
     auto tri = allocBuffer<Triangle<Out>>(all);

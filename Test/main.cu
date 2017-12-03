@@ -26,6 +26,7 @@ void renderGUI(IMGUIWindow& window) {
     window.renderGUI();
 }
 
+/*
 int main() {
     getEnvironment().init();
     try {
@@ -38,7 +39,11 @@ int main() {
         M = scale(M, vec3(1.0f, 1.0f, 1.0f)*10.0f);
         float t = glfwGetTime(), lum = 1.0f, last = 1.0f,delta;
         auto pipeline =std::move(Pipeline<Task>([&] {
-            auto size = window.size();
+            uvec2 size;
+            while (size.x == 0 || size.y == 0) {
+                window.update();
+                size = window.size();
+            }
             auto image = swapChain.pop();
             image->resize(size);
             Task task;
@@ -93,8 +98,8 @@ int main() {
     }
     return 0;
 }
+*/
 
-/*
 int main() {
     getEnvironment().init();
     try {
@@ -167,4 +172,4 @@ int main() {
     }
     return 0;
 }
-*/
+

@@ -77,13 +77,14 @@ struct Task {
     SharedImage image;
 };
 
-/*
+
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const Uniform* uniform
     ,FrameBufferCPU& fbo,const PostUniform* post,
     BuiltinRenderTargetGPU<RGBA> dest, Stream& stream);
-    */
 
+/*
 void init(Task& task,Stream& stream);
 void calcVert(Task& task, Stream& stream);
 void render(Task& task, Stream& stream);
 void postprocess(Task& task, Stream& stream);
+*/

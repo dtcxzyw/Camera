@@ -65,10 +65,10 @@ public:
 
 class UniqueIndex final {
 private:
-    const unsigned int mSize;
+    unsigned int mSize;
 public:
     UniqueIndex(unsigned int size) :mSize(size) {}
-    auto size() const {
+    BOTH auto size() const {
         return mSize;
     }
     CUDA UniqueIndexHelper operator[](unsigned int off) const {
@@ -78,12 +78,12 @@ public:
 
 class SharedIndex final {
 private:
-    const uvec3* ReadOnlyCache const mPtr;
-    const unsigned int mSize;
+    const uvec3* ReadOnlyCache mPtr;
+    unsigned int mSize;
 public:
     SharedIndex(const uvec3* ReadOnlyCache idx, unsigned int size) :mPtr(idx), mSize(size) {}
     SharedIndex(DataViewer<uvec3> ibo) :mPtr(ibo.begin()), mSize(ibo.size()) {}
-    auto size() const {
+    BOTH auto size() const {
         return mSize;
     }
     CUDA auto operator[](unsigned int off) const {

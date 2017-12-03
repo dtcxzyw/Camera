@@ -15,6 +15,7 @@
     <ClInclude Include="..\..\Include\Base\Common.hpp" />
     <ClInclude Include="..\..\Include\Base\Constant.hpp" />
     <ClInclude Include="..\..\Include\Base\DataSet.hpp" />
+    <ClInclude Include="..\..\Include\Base\DispatchSystem.hpp" />
     <ClInclude Include="..\..\Include\Base\Pipeline.hpp" />
     <ClInclude Include="..\..\Include\Base\Types.hpp" />
     <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp" />
@@ -37,6 +38,7 @@
     <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_internal.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Include\Base\DispatchSystem.cpp" />
     <ClCompile Include="..\..\Src\Base\Common.cpp" />
     <ClCompile Include="..\..\Src\Base\Pipeline.cpp" />
     <ClCompile Include="..\..\Src\IO\Model.cpp" />

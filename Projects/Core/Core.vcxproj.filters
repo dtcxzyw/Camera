@@ -96,6 +96,9 @@
     <ClInclude Include="..\..\Include\ScanLineRenderer\LineRasterizer.hpp">
       <Filter>ScanLineRenderer</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Base\DispatchSystem.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">
@@ -115,6 +118,9 @@
     </ClCompile>
     <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_draw.cpp">
       <Filter>Interaction\IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Include\Base\DispatchSystem.cpp">
+      <Filter>Base</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

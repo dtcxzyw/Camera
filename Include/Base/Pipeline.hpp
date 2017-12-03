@@ -7,6 +7,18 @@ CUDAInline unsigned int getID() {
     return blockIdx.x*blockDim.x + threadIdx.x;
 }
 
+constexpr auto maxThread = 1024U;
+
+template<typename Func, typename... Args>
+CUDAInline void run(Func func, unsigned int size, Args... args) {
+    if (size) func << <calcSize(size, maxThread), min(maxThread,size) >> > (size, args...);
+}
+
+template<typename Func, typename... Args>
+CUDAInline void runDim(Func func, dim3 grid, dim3 block, Args... args) {
+    func <<<grid, block>>> (args...);
+}
+
 class Event;
 
 class Stream final:Uncopyable {
@@ -20,13 +32,13 @@ public:
     ~Stream();
 
     void sync();
-    cudaStream_t getId() const;
+    cudaStream_t getID() const;
     cudaError_t query() const;
 
     template<typename Func, typename... Args>
     void run(Func func, unsigned int size, Args... args) {
         if (size) {
-            func <<<calcSize(size, mMaxThread), mMaxThread, 0, mStream >>> (size, args...);
+            func <<<calcSize(size, mMaxThread),min(mMaxThread,size), 0, mStream >>> (size, args...);
             checkError();
         }
     }
@@ -106,7 +118,7 @@ public:
     void update() {
         if (mStreams.empty())throw std::exception("This pipeline is incomplete.");
         if (mTasks.size() == mStreams.size()) {
-            mStreams.back().sync();
+            mTasks.back().second->wait();
             mEnd(mTasks.back().first);
             mTasks.pop_back();
         }

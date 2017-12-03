@@ -72,7 +72,7 @@ CUDA void post(ivec2 NDC, PostUniform uni, BuiltinRenderTargetGPU<RGBA> out) {
     out.set(NDC, { c,1.0f });
 }
 
-/*
+
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const Uniform* uniform
     , FrameBufferCPU& fbo, const PostUniform* puni,
     BuiltinRenderTargetGPU<RGBA> dest, Stream& stream) {
@@ -81,14 +81,14 @@ void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const Uniform* uniform
     auto vert = calcVertex<VI, OI, Uniform, VS>(stream, vbo, uniform, fbo.size);
     renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU, setPoint, drawPoint>
         (stream, vert, ibo, uniform, fbo.dataGPU.get(), fbo.size);
-    auto prim = genPrimitive<3,2,SharedIndex, VI, Uniform, GS>(stream, vbo,ibo,uniform,ibo.size());
-    auto pv= calcVertex<VI, OI, Uniform, VS>(stream, prim, uniform, fbo.size);
-    renderLines<OI, Uniform, FrameBufferGPU, setPoint, drawHair>(stream, pv, uniform
-        , fbo.dataGPU.get(), fbo.size);
+    //auto prim = genPrimitive<3,2,SharedIndex, VI, Uniform, GS>(stream, vbo,ibo,uniform,ibo.size());
+    //auto pv= calcVertex<VI, OI, Uniform, VS>(stream, prim, uniform, fbo.size);
+    //renderLines<OI, Uniform, FrameBufferGPU, setPoint, drawHair>(stream, pv, uniform
+     //   , fbo.dataGPU.get(), fbo.size);
     renderFullScreen<PostUniform, decltype(dest), post>(stream,puni,dest,fbo.size);
 }
-*/
 
+/*
 void init(Task & task, Stream & stream) {
     task.uniform.set(task.uni, stream);
     auto size = task.image->size();
@@ -119,3 +119,4 @@ void postprocess(Task & task, Stream & stream) {
     stream.sync();
     task.image->unbind(stream);
 }
+*/

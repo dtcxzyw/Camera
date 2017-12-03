@@ -37,7 +37,7 @@ auto genPrimitive(Stream& stream,DataViewer<Vert> vert,Index idx,const Uniform* 
     outSize *= outv;
     auto res = allocBuffer<Vert>(outSize);
     auto cnt = allocBuffer<unsigned int>();
-    checkError(cudaMemsetAsync(cnt.begin(),0,sizeof(unsigned int),stream.getId()));
+    checkError(cudaMemsetAsync(cnt.begin(),0,sizeof(unsigned int),stream.getID()));
     stream.run(GTHelper<inv,outv,Index, Vert, Uniform, gs>, idx.size(), vert.begin(), idx, uniform
         , Queue<Vert,outv>{cnt.begin(),res.begin()});
     stream.sync();
