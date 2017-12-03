@@ -3,26 +3,8 @@
 
 namespace Impl {
 
-    /*
-    Any::Any(Any & rhs) {
-        if (rhs.mData)mData = rhs.mData->clone();
-    }
-
-    bool Any::vaild() const {
-        return mData.get() == nullptr;
-    }
-
-    void Any::release() {
-        mData.reset();
-    }
-
-    void Any::swap(Any & rhs) {
-        mData.swap(rhs.mData);
-    }
-    */
-
-    size_t Impl::getPID() {
-        thread_local static size_t cnt = 0;
+    ID getPID() {
+        thread_local static ID cnt = 0;
         return ++cnt;
     }
 
@@ -33,7 +15,7 @@ namespace Impl {
         mBuffer.newDMI(mID, mSize, getID(),mType);
     }
 
-    size_t DeviceMemory::getID() const {
+    ID DeviceMemory::getID() const {
         return mID;
     }
 
@@ -41,15 +23,15 @@ namespace Impl {
         return mSize;
     }
 
-    DeviceMemoryInstance::DeviceMemoryInstance(size_t size, size_t end) :mSize(size), mEnd(end) {}
+    DeviceMemoryInstance::DeviceMemoryInstance(size_t size, ID end) :mSize(size), mEnd(end) {}
 
-    bool DeviceMemoryInstance::shouldRelease(size_t current) const {
+    bool DeviceMemoryInstance::shouldRelease(ID current) const {
         return current > mEnd;
     }
 
     void DeviceMemoryInstance::set(int mask, Stream & stream) {}
 
-    GlobalMemory::GlobalMemory(size_t size, size_t end):DeviceMemoryInstance(size,end) {}
+    GlobalMemory::GlobalMemory(size_t size, ID end):DeviceMemoryInstance(size,end) {}
 
     void * GlobalMemory::get() {
         if (!mMemory)mMemory = std::make_unique<Memory>(mSize);
@@ -57,15 +39,14 @@ namespace Impl {
     }
 
     void GlobalMemory::set(const void * src, Stream & stream) {
-        checkError(cudaMemcpyAsync(mMemory->getPtr(),src,mSize,
-            cudaMemcpyDefault,stream.getID()));
+        checkError(cudaMemcpyAsync(get(),src,mSize,cudaMemcpyDefault,stream.getID()));
     }
 
     void GlobalMemory::set(int mask, Stream & stream) {
-        checkError(cudaMemsetAsync(mMemory->getPtr(),mask,mSize,stream.getID()));
+        checkError(cudaMemsetAsync(get(),mask,mSize,stream.getID()));
     }
 
-    ConstantMemory::ConstantMemory(size_t size, size_t end)
+    ConstantMemory::ConstantMemory(size_t size, ID end)
         :DeviceMemoryInstance(size,end),mPtr(nullptr) {}
 
     ConstantMemory::~ConstantMemory() {
@@ -78,14 +59,121 @@ namespace Impl {
     }
 
     void ConstantMemory::set(const void * src, Stream & stream) {
-        Impl::constantSet(mPtr,src,static_cast<unsigned int>(mSize),stream.getID());
+        Impl::constantSet(get(),src,static_cast<unsigned int>(mSize),stream.getID());
     }
 
+    Operator::Operator(CommandBuffer & buffer):mBuffer(buffer),mID(getID()) {}
+
+    ID Operator::getID() {
+        return mID;
+    }
+
+    Impl::DeviceMemoryInstance & Operator::getMemory(ID memoryID) {
+        return *mBuffer.mDeviceMemory.find(memoryID)->second;
+    }
+
+    Memset::Memset(CommandBuffer & buffer, ID memoryID, int mask)
+        :Operator(buffer), mMemoryID(memoryID), mMask(mask) {}
+
+    void Memset::emit(Stream & stream) {
+        getMemory(mMemoryID).set(mMask,stream);
+    }
+
+    Memcpy::Memcpy(CommandBuffer & buffer, ID dst, std::function<void*()>&& src):
+        Operator(buffer),mDst(dst),mSrc(src){}
+
+    void Memcpy::emit(Stream & stream) {
+        getMemory(mDst).set(mSrc(),stream);
+    }
+
+    void KernelLaunchDim::emit(Stream & stream) {
+        mClosure(stream);
+    }
+
+    void KernelLaunchLinear::emit(Stream& stream) {
+        mClosure(stream);
+    }
+
+    Flag::Flag(CommandBuffer & buffer, const std::shared_ptr<bool>& ptr):Operator(buffer),mPtr(ptr) {}
+
+    void CUDART_CB streamCallback(cudaStream_t stream, cudaError_t status, void *userData) {
+        *reinterpret_cast<bool*>(userData) = true;
+    }
+
+    void Flag::emit(Stream & stream) {
+        checkError(cudaStreamAddCallback(stream.getID(),streamCallback,mPtr.get(),0));
+    }
 }
 
-void CommandBuffer::newDMI(size_t id, size_t size, size_t end, Impl::MemoryType type) {
+void CommandBuffer::newDMI(ID id, size_t size, ID end, Impl::MemoryType type) {
     if (type == Impl::MemoryType::global)
         mDeviceMemory.emplace(id,std::make_unique<Impl::GlobalMemory>(size, end));
     else
         mDeviceMemory.emplace(id,std::make_unique<Impl::ConstantMemory>(size, end));
+}
+
+void CommandBuffer::setPromise(const std::shared_ptr<bool>& promise) {
+    mPromise = promise;
+    mCommandQueue.emplace(std::make_unique<Impl::Flag>(*this,promise));
+}
+
+CommandBuffer::CommandBuffer():mLast(0) {}
+
+void CommandBuffer::memset(Impl::DMRef& memory, int mark) {
+    mCommandQueue.emplace(std::make_unique<Impl::Memset>(*this, memory.getID(),mark));
+}
+
+void CommandBuffer::memcpy(Impl::DMRef & dst, std::function<void*()>&& src) {
+    mCommandQueue.emplace(std::make_unique<Impl::Memcpy>(*this, dst.getID(), std::move(src)));
+}
+
+void CommandBuffer::pushOperator(std::unique_ptr<Impl::Operator>&& op) {
+    mCommandQueue.emplace(std::move(op));
+}
+
+void CommandBuffer::update(Stream& stream) {
+    if (!mPromise)throw std::exception("The task is imcomplete.");
+    if (!mCommandQueue.empty()) {
+        mCommandQueue.front()->emit(stream);
+        std::vector<ID> list;
+        for (auto&& x : mDeviceMemory)
+            if (x.second->shouldRelease(mLast))
+                list.emplace_back(x.first);
+        for (auto&& id : list)
+            mDeviceMemory.erase(id);
+        mLast = mCommandQueue.front()->getID();
+        mCommandQueue.pop();
+    }
+}
+
+bool CommandBuffer::ready() const {
+    return *mPromise;
+}
+
+DispatchSystem::DispatchSystem(size_t size):mStreams(size),mPos(0),mAlloc(0) {}
+
+Future DispatchSystem::submit(std::unique_ptr<CommandBuffer>&& buffer) {
+    mTasks.emplace_back(mAlloc,std::move(buffer));
+    mAlloc = (mAlloc + 1) % mStreams.size();
+    auto promise = std::make_shared<bool>(false);
+    mTasks.back().second->setPromise(promise);
+    return promise;
+}
+
+size_t DispatchSystem::size() const {
+    return mTasks.size();
+}
+
+void DispatchSystem::update(std::chrono::nanoseconds tot) {
+    using Clock = std::chrono::high_resolution_clock;
+    mPos %= mTasks.size();
+    auto begin = Clock::now();
+    for (;Clock::now()-begin>tot; mPos=(mPos+1)%mTasks.size())
+        mTasks[mPos].second->update(mStreams[mTasks[mPos].first]);
+}
+
+Future::Future(const std::shared_ptr<bool>& promise):mPromise(promise) {}
+
+bool Future::ready() const {
+    return *mPromise;
 }
