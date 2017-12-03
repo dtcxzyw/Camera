@@ -99,31 +99,3 @@ template<typename T>
 BOTH auto calcSize(T a, T b) {
     return (a + b - 1) / b;
 }
-
-template<typename T>
-class GPUArray final:Uncopyable {
-private:
-    T* mPtr;
-    unsigned int mSize;
-public:
-    CUDA GPUArray(unsigned int size):mSize(size),mPtr(reinterpret_cast<T*>(malloc(size*sizeof(T)))){}
-    CUDA void reset() {
-        free(mPtr);
-        mPtr = nullptr;
-    }
-    CUDA ~GPUArray() {
-        reset();
-    }
-    CUDA T& operator[](unsigned int i) {
-        return mPtr[i];
-    }
-    CUDA T* begin() {
-        return mPtr;
-    }
-    CUDA T* end() {
-        return mPtr+mSize;
-    }
-    CUDA unsigned int size() {
-        return mSize;
-    }
-};

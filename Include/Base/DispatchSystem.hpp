@@ -106,6 +106,14 @@ namespace Impl {
     };
 }
 
+class FunctionOperator final :public Impl::Operator {
+private:
+    std::function<void(Stream&)> mClosure;
+public:
+    FunctionOperator(CommandBuffer& buffer, std::function<void(Stream&)>&& closure);
+    void emit(Stream& stream) override;
+};
+
 template<typename T>
 class MemoryRef final:public Impl::DMRef {
 public:
@@ -122,16 +130,19 @@ namespace Impl {
         return arg;
     }
 
-    struct Tag {};
+    class IDTag {
+    public:
+        void* get(CommandBuffer& buffer, ID id);
+    };
 
     template<typename T>
-    class TID final:public Tag {
+    class TID final:public IDTag {
     private:
         ID mID;
     public:
         TID(ID id):mID(id){}
         T* get(CommandBuffer& buffer) {
-            return buffer.mDeviceMemory.find(mID)->second->get();
+            return get(buffer,mID);
         }
     };
 
@@ -140,7 +151,7 @@ namespace Impl {
         return ref.getID();
     }
 
-    template<typename T, typename = std::enable_if_t<!std::is_base_of<Tag, T>::value>>
+    template<typename T, typename = std::enable_if_t<!std::is_base_of<IDTag, T>::value>>
     T castPtr(T arg) {
         return arg;
     }
@@ -176,14 +187,6 @@ namespace Impl {
         }
         void emit(Stream& stream) override;
     };
-
-    class Flag final :public Operator {
-    private:
-        std::shared_ptr<bool> mPtr;
-    public:
-        Flag(CommandBuffer& buffer, const std::shared_ptr<bool>& ptr);
-        void emit(Stream& stream) override;
-    };
 }
 
 class Future final {
@@ -198,8 +201,7 @@ class CommandBuffer final :Uncopyable{
 private:
     friend class Impl::DeviceMemory;
     friend class Impl::Operator;
-    template<typename T>
-    friend class Impl::TID;
+    friend class Impl::IDTag;
     friend class DispatchSystem;
     void newDMI(ID id, size_t size, ID end,Impl::MemoryType type);
     std::map<ID, std::unique_ptr<Impl::DeviceMemoryInstance>> mDeviceMemory;
@@ -207,6 +209,8 @@ private:
     ID mLast;
     std::shared_ptr<bool> mPromise;
     void setPromise(const std::shared_ptr<bool>& promise);
+    void update(Stream& stream);
+    bool ready() const;
 public:
     CommandBuffer();
     template<typename T>
@@ -246,8 +250,7 @@ public:
     }
 
     void pushOperator(std::unique_ptr<Impl::Operator>&& op);
-    void update(Stream& stream);
-    bool ready() const;
+    void pushOperator(std::function<void(Stream&)>&& op);
 };
 
 class DispatchSystem final:Uncopyable {

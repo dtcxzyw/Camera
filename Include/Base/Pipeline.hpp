@@ -7,18 +7,6 @@ CUDAInline unsigned int getID() {
     return blockIdx.x*blockDim.x + threadIdx.x;
 }
 
-constexpr auto maxThread = 1024U;
-
-template<typename Func, typename... Args>
-CUDAInline void run(Func func, unsigned int size, Args... args) {
-    if (size) func << <calcSize(size, maxThread), min(maxThread,size) >> > (size, args...);
-}
-
-template<typename Func, typename... Args>
-CUDAInline void runDim(Func func, dim3 grid, dim3 block, Args... args) {
-    func <<<grid, block>>> (args...);
-}
-
 class Event;
 
 class Stream final:Uncopyable {

@@ -1,5 +1,6 @@
 #pragma once
 #include <Base/Pipeline.hpp>
+#include <Base/DispatchSystem.hpp>
 #include <device_atomic_functions.h>
 
 template<typename T>
@@ -30,6 +31,9 @@ private:
     uvec2 mSize;
 public:
     DepthBuffer(uvec2 size) :mSize(size),mData(allocBuffer<T>(size.x*size.y)) {}
+    void clear(CommandBuffer& buffer) {
+        buffer.pushOperator([=](Stream& stream) {stream.memset(mData, 0xff); });
+    }
     void clear(Stream& stream) {
         stream.memset(mData, 0xff);
     }

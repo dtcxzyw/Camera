@@ -1,5 +1,6 @@
 #include "DispatchSystem.hpp"
 #include "Constant.hpp"
+#include <algorithm>
 
 namespace Impl {
 
@@ -93,15 +94,11 @@ namespace Impl {
     void KernelLaunchLinear::emit(Stream& stream) {
         mClosure(stream);
     }
-
-    Flag::Flag(CommandBuffer & buffer, const std::shared_ptr<bool>& ptr):Operator(buffer),mPtr(ptr) {}
-
     void CUDART_CB streamCallback(cudaStream_t stream, cudaError_t status, void *userData) {
         *reinterpret_cast<bool*>(userData) = true;
     }
-
-    void Flag::emit(Stream & stream) {
-        checkError(cudaStreamAddCallback(stream.getID(),streamCallback,mPtr.get(),0));
+    void* IDTag::get(CommandBuffer & buffer, ID id) {
+        return buffer.mDeviceMemory.find(id)->second->get();
     }
 }
 
@@ -114,7 +111,9 @@ void CommandBuffer::newDMI(ID id, size_t size, ID end, Impl::MemoryType type) {
 
 void CommandBuffer::setPromise(const std::shared_ptr<bool>& promise) {
     mPromise = promise;
-    mCommandQueue.emplace(std::make_unique<Impl::Flag>(*this,promise));
+    pushOperator([=](Stream& stream) {
+        checkError(cudaStreamAddCallback(stream.getID(), Impl::streamCallback, promise.get(), 0));
+    });
 }
 
 CommandBuffer::CommandBuffer():mLast(0) {}
@@ -129,6 +128,10 @@ void CommandBuffer::memcpy(Impl::DMRef & dst, std::function<void*()>&& src) {
 
 void CommandBuffer::pushOperator(std::unique_ptr<Impl::Operator>&& op) {
     mCommandQueue.emplace(std::move(op));
+}
+
+void CommandBuffer::pushOperator(std::function<void(Stream&)>&& op) {
+    mCommandQueue.emplace(std::make_unique<FunctionOperator>(*this,std::move(op)));
 }
 
 void CommandBuffer::update(Stream& stream) {
@@ -170,10 +173,19 @@ void DispatchSystem::update(std::chrono::nanoseconds tot) {
     auto begin = Clock::now();
     for (;Clock::now()-begin>tot; mPos=(mPos+1)%mTasks.size())
         mTasks[mPos].second->update(mStreams[mTasks[mPos].first]);
+    mTasks.resize(std::remove_if(mTasks.begin(), mTasks.end(), 
+        [](auto&& x) {return x.second->ready(); }) - mTasks.begin());
 }
 
 Future::Future(const std::shared_ptr<bool>& promise):mPromise(promise) {}
 
 bool Future::ready() const {
     return *mPromise;
+}
+
+FunctionOperator::FunctionOperator(CommandBuffer& buffer,
+    std::function<void(Stream&)>&& closure):Operator(buffer),mClosure(closure) {}
+
+void FunctionOperator::emit(Stream & stream) {
+    mClosure(stream);
 }

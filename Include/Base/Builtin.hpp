@@ -6,7 +6,8 @@
 #include <texture_indirect_functions.h>
 #include <cuda_surface_types.h>
 #include <surface_indirect_functions.h>
-#include "Pipeline.hpp"
+#include <Base/Pipeline.hpp>
+#include <Base/DispatchSystem.hpp>
 
 template<typename T>
 struct Rename final {
@@ -36,6 +37,14 @@ public:
     }
     ~BuiltinArray() {
         checkError(cudaFreeArray(mArray));
+    }
+    DataViewer<T> download(CommandBuffer& buffer) const {
+        auto res = allocBuffer<T>(mSize.x*mSize.y);
+        buffer.pushOperator([=](Stream& stream) {
+            checkError(cudaMemcpyFromArrayAsync(res.begin(), mArray, 0, 0, res.size() * sizeof(T)
+                , cudaMemcpyDefault, stream.getID()));
+        });
+        return res;
     }
     DataViewer<T> download(Stream& stream) const {
         auto res = allocBuffer<T>(mSize.x*mSize.y);
@@ -148,6 +157,12 @@ public:
     BuiltinRenderTarget(BuiltinArray<T>& array):BuiltinRenderTarget(array.get(),array.size()) {}
     BuiltinRenderTargetGPU<T> toTarget() const {
         return mTarget;
+    }
+    void clear(CommandBuffer& buffer, T val) {
+        uint mul = sqrt(getEnvironment().getProp().maxThreadsPerBlock);
+        dim3 grid(calcSize(mSize.x, mul), calcSize(mSize.y, mul));
+        dim3 block(mul, mul);
+        buffer.runKernelDim(Impl::clear<T>, grid, block, toTarget(), val);
     }
     void clear(Stream& stream,T val) {
         uint mul = sqrt(getEnvironment().getProp().maxThreadsPerBlock);
