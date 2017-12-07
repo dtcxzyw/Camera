@@ -89,13 +89,6 @@ auto allocBuffer(size_t size=1) {
 }
 
 template<typename T>
-CUDAInline void swap(T& a, T& b) {
-    T c = a;
-    a = b;
-    b = c;
-}
-
-template<typename T>
 BOTH auto calcSize(T a, T b) {
     return (a + b - 1) / b;
 }

@@ -31,15 +31,29 @@ CALLABLE void GTHelper(unsigned int size, const Vert* ReadOnlyCache vert, Index 
 
 template<unsigned int inv,unsigned int outv,typename Index,typename Vert,typename Uniform
     ,GSF<Vert,Uniform,outv> gs>
-auto genPrimitive(Stream& stream,DataViewer<Vert> vert,Index idx,const Uniform* uniform
-    ,unsigned int outSize=0U) {
+auto genPrimitive(CommandBuffer& buffer,const MemoryRef<Vert>& vert,Index idx
+    ,const Uniform* uniform,unsigned int outSize=0U) {
+    if (outSize == 0U)outSize = idx.size();
+    outSize *= outv;
+    auto res = buffer.allocBuffer<Vert>(outSize);
+    auto cnt = buffer.allocBuffer<unsigned int>();
+    buffer.memset(cnt);
+    buffer.runKernelLinear(GTHelper<inv,outv,Index, Vert, Uniform, gs>, idx.size(), vert.begin(), idx
+        , uniform,makeLazyConstructor<Queue<Vert,outv>>(cnt,res));
+    return std::make_pair(res,cnt);
+}
+
+template<unsigned int inv, unsigned int outv, typename Index, typename Vert, typename Uniform
+    , GSF<Vert, Uniform, outv> gs>
+    auto genPrimitive(Stream& stream, DataViewer<Vert> vert, Index idx, const Uniform* uniform
+        , unsigned int outSize = 0U) {
     if (outSize == 0U)outSize = idx.size();
     outSize *= outv;
     auto res = allocBuffer<Vert>(outSize);
     auto cnt = allocBuffer<unsigned int>();
-    checkError(cudaMemsetAsync(cnt.begin(),0,sizeof(unsigned int),stream.getID()));
-    stream.run(GTHelper<inv,outv,Index, Vert, Uniform, gs>, idx.size(), vert.begin(), idx, uniform
-        , Queue<Vert,outv>{cnt.begin(),res.begin()});
+    checkError(cudaMemsetAsync(cnt.begin(), 0, sizeof(unsigned int), stream.getID()));
+    stream.run(GTHelper<inv, outv, Index, Vert, Uniform, gs>, idx.size(), vert.begin(), idx, uniform
+        , Queue<Vert, outv>{cnt.begin(), res.begin()});
     stream.sync();
     res.scale(*cnt);
     return res;

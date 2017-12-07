@@ -33,6 +33,14 @@ template< typename Out, typename Uniform, typename FrameBuffer,
 
 template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
+    void renderPoints(CommandBuffer& buffer, const MemoryRef<VertexInfo<Out>>& vert,
+        const Uniform* uniform, FrameBuffer* frameBuffer, uvec2 size) {
+    buffer.runKernelLinear(drawPointHelper<Out, Uniform, FrameBuffer, ds>, vert.size(), vert, uniform, frameBuffer, size);
+    buffer.runKernelLinear(drawPointHelper<Out, Uniform, FrameBuffer, fs>, vert.size(), vert, uniform, frameBuffer, size);
+}
+
+template< typename Out, typename Uniform, typename FrameBuffer,
+    FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
     void renderLines(Stream& stream, DataViewer<VertexInfo<Out>> vert,
         const Uniform* uniform, FrameBuffer* frameBuffer, uvec2 size) {
     auto cnt = allocBuffer<unsigned int>(11);

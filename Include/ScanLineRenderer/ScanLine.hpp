@@ -1,5 +1,6 @@
 #pragma once
 #include <Base/Pipeline.hpp>
+#include <Base/DispatchSystem.hpp>
 
 template<typename Vert, typename Out, typename Uniform>
 using VSF = void(*)(Vert in,Uniform uniform, vec4& pos,Out& out);

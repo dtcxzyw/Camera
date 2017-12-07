@@ -30,7 +30,7 @@ namespace Impl {
         return current > mEnd;
     }
 
-    void DeviceMemoryInstance::set(int mask, Stream & stream) {}
+    void DeviceMemoryInstance::memset(int mask, Stream & stream) {}
 
     GlobalMemory::GlobalMemory(size_t size, ID end):DeviceMemoryInstance(size,end) {}
 
@@ -43,7 +43,7 @@ namespace Impl {
         checkError(cudaMemcpyAsync(get(),src,mSize,cudaMemcpyDefault,stream.getID()));
     }
 
-    void GlobalMemory::set(int mask, Stream & stream) {
+    void GlobalMemory::memset(int mask, Stream & stream) {
         checkError(cudaMemsetAsync(get(),mask,mSize,stream.getID()));
     }
 
@@ -77,7 +77,7 @@ namespace Impl {
         :Operator(buffer), mMemoryID(memoryID), mMask(mask) {}
 
     void Memset::emit(Stream & stream) {
-        getMemory(mMemoryID).set(mMask,stream);
+        getMemory(mMemoryID).memset(mMask,stream);
     }
 
     Memcpy::Memcpy(CommandBuffer & buffer, ID dst, std::function<void*()>&& src):
@@ -97,7 +97,7 @@ namespace Impl {
     void CUDART_CB streamCallback(cudaStream_t stream, cudaError_t status, void *userData) {
         *reinterpret_cast<bool*>(userData) = true;
     }
-    void* IDTag::get(CommandBuffer & buffer, ID id) {
+    void* CastTag::get(CommandBuffer & buffer, ID id) {
         return buffer.mDeviceMemory.find(id)->second->get();
     }
 }
@@ -149,17 +149,16 @@ void CommandBuffer::update(Stream& stream) {
     }
 }
 
-bool CommandBuffer::ready() const {
-    return *mPromise;
+bool CommandBuffer::finished() const {
+    return mCommandQueue.empty();
 }
 
-DispatchSystem::DispatchSystem(size_t size):mStreams(size),mPos(0),mAlloc(0) {}
+DispatchSystem::DispatchSystem(size_t size):mStreams(size){}
 
 Future DispatchSystem::submit(std::unique_ptr<CommandBuffer>&& buffer) {
-    mTasks.emplace_back(mAlloc,std::move(buffer));
-    mAlloc = (mAlloc + 1) % mStreams.size();
+    mTasks.push(std::move(buffer));
     auto promise = std::make_shared<bool>(false);
-    mTasks.back().second->setPromise(promise);
+    mTasks.back()->setPromise(promise);
     return promise;
 }
 
@@ -168,18 +167,22 @@ size_t DispatchSystem::size() const {
 }
 
 void DispatchSystem::update(std::chrono::nanoseconds tot) {
-    using Clock = std::chrono::high_resolution_clock;
-    mPos %= mTasks.size();
     auto begin = Clock::now();
-    for (;Clock::now()-begin>tot; mPos=(mPos+1)%mTasks.size())
-        mTasks[mPos].second->update(mStreams[mTasks[mPos].first]);
-    mTasks.resize(std::remove_if(mTasks.begin(), mTasks.end(), 
-        [](auto&& x) {return x.second->ready(); }) - mTasks.begin());
+    while (true) {
+        auto t = Clock::now();
+        auto& stream = *std::min_element(mStreams.begin(),mStreams.end());
+        if (stream.free() && !mTasks.empty()) {
+            stream.set(std::move(mTasks.front()));
+            mTasks.pop();
+        }
+        if (t - begin > tot)return;
+        stream.update(t);
+    }
 }
 
 Future::Future(const std::shared_ptr<bool>& promise):mPromise(promise) {}
 
-bool Future::ready() const {
+bool Future::finished() const {
     return *mPromise;
 }
 
@@ -188,4 +191,31 @@ FunctionOperator::FunctionOperator(CommandBuffer& buffer,
 
 void FunctionOperator::emit(Stream & stream) {
     mClosure(stream);
+}
+
+DispatchSystem::StreamInfo::StreamInfo():mLast(Clock::now()) {}
+
+bool DispatchSystem::StreamInfo::free() {
+    return mTask==nullptr;
+}
+
+void DispatchSystem::StreamInfo::set(std::unique_ptr<CommandBuffer>&& task) {
+    mTask = std::move(task);
+}
+
+void DispatchSystem::StreamInfo::update(Clock::time_point point) {
+    if (mTask) {
+        mLast = point;
+        mTask->update(mStream);
+        if (mTask->finished()) {
+            mPool.emplace_back();
+            mPool.back().swap(mTask);
+        }
+    }
+    mPool.erase(std::remove_if(mPool.begin(), mPool.end(), 
+        [](auto&& task) {return *task->mPromise; }), mPool.end());
+}
+
+bool DispatchSystem::StreamInfo::operator<(const StreamInfo & rhs) const {
+    return mLast<rhs.mLast;
 }

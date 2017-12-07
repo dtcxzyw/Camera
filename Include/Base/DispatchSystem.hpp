@@ -4,6 +4,7 @@
 #include <queue>
 #include <type_traits>
 #include <chrono>
+#include <tuple>
 
 class CommandBuffer;
 using ID = uintmax_t;
@@ -40,7 +41,7 @@ namespace Impl {
         bool shouldRelease(ID current) const;
         virtual void* get() = 0;
         virtual void set(const void* src, Stream& stream) = 0;
-        virtual void set(int mask, Stream& stream);
+        virtual void memset(int mask, Stream& stream);
     };
 
     class GlobalMemory final :public DeviceMemoryInstance {
@@ -50,7 +51,7 @@ namespace Impl {
         GlobalMemory(size_t size, ID end);
         void* get() override;
         void set(const void* src, Stream& stream) override;
-        void set(int mask, Stream& stream) override;
+        void memset(int mask, Stream& stream) override;
     };
 
     class ConstantMemory final :public DeviceMemoryInstance {
@@ -125,24 +126,24 @@ public:
 
 namespace Impl {
 
-    template<typename T,typename=std::enable_if_t<!std::is_base_of<Impl::DMRef,T>::value>>
+    template<typename T, typename = std::enable_if_t<!std::is_base_of<Impl::DMRef, T>::value>>
     T castID(T arg) {
         return arg;
     }
 
-    class IDTag {
+    class CastTag {
     public:
         void* get(CommandBuffer& buffer, ID id);
     };
 
     template<typename T>
-    class TID final:public IDTag {
+    class TID final :public CastTag {
     private:
         ID mID;
     public:
-        TID(ID id):mID(id){}
+        TID(ID id) :mID(id) {}
         T* get(CommandBuffer& buffer) {
-            return get(buffer,mID);
+            return get(buffer, mID);
         }
     };
 
@@ -151,14 +152,38 @@ namespace Impl {
         return ref.getID();
     }
 
-    template<typename T, typename = std::enable_if_t<!std::is_base_of<IDTag, T>::value>>
-    T castPtr(T arg) {
+    template<typename T, typename = std::enable_if_t<!std::is_base_of<CastTag, T>::value>>
+    T cast(T arg) {
         return arg;
     }
+
     template<typename T>
-    auto castPtr(TID<T> ref) {
+    auto cast(TID<T> ref) {
         return ref.get();
     }
+
+    template<typename T, typename... Args>
+    class LazyConstructor;
+
+    template<typename T,typename... Args>
+    auto cast(LazyConstructor<T,Args...> ref) {
+        return ref.construct();
+    }
+
+    template<typename T, typename... Args>
+    class LazyConstructor final:public CastTag {
+    private:
+        std::tuple<Args...> mArgs;
+        template<size_t... I>
+        auto constructImpl(std::index_sequence<I...>) {
+            return T{ cast(std::get<I>(mArgs))... };
+        }
+    public:
+        LazyConstructor(Args... args):mArgs(std::make_tuple(args...)){}
+        auto construct() {
+            return constructImpl(std::make_index_sequence<std::tuple_size<decltype(mArgs)>::value>());
+        }
+    };
 
     class KernelLaunchDim final :public Operator {
     private:
@@ -168,7 +193,7 @@ namespace Impl {
         KernelLaunchDim(CommandBuffer& buffer, Func func, dim3 grid, dim3 block, Args... args)
             :Operator(buffer) {
             mClosure = [=](Stream& stream) {
-                stream.runDim(func, grid, block, castPtr(args)...);
+                stream.runDim(func, grid, block, cast(args)...);
             };
         }
         void emit(Stream& stream) override;
@@ -189,19 +214,24 @@ namespace Impl {
     };
 }
 
+template<typename T,typename... Args>
+auto makeLazyConstructor(Args... args) {
+    return Impl::LazyConstructor <T, decltype(Impl::castID(args))...>(Impl::castID(args)...);
+}
+
 class Future final {
 private:
     std::shared_ptr<bool> mPromise;
 public:
     Future(const std::shared_ptr<bool>& promise);
-    bool ready() const;
+    bool finished() const;
 };
 
 class CommandBuffer final :Uncopyable{
 private:
     friend class Impl::DeviceMemory;
     friend class Impl::Operator;
-    friend class Impl::IDTag;
+    friend class Impl::CastTag;
     friend class DispatchSystem;
     void newDMI(ID id, size_t size, ID end,Impl::MemoryType type);
     std::map<ID, std::unique_ptr<Impl::DeviceMemoryInstance>> mDeviceMemory;
@@ -210,11 +240,11 @@ private:
     std::shared_ptr<bool> mPromise;
     void setPromise(const std::shared_ptr<bool>& promise);
     void update(Stream& stream);
-    bool ready() const;
+    bool finished() const;
 public:
     CommandBuffer();
     template<typename T>
-    MemoryRef<T> allocBuffer(size_t size) {
+    MemoryRef<T> allocBuffer(size_t size=1) {
         return std::make_shared<Impl::DeviceMemory>(*this, size*sizeof(T),Impl::MemoryType::global);
     }
 
@@ -253,11 +283,25 @@ public:
     void pushOperator(std::function<void(Stream&)>&& op);
 };
 
+using Clock = std::chrono::high_resolution_clock;
+
 class DispatchSystem final:Uncopyable {
 private:
-    std::vector<std::pair<size_t,std::unique_ptr<CommandBuffer>>> mTasks;
-    std::vector<Stream> mStreams;
-    size_t mPos,mAlloc;
+    std::queue<std::unique_ptr<CommandBuffer>> mTasks;
+    class StreamInfo final:Uncopyable {
+    private:
+        Stream mStream;
+        std::unique_ptr<CommandBuffer> mTask;
+        std::vector<std::unique_ptr<CommandBuffer>> mPool;
+        Clock::time_point mLast;
+    public:
+        StreamInfo();
+        bool free();
+        void set(std::unique_ptr<CommandBuffer>&& task);
+        void update(Clock::time_point point);
+        bool operator<(const StreamInfo& rhs) const;
+    };
+    std::vector<StreamInfo> mStreams;
 public:
     DispatchSystem(size_t size);
     Future submit(std::unique_ptr<CommandBuffer>&& buffer);
