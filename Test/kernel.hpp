@@ -1,6 +1,6 @@
 #pragma once
 #include <Interaction/OpenGL.hpp>
-#include <Base/Pipeline.hpp>
+#include <Base/DispatchSystem.hpp>
 #include <Base/DataSet.hpp>
 #include <Base/Builtin.hpp>
 #include <ScanLineRenderer/DepthBuffer.hpp>
@@ -62,29 +62,5 @@ struct PostUniform final {
     ALIGN std::pair<float, unsigned int>* sum;
 };
 
-struct Task {
-    Task() {};
-    Task(Task&&) = default;
-    Task& operator=(Task&&) = default;
-    Uniform uni;
-    StaticMesh* mesh;
-    Constant<Uniform> uniform;
-    DataViewer<std::pair<float, unsigned int>> sum;
-    FrameBufferCPU FB;
-    DataViewer<VertexInfo<OI>> vi;
-    Constant<PostUniform> puni;
-    float lum;
-    SharedImage image;
-};
-
-
-void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const Uniform* uniform
-    ,FrameBufferCPU& fbo,const PostUniform* post,
-    BuiltinRenderTargetGPU<RGBA> dest, Stream& stream);
-
-/*
-void init(Task& task,Stream& stream);
-void calcVert(Task& task, Stream& stream);
-void render(Task& task, Stream& stream);
-void postprocess(Task& task, Stream& stream);
-*/
+void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const MemoryRef<Uniform>& uniform
+    ,FrameBufferCPU& fbo,const MemoryRef<PostUniform>& post,CommandBuffer& buffer);

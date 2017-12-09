@@ -9,12 +9,15 @@ namespace Impl {
         return ++cnt;
     }
 
-    DeviceMemory::DeviceMemory(CommandBuffer& buffer, size_t size, MemoryType type)
-        :mID(getID()), mSize(size), mBuffer(buffer), mType(type) {}
-
-    DeviceMemory::~DeviceMemory() {
-        mBuffer.newDMI(mID, mSize, getID(),mType);
+    std::unique_ptr<ResourceInstance> DeviceMemory::genInstance() const {
+        if (mType == MemoryType::global)
+            return std::make_unique<GlobalMemory>(mSize);
+        else
+            return std::make_unique<ConstantMemory>(mSize);
     }
+
+    DeviceMemory::DeviceMemory(CommandBuffer& buffer, size_t size, MemoryType type)
+        :Resource(buffer), mSize(size), mType(type) {}
 
     ID DeviceMemory::getID() const {
         return mID;
@@ -24,15 +27,15 @@ namespace Impl {
         return mSize;
     }
 
-    DeviceMemoryInstance::DeviceMemoryInstance(size_t size, ID end) :mSize(size), mEnd(end) {}
-
-    bool DeviceMemoryInstance::shouldRelease(ID current) const {
-        return current > mEnd;
+    void DeviceMemoryInstance::getRes(void * res) {
+        *reinterpret_cast<void**>(res) = get();
     }
+
+    DeviceMemoryInstance::DeviceMemoryInstance(size_t size):mSize(size) {}
 
     void DeviceMemoryInstance::memset(int mask, Stream & stream) {}
 
-    GlobalMemory::GlobalMemory(size_t size, ID end):DeviceMemoryInstance(size,end) {}
+    GlobalMemory::GlobalMemory(size_t size):DeviceMemoryInstance(size) {}
 
     void * GlobalMemory::get() {
         if (!mMemory)mMemory = std::make_unique<Memory>(mSize);
@@ -47,8 +50,8 @@ namespace Impl {
         checkError(cudaMemsetAsync(get(),mask,mSize,stream.getID()));
     }
 
-    ConstantMemory::ConstantMemory(size_t size, ID end)
-        :DeviceMemoryInstance(size,end),mPtr(nullptr) {}
+    ConstantMemory::ConstantMemory(size_t size)
+        :DeviceMemoryInstance(size),mPtr(nullptr) {}
 
     ConstantMemory::~ConstantMemory() {
         Impl::constantFree(mPtr,static_cast<unsigned int>(mSize));
@@ -63,14 +66,14 @@ namespace Impl {
         Impl::constantSet(get(),src,static_cast<unsigned int>(mSize),stream.getID());
     }
 
+    DeviceMemoryInstance & Operator::getMemory(ID id) const {
+        return dynamic_cast<DeviceMemoryInstance&>(mBuffer.getResource(id));
+    }
+
     Operator::Operator(CommandBuffer & buffer):mBuffer(buffer),mID(getID()) {}
 
     ID Operator::getID() {
         return mID;
-    }
-
-    Impl::DeviceMemoryInstance & Operator::getMemory(ID memoryID) {
-        return *mBuffer.mDeviceMemory.find(memoryID)->second;
     }
 
     Memset::Memset(CommandBuffer & buffer, ID memoryID, int mask)
@@ -97,16 +100,19 @@ namespace Impl {
     void CUDART_CB streamCallback(cudaStream_t stream, cudaError_t status, void *userData) {
         *reinterpret_cast<bool*>(userData) = true;
     }
-    void* CastTag::get(CommandBuffer & buffer, ID id) {
-        return buffer.mDeviceMemory.find(id)->second->get();
+
+    void CastTag::get(CommandBuffer & buffer, ID id,void* ptr) {
+        buffer.mResource.find(id)->second->getRes(ptr);
+    }
+
+    DMRef::DMRef(const std::shared_ptr<Impl::DeviceMemory>& ref):ResourceRef(ref) {}
+    size_t DMRef::size() const {
+        return dynamic_cast<Impl::DeviceMemory&>(*mRef).size();
     }
 }
 
-void CommandBuffer::newDMI(ID id, size_t size, ID end, Impl::MemoryType type) {
-    if (type == Impl::MemoryType::global)
-        mDeviceMemory.emplace(id,std::make_unique<Impl::GlobalMemory>(size, end));
-    else
-        mDeviceMemory.emplace(id,std::make_unique<Impl::ConstantMemory>(size, end));
+void CommandBuffer::registerResource(ID id, std::unique_ptr<ResourceInstance>&& instance) {
+    mResource.emplace(id, std::move(instance));
 }
 
 void CommandBuffer::setPromise(const std::shared_ptr<bool>& promise) {
@@ -139,11 +145,11 @@ void CommandBuffer::update(Stream& stream) {
     if (!mCommandQueue.empty()) {
         mCommandQueue.front()->emit(stream);
         std::vector<ID> list;
-        for (auto&& x : mDeviceMemory)
+        for (auto&& x : mResource)
             if (x.second->shouldRelease(mLast))
                 list.emplace_back(x.first);
         for (auto&& id : list)
-            mDeviceMemory.erase(id);
+            mResource.erase(id);
         mLast = mCommandQueue.front()->getID();
         mCommandQueue.pop();
     }
@@ -151,6 +157,10 @@ void CommandBuffer::update(Stream& stream) {
 
 bool CommandBuffer::finished() const {
     return mCommandQueue.empty();
+}
+
+ResourceInstance & CommandBuffer::getResource(ID id) {
+    return *mResource.find(id)->second;
 }
 
 DispatchSystem::DispatchSystem(size_t size):mStreams(size){}
@@ -218,4 +228,10 @@ void DispatchSystem::StreamInfo::update(Clock::time_point point) {
 
 bool DispatchSystem::StreamInfo::operator<(const StreamInfo & rhs) const {
     return mLast<rhs.mLast;
+}
+
+ResourceInstance::ResourceInstance():mEnd(Impl::getPID()) {}
+
+bool ResourceInstance::shouldRelease(ID current) const {
+    return current>mEnd;
 }

@@ -49,12 +49,12 @@ GLWindow::GLWindow() {
     glGenFramebuffers(1, &mFBO);
 }
 
-void GLWindow::present(SharedImage image) {
+void GLWindow::present(Image& image) {
     getContext().makeContext(mWindow);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, mFBO);
     glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D
-        , image->get(), 0);
-    auto isiz = image->size();
+        , image.get(), 0);
+    auto isiz = image.size();
     auto frame = size();
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, frame.x, frame.y, 0, 0, isiz.x, isiz.y
@@ -146,18 +146,3 @@ GLuint Image::get() const {
     return mTexture;
 }
 
-SwapChain::SwapChain(size_t size) {
-    for (size_t i = 0; i < size; ++i)
-        mImages.emplace_back(std::make_shared<Image>());
-}
-
-SharedImage SwapChain::pop() {
-    if (mImages.empty())return nullptr;
-    auto res = mImages.back();
-    mImages.pop_back();
-    return res;
-}
-
-void SwapChain::push(SharedImage image) {
-    mImages.emplace_back(image);
-}

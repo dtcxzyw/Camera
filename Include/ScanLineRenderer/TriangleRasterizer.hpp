@@ -38,7 +38,7 @@ CUDAInline void calcBase(vec3 a, vec3 b, vec3& w) {
 template<typename Index, typename Out>
 CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     const VertexInfo<Out>* ReadOnlyCache vert, Index index,
-    Triangle<Out>* info, vec2 fsize) {
+    Triangle<Out>* info, unsigned int* triID, vec2 fsize) {
     auto id = getID();
     if (id >= size)return;
     auto idx = index[id];
@@ -55,20 +55,10 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
         res.out[0] = vert[idx[0]].out, res.out[1] = vert[idx[1]].out, res.out[2] = vert[idx[2]].out;
         auto tsize = fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z);
         auto x = static_cast<int>(ceil(log2f(fmin(tsize + 1.0f, 50.0f))));
-        atomicInc(cnt + x, maxv);
-        info[atomicInc(cnt+7, maxv)] = res;
+        auto tid = atomicInc(cnt + 7, maxv);
+        triID[atomicInc(cnt + x, maxv) + x * size] = tid;
+        info[tid] = res;
     }
-}
-
-template<typename Out>
-CALLABLE void sortTriangles(unsigned int size,const Triangle<Out>* info,
-    Triangle<Out>* out,unsigned int* head) {
-    auto id = getID();
-    if (id >= size)return;
-    auto tri = info[id];
-    auto tsize = fmax(tri.rect.y - tri.rect.x, tri.rect.w - tri.rect.z);
-    auto x = static_cast<int>(ceil(log2f(fmin(tsize + 1.0f, 50.0f))));
-    out[atomicInc(head + x, maxv)] = tri;
 }
 
 template<typename Out, typename Uniform, typename FrameBuffer,
@@ -87,49 +77,53 @@ template<typename Out, typename Uniform, typename FrameBuffer,
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void drawMicroT(const Triangle<Out>* ReadOnlyCache info,
+        const unsigned int* ReadOnlyCache idx,
         const Uniform* ReadOnlyCache uniform, FrameBuffer* frameBuffer) {
-    auto tri = info[blockIdx.x];
+    auto tri = info[idx[blockIdx.x]];
     ivec2 uv{ tri.rect.x + threadIdx.x,tri.rect.z + threadIdx.y };
     vec2 p{ uv.x,uv.y };
     drawPoint<Out, Uniform, FrameBuffer, fs>(tri, uv, p, *uniform, *frameBuffer);
-} 
-
-constexpr auto tileSize = 32U;
+}
 
 template<typename Out>
-CALLABLE void clipTile(const Triangle<Out>* ReadOnlyCache in,
-    unsigned int* cnt, unsigned int* out) {
-    auto id = threadIdx.x*blockDim.y + threadIdx.y;
-    auto range = in[blockIdx.x].rect;
-    vec2 begin = { tileSize*threadIdx.x,tileSize*threadIdx.y };
-    if ((range.x <= begin.x + tileSize) &(range.y >= begin.x)&
-        (range.z <= begin.y + tileSize)&(range.w >= begin.y))
-        out[gridDim.x*id + atomicInc(cnt + id, maxv)] = blockIdx.x;
+CALLABLE void cutTriangles(unsigned int size, unsigned int* cnt,
+    Triangle<Out>* tri, unsigned int* idx, unsigned int* out) {
+    auto id = getID();
+    if (id >= size)return;
+    auto info = tri[idx[id]];
+    auto rect = info.rect;
+    for (auto i = rect[0]; i < rect[1]; i += 32.0f)
+        for (auto j = rect[2]; j < rect[3]; j += 32.0f) {
+            auto tid = atomicInc(cnt + 7, maxv);
+            out[atomicInc(cnt + 5, maxv)] = tid;
+            info.rect[0] = i, info.rect[1] = j;
+            tri[tid] = info;
+        }
 }
 
 template<typename Out, typename Uniform, typename FrameBuffer,
-    FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void drawTriangles(const Triangle<Out>* ReadOnlyCache info, const unsigned int* ReadOnlyCache tid,
-        const Uniform* ReadOnlyCache uniform, FrameBuffer* frameBuffer
-        , unsigned int offsetX, unsigned int offsetY) {
-    auto tri = info[tid[blockIdx.x]];
-    ivec2 uv{ offsetX + blockIdx.y*blockDim.x + threadIdx.x,
-        offsetY + blockIdx.z*blockDim.y + threadIdx.y };
-    vec2 p{ uv.x,uv.y };
-    if ((p.x < tri.rect.x) | (p.x > tri.rect.y) | (p.y < tri.rect.z) | (p.y > tri.rect.w))return;
-    drawPoint<Out, Uniform, FrameBuffer, fs>(tri, uv, p, *uniform, *frameBuffer);
+    FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
+    CALLABLE void renderTrianglesGPU(unsigned int* cnt, Triangle<Out>* tri
+        , unsigned int* idx, Uniform* uniform, FrameBuffer* frameBuffer, unsigned int size) {
+    constexpr auto block = 64U;
+    cutTriangles<Out> << <calcSize(cnt[6], block), block >> > (cnt[6], cnt, tri, idx + size * 6, idx + size * 5);
+
+    for (auto i = 0; i < 6; ++i)
+        if (cnt[i]) {
+            auto bsiz = 1U << i;
+            dim3 grid(cnt[i]);
+            dim3 block(bsiz, bsiz);
+            drawMicroT<Out, Uniform, FrameBuffer, ds> << <grid, block >> > (tri, idx + size * i,
+                uniform, frameBuffer);
+        }
+
+    for (auto i = 0; i < 6; ++i)
+        if (cnt[i]) {
+            auto bsiz = 1U << i;
+            dim3 grid(cnt[i]);
+            dim3 block(bsiz, bsiz);
+            drawMicroT<Out, Uniform, FrameBuffer, fs> << <grid, block >> > (tri, idx + size * i,
+                uniform, frameBuffer);
+        }
 }
 
-template<typename Out, typename Uniform, typename FrameBuffer,
-    FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void drawTile(const unsigned int* ReadOnlyCache tsiz, const Triangle<Out>* ReadOnlyCache info,
-        const unsigned int* ReadOnlyCache tid, const Uniform* ReadOnlyCache uniform, FrameBuffer* frameBuffer,
-        unsigned int num) {
-    auto id = threadIdx.x*blockDim.y + threadIdx.y;
-    if (tsiz[id]) {
-        dim3 grid(tsiz[id]);
-        dim3 block(tileSize, tileSize);
-        drawTriangles<Out, Uniform, FrameBuffer, fs> << <grid, block >> > (info,
-            tid + num*id, uniform, frameBuffer, threadIdx.x*tileSize, threadIdx.y*tileSize);
-    }
-}

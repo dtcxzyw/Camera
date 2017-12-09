@@ -19,15 +19,25 @@ public:
     GLuint get() const;
 };
 
-using SharedImage = std::shared_ptr<Image>;
-
+template<typename Frame>
 class SwapChain final:Uncopyable {
 private:
-    std::vector<SharedImage> mImages;
+    std::vector<std::shared_ptr<Frame>> mImages;
 public:
-    SwapChain(size_t size);
-    SharedImage pop();
-    void push(SharedImage image);
+    using SharedFrame = std::shared_ptr<Frame>;
+    SwapChain(size_t size) {
+        for (size_t i = 0; i < size; ++i)
+            mImages.emplace_back(std::make_shared<Frame>());
+    }
+    SharedFrame pop() {
+        if (mImages.empty())return nullptr;
+        auto ptr = std::move(mImages.back());
+        mImages.pop_back();
+        return ptr;
+    }
+    void push(SharedFrame&& image) {
+        mImages.emplace_back(std::move(image));
+    }
 };
 
 class GLWindow:Uncopyable {
@@ -36,7 +46,7 @@ protected:
     GLuint mFBO;
 public:
     GLWindow();
-    void present(SharedImage image);
+    void present(Image& image);
     void swapBuffers();
     bool update();
     void resize(size_t width, size_t height);

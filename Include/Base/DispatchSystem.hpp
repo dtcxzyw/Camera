@@ -10,35 +10,68 @@ class CommandBuffer;
 using ID = uintmax_t;
 
 namespace Impl {
-
     ID getPID();
+    struct ResourceTag{};
+}
 
+class ResourceInstance :Uncopyable {
+private:
+    ID mEnd;
+public:
+    ResourceInstance();
+    virtual ~ResourceInstance() = default;
+    bool shouldRelease(ID current) const;
+    virtual void getRes(void*) = 0;
+};
+
+template<typename T>
+class Resource :Uncopyable {
+protected:
+    ID mID;
+    CommandBuffer& mBuffer;
+    virtual std::unique_ptr<ResourceInstance> genInstance() const=0;
+public:
+    Resource(CommandBuffer& buffer) :mID(Impl::getPID()),mBuffer(buffer) {}
+    virtual ~Resource();
+    ID getID() const {
+        return mID;
+    }
+};
+
+template<typename T>
+class ResourceRef:Impl::ResourceTag {
+protected:
+    std::shared_ptr<Resource<T>> mRef;
+public:
+    ResourceRef(const std::shared_ptr<Resource<T>>& ref):mRef(ref){}
+    ID getID() const {
+        return mRef->getID();
+    }
+};
+
+namespace Impl{
     enum MemoryType {
         global, constant
     };
 
-    class DeviceMemory final :Uncopyable {
+    class DeviceMemory final :public Resource<void*> {
     private:
-        ID mID;
         size_t mSize;
-        CommandBuffer& mBuffer;
         MemoryType mType;
+        std::unique_ptr<ResourceInstance> genInstance() const override;
     public:
         DeviceMemory(CommandBuffer& buffer, size_t size, MemoryType type);
-        ~DeviceMemory();
         ID getID() const;
         size_t size() const;
     };
 
-    class DeviceMemoryInstance :Uncopyable {
-    private:
-        ID mEnd;
+    class DeviceMemoryInstance :public ResourceInstance {
     protected:
         size_t mSize;
+        void getRes(void*) override;
     public:
-        DeviceMemoryInstance(size_t size, ID end);
+        DeviceMemoryInstance(size_t size);
         virtual ~DeviceMemoryInstance() = default;
-        bool shouldRelease(ID current) const;
         virtual void* get() = 0;
         virtual void set(const void* src, Stream& stream) = 0;
         virtual void memset(int mask, Stream& stream);
@@ -48,7 +81,7 @@ namespace Impl {
     private:
         SharedMemory mMemory;
     public:
-        GlobalMemory(size_t size, ID end);
+        GlobalMemory(size_t size);
         void* get() override;
         void set(const void* src, Stream& stream) override;
         void memset(int mask, Stream& stream) override;
@@ -58,30 +91,23 @@ namespace Impl {
     private:
         void* mPtr;
     public:
-        ConstantMemory(size_t size, ID end);
+        ConstantMemory(size_t size);
         ~ConstantMemory();
         void* get() override;
         void set(const void* src, Stream& stream) override;
     };
 
-    class DMRef {
-    private:
-        std::shared_ptr<Impl::DeviceMemory> mRef;
+    class DMRef:public ResourceRef<void*> {
     public:
-        DMRef(const std::shared_ptr<Impl::DeviceMemory>& ref) :mRef(ref) {}
-        ID getID() const {
-            return mRef->getID();
-        }
-        size_t size() const {
-            return mRef->size();
-        }
+        DMRef(const std::shared_ptr<Impl::DeviceMemory>& ref);
+        size_t size() const;
     };
 
     class Operator :Uncopyable {
     protected:
         CommandBuffer& mBuffer;
         ID mID;
-        Impl::DeviceMemoryInstance& getMemory(ID memoryID);
+        DeviceMemoryInstance& getMemory(ID id) const;
     public:
         Operator(CommandBuffer& buffer);
         ID getID();
@@ -126,29 +152,36 @@ public:
 
 namespace Impl {
 
-    template<typename T, typename = std::enable_if_t<!std::is_base_of<Impl::DMRef, T>::value>>
+    class CastTag {
+    protected:
+        void get(CommandBuffer & buffer, ID id, void* ptr);
+    };
+
+    template<typename T>
+    class ResourceID final :public CastTag {
+    private:
+        ID mID;
+    public:
+        ResourceID(ID id) :mID(id) {}
+        T get(CommandBuffer& buffer) {
+            T res;
+            get(buffer, mID,&res);
+            return res;
+        }
+    };
+
+    template<typename T, typename = std::enable_if_t<!std::is_base_of<Impl::ResourceTag, T>::value>>
     T castID(T arg) {
         return arg;
     }
 
-    class CastTag {
-    public:
-        void* get(CommandBuffer& buffer, ID id);
-    };
+    template<typename T, typename = std::enable_if_t<!std::is_base_of<Impl::DMRef, T>::value>>
+    auto castID(const ResourceRef<T>& ref)->ResourceID<T> {
+        return ref.getID();
+    }
 
     template<typename T>
-    class TID final :public CastTag {
-    private:
-        ID mID;
-    public:
-        TID(ID id) :mID(id) {}
-        T* get(CommandBuffer& buffer) {
-            return get(buffer, mID);
-        }
-    };
-
-    template<typename T>
-    auto castID(const MemoryRef<T>& ref)->TID<T> {
+    auto castID(const MemoryRef<T>& ref)->ResourceID<T*> {
         return ref.getID();
     }
 
@@ -158,7 +191,7 @@ namespace Impl {
     }
 
     template<typename T>
-    auto cast(TID<T> ref) {
+    auto cast(ResourceID<T> ref) {
         return ref.get();
     }
 
@@ -229,18 +262,20 @@ public:
 
 class CommandBuffer final :Uncopyable{
 private:
-    friend class Impl::DeviceMemory;
+    template<typename T>
+    friend class Resource;
     friend class Impl::Operator;
     friend class Impl::CastTag;
     friend class DispatchSystem;
-    void newDMI(ID id, size_t size, ID end,Impl::MemoryType type);
-    std::map<ID, std::unique_ptr<Impl::DeviceMemoryInstance>> mDeviceMemory;
+    void registerResource(ID id, std::unique_ptr<ResourceInstance>&& instance);
+    std::map<ID, std::unique_ptr<ResourceInstance>> mResource;
     std::queue<std::unique_ptr<Impl::Operator>> mCommandQueue;
     ID mLast;
     std::shared_ptr<bool> mPromise;
     void setPromise(const std::shared_ptr<bool>& promise);
     void update(Stream& stream);
     bool finished() const;
+    ResourceInstance& getResource(ID id);
 public:
     CommandBuffer();
     template<typename T>
@@ -264,13 +299,23 @@ public:
 
     template<typename T>
     void memcpy(MemoryRef<T>& dst, const MemoryRef<T>& src) {
-        memcpy(dst, [src,this] {return mDeviceMemory.find(src)->second->get(); });
+        auto id = src.getID();
+        memcpy(dst, [id, this] {
+            void* res;
+            mResource.find(id)->second->getRes(&res);
+            return res;
+        });
     }
 
     template<typename Func,typename... Args>
     void runKernelDim(Func func,dim3 grid,dim3 block,Args... args) {
         mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchDim>(func,grid,block
             ,Impl::castID(args)...));
+    }
+
+    template<typename Func, typename... Args>
+    void callKernel(Func func, Args... args) {
+        runKernelDim(func, dim3{}, dim3{},args...);
     }
 
     template<typename Func, typename... Args>
@@ -308,3 +353,8 @@ public:
     size_t size() const;
     void update(std::chrono::nanoseconds tot);
 };
+
+template<typename T>
+inline Resource<T>::~Resource() {
+    mBuffer.registerResource(mID,genInstance());
+}

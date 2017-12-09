@@ -5,21 +5,8 @@ Stream::Stream() {
     mMaxThread = getEnvironment().getProp().maxThreadsPerBlock;
 }
 
-Stream::Stream(Stream && rhs):mStream(rhs.mStream),mMaxThread(rhs.mMaxThread) {
-    rhs.mStream = 0;
-}
-
-Stream & Stream::operator=(Stream && rhs) {
-    if (this != &rhs) {
-        checkError(cudaStreamDestroy(mStream));
-        mStream = rhs.mStream;
-        rhs.mStream = 0;
-    }
-    return *this;
-}
-
 Stream::~Stream() {
-    if(mStream)checkError(cudaStreamDestroy(mStream));
+    checkError(cudaStreamDestroy(mStream));
 }
 
 void Stream::sync() {
