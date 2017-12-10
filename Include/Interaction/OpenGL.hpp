@@ -14,8 +14,8 @@ public:
     ~Image();
     uvec2 size() const;
     void resize(uvec2 size);
-    cudaArray_t bind(Stream& stream);
-    void unbind(Stream& stream);
+    cudaArray_t bind(cudaStream_t stream);
+    void unbind(cudaStream_t stream);
     GLuint get() const;
 };
 
@@ -37,6 +37,9 @@ public:
     }
     void push(SharedFrame&& image) {
         mImages.emplace_back(std::move(image));
+    }
+    bool empty() const {
+        return mImages.empty();
     }
 };
 

@@ -67,21 +67,38 @@ CUDA void post(ivec2 NDC, PostUniform uni, BuiltinRenderTargetGPU<RGBA> out) {
         atomicAdd(&uni.sum->first, fmin(log(lum), 5.0f));
         atomicInc(&uni.sum->second, maxv);
     }
-    c = pow(ACES(c,uni.lum),vec3(1.0f/2.2f));
+    c = pow(ACES(c,*uni.lum),vec3(1.0f/2.2f));
     NDC.y = uni.in.mSize.y- 1 - NDC.y;
     out.set(NDC, { c,1.0f });
 }
 
+CALLABLE void updateLum(PostUniform uniform) {
+    *uniform.lum = calcLum(uniform.sum->first/(uniform.sum->second+1));
+}
+
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const MemoryRef<Uniform>& uniform
-    , FrameBufferCPU & fbo, const MemoryRef<PostUniform>& post, CommandBuffer & buffer) {
+    , FrameBufferCPU & fbo, float* lum, CommandBuffer & buffer) {
     fbo.colorRT->clear(buffer, vec4{ 0.0f,0.0f,0.0f,1.0f });
     fbo.depthBuffer->clear(buffer);
     auto vert = calcVertex<VI, OI, Uniform, VS>(buffer, vbo, uniform, fbo.size);
     renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU, setPoint, drawPoint>
-        (buffer, vert, ibo, uniform, fbo.dataGPU.get(), fbo.size);
+        (buffer, vert, ibo, uniform,fbo.getData(buffer), fbo.size);
     //auto prim = genPrimitive<3,2,SharedIndex, VI, Uniform, GS>(stream, vbo,ibo,uniform,ibo.size());
     //auto pv= calcVertex<VI, OI, Uniform, VS>(stream, prim, uniform, fbo.size);
     //renderLines<OI, Uniform, FrameBufferGPU, setPoint, drawHair>(stream, pv, uniform
     //   , fbo.dataGPU.get(), fbo.size);
-    renderFullScreen<PostUniform, decltype(dest), post>(buffer, post, dest, fbo.size);
+    auto puni = buffer.allocConstant<PostUniform>();
+    auto sum = buffer.allocBuffer<std::pair<float, unsigned int>>();
+    buffer.memset(sum);
+    auto punidata = buffer.makeLazyConstructor<PostUniform>(fbo.data,lum,sum);
+    buffer.memcpy(puni, [punidata,&buffer](auto call) {
+        auto pd = punidata;
+        auto data=pd.get(buffer);
+        call(&data);
+    });
+    ResourceRef<BuiltinRenderTargetGPU<RGBA>> image
+        = std::make_shared<ImageResource>(buffer,fbo.image);
+    renderFullScreen<PostUniform,BuiltinRenderTargetGPU<RGBA>, post>(buffer, puni
+        , image, fbo.size);
+    buffer.callKernel(updateLum,punidata);
 }

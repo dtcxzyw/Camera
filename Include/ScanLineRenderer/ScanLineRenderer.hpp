@@ -14,6 +14,15 @@ auto calcVertex(CommandBuffer& buffer, const MemoryRef<Vert>& vert
     return vertex;
 }
 
+template<typename Vert, typename Out, typename Uniform, VSF<Vert, Out, Uniform> vs>
+auto calcVertex(CommandBuffer& buffer, const DataViewer<Vert>& vert
+    , const MemoryRef<Uniform>& uniform, uvec2 size) {
+    auto vertex = buffer.allocBuffer<VertexInfo<Out>>(vert.size());
+    buffer.runKernelLinear(runVS<Vert, Out, Uniform, vs>, vert.size(),
+        vert.begin(), uniform, vertex, static_cast<vec2>(size));
+    return vertex;
+}
+
 template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void drawPointHelper(unsigned int size, const VertexInfo<Out>* ReadOnlyCache vert,
@@ -77,7 +86,8 @@ template< typename Out, typename Uniform, typename FrameBuffer,
 template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
     void renderTriangles(CommandBuffer& buffer, const MemoryRef<VertexInfo<Out>>& vert,
-        Index index, const MemoryRef<Uniform>& uniform, FrameBuffer* frameBuffer, uvec2 size) {
+        Index index, const MemoryRef<Uniform>& uniform
+        ,const MemoryRef<FrameBuffer>& frameBuffer, uvec2 size) {
     auto cnt =buffer.allocBuffer<unsigned int>(8);
     buffer.memset(cnt);
     auto info =buffer.allocBuffer<Triangle<Out>>(index.size()*2);
@@ -89,7 +99,7 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
 }
 
 template<typename Uniform, typename FrameBuffer, FSFSF<Uniform, FrameBuffer> fs>
-void renderFullScreen(CommandBuffer& buffer, const Uniform* uniform,
-    FrameBuffer frameBuffer, uvec2 size) {
-    buffer.runKernelDim(runFSFS<Uniform, FrameBuffer, fs>, size.x*size.y, uniform, frameBuffer, size.x);
+void renderFullScreen(CommandBuffer& buffer, const MemoryRef<Uniform>& uniform,
+    const ResourceRef<FrameBuffer>& frameBuffer, uvec2 size) {
+    buffer.runKernelLinear(runFSFS<Uniform, FrameBuffer, fs>, size.x*size.y, uniform, frameBuffer, size.x);
 }

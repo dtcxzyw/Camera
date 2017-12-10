@@ -29,8 +29,7 @@ void renderGUI(IMGUIWindow& window) {
 Uniform getUniform(float w,float h,float delta) {
     vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f };
     auto V = lookAt(cp, { 0.0f,0.0f,0.0f }, { 0.0f,1.0f,0.0f });
-    glm::mat4 M;
-    M = scale(M, vec3(1.0f, 1.0f, 1.0f)*10.0f);
+    static glm::mat4 M = scale(glm::mat4{}, vec3(1.0f, 1.0f, 1.0f)*10.0f);
     auto fov = toFOV(36.0f*24.0f, f);
     glm::mat4 P = perspectiveFov(fov, w, h, 1.0f, 20.0f);
     M = rotate(M, delta*0.2f, { 0.0f,1.0f,0.0f });
@@ -48,23 +47,54 @@ Uniform getUniform(float w,float h,float delta) {
     return u;
 }
 
+using SwapChain_t = SwapChain<FrameBufferCPU>;
+
+auto addTask(DispatchSystem& system
+    ,SwapChain_t::SharedFrame frame,uvec2 size,float* lum) {
+    static float last = glfwGetTime();
+    float now = glfwGetTime();
+    auto uniform = getUniform(size.x,size.y,now-last);
+    last = now;
+    auto buffer=std::make_unique<CommandBuffer>();
+    frame->resize(size.x,size.y);
+    auto uni = buffer->allocConstant<Uniform>();
+    buffer->memcpy(uni, [uniform](auto call) {call(&uniform); });
+    kernel(model.mVert,model.mIndex,uni,*frame,lum,*buffer);
+    return std::make_pair(system.submit(std::move(buffer)),frame);
+}
+
 int main() {
     getEnvironment().init();
     try {
         model.load("Res/bunny.obj");
         IMGUIWindow window;
-        SwapChain<FrameBufferCPU> swapChain(5);
-        DispatchSystem system(2);
-        while (window.update()) {
-            auto size = window.size();
-            if (size.x == 0 || size.y == 0) {
-                std::this_thread::sleep_for(1ms);
-                continue;
+        SwapChain_t swapChain(5);
+        {
+            DispatchSystem system(1);
+            std::queue<std::pair<Future, SwapChain_t::SharedFrame>> futures;
+            auto lum = allocBuffer<float>();
+            while (window.update()) {
+                auto size = window.size();
+                if (size.x == 0 || size.y == 0) {
+                    std::this_thread::sleep_for(1ms);
+                    continue;
+                }
+                SwapChain_t::SharedFrame frame;
+                while (true) {
+                    system.update(1us);
+                    if (system.size() < 3 && !swapChain.empty())
+                        futures.emplace(addTask(system, swapChain.pop(), size, lum.begin()));
+                    if (futures.size() && futures.front().first.finished()) {
+                        frame = futures.front().second;
+                        futures.pop();
+                        break;
+                    }
+                }
+                window.present(frame->image);
+                swapChain.push(std::move(frame));
+                renderGUI(window);
+                window.swapBuffers();
             }
-            auto image = swapChain.pop();
-
-            renderGUI(window);
-            window.swapBuffers();
         }
     }
     catch (const std::exception& e) {

@@ -95,11 +95,17 @@
       <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda </AdditionalOptions>
       <FastMath>false</FastMath>
       <MaxRegCount>64</MaxRegCount>
+      <Optimization>O2</Optimization>
+      <RuntimeChecks>Default</RuntimeChecks>
+      <TypeInfo>false</TypeInfo>
+      <Warning>W0</Warning>
     </CudaCompile>
     <CudaLink>
       <AdditionalDependencies>
       </AdditionalDependencies>
       <PerformDeviceLink>true</PerformDeviceLink>
+      <GPUDebugInfo>false</GPUDebugInfo>
+      <Optimization>O2</Optimization>
     </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

@@ -35,6 +35,6 @@ CUDAInline RGB ACES(RGB color, float lum) {
     return clamp((color * (A * color + B)) / (color * (C * color + D) + E), 0.0f, 1.0f);
 }
 
-inline float calcLum(float ave, float alpha = 0.18f) {
+CUDAInline float calcLum(float ave, float alpha = 0.18f) {
     return alpha / exp(ave);
 }

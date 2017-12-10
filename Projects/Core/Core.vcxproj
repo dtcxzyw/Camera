@@ -103,6 +103,9 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <SDLCheck>false</SDLCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -120,9 +123,15 @@
       <CodeGeneration>compute_52,sm_52</CodeGeneration>
       <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda</AdditionalOptions>
       <FastMath>false</FastMath>
+      <Optimization>O2</Optimization>
+      <RuntimeChecks>Default</RuntimeChecks>
+      <TypeInfo>false</TypeInfo>
+      <Warning>W0</Warning>
     </CudaCompile>
     <CudaLink>
       <PerformDeviceLink>false</PerformDeviceLink>
+      <GPUDebugInfo>false</GPUDebugInfo>
+      <Optimization>O2</Optimization>
     </CudaLink>
     <Lib>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

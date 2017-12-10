@@ -24,22 +24,62 @@ struct FrameBufferGPU final {
     }
 };
 
+class ImageResourceInstance final :public ResourceInstance {
+private:
+    Image & mImage;
+    std::shared_ptr<BuiltinRenderTarget<RGBA>> mTarget;
+    cudaStream_t mStream;
+public:
+    ImageResourceInstance(Image& image):mImage(image){}
+    void getRes(void* ptr, cudaStream_t stream) override {
+        if (!mTarget) {
+            mTarget=std::make_shared<BuiltinRenderTarget<RGBA>>(mImage.bind(stream)
+                ,mImage.size());
+            mStream = stream;
+        }
+        *reinterpret_cast<BuiltinRenderTargetGPU<RGBA>*>(ptr) = mTarget->toTarget();
+    }
+    ~ImageResourceInstance() {
+        if (mTarget) {
+            mTarget.reset();
+            mImage.unbind(mStream);
+        }
+    }
+};
+
+class ImageResource final:public Resource<BuiltinRenderTargetGPU<RGBA>> {
+private:
+    Image& mImage;
+public:
+    ImageResource(CommandBuffer& buffer,Image& image):Resource(buffer),mImage(image){}
+    ~ImageResource() {
+        addInstance(std::make_unique<ImageResourceInstance>(mImage));
+    }
+};
+
 struct FrameBufferCPU final {
     std::unique_ptr<BuiltinArray<RGBA>> colorBuffer;
     std::unique_ptr<DepthBuffer<unsigned int>> depthBuffer;
     std::unique_ptr<BuiltinRenderTarget<RGBA>> colorRT;
+    Image image;
     uvec2 size;
-    Constant<FrameBufferGPU> dataGPU;
     FrameBufferGPU data;
-    void resize(size_t width, size_t height,Stream& stream) {
+    void resize(size_t width, size_t height) {
         if (size.x == width && size.y == height)return;
         colorBuffer = std::make_unique<BuiltinArray<RGBA>>(width, height);
         colorRT = std::make_unique <BuiltinRenderTarget<RGBA>>(*colorBuffer);
         depthBuffer = std::make_unique<DepthBuffer<unsigned int>>(uvec2(width, height));
+        size = { width,height };
+        image.resize(size);
         data.color = colorRT->toTarget();
         data.depth = depthBuffer->toBuffer();
-        data.mSize = size = { width,height };
-        dataGPU.set(data,stream);
+        data.mSize = size;
+    }
+    MemoryRef<FrameBufferGPU> getData(CommandBuffer& buffer) {
+        auto dataGPU = buffer.allocConstant<FrameBufferGPU>();
+        auto buf = data;
+        buffer.memcpy(dataGPU, [buf](auto call) {call(&buf); });
+        return dataGPU;
     }
 };
  
@@ -58,9 +98,11 @@ struct Uniform final {
 
 struct PostUniform final {
     ALIGN FrameBufferGPU in;
-    ALIGN float lum;
+    ALIGN float* lum;
     ALIGN std::pair<float, unsigned int>* sum;
+    PostUniform(FrameBufferGPU buf,float* clum, std::pair<float, unsigned int>* cnt)
+        :in(buf),lum(clum),sum(cnt){}
 };
 
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const MemoryRef<Uniform>& uniform
-    ,FrameBufferCPU& fbo,const MemoryRef<PostUniform>& post,CommandBuffer& buffer);
+    ,FrameBufferCPU& fbo,float* lum,CommandBuffer& buffer);

@@ -131,15 +131,15 @@ void Image::resize(uvec2 size) {
     }
 }
 
-cudaArray_t Image::bind(Stream & stream) {
-    checkError(cudaGraphicsMapResources(1, &mRes, stream.getID()));
+cudaArray_t Image::bind(cudaStream_t stream) {
+    checkError(cudaGraphicsMapResources(1, &mRes, stream));
     cudaArray_t data;
     checkError(cudaGraphicsSubResourceGetMappedArray(&data, mRes, 0, 0));
     return data;
 }
 
-void Image::unbind(Stream & stream) {
-    checkError(cudaGraphicsUnmapResources(1, &mRes, stream.getID()));
+void Image::unbind(cudaStream_t stream) {
+    checkError(cudaGraphicsUnmapResources(1, &mRes, stream));
 }
 
 GLuint Image::get() const {

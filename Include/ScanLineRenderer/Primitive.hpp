@@ -39,7 +39,7 @@ auto genPrimitive(CommandBuffer& buffer,const MemoryRef<Vert>& vert,Index idx
     auto cnt = buffer.allocBuffer<unsigned int>();
     buffer.memset(cnt);
     buffer.runKernelLinear(GTHelper<inv,outv,Index, Vert, Uniform, gs>, idx.size(), vert.begin(), idx
-        , uniform,makeLazyConstructor<Queue<Vert,outv>>(cnt,res));
+        , uniform,buffer.makeLazyConstructor<Queue<Vert,outv>>(cnt,res));
     return std::make_pair(res,cnt);
 }
 
