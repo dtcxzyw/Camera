@@ -17,7 +17,7 @@ void renderGUI(IMGUIWindow& window) {
     ImGui::Text("vertices %d, triangles: %d\n", static_cast<int>(model.mVert.size()),
         static_cast<int>(model.mIndex.size()));
     ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
-    ImGui::SliderFloat("focal length",&f,15.0f,150.0f,"%.1f");
+    ImGui::SliderFloat("focal length",&f,15.0f,500.0f,"%.1f");
     ImGui::SliderFloat("roughness", &roughness, 0.01f, 0.99f);
     ImGui::SliderFloat("metallic", &metallic, 0.01f, 0.99f);
     ImGui::SliderFloat("ao", &ao, 0.001f, 0.09f);

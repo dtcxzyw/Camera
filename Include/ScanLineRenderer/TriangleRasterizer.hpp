@@ -92,11 +92,11 @@ CALLABLE void cutTriangles(unsigned int size, unsigned int* cnt,
     if (id >= size)return;
     auto info = tri[idx[id]];
     auto rect = info.rect;
-    for (auto i = rect[0]; i < rect[1]; i += 32.0f)
-        for (auto j = rect[2]; j < rect[3]; j += 32.0f) {
+    for (int i = rect[0]; i <= rect[1]; i += 31)
+        for (int j = rect[2]; j <= rect[3]; j += 31) {
             auto tid = atomicInc(cnt + 7, maxv);
             out[atomicInc(cnt + 5, maxv)] = tid;
-            info.rect[0] = i, info.rect[1] = j;
+            info.rect[0] = i, info.rect[2] = j;
             tri[tid] = info;
         }
 }
@@ -107,6 +107,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
         , unsigned int* idx, Uniform* uniform, FrameBuffer* frameBuffer, unsigned int size) {
     constexpr auto block = 64U;
     cutTriangles<Out> << <calcSize(cnt[6], block), block >> > (cnt[6], cnt, tri, idx + size * 6, idx + size * 5);
+    cudaDeviceSynchronize();
 
     for (auto i = 0; i < 6; ++i)
         if (cnt[i]) {
