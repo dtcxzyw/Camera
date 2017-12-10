@@ -46,12 +46,6 @@ public:
         });
         return res;
     }
-    DataViewer<T> download(Stream& stream) const {
-        auto res = allocBuffer<T>(mSize.x*mSize.y);
-        checkError(cudaMemcpyFromArrayAsync(res.begin(), mArray, 0, 0, mSize.x*mSize.y * sizeof(T)
-            , cudaMemcpyDefault, stream.getID()));
-        return res;
-    }
     uvec2 size() const {
         return mSize;
     }
@@ -163,12 +157,6 @@ public:
         dim3 grid(calcSize(mSize.x, mul), calcSize(mSize.y, mul));
         dim3 block(mul, mul);
         buffer.runKernelDim(Impl::clear<T>, grid, block, toTarget(), val);
-    }
-    void clear(Stream& stream,T val) {
-        uint mul = sqrt(getEnvironment().getProp().maxThreadsPerBlock);
-        dim3 grid(calcSize(mSize.x,mul),calcSize(mSize.y,mul));
-        dim3 block(mul, mul);
-        stream.runDim(Impl::clear<T>, grid, block, toTarget(), val);
     }
     uvec2 size() const {
         return mSize;

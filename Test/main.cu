@@ -68,10 +68,10 @@ int main() {
     try {
         model.load("Res/bunny.obj");
         IMGUIWindow window;
-        SwapChain_t swapChain(5);
+        SwapChain_t swapChain(8);
+        std::queue<std::pair<Future, SwapChain_t::SharedFrame>> futures;
         {
-            DispatchSystem system(1);
-            std::queue<std::pair<Future, SwapChain_t::SharedFrame>> futures;
+            DispatchSystem system(3);
             auto lum = allocBuffer<float>();
             while (window.update()) {
                 auto size = window.size();
@@ -81,8 +81,8 @@ int main() {
                 }
                 SwapChain_t::SharedFrame frame;
                 while (true) {
-                    system.update(1us);
-                    if (system.size() < 3 && !swapChain.empty())
+                    system.update(500us);
+                    if (!swapChain.empty())
                         futures.emplace(addTask(system, swapChain.pop(), size, lum.begin()));
                     if (futures.size() && futures.front().first.finished()) {
                         frame = futures.front().second;

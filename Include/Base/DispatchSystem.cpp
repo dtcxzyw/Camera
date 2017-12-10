@@ -177,6 +177,15 @@ cudaStream_t CommandBuffer::getStream() {
     return mStream;
 }
 
+void DispatchSystem::update(Clock::time_point t) {
+    auto& stream = *std::min_element(mStreams.begin(), mStreams.end());
+    if (stream.free() && !mTasks.empty()) {
+        stream.set(std::move(mTasks.front()));
+        mTasks.pop();
+    }
+    stream.update(t);
+}
+
 DispatchSystem::DispatchSystem(size_t size):mStreams(size){}
 
 Future DispatchSystem::submit(std::unique_ptr<CommandBuffer>&& buffer) {
@@ -194,14 +203,16 @@ void DispatchSystem::update(std::chrono::nanoseconds tot) {
     auto begin = Clock::now();
     while (true) {
         auto t = Clock::now();
-        auto& stream = *std::min_element(mStreams.begin(),mStreams.end());
-        if (stream.free() && !mTasks.empty()) {
-            stream.set(std::move(mTasks.front()));
-            mTasks.pop();
-        }
+        update(t);
         if (t - begin > tot)return;
-        stream.update(t);
+        if (mTasks.empty() && std::all_of(mStreams.cbegin(), mStreams.cend(), [](const auto& info) {
+            return info.free();
+        })) return;
     }
+}
+
+void DispatchSystem::update() {
+    update(Clock::now());
 }
 
 Future::Future(const std::shared_ptr<bool>& promise):mPromise(promise) {}
@@ -219,8 +230,8 @@ void FunctionOperator::emit(Stream & stream) {
 
 DispatchSystem::StreamInfo::StreamInfo():mLast(Clock::now()) {}
 
-bool DispatchSystem::StreamInfo::free() {
-    return mTask==nullptr;
+bool DispatchSystem::StreamInfo::free() const {
+    return mTask==nullptr && mPool.empty();
 }
 
 void DispatchSystem::StreamInfo::set(std::unique_ptr<CommandBuffer>&& task) {
@@ -228,6 +239,8 @@ void DispatchSystem::StreamInfo::set(std::unique_ptr<CommandBuffer>&& task) {
 }
 
 void DispatchSystem::StreamInfo::update(Clock::time_point point) {
+    mPool.erase(std::remove_if(mPool.begin(), mPool.end(),
+        [](auto&& task) {return task->isDone(); }), mPool.end());
     if (mTask) {
         mLast = point;
         mTask->update(mStream);
@@ -236,8 +249,6 @@ void DispatchSystem::StreamInfo::update(Clock::time_point point) {
             mPool.back().swap(mTask);
         }
     }
-    mPool.erase(std::remove_if(mPool.begin(), mPool.end(), 
-        [](auto&& task) {return task->isDone(); }), mPool.end());
 }
 
 bool DispatchSystem::StreamInfo::operator<(const StreamInfo & rhs) const {

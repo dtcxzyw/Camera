@@ -34,9 +34,6 @@ public:
     void clear(CommandBuffer& buffer) {
         buffer.pushOperator([=](Stream& stream) {stream.memset(mData, 0xff); });
     }
-    void clear(Stream& stream) {
-        stream.memset(mData, 0xff);
-    }
     DepthBufferGPU<T> toBuffer() {
         return { mData.begin(),{mSize.x-1,mSize.y-1,mSize.x} };
     }

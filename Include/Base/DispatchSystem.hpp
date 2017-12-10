@@ -338,17 +338,19 @@ private:
         Clock::time_point mLast;
     public:
         StreamInfo();
-        bool free();
+        bool free() const;
         void set(std::unique_ptr<CommandBuffer>&& task);
         void update(Clock::time_point point);
         bool operator<(const StreamInfo& rhs) const;
     };
     std::vector<StreamInfo> mStreams;
+    void update(Clock::time_point t);
 public:
     DispatchSystem(size_t size);
     Future submit(std::unique_ptr<CommandBuffer>&& buffer);
     size_t size() const;
     void update(std::chrono::nanoseconds tot);
+    void update();
 };
 
 template<typename T>
