@@ -6,20 +6,11 @@
 #include "TriangleRasterizer.hpp"
 
 template<typename Vert, typename Out, typename Uniform, VSF<Vert, Out, Uniform> vs>
-auto calcVertex(CommandBuffer& buffer, const MemoryRef<Vert>& vert
-    , const MemoryRef<Uniform>& uniform, uvec2 size) {
+auto calcVertex(CommandBuffer& buffer, const DataPtr<Vert>& vert
+    , const DataPtr<Uniform>& uniform, uvec2 size) {
     auto vertex = buffer.allocBuffer<VertexInfo<Out>>(vert.size());
     buffer.runKernelLinear(runVS<Vert, Out, Uniform, vs>, vert.size(),
         vert, uniform, vertex, static_cast<vec2>(size));
-    return vertex;
-}
-
-template<typename Vert, typename Out, typename Uniform, VSF<Vert, Out, Uniform> vs>
-auto calcVertex(CommandBuffer& buffer, const DataViewer<Vert>& vert
-    , const MemoryRef<Uniform>& uniform, uvec2 size) {
-    auto vertex = buffer.allocBuffer<VertexInfo<Out>>(vert.size());
-    buffer.runKernelLinear(runVS<Vert, Out, Uniform, vs>, vert.size(),
-        vert.begin(), uniform, vertex, static_cast<vec2>(size));
     return vertex;
 }
 
@@ -36,8 +27,8 @@ template< typename Out, typename Uniform, typename FrameBuffer,
 
 template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
-    void renderPoints(CommandBuffer& buffer, const MemoryRef<VertexInfo<Out>>& vert,
-        const MemoryRef<Uniform>& uniform, FrameBuffer* frameBuffer, uvec2 size) {
+    void renderPoints(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
+        const DataPtr<Uniform>& uniform, FrameBuffer* frameBuffer, uvec2 size) {
     buffer.runKernelLinear(drawPointHelper<Out, Uniform, FrameBuffer, ds>, vert.size(), vert, uniform, frameBuffer, size);
     buffer.runKernelLinear(drawPointHelper<Out, Uniform, FrameBuffer, fs>, vert.size(), vert, uniform, frameBuffer, size);
 }
@@ -85,9 +76,9 @@ template< typename Out, typename Uniform, typename FrameBuffer,
 
 template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
-    void renderTriangles(CommandBuffer& buffer, const MemoryRef<VertexInfo<Out>>& vert,
-        Index index, const MemoryRef<Uniform>& uniform
-        ,const MemoryRef<FrameBuffer>& frameBuffer, uvec2 size) {
+    void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
+        Index index, const DataPtr<Uniform>& uniform
+        ,const DataPtr<FrameBuffer>& frameBuffer, uvec2 size) {
     auto cnt =buffer.allocBuffer<unsigned int>(8);
     buffer.memset(cnt);
     auto info =buffer.allocBuffer<Triangle<Out>>(index.size()*2);
@@ -99,7 +90,7 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
 }
 
 template<typename Uniform, typename FrameBuffer, FSFSF<Uniform, FrameBuffer> fs>
-void renderFullScreen(CommandBuffer& buffer, const MemoryRef<Uniform>& uniform,
-    const ResourceRef<FrameBuffer>& frameBuffer, uvec2 size) {
+void renderFullScreen(CommandBuffer& buffer, const DataPtr<Uniform>& uniform,
+    const Value<FrameBuffer>& frameBuffer, uvec2 size) {
     buffer.runKernelLinear(runFSFS<Uniform, FrameBuffer, fs>, size.x*size.y, uniform, frameBuffer, size.x);
 }

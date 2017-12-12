@@ -152,7 +152,6 @@ public:
 };
 
 namespace Impl {
-
     class CastTag {
     protected:
         void get(CommandBuffer & buffer, ID id, void* ptr);
@@ -211,6 +210,50 @@ namespace Impl {
         }
     };
 
+    template<typename T>
+    class ValueImpl final:public CastTag {
+    private:
+        std::function<T(CommandBuffer&)> mClosure;
+    public:
+        template<typename U>
+        ValueImpl(const U& val) {
+            auto rval = castID(val);
+            mClosure = [rval](CommandBuffer& buffer) {
+                return cast(rval, buffer);
+            };
+        }
+        T get(CommandBuffer& buffer) {
+            return mClosure(buffer);
+        }
+    };
+
+    template<typename T>
+    class DataPtrImpl final :public CastTag {
+    private:
+        std::function<T*(CommandBuffer&)> mClosure;
+        size_t mSize;
+    public:
+        DataPtrImpl(const MemoryRef<T>& ref):mSize(ref.size()) {
+            auto rval = castID(ref);
+            mClosure = [rval](CommandBuffer& buffer) {
+                return cast(rval, buffer);
+            };
+        }
+        DataPtrImpl(const DataViewer<T>& data):mSize(data.size()) {
+            auto ptr = data.begin();
+            mClosure = [ptr](CommandBuffer& buffer) {
+                return ptr;
+            };
+        }
+        T* get(CommandBuffer& buffer) {
+            return mClosure(buffer);
+        }
+        size_t size() const {
+            return mSize;
+        }
+    };
+
+
     class KernelLaunchDim final :public Operator {
     private:
         std::function<void(Stream&)> mClosure;
@@ -239,6 +282,11 @@ namespace Impl {
         void emit(Stream& stream) override;
     };
 }
+
+template<typename T>
+using Value = Impl::ValueImpl<T>;
+template<typename T>
+using DataPtr = Impl::DataPtrImpl<T>;
 
 class Future final {
 private:

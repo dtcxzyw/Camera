@@ -47,4 +47,14 @@ CUDAInline vec3 cookTorrance(float D, vec3 F, float G, float ndi, float ndo) {
     return F*(D*G / (4.0f*ndi*ndo+epsilon<float>()));
 }
 
+CUDAInline float dist(float ndi,float r) {
+    return ndi / (r*r);
+}
+
+CUDAInline float distPIXAR(float ndi, float r,float m,float k,float l,float alpha) {
+    float s = log(k / m);
+    float beta = -alpha / s;
+    float fd = (r < l ?m*exp(s*pow(r/l,beta)):k*pow(l/r,alpha)) ;
+    return ndi *fd;
+}
 

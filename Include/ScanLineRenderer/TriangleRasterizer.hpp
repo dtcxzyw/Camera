@@ -118,6 +118,8 @@ template<typename Out, typename Uniform, typename FrameBuffer,
                 uniform, frameBuffer);
         }
 
+    cudaDeviceSynchronize();
+
     for (auto i = 0; i < 6; ++i)
         if (cnt[i]) {
             auto bsiz = 1U << i;
