@@ -6,7 +6,8 @@ using namespace std::chrono_literals;
 
 auto f = 50.0f, light=5.0f,r=20.0f;
 StaticMesh model;
-DisneyBRDFArg arg;
+//DisneyBRDFArg arg;
+UE4BRDFArg arg;
 
 void renderGUI(IMGUIWindow& window) {
     window.newFrame();
@@ -27,14 +28,16 @@ void renderGUI(IMGUIWindow& window) {
 
     Arg(metallic);
     Arg(subsurface);
-    Arg(specular);
+    //Arg(specular);
     Arg(roughness);
-    Arg(specularTint);
-    Arg(anisotropic);
+    //Arg(specularTint);
+    //Arg(anisotropic);
+    Arg(anisotropy);
     Arg(sheen);
-    Arg(sheenTint);
+    //Arg(sheenTint);
     Arg(clearcoat);
-    Arg(clearcoatGloss);
+    //Arg(clearcoatGloss);
+    Arg(cavity);
     ImGui::End();
     window.renderGUI();
 }
@@ -55,7 +58,7 @@ Uniform getUniform(float w,float h,float delta) {
     u.arg.baseColor = { 1.000f, 0.766f, 0.336f };
     u.cp = cp;
     u.lp = lp;
-    u.r2 = r * r;
+    u.r = r;
     return u;
 }
 

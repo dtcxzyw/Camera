@@ -38,10 +38,12 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
         vec3 Y = normalize(cross(N, X));
         auto off = uniform.lp - p;
         auto dis2 = length2(off);
-        auto L = off/sqrt(dis2);
+        auto dis = sqrt(dis2);
+        auto L = off/dis;
         auto V = normalize(uniform.cp - p);
-        auto F = disneyBRDF(L,V,N,X,Y,uniform.arg);
-        auto res = uniform.lc*F*(distUE4(dis2,uniform.r2)*dot(N, L));
+        //auto F = disneyBRDF(L,V,N,X,Y,uniform.arg);
+        auto F = UE4BRDF(L, V, N, X, Y, uniform.arg,dis/uniform.r);
+        auto res = uniform.lc*F*(distUE4(dis2,uniform.r*uniform.r)*dot(N, L));
         fbo.color.set(uv, {res,1.0f });
     }
 }

@@ -91,8 +91,9 @@ struct Uniform final {
     ALIGN vec3 cp;
     ALIGN vec3 lp;
     ALIGN vec3 lc;
-    ALIGN float r2;
-    ALIGN DisneyBRDFArg arg;
+    ALIGN float r;
+    //ALIGN DisneyBRDFArg arg;
+    ALIGN UE4BRDFArg arg;
 };
 
 struct PostUniform final {

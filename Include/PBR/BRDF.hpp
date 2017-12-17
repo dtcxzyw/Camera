@@ -79,8 +79,8 @@ CUDAInline float disneyDiffuse(float ndl, float ndv, float ldh, float roughness)
 }
 
 //BRDF
-template<typename Arg>
-using BRDF = vec3(*)(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, Arg arg);
+template<typename... Arg>
+using BRDF = vec3(*)(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, Arg... arg);
 
 /*
 Implementation of Disney "principled" BRDF ,as described in:
@@ -100,8 +100,9 @@ struct DisneyBRDFArg final {
     float sheenTint;
     float clearcoat;
     float clearcoatGloss;
-    vec3 baseColor;//linear
+    vec3 baseColor;//linear color space
 };
+
 CUDAInline vec3 disneyBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y,DisneyBRDFArg arg) {
     auto ndl = dot(L, N);
     auto ndv = dot(V, N);
@@ -150,3 +151,63 @@ CUDAInline vec3 disneyBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y,DisneyBRDFArg 
         *(1.0f - arg.metallic) + Vs + 0.25f*arg.clearcoat*Vc;
 }
 
+/*
+Implementation of UE4 BRDF ,as described in:
+http://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf
+The implementation may be wrong because I couldn't learn more from this paper.
+*/
+struct UE4BRDFArg final {
+    float metallic;
+    float roughness;
+    float cavity;
+    float subsurface;
+    float anisotropy;
+    float clearcoat;
+    float sheen;
+    vec3 baseColor;//linear color space
+};
+//ratio = dis/radius
+CUDAInline vec3 UE4BRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, UE4BRDFArg arg,float ratio) {
+    auto ndl = dot(L, N);
+    auto ndv = dot(V, N);
+    if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);
+    auto H = calcHalf(L, V);
+    auto ldh = dot(L, H);
+    auto ndh = dot(N, H);
+
+    //sheen
+    auto lum = luminosity(arg.baseColor);
+    auto ctint = lum > 0.0f ? arg.baseColor / lum : vec3(1.0f);
+    auto cspec = mix(arg.cavity*0.08f*ctint, arg.baseColor, arg.metallic);
+    auto fh = fresnelSchlickUE4(ldh);
+    auto sheen = fh * arg.sheen * ctint;
+
+    //subsurface
+    auto fl = fresnelSchlickUE4(ndl), fv = fresnelSchlickUE4(ndv);
+    auto fss90 = ldh * ldh*arg.roughness;
+    auto fss = mix(1.0f, fss90, fl)*mix(1.0f, fss90, fv);
+    auto ss = 1.25f * (fss * (1.0f / (ndl + ndv) - 0.5f) + 0.5f);
+
+    //diffuse fresnel
+    auto fd = lambertian();
+
+    //specular
+    auto aspect = sqrt(1.0f - arg.anisotropy*0.9f);
+    auto alpha = saturate(arg.roughness*arg.roughness+0.5f*ratio);
+    auto ax = fmax(0.001f, alpha*aspect);
+    auto ay = fmax(0.001f, alpha / aspect);
+    auto D = DGTR2Aniso(ndh, ax, ay, dot(X, H), dot(Y, H));
+    auto F = mix(cspec, vec3(1.0f), fh);
+    auto G = smithGUE4(ndl,ndv,arg.roughness);
+    auto Vs = D * G * F;
+
+    //clearcoat
+    auto Dc = DGTR1(ndh, 0.1f);
+    auto Fc = mix(0.04f, 1.0f, fh);
+    constexpr auto a2 = 0.25f*0.25f;
+    auto Gc = smithGGGX(ndl, a2)*smithGGGX(ndv, a2);
+    auto Vc = Dc * Fc*Gc;
+
+    return (one_over_pi<float>()*mix(fd, ss, arg.subsurface)*arg.baseColor + sheen)
+        *(1.0f - arg.metallic) + Vs + 0.25f*arg.clearcoat*Vc;
+}
