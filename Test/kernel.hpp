@@ -8,12 +8,13 @@
 #include <PostProcess/ToneMapping.hpp>
 #include <Base/Constant.hpp>
 #include <ScanLineRenderer/ScanLineRenderer.hpp>
+#include <PBR/BRDF.hpp>
 
 using VI = StaticMesh::Vertex;
 enum OutInfo {
-    pos,normal
+    pos,normal,tangent
 };
-using OI = Args<Var(pos,vec3),Var(normal,vec3)>;
+using OI = Args<Var(pos, vec3), Var(normal, vec3),Var(tangent, vec3)>;
  
 struct FrameBufferGPU final {
     BuiltinRenderTargetGPU<RGBA> color;
@@ -88,12 +89,10 @@ struct Uniform final {
     ALIGN mat4 M;
     ALIGN mat3 invM;
     ALIGN vec3 cp;
-    ALIGN vec3 dir;
+    ALIGN vec3 lp;
     ALIGN vec3 lc;
-    ALIGN vec3 albedo;
-    ALIGN float roughness;
-    ALIGN float metallic;
-    ALIGN float ao;
+    ALIGN float r2;
+    ALIGN DisneyBRDFArg arg;
 };
 
 struct PostUniform final {

@@ -99,6 +99,9 @@
     <ClInclude Include="..\..\Include\Base\DispatchSystem.hpp">
       <Filter>Base</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\PBR\Dist.hpp">
+      <Filter>PBR</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">

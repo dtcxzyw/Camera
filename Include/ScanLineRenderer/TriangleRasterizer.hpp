@@ -1,6 +1,6 @@
 #pragma once
 #include "ScanLine.hpp"
-#include <math_functions.hpp>
+#include <math_functions.h>
 #include <device_atomic_functions.h>
 
 template<typename Out>

@@ -4,24 +4,37 @@
 #include <thread>
 using namespace std::chrono_literals;
 
-auto f = 50.0f, roughness = 0.5f,light=5.0f,metallic=0.01f,ao=0.05f;
+auto f = 50.0f, light=5.0f,r=20.0f;
 StaticMesh model;
+DisneyBRDFArg arg;
 
 void renderGUI(IMGUIWindow& window) {
     window.newFrame();
     ImGui::Begin("Debug");
     ImGui::SetWindowPos({ 0, 0 });
-    ImGui::SetWindowSize({ 500,300 });
+    ImGui::SetWindowSize({ 500,500 });
     ImGui::SetWindowFontScale(1.5f);
     ImGui::StyleColorsDark();
     ImGui::Text("vertices %d, triangles: %d\n", static_cast<int>(model.mVert.size()),
         static_cast<int>(model.mIndex.size()));
     ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
     ImGui::SliderFloat("focal length",&f,15.0f,500.0f,"%.1f");
-    ImGui::SliderFloat("roughness", &roughness, 0.01f, 0.99f);
-    ImGui::SliderFloat("metallic", &metallic, 0.01f, 0.99f);
-    ImGui::SliderFloat("ao", &ao, 0.001f, 0.09f);
-    ImGui::SliderFloat("light", &light, 0.0f, 10.0f, "%.1f");
+    ImGui::SliderFloat("light", &light, 0.0f, 10.0f);
+    ImGui::SliderFloat("lightRadius", &r, 0.0f, 20.0f);
+#define Arg(name)\
+ arg.##name=clamp(arg.##name,0.01f,0.99f);\
+ ImGui::SliderFloat(#name, &arg.##name, 0.01f, 0.99f);\
+
+    Arg(metallic);
+    Arg(subsurface);
+    Arg(specular);
+    Arg(roughness);
+    Arg(specularTint);
+    Arg(anisotropic);
+    Arg(sheen);
+    Arg(sheenTint);
+    Arg(clearcoat);
+    Arg(clearcoatGloss);
     ImGui::End();
     window.renderGUI();
 }
@@ -29,7 +42,7 @@ void renderGUI(IMGUIWindow& window) {
 Uniform getUniform(float w,float h,float delta) {
     vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f };
     auto V = lookAt(cp, { 0.0f,0.0f,0.0f }, { 0.0f,1.0f,0.0f });
-    static glm::mat4 M = scale(glm::mat4{}, vec3(1.0f, 1.0f, 1.0f)*10.0f);
+    static glm::mat4 M = scale(glm::mat4{}, vec3(10.0f));
     auto fov = toFOV(36.0f*24.0f, f);
     glm::mat4 P = perspectiveFov(fov, w, h, 1.0f, 20.0f);
     M = rotate(M, delta*0.2f, { 0.0f,1.0f,0.0f });
@@ -38,12 +51,11 @@ Uniform getUniform(float w,float h,float delta) {
     u.M = M;
     u.invM = mat3(transpose(inverse(M)));
     u.lc = vec3(light);
-    u.albedo = { 1.000f, 0.766f, 0.336f };
+    u.arg = arg;
+    u.arg.baseColor = { 1.000f, 0.766f, 0.336f };
     u.cp = cp;
-    u.dir = normalize(lp);
-    u.roughness = roughness;
-    u.metallic = metallic;
-    u.ao = ao;
+    u.lp = lp;
+    u.r2 = r * r;
     return u;
 }
 
