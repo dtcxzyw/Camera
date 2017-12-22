@@ -93,7 +93,8 @@ struct Uniform final {
     ALIGN vec3 lc;
     ALIGN float r;
     //ALIGN DisneyBRDFArg arg;
-    ALIGN UE4BRDFArg arg;
+    //ALIGN UE4BRDFArg arg;
+    ALIGN FrostbiteBRDFArg arg;
 };
 
 struct PostUniform final {

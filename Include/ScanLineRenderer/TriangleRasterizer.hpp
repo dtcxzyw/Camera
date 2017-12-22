@@ -54,7 +54,7 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
         res.invz = { 1.0f / a.z,1.0f / b.z,1.0f / c.z };
         res.out[0] = vert[idx[0]].out, res.out[1] = vert[idx[1]].out, res.out[2] = vert[idx[2]].out;
         auto tsize = fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z);
-        auto x = static_cast<int>(ceil(log2f(fmin(tsize + 1.0f, 50.0f))));
+        auto x=static_cast<int>(ceil(log2f(fmin(tsize + 1.0f, 50.0f))));
         auto tid = atomicInc(cnt + 7, maxv);
         triID[atomicInc(cnt + x, maxv) + x * size] = tid;
         info[tid] = res;

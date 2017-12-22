@@ -62,6 +62,16 @@ CUDAInline float smithGAniso(float ndv, float vdx,float vdy, float ax,float ay) 
     return 1.0f / (ndv +sqrt(mx*mx+my*my+ndv*ndv));
 }
 
+CUDAInline float GLambda(float u,float alpha2) {
+    auto cosu2 = u * u;
+    auto sinu2 = 1.0f - cosu2;
+    return (-1.0f+sqrt(1.0f+alpha2*sinu2/cosu2))*0.5f;
+}
+
+CUDAInline float smithGHeightCorrelated(float ndl,float ndv,float ldh,float vdh,float alpha2) {
+    return fmin(ldh, vdh) > 0.0f ?1.0f/(1.0f+GLambda(ndl,alpha2)+GLambda(ndv,alpha2)) :0.0f;
+}
+
 //Diffuse
 CUDAInline float lambertian() {
     return one_over_pi<float>();
@@ -69,13 +79,26 @@ CUDAInline float lambertian() {
 
 //https://disney-animation.s3.amazonaws.com/library/s2012_pbs_disney_brdf_notes_v2.pdf
 CUDAInline float disneyDiffuse(float ndl, float ndv, float ldh, float roughness) {
-    auto cosi = 1.0f - fabs(ndl);
+    auto cosi = 1.0f - ndl;
     auto cosi2 = cosi*cosi;
-    auto coso = 1.0f - fabs(ndv);
+    auto coso = 1.0f - ndv;
     auto coso2 = coso*coso;
     auto fd90sub1 = 2.0f*ldh*ldh*roughness - 0.5f;
     return one_over_pi<float>()*(1.0f + fd90sub1*cosi*cosi2*cosi2)
         *(1.0f + fd90sub1*coso*coso2*coso2);
+}
+
+CUDAInline float disneyDiffuse2015(float ndl, float ndv, float ldh, float roughness) {
+    auto cosi = 1.0f - ndl;
+    auto cosi2 = cosi * cosi;
+    auto coso = 1.0f - ndv;
+    auto coso2 = coso * coso;
+    auto fl = cosi * cosi2*cosi2;
+    auto fv = coso * coso2*coso2;
+    auto rr = 2.0f*ldh*ldh*roughness;
+    auto lambert = (1.0f - 0.5f*fl)*(1.0f - 0.5f*fv);
+    auto retroReflection = rr * (fl + fv + fl * fv * (rr - 1.0f));
+    return one_over_pi<float>()*(lambert+retroReflection);
 }
 
 //BRDF
@@ -113,7 +136,7 @@ CUDAInline vec3 disneyBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y,DisneyBRDFArg 
 
     //sheen
     auto lum = luminosity(arg.baseColor);
-    auto ctint = lum > 0.0f ? arg.baseColor / lum : vec3(1.0f);
+    auto ctint = arg.baseColor / lum;
     auto cspec = mix(arg.specular*0.08f*mix(vec3(1.0f), ctint, arg.specularTint), arg.baseColor, arg.metallic);
     auto csheen = mix(vec3(1.0f), ctint,arg.sheenTint);
     auto fh = fresnelSchlick(ldh);
@@ -132,8 +155,8 @@ CUDAInline vec3 disneyBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y,DisneyBRDFArg 
     //specular
     auto aspect = sqrt(1.0f - arg.anisotropic*0.9f);
     auto sqrr = arg.roughness*arg.roughness;
-    auto ax = fmax(0.001f, sqrr*aspect);
-    auto ay = fmax(0.001f, sqrr / aspect);
+    auto ax = fmax(0.001f, sqrr/aspect);
+    auto ay = fmax(0.001f, sqrr*aspect);
     auto D = DGTR2Aniso(ndh, ax, ay,dot(X,H),dot(Y,H));
     auto F = mix(cspec,vec3(1.0f),fh);
     auto G = smithGAniso(ndl, dot(L, X), dot(L, Y), ax, ay)*
@@ -177,7 +200,7 @@ CUDAInline vec3 UE4BRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, UE4BRDFArg arg,f
 
     //sheen
     auto lum = luminosity(arg.baseColor);
-    auto ctint = lum > 0.0f ? arg.baseColor / lum : vec3(1.0f);
+    auto ctint = arg.baseColor / lum;
     auto cspec = mix(arg.cavity*0.08f*ctint, arg.baseColor, arg.metallic);
     auto fh = fresnelSchlickUE4(ldh);
     auto sheen = fh * arg.sheen * ctint;
@@ -189,20 +212,20 @@ CUDAInline vec3 UE4BRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, UE4BRDFArg arg,f
     auto ss = 1.25f * (fss * (1.0f / (ndl + ndv) - 0.5f) + 0.5f);
 
     //diffuse fresnel
-    auto fd = lambertian();
+    auto fd = 1.0f;
 
     //specular
     auto aspect = sqrt(1.0f - arg.anisotropy*0.9f);
     auto alpha = saturate(arg.roughness*arg.roughness+0.5f*ratio);
-    auto ax = fmax(0.001f, alpha*aspect);
-    auto ay = fmax(0.001f, alpha / aspect);
+    auto ax = fmax(0.001f, alpha/aspect);
+    auto ay = fmax(0.001f, alpha*aspect);
     auto D = DGTR2Aniso(ndh, ax, ay, dot(X, H), dot(Y, H));
     auto F = mix(cspec, vec3(1.0f), fh);
     auto G = smithGUE4(ndl,ndv,arg.roughness);
     auto Vs = D * G * F;
 
     //clearcoat
-    auto Dc = DGTR1(ndh, 0.1f);
+    auto Dc = DGTR1(ndh, 0.05f);
     auto Fc = mix(0.04f, 1.0f, fh);
     constexpr auto a2 = 0.25f*0.25f;
     auto Gc = smithGGGX(ndl, a2)*smithGGGX(ndv, a2);
@@ -210,4 +233,95 @@ CUDAInline vec3 UE4BRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, UE4BRDFArg arg,f
 
     return (one_over_pi<float>()*mix(fd, ss, arg.subsurface)*arg.baseColor + sheen)
         *(1.0f - arg.metallic) + Vs + 0.25f*arg.clearcoat*Vc;
+}
+
+/*
+Implementation of Frostbite BRDF ,as described in:
+http://blog.selfshadow.com/publications/s2014-shading-course/frostbite/s2014_pbs_frostbite_slides.pdf
+Diffuse:Disney's model
+Specular:Microfacet model with GGX NDF
+D:GGX
+F:Schlick
+G:Height-Correlated Smith[Heitz14]
+http://jcgt.org/published/0003/02/03/
+r->fv:
+O                0    0          0
+water          90  0.352   0.02
+common    128 0.5       0.04
+ruby           180 0.705   0.077
+diamond    255 1          0.171
+fv=0.2281399812785982*x^3-0.22673613288218408*x^2+0.20285923208572978*x-0.03326308048214361
+f0=mix(fv,1.0,metallic)
+*/
+struct FrostbiteBRDFArg final {
+    vec3 baseColor;
+    float metallic;
+    float smoothness;
+    float reflectance;
+};
+CUDAInline float calcFv(float r) {
+    constexpr auto A = 0.2281399812785982f, B = -0.22673613288218408f
+        , C = 0.20285923208572978f, D = -0.03326308048214361f;
+    return saturate(((A*r +B)*r + C)*r + D);
+}
+CUDAInline vec3 frostbiteBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, FrostbiteBRDFArg arg) {
+    auto ndl = dot(L, N);
+    auto ndv = dot(V, N);
+    if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);
+    auto H = calcHalf(L, V);
+    auto ldh = dot(L, H);
+    auto ndh = dot(N, H);
+    auto vdh = dot(V, H);
+
+    //diffuse
+    auto k = 1.0f - arg.smoothness;
+    auto roughness = k*k;
+    auto fd =arg.baseColor * (disneyDiffuse(ndl,ndv,ldh,roughness)*(1.0f-arg.metallic));
+
+    //specular
+    auto D = GGXD(ndh,roughness);
+    auto f0 =mix(vec3(calcFv(arg.reflectance)),arg.baseColor,arg.metallic);
+    auto F =mix(f0,vec3(1.0f),fresnelSchlick(ldh));
+    auto G = smithGHeightCorrelated(ndl,ndv,ldh,vdh,roughness*roughness);
+    auto fs = D*G*F/(4.0f*ndl*ndv);
+    return fd+fs;
+}
+
+/*
+mixed BRDF
+This BRDF depends on http://blog.selfshadow.com/publications/s2016-shading-course/hoffman/s2016_pbs_recent_advances_v2.pdf.
+Diffuse:Extending the Disney BRDF to a BSDF with Integrated Subsurface Scattering¡±, Burley, SIGGRAPH Course Notes 2015
+http://blog.selfshadow.com/publications/s2015-shading-course/burley/s2015_pbs_disney_bsdf_notes.pdf
+F:Artist Friendly Metallic Fresnel (JCGT, 2014)
+http://jcgt.org/published/0003/04/03/
+D:Anisotropic GGX
+
+G:Height-Correlated Smith[Heitz14]
+http://jcgt.org/published/0003/02/03/
+*/
+struct MaterialLayer final{
+    float k;
+
+};
+struct MixedBRDFArg final{
+    vec3 baseColor;
+    float metallic;
+    float roughness;
+    MaterialLayer layer[3];
+    int layerCount;
+};
+CUDAInline vec3 mixedBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, MixedBRDFArg arg) {
+    auto ndl = dot(L, N);
+    auto ndv = dot(V, N);
+    if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);
+    auto H = calcHalf(L, V);
+    auto ldh = dot(L, H);
+    auto ndh = dot(N, H);
+
+    auto fd = arg.baseColor*(disneyDiffuse2015(ndl,ndv,ldh,arg.roughness)*(1.0f-arg.metallic));
+    vec3 fs = {};
+    for (int i = 0; i < arg.layerCount; ++i) {
+
+    }
+    return fd+fs;
 }

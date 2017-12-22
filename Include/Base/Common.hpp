@@ -6,7 +6,7 @@
 #include <cassert>
 
 #define CUDA __device__
-#define CUDAInline inline CUDA
+#define CUDAInline __forceinline__ CUDA
 #define HOST __host__
 #define BOTH CUDA HOST
 #define CALLABLE __global__

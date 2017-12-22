@@ -7,7 +7,8 @@ using namespace std::chrono_literals;
 auto f = 50.0f, light=5.0f,r=20.0f;
 StaticMesh model;
 //DisneyBRDFArg arg;
-UE4BRDFArg arg;
+//UE4BRDFArg arg;
+FrostbiteBRDFArg arg;
 
 void renderGUI(IMGUIWindow& window) {
     window.newFrame();
@@ -23,21 +24,23 @@ void renderGUI(IMGUIWindow& window) {
     ImGui::SliderFloat("light", &light, 0.0f, 10.0f);
     ImGui::SliderFloat("lightRadius", &r, 0.0f, 20.0f);
 #define Arg(name)\
- arg.##name=clamp(arg.##name,0.01f,0.99f);\
- ImGui::SliderFloat(#name, &arg.##name, 0.01f, 0.99f);\
+ arg.##name=clamp(arg.##name,0.01f,0.999f);\
+ ImGui::SliderFloat(#name, &arg.##name, 0.01f, 0.999f);\
 
     Arg(metallic);
-    Arg(subsurface);
+    //Arg(subsurface);
     //Arg(specular);
-    Arg(roughness);
+    //Arg(roughness);
     //Arg(specularTint);
     //Arg(anisotropic);
-    Arg(anisotropy);
-    Arg(sheen);
+    //Arg(anisotropy);
+    //Arg(sheen);
     //Arg(sheenTint);
-    Arg(clearcoat);
+    //Arg(clearcoat);
     //Arg(clearcoatGloss);
-    Arg(cavity);
+    //Arg(cavity);
+    Arg(smoothness);
+    Arg(reflectance);
     ImGui::End();
     window.renderGUI();
 }
