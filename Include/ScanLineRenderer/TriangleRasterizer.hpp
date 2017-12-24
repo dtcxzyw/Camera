@@ -106,7 +106,8 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     CALLABLE void renderTrianglesGPU(unsigned int* cnt, Triangle<Out>* tri
         , unsigned int* idx, Uniform* uniform, FrameBuffer* frameBuffer, unsigned int size) {
     constexpr auto block = 64U;
-    cutTriangles<Out> << <calcSize(cnt[6], block), block >> > (cnt[6], cnt, tri, idx + size * 6, idx + size * 5);
+    if(cnt[6])
+        cutTriangles<Out> <<<calcSize(cnt[6], block), block >> > (cnt[6], cnt, tri, idx + size * 6, idx + size * 5);
     cudaDeviceSynchronize();
 
     for (auto i = 0; i < 6; ++i)

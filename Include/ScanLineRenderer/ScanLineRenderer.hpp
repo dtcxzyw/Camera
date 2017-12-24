@@ -1,5 +1,4 @@
 #pragma once
-#include <Base/Pipeline.hpp>
 #include <Base/DispatchSystem.hpp>
 #include "ScanLine.hpp"
 #include "LineRasterizer.hpp"
@@ -35,43 +34,16 @@ template< typename Out, typename Uniform, typename FrameBuffer,
 
 template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
-    void renderLines(Stream& stream, DataViewer<VertexInfo<Out>> vert,
-        const Uniform* uniform, FrameBuffer* frameBuffer, uvec2 size) {
-    auto cnt = allocBuffer<unsigned int>(11);
-    stream.memset(cnt);
+    void renderLines(CommandBuffer& buffer,const DataPtr<VertexInfo<Out>>& vert,
+        const DataPtr<Uniform>& uniform,const DataPtr<FrameBuffer>& frameBuffer, uvec2 size) {
+    auto cnt = buffer.allocBuffer<unsigned int>(12);
+    buffer.memset(cnt);
     auto lsiz = vert.size() / 2;
-    auto info = allocBuffer<Line<Out>>(11 * lsiz);
-    stream.run(sortLines<Out>, lsiz, cnt.begin(), vert.begin(), info.begin(), static_cast<vec2>(size));
-    stream.sync();
-    unsigned int lineNum[11];
-    for (auto i = 0; i < 11; ++i)
-        lineNum[i] = cnt[i];
-
-    if (lineNum[10]) {
-        auto num = lineNum[10];
-        auto base = info.begin() + 9 * lsiz;
-        stream.run(cutLines<Out>, num, &cnt[9], base + lsiz, base, size, 1 << 9);
-        stream.sync();
-        lineNum[9] = cnt[9];
-    }
-
-    for (auto i = 0; i < 10; ++i)
-        if (lineNum[i]) {
-            dim3 grid(lineNum[i]);
-            dim3 block(1 << i);
-            auto base = info.begin() + i*lsiz;
-            stream.runDim(drawMicroL<Out, Uniform, FrameBuffer, ds>, grid, block, base,
-                uniform, frameBuffer, 1 << i);
-        }
-
-    for (auto i = 0; i < 10; ++i)
-        if (lineNum[i]) {
-            dim3 grid(lineNum[i]);
-            dim3 block(1 << i);
-            auto base = info.begin() + i*lsiz;
-            stream.runDim(drawMicroL<Out, Uniform, FrameBuffer, fs>, grid, block, base,
-                uniform, frameBuffer, 1 << i);
-        }
+    auto info = buffer.allocBuffer<Line<Out>>(lsiz);
+    auto idx = buffer.allocBuffer<unsigned int>(lsiz * 11);
+    buffer.runKernelLinear(sortLines<Out>, lsiz, cnt, vert,info, static_cast<vec2>(size));
+    buffer.callKernel(renderLineGPU<Out, Uniform, FrameBuffer, ds, fs>,info,uniform,frameBuffer
+        ,cnt,idx,lsiz, static_cast<vec2>(size));
 }
 
 template<typename Index, typename Out, typename Uniform, typename FrameBuffer,

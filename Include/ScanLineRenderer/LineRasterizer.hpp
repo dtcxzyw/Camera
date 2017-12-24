@@ -12,7 +12,7 @@ struct Line final {
 
 template<typename Out>
 CALLABLE void sortLines(unsigned int size, unsigned int* cnt,
-    const VertexInfo<Out>* ReadOnlyCache vert, Line<Out>* info, vec2 fsize) {
+    const VertexInfo<Out>* ReadOnlyCache vert, Line<Out>* info,unsigned int* lineID,vec2 fsize) {
     auto id = getID();
     if (id >= size)return;
     auto a = id << 1, b = id << 1 | 1;
@@ -24,7 +24,9 @@ CALLABLE void sortLines(unsigned int size, unsigned int* cnt,
         res.oa = vert[a].out, res.ob = vert[b].out;
         auto len = distance(vec2(res.pa), vec2(res.pb));
         auto x = static_cast<int>(ceil(log2f(fmin(len + 1.0f, 700.0f))));
-        info[x*size + atomicInc(cnt + x, maxv)] = res;
+        auto lid = atomicInc(cnt + 11, maxv);
+        info[lid] = res;
+        lineID[x*size + atomicInc(cnt + x, maxv)] = lid;
     }
 }
 
@@ -53,11 +55,11 @@ CUDAInline void calcY(Line<Out>& line, float y) {
 }
 
 template<typename Out>
-CALLABLE void cutLines(unsigned int size, unsigned int* cnt,
-    const Line<Out>* ReadOnlyCache data, Line<Out>* out, vec2 fsize, float len) {
+CALLABLE void cutLines(unsigned int size, unsigned int* cnt,unsigned int* wp,
+    const Line<Out>* ReadOnlyCache data,unsigned int* iidx,unsigned int* oidx, vec2 fsize, float len) {
     auto id = getID();
     if (id >= size)return;
-    auto line=data[id];
+    auto line=data[iidx[id]];
     calcX(line,fmax(0.0f,fmin(line.pa.x,fsize.x)));
     calcY(line, fmax(0.0f, fmin(line.pa.y, fsize.y)));
     swap(line.pa, line.pb);
@@ -73,7 +75,9 @@ CALLABLE void cutLines(unsigned int size, unsigned int* cnt,
         float wb = w + delta;
         res.pb = res.pa*(1.0f - wb) + res.pb*wb;
         res.ob = res.oa*(1.0f - wb) + res.ob*wb;
-        out[atomicInc(cnt, maxv)] = res;
+        auto lid = atomicInc(cnt,maxv);
+        data[lid] = res;
+        oidx[atomicInc(wp, maxv)] = lid;
     }
 }
 
@@ -90,10 +94,43 @@ template<typename Out, typename Uniform, typename FrameBuffer,
 //1...512
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void drawMicroL(const Line<Out>* ReadOnlyCache info,
-        const Uniform* ReadOnlyCache uniform, FrameBuffer* frameBuffer, float len) {
-    auto line = info[blockIdx.x];
+    CALLABLE void drawMicroL(const Line<Out>* ReadOnlyCache info, 
+        const unsigned int* ReadOnlyCache idx,const Uniform* ReadOnlyCache uniform, 
+        FrameBuffer* frameBuffer, float len) {
+    auto line = info[idx[blockIdx.x]];
     auto w = threadIdx.x / len;
     drawPoint<Out,Uniform,FrameBuffer,fs>(line, w, *uniform, *frameBuffer);
 }
 
+template<typename Out, typename Uniform, typename FrameBuffer,
+    FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
+    CALLABLE void renderLineGPU(const Line<Out>* info,
+        const Uniform* uniform, FrameBuffer* frameBuffer,
+        unsigned int* cnt,unsigned int* idx,unsigned int lsiz,vec2 fsize) {
+    constexpr auto block = 64U;
+
+    if (cnt[10]) cutLines<Out><<<calcSize(cnt[10],block),block>>>
+        (cnt[10],&cnt[11],&cnt[9],info, idx + lsiz*10, idx+lsiz*9, fsize, 1 << 9);
+
+    cudaDeviceSynchronize();
+
+    for (auto i = 0; i < 10; ++i)
+        if (cnt[i]) {
+            dim3 grid(cnt[i]);
+            dim3 block(1 << i);
+            auto base = idx + i * lsiz;
+            drawMicroL<Out, Uniform, FrameBuffer, ds><<<grid,block>>>
+                (info,base,uniform, frameBuffer, 1 << i);
+        }
+
+    cudaDeviceSynchronize();
+
+    for (auto i = 0; i < 10; ++i)
+        if (cnt[i]) {
+            dim3 grid(cnt[i]);
+            dim3 block(1 << i);
+            auto base = idx + i * lsiz;
+            drawMicroL<Out, Uniform, FrameBuffer, fs><<<grid, block>>>
+                (info,base,uniform, frameBuffer, 1 << i);
+        }
+}
