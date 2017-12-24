@@ -22,6 +22,9 @@
     <Filter Include="Interaction\IMGUI">
       <UniqueIdentifier>{3940d887-bf99-457d-8239-8c36a3bfdd9b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sampler">
+      <UniqueIdentifier>{c10a63ef-cb26-4541-9ac6-04574f25aa48}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Include\Base\Common.hpp">
@@ -102,12 +105,15 @@
     <ClInclude Include="..\..\Include\PBR\Dist.hpp">
       <Filter>PBR</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp">
+      <Filter>Sampler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Base\Memory.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">
-      <Filter>Base</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Base\Pipeline.cpp">
       <Filter>Base</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\IO\Model.cpp">
@@ -122,7 +128,13 @@
     <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_draw.cpp">
       <Filter>Interaction\IMGUI</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Include\Base\DispatchSystem.cpp">
+    <ClCompile Include="..\..\Src\Base\DispatchSystem.cpp">
+      <Filter>Base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Base\Memory.cpp">
+      <Filter>Base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Base\Pipeline.cpp">
       <Filter>Base</Filter>
     </ClCompile>
   </ItemGroup>

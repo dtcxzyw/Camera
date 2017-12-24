@@ -16,6 +16,7 @@
     <ClInclude Include="..\..\Include\Base\Constant.hpp" />
     <ClInclude Include="..\..\Include\Base\DataSet.hpp" />
     <ClInclude Include="..\..\Include\Base\DispatchSystem.hpp" />
+    <ClInclude Include="..\..\Include\Base\Memory.hpp" />
     <ClInclude Include="..\..\Include\Base\Pipeline.hpp" />
     <ClInclude Include="..\..\Include\Base\Types.hpp" />
     <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp" />
@@ -27,6 +28,7 @@
     <ClInclude Include="..\..\Include\PBR\Dist.hpp" />
     <ClInclude Include="..\..\Include\PBR\PhotorealisticRendering.hpp" />
     <ClInclude Include="..\..\Include\PostProcess\ToneMapping.hpp" />
+    <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\DepthBuffer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\LineRasterizer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\Primitive.hpp" />
@@ -39,8 +41,9 @@
     <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_internal.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Include\Base\DispatchSystem.cpp" />
     <ClCompile Include="..\..\Src\Base\Common.cpp" />
+    <ClCompile Include="..\..\Src\Base\DispatchSystem.cpp" />
+    <ClCompile Include="..\..\Src\Base\Memory.cpp" />
     <ClCompile Include="..\..\Src\Base\Pipeline.cpp" />
     <ClCompile Include="..\..\Src\IO\Model.cpp" />
     <ClCompile Include="..\..\ThirdParty\IMGUI\imgui.cpp" />

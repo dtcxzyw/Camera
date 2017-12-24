@@ -1,5 +1,5 @@
-#include "DispatchSystem.hpp"
-#include "Constant.hpp"
+#include <Base/DispatchSystem.hpp>
+#include <Base/Constant.hpp>
 #include <algorithm>
 
 namespace Impl {

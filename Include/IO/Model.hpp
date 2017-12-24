@@ -1,5 +1,6 @@
 #pragma once
-#include <Base/Common.hpp>
+#include <Base/Memory.hpp>
+#include <string>
 
 struct StaticMesh final {
     struct Vertex {

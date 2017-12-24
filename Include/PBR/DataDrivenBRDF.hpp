@@ -1,5 +1,6 @@
 #pragma once
 #include <Base/Common.hpp>
+#include <Base/Memory.hpp>
 
 /*
 http://www.merl.com/brdf/

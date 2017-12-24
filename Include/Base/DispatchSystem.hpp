@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <chrono>
 #include <tuple>
+#include <functional>
 
 class CommandBuffer;
 using ID = uintmax_t;

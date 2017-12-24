@@ -1,11 +1,6 @@
 #pragma once
-#include "Common.hpp"
-#include <functional>
-#include <deque>
-
-CUDAInline unsigned int getID() {
-    return blockIdx.x*blockDim.x + threadIdx.x;
-}
+#include <Base/Common.hpp>
+#include <Base/Memory.hpp>
 
 class Event;
 

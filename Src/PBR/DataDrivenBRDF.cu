@@ -1,5 +1,6 @@
 #include <PBR/DataDrivenBRDF.hpp>
 #include <fstream>
+#include <vector>
 
 BRDFSampler::BRDFSampler(const vec3* ReadOnlyCache data):mData(data) {}
 
