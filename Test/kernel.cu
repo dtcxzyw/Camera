@@ -43,7 +43,7 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
         auto V = normalize(uniform.cp - p);
         //auto F = disneyBRDF(L,V,N,X,Y,uniform.arg);
         //auto F = UE4BRDF(L, V, N, X, Y, uniform.arg,dis/uniform.r);
-        auto F = frostbiteBRDF(L, V, N, X, Y, uniform.arg);
+        auto F = mixedBRDF(L, V, N, X, Y, uniform.arg);
         auto res = uniform.lc*F*(distUE4(dis2,uniform.r*uniform.r)*dot(N, L));
         fbo.color.set(uv, {res,1.0f });
     }

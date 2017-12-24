@@ -8,13 +8,13 @@ auto f = 50.0f, light=5.0f,r=20.0f;
 StaticMesh model;
 //DisneyBRDFArg arg;
 //UE4BRDFArg arg;
-FrostbiteBRDFArg arg;
+MixedBRDFArg arg;
 
 void renderGUI(IMGUIWindow& window) {
     window.newFrame();
     ImGui::Begin("Debug");
     ImGui::SetWindowPos({ 0, 0 });
-    ImGui::SetWindowSize({ 500,500 });
+    ImGui::SetWindowSize({ 500,320 });
     ImGui::SetWindowFontScale(1.5f);
     ImGui::StyleColorsDark();
     ImGui::Text("vertices %d, triangles: %d\n", static_cast<int>(model.mVert.size()),
@@ -23,6 +23,15 @@ void renderGUI(IMGUIWindow& window) {
     ImGui::SliderFloat("focal length",&f,15.0f,500.0f,"%.1f");
     ImGui::SliderFloat("light", &light, 0.0f, 10.0f);
     ImGui::SliderFloat("lightRadius", &r, 0.0f, 20.0f);
+
+#define Color(name)\
+arg.##name=clamp(arg.##name,vec3(0.01f),vec3(0.999f));\
+ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
+
+    Color(baseColor);
+    Color(edgeTint);
+#undef Color
+
 #define Arg(name)\
  arg.##name=clamp(arg.##name,0.01f,0.999f);\
  ImGui::SliderFloat(#name, &arg.##name, 0.01f, 0.999f);\
@@ -30,17 +39,18 @@ void renderGUI(IMGUIWindow& window) {
     Arg(metallic);
     //Arg(subsurface);
     //Arg(specular);
-    //Arg(roughness);
+    Arg(roughness);
     //Arg(specularTint);
-    //Arg(anisotropic);
+    Arg(anisotropic);
     //Arg(anisotropy);
     //Arg(sheen);
     //Arg(sheenTint);
     //Arg(clearcoat);
     //Arg(clearcoatGloss);
     //Arg(cavity);
-    Arg(smoothness);
-    Arg(reflectance);
+    //Arg(smoothness);
+    //Arg(reflectance);
+#undef Arg
     ImGui::End();
     window.renderGUI();
 }
@@ -58,7 +68,6 @@ Uniform getUniform(float w,float h,float delta) {
     u.invM = mat3(transpose(inverse(M)));
     u.lc = vec3(light);
     u.arg = arg;
-    u.arg.baseColor = { 1.000f, 0.766f, 0.336f };
     u.cp = cp;
     u.lp = lp;
     u.r = r;
@@ -85,6 +94,8 @@ int main() {
     getEnvironment().init();
     try {
         model.load("Res/bunny.obj");
+        arg.baseColor = vec3{ 244,206,120 }/255.0f;
+        arg.edgeTint = vec3{ 254,249,205 } / 255.0f;
         IMGUIWindow window;
         SwapChain_t swapChain(8);
         std::queue<std::pair<Future, SwapChain_t::SharedFrame>> futures;

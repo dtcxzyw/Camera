@@ -18,6 +18,25 @@ CUDAInline float fresnelSchlickUE4(float vdh) {
     return powf(2.0f, (-5.55473f*vdh-6.98316f)*vdh);
 }
 
+/*
+Artist Friendly Metallic Fresnel(JCGT, 2014)
+http://jcgt.org/published/0003/04/03/
+*/
+CUDAInline vec3 fresnelGulbrandsen(vec3 r,vec3 g,float u) {
+    auto nMin = (1.0f - r) / (1.0f + r);
+    auto sqrtr = sqrt(r);
+    auto nMax = (1.0f + sqrtr) / (1.0f - sqrtr);
+    auto n = mix(nMax,nMin,g);
+    auto na1 = n + 1.0f,ns1=n-1.0f;
+    auto k2 =(na1*na1*r-ns1*ns1) / (1.0f - r);
+    auto sum = n * n+k2, n2u = 2.0f*u*n;
+    auto u2 = u * u;
+    auto sau2 = sum + u2, smu2 = sum * u2+1.0f;
+    auto rs = (sau2 - n2u)/ (sau2 + n2u);
+    auto rp = (smu2 - n2u) / (smu2 + n2u);
+    return 0.5f*(rs + rp);
+}
+
 //D
 CUDAInline float GGXD(float ndh, float roughness) {
     auto a = roughness*roughness;
@@ -283,7 +302,7 @@ CUDAInline vec3 frostbiteBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, FrostbiteB
     auto f0 =mix(vec3(calcFv(arg.reflectance)),arg.baseColor,arg.metallic);
     auto F =mix(f0,vec3(1.0f),fresnelSchlick(ldh));
     auto G = smithGHeightCorrelated(ndl,ndv,ldh,vdh,roughness*roughness);
-    auto fs = D*G*F/(4.0f*ndl*ndv);
+    auto fs =F*(D*G / (4.0f*ndl*ndv));
     return fd+fs;
 }
 
@@ -295,20 +314,16 @@ http://blog.selfshadow.com/publications/s2015-shading-course/burley/s2015_pbs_di
 F:Artist Friendly Metallic Fresnel (JCGT, 2014)
 http://jcgt.org/published/0003/04/03/
 D:Anisotropic GGX
-
+http://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_notes_v3.pdf
 G:Height-Correlated Smith[Heitz14]
 http://jcgt.org/published/0003/02/03/
 */
-struct MaterialLayer final{
-    float k;
-
-};
 struct MixedBRDFArg final{
     vec3 baseColor;
+    vec3 edgeTint;
     float metallic;
     float roughness;
-    MaterialLayer layer[3];
-    int layerCount;
+    float anisotropic;
 };
 CUDAInline vec3 mixedBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, MixedBRDFArg arg) {
     auto ndl = dot(L, N);
@@ -316,12 +331,18 @@ CUDAInline vec3 mixedBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, MixedBRDFArg a
     if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);
     auto H = calcHalf(L, V);
     auto ldh = dot(L, H);
+    auto vdh = dot(V, H);
     auto ndh = dot(N, H);
 
     auto fd = arg.baseColor*(disneyDiffuse2015(ndl,ndv,ldh,arg.roughness)*(1.0f-arg.metallic));
-    vec3 fs = {};
-    for (int i = 0; i < arg.layerCount; ++i) {
-
-    }
+    auto F = fresnelGulbrandsen(arg.baseColor,arg.edgeTint,ldh);
+    auto aspect = sqrt(1.0f - arg.anisotropic*0.9f);
+    auto sqrr = arg.roughness*arg.roughness;
+    auto ax = fmax(0.001f, sqrr / aspect);
+    auto ay = fmax(0.001f, sqrr*aspect);
+    auto kx=ax*dot(X,V), ky =ay*dot(Y,V) ;
+    auto G = smithGHeightCorrelated(ndl, ndv, ldh, vdh, kx*kx+ky*ky);
+    auto D = DGTR2Aniso(ndh,ax,ay,dot(X,H),dot(Y,H));
+    auto fs=F*(D*G/(4.0f*ndl*ndv));
     return fd+fs;
 }
