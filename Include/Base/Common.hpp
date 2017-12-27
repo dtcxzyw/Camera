@@ -9,7 +9,7 @@
 #define CALLABLE __global__
 #define ALIGN __align__(4)
 #define ReadOnlyCache __restrict__
-#include "Types.hpp"
+#include "Math.hpp"
 
 struct Uncopyable {
     Uncopyable() = default;

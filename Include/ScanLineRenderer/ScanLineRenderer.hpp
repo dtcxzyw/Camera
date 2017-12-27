@@ -51,10 +51,10 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
         Index index, const DataPtr<Uniform>& uniform
         ,const DataPtr<FrameBuffer>& frameBuffer, uvec2 size) {
-    auto cnt =buffer.allocBuffer<unsigned int>(8);
+    auto cnt =buffer.allocBuffer<unsigned int>(9);
     buffer.memset(cnt);
     auto info =buffer.allocBuffer<Triangle<Out>>(index.size()*2);
-    auto idx = buffer.allocBuffer<unsigned int>(index.size()*7);
+    auto idx = buffer.allocBuffer<unsigned int>(index.size()*10);
     buffer.runKernelLinear(clipTriangles<Index, Out>, index.size(), cnt, vert, index,
         info,idx, static_cast<vec2>(size));
     buffer.callKernel(renderTrianglesGPU<Out, Uniform,FrameBuffer,ds,fs>,cnt,info,idx

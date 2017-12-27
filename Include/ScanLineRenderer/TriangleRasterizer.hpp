@@ -55,7 +55,7 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
         res.out[0] = vert[idx[0]].out, res.out[1] = vert[idx[1]].out, res.out[2] = vert[idx[2]].out;
         auto tsize = fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z);
         auto x=static_cast<int>(ceil(log2f(fmin(tsize + 1.0f, 50.0f))));
-        auto tid = atomicInc(cnt + 7, maxv);
+        auto tid = atomicInc(cnt + 8, maxv);
         triID[atomicInc(cnt + x, maxv) + x * size] = tid;
         info[tid] = res;
     }
@@ -94,8 +94,8 @@ CALLABLE void cutTriangles(unsigned int size, unsigned int* cnt,
     auto rect = info.rect;
     for (int i = rect[0]; i <= rect[1]; i += 31)
         for (int j = rect[2]; j <= rect[3]; j += 31) {
-            auto tid = atomicInc(cnt + 7, maxv);
-            out[atomicInc(cnt + 5, maxv)] = tid;
+            auto tid = atomicInc(cnt + 8, maxv);
+            out[atomicInc(cnt + 7, maxv)] = tid;
             info.rect[0] = i, info.rect[2] = j;
             tri[tid] = info;
         }
@@ -105,10 +105,11 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void renderTrianglesGPU(unsigned int* cnt, Triangle<Out>* tri
         , unsigned int* idx, Uniform* uniform, FrameBuffer* frameBuffer, unsigned int size) {
-    constexpr auto block = 64U;
-    if(cnt[6])
-        cutTriangles<Out> <<<calcSize(cnt[6], block), block >> > (cnt[6], cnt, tri, idx + size * 6, idx + size * 5);
-    cudaDeviceSynchronize();
+    if (cnt[6]) {
+        constexpr auto block = 128U;
+        cutTriangles<Out> << <calcSize(cnt[6], block), block >> > (cnt[6], cnt, tri, idx + size * 6, idx + size * 7);
+        cudaDeviceSynchronize();
+    }
 
     for (auto i = 0; i < 6; ++i)
         if (cnt[i]) {
@@ -118,6 +119,14 @@ template<typename Out, typename Uniform, typename FrameBuffer,
             drawMicroT<Out, Uniform, FrameBuffer, ds> << <grid, block >> > (tri, idx + size * i,
                 uniform, frameBuffer);
         }
+
+    if (cnt[7]) {
+        auto bsiz = 1U << 5;
+        dim3 grid(cnt[7]);
+        dim3 block(bsiz, bsiz);
+        drawMicroT<Out, Uniform, FrameBuffer, ds> << <grid, block >> > (tri, idx + size * 7,
+            uniform, frameBuffer);
+    }
 
     cudaDeviceSynchronize();
 
@@ -129,5 +138,13 @@ template<typename Out, typename Uniform, typename FrameBuffer,
             drawMicroT<Out, Uniform, FrameBuffer, fs> << <grid, block >> > (tri, idx + size * i,
                 uniform, frameBuffer);
         }
+
+    if (cnt[7]) {
+        auto bsiz = 1U << 5;
+        dim3 grid(cnt[7]);
+        dim3 block(bsiz, bsiz);
+        drawMicroT<Out, Uniform, FrameBuffer, fs> << <grid, block >> > (tri, idx + size * 7,
+            uniform, frameBuffer);
+    }
 }
 

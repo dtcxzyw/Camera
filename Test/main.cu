@@ -6,15 +6,13 @@ using namespace std::chrono_literals;
 
 auto f = 50.0f, light=5.0f,r=20.0f;
 StaticMesh model;
-//DisneyBRDFArg arg;
-//UE4BRDFArg arg;
-MixedBRDFArg arg;
+DisneyBRDFArg arg;
 
 void renderGUI(IMGUIWindow& window) {
     window.newFrame();
     ImGui::Begin("Debug");
     ImGui::SetWindowPos({ 0, 0 });
-    ImGui::SetWindowSize({ 500,320 });
+    ImGui::SetWindowSize({ 500,530 });
     ImGui::SetWindowFontScale(1.5f);
     ImGui::StyleColorsDark();
     ImGui::Text("vertices %d, triangles: %d\n", static_cast<int>(model.mVert.size()),
@@ -29,7 +27,7 @@ arg.##name=clamp(arg.##name,vec3(0.01f),vec3(0.999f));\
 ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
 
     Color(baseColor);
-    Color(edgeTint);
+    //Color(edgeTint);
 #undef Color
 
 #define Arg(name)\
@@ -37,16 +35,16 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
  ImGui::SliderFloat(#name, &arg.##name, 0.01f, 0.999f);\
 
     Arg(metallic);
-    //Arg(subsurface);
-    //Arg(specular);
+    Arg(subsurface);
+    Arg(specular);
     Arg(roughness);
-    //Arg(specularTint);
+    Arg(specularTint);
     Arg(anisotropic);
     //Arg(anisotropy);
-    //Arg(sheen);
-    //Arg(sheenTint);
-    //Arg(clearcoat);
-    //Arg(clearcoatGloss);
+    Arg(sheen);
+    Arg(sheenTint);
+    Arg(clearcoat);
+    Arg(clearcoatGloss);
     //Arg(cavity);
     //Arg(smoothness);
     //Arg(reflectance);
@@ -58,7 +56,7 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
 Uniform getUniform(float w,float h,float delta) {
     vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f };
     auto V = lookAt(cp, { 0.0f,0.0f,0.0f }, { 0.0f,1.0f,0.0f });
-    static glm::mat4 M = scale(glm::mat4{}, vec3(10.0f));
+    static glm::mat4 M = scale(glm::mat4{}, vec3(1.0f));
     auto fov = toFOV(36.0f*24.0f, f);
     glm::mat4 P = perspectiveFov(fov, w, h, 1.0f, 20.0f);
     M = rotate(M, delta*0.2f, { 0.0f,1.0f,0.0f });
@@ -93,11 +91,11 @@ auto addTask(DispatchSystem& system
 int main() {
     getEnvironment().init();
     try {
-        model.load("Res/bunny.obj");
+        model.load("Res/mitsuba/mitsuba-sphere.obj");
         arg.baseColor = vec3{ 244,206,120 }/255.0f;
-        arg.edgeTint = vec3{ 254,249,205 } / 255.0f;
+        //arg.edgeTint = vec3{ 254,249,205 } / 255.0f;
         IMGUIWindow window;
-        SwapChain_t swapChain(8);
+        SwapChain_t swapChain(5);
         std::queue<std::pair<Future, SwapChain_t::SharedFrame>> futures;
         {
             DispatchSystem system(3);

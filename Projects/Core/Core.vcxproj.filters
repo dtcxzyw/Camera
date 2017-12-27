@@ -33,9 +33,6 @@
     <ClInclude Include="..\..\Include\Base\DataSet.hpp">
       <Filter>Base</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Base\Types.hpp">
-      <Filter>Base</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLine.hpp">
       <Filter>ScanLineRenderer</Filter>
     </ClInclude>
@@ -109,6 +106,12 @@
       <Filter>Sampler</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Base\Memory.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Base\Math.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Base\MathExt.hpp">
       <Filter>Base</Filter>
     </ClInclude>
   </ItemGroup>
