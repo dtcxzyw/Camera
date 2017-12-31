@@ -8,11 +8,19 @@ auto f = 50.0f, light=5.0f,r=20.0f;
 StaticMesh model;
 DisneyBRDFArg arg;
 
-void renderGUI(IMGUIWindow& window) {
+void setUIStyle() {
+    ImGui::StyleColorsDark();
     auto& style = ImGui::GetStyle();
     style.Alpha = 0.8f;
+    style.AntiAliasedFill = true;
     style.AntiAliasedLines = true;
-    style.AntiAliasedShapes = true;
+    style.WindowBorderSize = 1.0f;
+    style.FrameBorderSize = 1.0f;
+    style.ChildBorderSize = 1.0f;
+    style.FrameRounding = 5.0f;
+}
+
+void renderGUI(IMGUIWindow& window) {
     window.newFrame();
     ImGui::Begin("Debug");
     ImGui::SetWindowPos({ 0, 0 });
@@ -98,6 +106,7 @@ int main() {
         arg.baseColor = vec3{ 244,206,120 }/255.0f;
         //arg.edgeTint = vec3{ 254,249,205 } / 255.0f;
         IMGUIWindow window;
+        setUIStyle();
         SwapChain_t swapChain(5);
         std::queue<std::pair<Future, SwapChain_t::SharedFrame>> futures;
         {
