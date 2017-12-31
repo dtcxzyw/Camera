@@ -87,8 +87,8 @@ private:
         stream.sync();
     }
 public:
-    BuiltinMipmapedArray(const T* src,Stream& stream,int flags=cudaArrayDefault,size_t level=0) 
-        :mSize(width, height) {
+    BuiltinMipmapedArray(const T* src,size_t width,size_t height,Stream& stream,
+        int flags=cudaArrayDefault,size_t level=0) :mSize(width, height) {
         auto desc = cudaCreateChannelDesc<Type>();
         auto maxLevel = calcMaxMipmapLevel(width, height);
         if (level == 0)level = maxLevel;

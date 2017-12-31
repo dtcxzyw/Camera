@@ -107,7 +107,7 @@ int main() {
         //arg.edgeTint = vec3{ 254,249,205 } / 255.0f;
         IMGUIWindow window;
         setUIStyle();
-        SwapChain_t swapChain(5);
+        SwapChain_t swapChain(8);
         std::queue<std::pair<Future, SwapChain_t::SharedFrame>> futures;
         {
             DispatchSystem system(3);
@@ -120,7 +120,7 @@ int main() {
                 }
                 SwapChain_t::SharedFrame frame;
                 while (true) {
-                    system.update(500us);
+                    system.update(1ms);
                     if (!swapChain.empty())
                         futures.emplace(addTask(system, swapChain.pop(), size, lum.begin()));
                     if (futures.size() && futures.front().first.finished()) {
