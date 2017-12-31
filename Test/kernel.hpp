@@ -67,7 +67,7 @@ struct FrameBufferCPU final {
     FrameBufferGPU data;
     void resize(size_t width, size_t height) {
         if (size.x == width && size.y == height)return;
-        colorBuffer = std::make_unique<BuiltinArray<RGBA>>(width, height);
+        colorBuffer = std::make_unique<BuiltinArray<RGBA>>(width, height,cudaArraySurfaceLoadStore);
         colorRT = std::make_unique <BuiltinRenderTarget<RGBA>>(*colorBuffer);
         depthBuffer = std::make_unique<DepthBuffer<unsigned int>>(uvec2(width, height));
         size = { width,height };

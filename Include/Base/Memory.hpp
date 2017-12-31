@@ -47,9 +47,6 @@ public:
     size_t size() const {
         return mSize;
     }
-    void scale(size_t size) {
-        mSize = size;
-    }
 };
 
 template<typename T>

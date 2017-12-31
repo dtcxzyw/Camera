@@ -82,7 +82,8 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     auto tri = info[idx[blockIdx.x]];
     ivec2 uv{ tri.rect.x + threadIdx.x,tri.rect.z + threadIdx.y };
     vec2 p{ uv.x,uv.y };
-    drawPoint<Out, Uniform, FrameBuffer, fs>(tri, uv, p, *uniform, *frameBuffer);
+    if(p.x<=tri.rect.y & p.y<=tri.rect.w)
+        drawPoint<Out, Uniform, FrameBuffer, fs>(tri, uv, p, *uniform, *frameBuffer);
 }
 
 template<typename Out>
@@ -92,13 +93,14 @@ CALLABLE void cutTriangles(unsigned int size, unsigned int* cnt,
     if (id >= size)return;
     auto info = tri[idx[id]];
     auto rect = info.rect;
-    for (int i = rect[0]; i <= rect[1]; i += 31)
+    for (int i = rect[0]; i <= rect[1]; i += 31) {
         for (int j = rect[2]; j <= rect[3]; j += 31) {
             auto tid = atomicInc(cnt + 8, maxv);
             out[atomicInc(cnt + 7, maxv)] = tid;
             info.rect[0] = i, info.rect[2] = j;
             tri[tid] = info;
         }
+    }
 }
 
 template<typename Out, typename Uniform, typename FrameBuffer,

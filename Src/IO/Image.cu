@@ -7,8 +7,9 @@ std::shared_ptr<BuiltinArray<RGBA>> loadRGBA(const std::string& path,Stream& str
     int w, h, channel;
     auto p = stbi_loadf(path.c_str(), &w, &h, &channel, STBI_rgb_alpha);
     auto res = std::make_shared<BuiltinArray<RGBA>>(w,h);
-    checkError(cudaMemcpyToArray(res->get(), 0, 0, p, w*h * sizeof(RGBA)
-        , cudaMemcpyHostToDevice));
+    checkError(cudaMemcpyToArrayAsync(res->get(), 0, 0, p, w*h * sizeof(RGBA)
+        , cudaMemcpyHostToDevice,stream.getID()));
+    stream.sync();
     stbi_image_free(p);
     return res;
 }

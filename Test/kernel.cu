@@ -16,7 +16,7 @@ CUDA void GS(VI* in, Uniform uniform, Queue<VI, 2> out) {
 }
 */
 
-CUDA void VS(VI in, Uniform uniform, vec4& NDC, OI& out) {
+CUDAInline void VS(VI in, Uniform uniform, vec4& NDC, OI& out) {
     auto wp =uniform.M*vec4(in.pos, 1.0f);
     out.get<pos>() = wp;
     out.get<normal>() =uniform.invM*in.normal;
@@ -26,11 +26,11 @@ CUDA void VS(VI in, Uniform uniform, vec4& NDC, OI& out) {
 
 constexpr float maxdu = std::numeric_limits<unsigned int>::max();
 
-CUDA void setPoint(ivec2 uv,float z, OI out, Uniform uniform, FrameBufferGPU& fbo) {
+CUDAInline void setPoint(ivec2 uv,float z, OI out, Uniform uniform, FrameBufferGPU& fbo) {
     fbo.depth.set(uv, z*maxdu);
 }
 
-CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& fbo) {
+CUDAInline void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& fbo) {
     if (fbo.depth.get(uv) ==static_cast<unsigned int>(z*maxdu)) {
         auto p = out.get<pos>();
         vec3 N =normalize(out.get<normal>());
@@ -48,13 +48,13 @@ CUDA void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& f
 }
 
 /*
-CUDA void drawHair(ivec2 uv, float z, OI out, Uniform uniform, FrameBufferGPU& fbo) {
+CUDAInline void drawHair(ivec2 uv, float z, OI out, Uniform uniform, FrameBufferGPU& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z*maxdu))
         fbo.color.set(uv, vec4(1.0f));
 }
 */
 
-CUDA void post(ivec2 NDC, PostUniform uni, BuiltinRenderTargetGPU<RGBA> out) {
+CUDAInline void post(ivec2 NDC, PostUniform uni, BuiltinRenderTargetGPU<RGBA> out) {
     RGB c = uni.in.color.get(NDC);
     auto lum =luminosity(c);
     if (lum > 0.0f) {

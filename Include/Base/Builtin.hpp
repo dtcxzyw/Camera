@@ -31,9 +31,9 @@ private:
     using Type = typename Rename<T>::Type;
     uvec2 mSize;
 public:
-    BuiltinArray(size_t width, size_t height) :mSize(width, height) {
+    BuiltinArray(size_t width, size_t height,int flag=cudaArrayDefault) :mSize(width, height) {
         auto desc = cudaCreateChannelDesc<Type>();
-        checkError(cudaMallocArray(&mArray, &desc, width, height));
+        checkError(cudaMallocArray(&mArray, &desc, width, height,flag));
     }
     ~BuiltinArray() {
         checkError(cudaFreeArray(mArray));
@@ -54,6 +54,59 @@ public:
     }
 };
 
+inline size_t calcMaxMipmapLevel(size_t width,size_t height) {
+    return 1 + floor(std::log2(std::max(width,height)));
+}
+
+template<typename T>
+class BuiltinMipmapedArray final :Uncopyable {
+private:
+    cudaMipmappedArray_t mArray;
+    using Type = typename Rename<T>::Type;
+    uvec2 mSize;
+    void downSample(cudaArray_const_t src, cudaArray_t dst,uvec2 size,Stream& stream);
+    void genMipmaps(const T* src, size_t level,Stream& stream) {
+        cudaArray_t srcArray;
+        {
+            cudaMemcpy3DParms parms;
+            parms.extent = { mSize.x,mSize.y,0 };
+            parms.kind = cudaMemcpyHostToDevice;
+            parms.srcPtr = make_cudaPitchedPtr(src, mSize.x * sizeof(T), mSize.x, mSize.y);
+            checkError(cudaGetMipmappedArrayLevel(&srcArray, mArray, 0));
+            parms.dstArray = srcArray;
+            checkError(cudaMemcpy3D(&parms));
+        }
+        uvec2 size = mSize;
+        for (size_t i = 1; i <level; ++i) {
+            size /= 2;
+            cudaArray_t dstArray;
+            checkError(cudaGetMipmappedArrayLevel(&dstArray, mArray, i));
+            downSample(srcArray, dstArray,size,stream);
+            srcArray = dstArray;
+        }
+        stream.sync();
+    }
+public:
+    BuiltinMipmapedArray(const T* src,Stream& stream,int flags=cudaArrayDefault,size_t level=0) 
+        :mSize(width, height) {
+        auto desc = cudaCreateChannelDesc<Type>();
+        auto maxLevel = calcMaxMipmapLevel(width, height);
+        if (level == 0)level = maxLevel;
+        else level = std::max(level, maxLevel);
+        checkError(cudaMallocMipmappedArray(&mArray, &desc,
+            make_cudaExtent(width, height,0),level,flags));
+        genMipmaps(src, level,stream);
+    }
+    ~BuiltinMipmapedArray() {
+        checkError(cudaFreeMipmappedArray(mArray));
+    }
+    uvec2 size() const {
+        return mSize;
+    }
+    cudaMipmappedArray_t get() const {
+        return mArray;
+    }
+};
 
 template<typename T>
 class BuiltinSamplerGPU final {
@@ -66,6 +119,21 @@ public:
         tex2D<Type>(reinterpret_cast<Type*>(&res),mTexture,p.x,p.y);
         return res;
     }
+    CUDA T getGather(vec2 p,int comp) const {
+        T res;
+        tex2Dgather<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y,comp);
+        return res;
+    }
+    CUDA T getGrad(vec2 p, float dPdx,float dPdy) const {
+        T res;
+        tex2DGrad<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y, dPdx,dPdy);
+        return res;
+    }
+    CUDA T getLod(vec2 p,float lod) const {
+        T res;
+        tex2DLod<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y,lod);
+        return res;
+    }
     CUDA T getCubeMap(vec3 p) const {
         T res;
         texCubemap<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y, p.z);
@@ -75,19 +143,23 @@ private:
     cudaTextureObject_t mTexture;
 };
 
+//The trick comes from https://learnopengl.com/#!PBR/IBL/Diffuse-irradiance.
+CUDAInline vec2 calcHDRUV(vec3 p) {
+    return {atan(p.z,p.x)*0.1591f+0.5f,asin(p.y)*0.3183f+0.5f};
+}
+
 template<typename T>
 class BuiltinSampler final:Uncopyable {
 private:
-    cudaArray_t mArray;
     using Type = typename Rename<T>::Type;
     cudaTextureObject_t mTexture;
 public:
     BuiltinSampler(BuiltinArray<T>& array,
         cudaTextureAddressMode am = cudaAddressModeWrap,vec4 borderColor={},
         cudaTextureFilterMode fm = cudaFilterModeLinear,unsigned int maxAnisotropy = 0,
-        bool sRGB = false):mArray(array.get()){
+        bool sRGB = false){
         cudaResourceDesc RD;
-        RD.res.array.array = mArray;
+        RD.res.array.array = array.get();
         RD.resType = cudaResourceType::cudaResourceTypeArray;
         cudaTextureDesc TD;
         memset(&TD, 0, sizeof(TD));
@@ -99,6 +171,28 @@ public:
         TD.readMode = cudaReadModeElementType;
         TD.sRGB = sRGB;
         checkError(cudaCreateTextureObject(&mTexture,&RD,&TD,nullptr));
+    }
+    BuiltinSampler(BuiltinMipmapedArray<T>& array,
+        cudaTextureAddressMode am = cudaAddressModeWrap, vec4 borderColor = {},
+        cudaTextureFilterMode fm = cudaFilterModeLinear, unsigned int maxAnisotropy = 0,
+        bool sRGB = false) {
+        cudaResourceDesc RD;
+        RD.res.mipmap.mipmap = array.get();
+        RD.resType = cudaResourceType::cudaResourceTypeMipmappedArray;
+        cudaTextureDesc TD;
+        memset(&TD, 0, sizeof(TD));
+        TD.addressMode[0] = TD.addressMode[1] = am;
+        *reinterpret_cast<vec4*>(TD.borderColor) = borderColor;
+        TD.filterMode = fm;
+        TD.maxAnisotropy = maxAnisotropy;
+        TD.normalizedCoords = 1;
+        TD.readMode = cudaReadModeElementType;
+        TD.sRGB = sRGB;
+        auto size = array.size();
+        TD.maxMipmapLevelClamp=calcMaxMipmapLevel(size.x,size.y);
+        TD.minMipmapLevelClamp=1.0f;
+        TD.mipmapFilterMode=fm;
+        checkError(cudaCreateTextureObject(&mTexture, &RD, &TD, nullptr));
     }
     BuiltinSamplerGPU<T> toSampler() const {
         return mTexture;
@@ -196,3 +290,27 @@ public:
         return mTexture;
     }
 };
+
+namespace Impl {
+    template<typename T>
+    CALLABLE void downSample(BuiltinSamplerGPU<T> src,BuiltinRenderTargetGPU<T> rt) {
+        uvec2 p = { blockIdx.x*blockDim.x + threadIdx.x,blockIdx.y*blockDim.y + threadIdx.y };
+        uvec2 base = { p.x * 2,p.y * 2 };
+        T val = {};
+        for (auto i = 0; i < 2; ++i)
+            for (auto j = 0; j < 2; ++j)
+                val += src.get(base + uvec2{i, j});
+        rt.set(p, val*0.25f);
+    }
+}
+
+template<typename T>
+inline void BuiltinMipmapedArray<T>::downSample(cudaArray_const_t src, cudaArray_t dst,
+    uvec2 size,Stream& stream) {
+    BuiltinSampler<T> sampler(src);
+    BuiltinRenderTarget<T> RT(dst,size);
+    uint mul = sqrt(getEnvironment().getProp().maxThreadsPerBlock);
+    dim3 grid(calcSize(size.x, mul), calcSize(size.y, mul));
+    dim3 block(mul, mul);
+    stream.runDim(Impl::downSample<T>,grid,block,sampler.toSampler(),RT.toTarget());
+}
