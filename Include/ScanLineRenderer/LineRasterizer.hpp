@@ -16,11 +16,14 @@ CALLABLE void sortLines(unsigned int size, unsigned int* cnt,
     auto id = getID();
     if (id >= size)return;
     auto a = id << 1, b = id << 1 | 1;
-    if (vert[a].flag | vert[b].flag == 0b111111) {
+    auto pa = vert[a].pos, pb = vert[b].pos;
+    auto rect = { fmax(0.0f,fmin(pa.x,pb.x)),fmin(fsize.x,fmax(pa.x,pb.x)),
+        fmax(0.0f,fmin(pa.y,pb.y)),fmin(fsize.y,fmax(pa.y,pb.y)) };
+    float minz = fmax(0.0f, fmin(pa.z, pb.z)), maxz = fmin(1.0f, fmax(pa.z, pb.z));
+    if (rect.x<rect.y & rect.z<rect.w & minz<=maxz) {
         Line<Out> res;
-        res.pa = vert[a].pos, res.pb = vert[b].pos;
-        res.rect = { fmax(0.0f,fmin(res.pa.x,res.pb.x)),fmin(fsize.x,fmax(res.pa.x,res.pb.x)),
-            fmax(0.0f,fmin(res.pa.y,res.pb.y)),fmin(fsize.y,fmax(res.pa.y,res.pb.y)) };
+        res.rect = rect;
+        res.pa = pa, res.pb = pb;
         res.oa = vert[a].out, res.ob = vert[b].out;
         auto len = distance(vec2(res.pa), vec2(res.pb));
         auto x = static_cast<int>(ceil(log2f(fmin(len + 1.0f, 700.0f))));

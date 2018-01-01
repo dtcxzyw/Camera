@@ -20,7 +20,8 @@ template< typename Out, typename Uniform, typename FrameBuffer,
     auto id = getID();
     if (id >= size)return;
     auto p = vert[id];
-    if (p.flag == 0b111111)
+    if (0.0f<=p.pos.x & p.pos.x<=fsize.x & 0.0f<=p.pos.y & p.pos.y<=fsize.y 
+        & 0.0f<=p.pos.z & p.pos.z<=1.0f)
         fs({ p.pos.x,p.pos.y }, p.pos.z, p.out, *uniform, *frameBuffer);
 }
 
@@ -53,7 +54,7 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
         ,const DataPtr<FrameBuffer>& frameBuffer, uvec2 size) {
     auto cnt =buffer.allocBuffer<unsigned int>(9);
     buffer.memset(cnt);
-    auto info =buffer.allocBuffer<Triangle<Out>>(index.size()*2);
+    auto info =buffer.allocBuffer<Triangle<Out>>(std::max(65536U,index.size()*2U));
     auto idx = buffer.allocBuffer<unsigned int>(index.size()*10);
     buffer.runKernelLinear(clipTriangles<Index, Out>, index.size(), cnt, vert, index,
         info,idx, static_cast<vec2>(size));
@@ -64,5 +65,8 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
 template<typename Uniform, typename FrameBuffer, FSFSF<Uniform, FrameBuffer> fs>
 void renderFullScreen(CommandBuffer& buffer, const DataPtr<Uniform>& uniform,
     const Value<FrameBuffer>& frameBuffer, uvec2 size) {
-    buffer.runKernelLinear(runFSFS<Uniform, FrameBuffer, fs>, size.x*size.y, uniform, frameBuffer, size.x);
+    constexpr auto tileSize = 32U;
+    dim3 grid(calcSize(size.x, tileSize), calcSize(size.y,tileSize));
+    dim3 block(tileSize, tileSize);
+    buffer.runKernelDim(runFSFS<Uniform, FrameBuffer, fs>,grid,block, uniform, frameBuffer, size);
 }

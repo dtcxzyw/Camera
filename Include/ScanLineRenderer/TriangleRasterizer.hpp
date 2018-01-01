@@ -42,17 +42,24 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     auto id = getID();
     if (id >= size)return;
     auto idx = index[id];
+    if (edgeFunction(vert[idx[0]].pos,vert[idx[1]].pos,vert[idx[2]].pos)<0.0f) {
+        auto tmp = idx[0];
+        idx[0] = idx[2];
+        idx[2] = tmp;
+    }
     vec3 a = vert[idx[0]].pos, b = vert[idx[1]].pos, c = vert[idx[2]].pos;
-    if ((edgeFunction(a, b, c) > 0.0f) & ((vert[idx[0]].flag | vert[idx[1]].flag | vert[idx[2]].flag) == 0b111111)) {
+    vec4 rect= { fmax(0.0f,fmin(a.x,fmin(b.x,c.x))),fmin(fsize.x,fmax(a.x,fmax(b.x,c.x))),
+        fmax(0.0f,fmin(a.y,fmin(b.y,c.y))),fmin(fsize.y,fmax(a.y,fmax(b.y,c.y))) };
+    float minz = fmax(0.0f, fmin(a.z, fmin(b.z, c.z))), maxz = fmin(1.0f, fmax(a.z, fmax(b.z, c.z)));
+    if (rect.x<rect.y & rect.z<rect.w & minz<=maxz) {
         Triangle<Out> res;
-        res.rect = { fmax(0.0f,fmin(a.x,fmin(b.x,c.x))),fmin(fsize.x,fmax(a.x,fmax(b.x,c.x))),
-            fmax(0.0f,fmin(a.y,fmin(b.y,c.y))),fmin(fsize.y,fmax(a.y,fmax(b.y,c.y))) };
+        res.rect = rect;
         calcBase(b, c, res.w[0]);
         calcBase(c, a, res.w[1]);
         calcBase(a, b, res.w[2]);
         res.z = { a.z,b.z,c.z };
         res.invz = { 1.0f / a.z,1.0f / b.z,1.0f / c.z };
-        res.out[0] = vert[idx[0]].out, res.out[1] = vert[idx[1]].out, res.out[2] = vert[idx[2]].out;
+        res.out[0] =vert[idx[0]].out, res.out[1] = vert[idx[1]].out, res.out[2] = vert[idx[2]].out;
         auto tsize = fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z);
         auto x=static_cast<int>(ceil(log2f(fmin(tsize + 1.0f, 50.0f))));
         auto tid = atomicInc(cnt + 8, maxv);

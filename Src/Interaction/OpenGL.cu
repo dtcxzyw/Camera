@@ -98,6 +98,12 @@ void IMGUIWindow::newFrame() {
     ImGui_ImplGlfwGL3_NewFrame();
 }
 
+void IMGUIWindow::renderGUI() {
+    auto wsiz = size();
+    glViewport(0, 0, wsiz.x, wsiz.y);
+    ImGui::Render();
+}
+
 IMGUIWindow::~IMGUIWindow() {
     getContext().makeContext(mWindow);
     ImGui_ImplGlfwGL3_Shutdown();

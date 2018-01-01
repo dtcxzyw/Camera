@@ -28,7 +28,7 @@ std::shared_ptr<BuiltinMipmapedArray<RGBA>> loadMipmapedRGBA(const std::string &
 }
 
 std::shared_ptr<BuiltinCubeMap<RGBA>> loadCubeMap(const std::function<std::string(size_t id)>& path, Stream & stream) {
-    stbi_set_flip_vertically_on_load(true);
+    stbi_set_flip_vertically_on_load(false);
     std::shared_ptr<BuiltinCubeMap<RGBA>> res;
     for (size_t i = 0; i < 6; ++i) {
         auto rpath = path(i);
@@ -38,8 +38,9 @@ std::shared_ptr<BuiltinCubeMap<RGBA>> loadCubeMap(const std::function<std::strin
             throw std::exception(stbi_failure_reason());
         if (!res)res = std::make_shared<BuiltinCubeMap<RGBA>>(w);
         cudaMemcpy3DParms parm;
+        memset(&parm, 0, sizeof(parm));
         parm.kind = cudaMemcpyHostToDevice;
-        parm.extent = { w,w,1 };
+        parm.extent =make_cudaExtent(w,w,1);
         parm.srcPtr =make_cudaPitchedPtr(p,sizeof(RGBA)*w,w,h);
         parm.dstArray = res->get();
         parm.dstPos = make_cudaPos(0,0,i);

@@ -1,11 +1,14 @@
 #include "kernel.hpp"
 #include <cstdio>
 #include <PBR/PhotorealisticRendering.hpp>
+#include <IO/Image.hpp>
 #include <thread>
 using namespace std::chrono_literals;
 
 auto f = 50.0f, light=5.0f,r=20.0f;
 StaticMesh model;
+std::shared_ptr<BuiltinCubeMap<RGBA>> envMap;
+std::shared_ptr<BuiltinSampler<RGBA>> envMapSampler;
 DisneyBRDFArg arg;
 
 void setUIStyle() {
@@ -29,7 +32,7 @@ void renderGUI(IMGUIWindow& window) {
     ImGui::Text("vertices %d, triangles: %d\n", static_cast<int>(model.mVert.size()),
         static_cast<int>(model.mIndex.size()));
     ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
-    ImGui::SliderFloat("focal length",&f,15.0f,500.0f,"%.1f");
+    ImGui::SliderFloat("focal length",&f,1.0f,500.0f,"%.1f");
     ImGui::SliderFloat("light", &light, 0.0f, 10.0f);
     ImGui::SliderFloat("lightRadius", &r, 0.0f, 20.0f);
 
@@ -65,28 +68,35 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
 }
 
 Uniform getUniform(float w,float h,float delta) {
-    vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f };
-    auto V = lookAt(cp, { 0.0f,0.0f,0.0f }, { 0.0f,1.0f,0.0f });
-    static glm::mat4 M = scale(glm::mat4{}, vec3(1.0f));
+    static vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { -10000.0f,0.0f,0.0f };
+    auto V = lookAt(cp,mid, { 0.0f,1.0f,0.0f });
+    static glm::mat4 M = scale(glm::mat4{}, vec3(0.01f));
     auto fov = toFOV(36.0f*24.0f, f);
-    glm::mat4 P = perspectiveFov(fov, w, h, 1.0f, 20.0f);
-    M = rotate(M, delta*0.2f, { 0.0f,1.0f,0.0f });
+    glm::mat4 P = perspectiveFov(fov, w, h, 0.1f, 200.0f);
+    //M = rotate(M, delta*0.2f, { 0.0f,1.0f,0.0f });
+    constexpr auto step = 100.0f;
+    auto off = ImGui::GetIO().DeltaTime * step;
+    if (ImGui::IsKeyPressed(GLFW_KEY_W))cp.x -= off;
+    if (ImGui::IsKeyPressed(GLFW_KEY_S))cp.x += off;
+    if (ImGui::IsKeyPressed(GLFW_KEY_A))cp.z -= off;
+    if (ImGui::IsKeyPressed(GLFW_KEY_D))cp.z += off;
     Uniform u;
-    u.VP = P * V;
     u.M = M;
+    u.V = V;
+    u.P = P;
     u.invM = mat3(transpose(inverse(M)));
     u.lc = vec3(light);
     u.arg = arg;
     u.cp = cp;
     u.lp = lp;
     u.r = r;
+    u.sampler = envMapSampler->toSampler();
     return u;
 }
 
 using SwapChain_t = SwapChain<FrameBufferCPU>;
 
-auto addTask(DispatchSystem& system
-    ,SwapChain_t::SharedFrame frame,uvec2 size,float* lum) {
+auto addTask(DispatchSystem& system,SwapChain_t::SharedFrame frame,uvec2 size,float* lum) {
     static float last = glfwGetTime();
     float now = glfwGetTime();
     auto uniform = getUniform(size.x,size.y,now-last);
@@ -102,11 +112,19 @@ auto addTask(DispatchSystem& system
 int main() {
     getEnvironment().init();
     try {
-        model.load("Res/mitsuba/mitsuba-sphere.obj");
+        Stream resLoader;
+        model.load("Res/cube.obj");
+        envMap = loadCubeMap([](size_t id) {
+            const char* table[] = {"right","left","top","bottom","back","front"};
+            return std::string("Res/skybox/")+table[id]+".jpg";
+        }, resLoader);
+        envMapSampler = std::make_shared<BuiltinSampler<RGBA>>(envMap->get());
         arg.baseColor = vec3{ 244,206,120 }/255.0f;
         //arg.edgeTint = vec3{ 254,249,205 } / 255.0f;
         IMGUIWindow window;
         setUIStyle();
+        ImGui::GetIO().WantCaptureKeyboard = true;
+
         SwapChain_t swapChain(8);
         std::queue<std::pair<Future, SwapChain_t::SharedFrame>> futures;
         {
@@ -135,6 +153,9 @@ int main() {
                 window.swapBuffers();
             }
         }
+        
+        envMapSampler.reset();
+        envMap.reset();
     }
     catch (const std::exception& e) {
         puts("Catched an error:");

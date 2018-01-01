@@ -184,6 +184,8 @@
       <Warning>W0</Warning>
       <CodeGeneration>compute_52,sm_52</CodeGeneration>
       <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda</AdditionalOptions>
+      <GPUDebugInfo>false</GPUDebugInfo>
+      <GenerateLineInfo>false</GenerateLineInfo>
     </CudaCompile>
     <CudaLink>
       <GPUDebugInfo>false</GPUDebugInfo>

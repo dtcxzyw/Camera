@@ -18,10 +18,12 @@ CUDA void GS(VI* in, Uniform uniform, Queue<VI, 2> out) {
 
 CUDAInline void VS(VI in, Uniform uniform, vec4& NDC, OI& out) {
     auto wp =uniform.M*vec4(in.pos, 1.0f);
-    out.get<pos>() = wp;
-    out.get<normal>() =uniform.invM*in.normal;
-    out.get<tangent>() =uniform.invM*in.tangent;
-    NDC = uniform.VP*wp;
+    out.get<texCoord>() = in.uv;
+    out.get<pos>() = in.pos;
+    //out.get<normal>() =uniform.invM*in.normal;
+    //out.get<tangent>() =uniform.invM*in.tangent;
+    NDC = uniform.P*uniform.V*wp;
+    //NDC.z = NDC.w*0.999f;
 }
 
 constexpr float maxdu = std::numeric_limits<unsigned int>::max();
@@ -32,7 +34,9 @@ CUDAInline void setPoint(ivec2 uv,float z, OI out, Uniform uniform, FrameBufferG
 
 CUDAInline void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& fbo) {
     if (fbo.depth.get(uv) ==static_cast<unsigned int>(z*maxdu)) {
-        auto p = out.get<pos>();
+        //auto p = out.get<pos>();
+        auto tex = out.get<texCoord>();
+        /*
         vec3 N =normalize(out.get<normal>());
         vec3 X = normalize(out.get<tangent>());
         vec3 Y = normalize(cross(N, X));
@@ -43,7 +47,10 @@ CUDAInline void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBuffer
         auto V = normalize(uniform.cp - p);
         auto F = disneyBRDF(L, V, N, X, Y, uniform.arg);
         auto res = uniform.lc*F*(distUE4(dis2,uniform.r*uniform.r)*dot(N, L));
-        fbo.color.set(uv, {res,1.0f });
+        */
+        tex *= 10.0f;
+        auto p = (fmod(tex.x, 1.0f) > 0.5f) ^ (fmod(tex.y, 1.0f) < 0.5f);
+        fbo.color.set(uv,vec4(p));
     }
 }
 
@@ -56,13 +63,13 @@ CUDAInline void drawHair(ivec2 uv, float z, OI out, Uniform uniform, FrameBuffer
 
 CUDAInline void post(ivec2 NDC, PostUniform uni, BuiltinRenderTargetGPU<RGBA> out) {
     RGB c = uni.in.color.get(NDC);
-    auto lum =luminosity(c);
+    auto lum = luminosity(c);
     if (lum > 0.0f) {
         atomicAdd(&uni.sum->first, fmin(log(lum), 5.0f));
         atomicInc(&uni.sum->second, maxv);
     }
-    c = pow(ACES(c,*uni.lum),vec3(1.0f/2.2f));
-    NDC.y = uni.in.mSize.y- 1 - NDC.y;
+    c = pow(ACES(c, *uni.lum), vec3(1.0f / 2.2f));
+    NDC.y = uni.in.mSize.y - 1 - NDC.y;
     out.set(NDC, { c,1.0f });
 }
 
@@ -71,7 +78,7 @@ CALLABLE void updateLum(PostUniform uniform) {
 }
 
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const MemoryRef<Uniform>& uniform
-    , FrameBufferCPU & fbo, float* lum, CommandBuffer & buffer) {
+    , FrameBufferCPU & fbo, float* lum,CommandBuffer & buffer) {
     fbo.colorRT->clear(buffer, vec4{ 0.0f,0.0f,0.0f,1.0f });
     fbo.depthBuffer->clear(buffer);
     auto vert = calcVertex<VI, OI, Uniform, VS>(buffer, vbo, uniform, fbo.size);

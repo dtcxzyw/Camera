@@ -64,21 +64,21 @@ private:
     cudaMipmappedArray_t mArray;
     using Type = typename Rename<T>::Type;
     uvec2 mSize;
-    void downSample(cudaArray_const_t src, cudaArray_t dst,uvec2 size,Stream& stream);
-    void genMipmaps(const T* src, size_t level,Stream& stream) {
+    void downSample(cudaArray_t src, cudaArray_t dst,uvec2 size,Stream& stream);
+    void genMipmaps(const void* src, size_t level,Stream& stream) {
         cudaArray_t srcArray;
         {
             cudaMemcpy3DParms parms;
             parms.extent = { mSize.x,mSize.y,0 };
             parms.kind = cudaMemcpyHostToDevice;
-            parms.srcPtr = make_cudaPitchedPtr(src, mSize.x * sizeof(T), mSize.x, mSize.y);
+            parms.srcPtr = make_cudaPitchedPtr(const_cast<void*>(src), mSize.x * sizeof(T), mSize.x, mSize.y);
             checkError(cudaGetMipmappedArrayLevel(&srcArray, mArray, 0));
             parms.dstArray = srcArray;
             checkError(cudaMemcpy3D(&parms));
         }
         uvec2 size = mSize;
         for (size_t i = 1; i <level; ++i) {
-            size /= 2;
+            size = max(size/2U,uvec2{ 1,1 });
             cudaArray_t dstArray;
             checkError(cudaGetMipmappedArrayLevel(&dstArray, mArray, i));
             downSample(srcArray, dstArray,size,stream);
@@ -87,7 +87,7 @@ private:
         stream.sync();
     }
 public:
-    BuiltinMipmapedArray(const T* src,size_t width,size_t height,Stream& stream,
+    BuiltinMipmapedArray(const void* src,size_t width,size_t height,Stream& stream,
         int flags=cudaArrayDefault,size_t level=0) :mSize(width, height) {
         auto desc = cudaCreateChannelDesc<Type>();
         auto maxLevel = calcMaxMipmapLevel(width, height);
@@ -112,7 +112,7 @@ template<typename T>
 class BuiltinSamplerGPU final {
 public:
     using Type = typename Rename<T>::Type;
-    CUDA BuiltinSamplerGPU() = default;
+    CUDA BuiltinSamplerGPU() {};
     BuiltinSamplerGPU(cudaTextureObject_t texture):mTexture(texture){}
     CUDA T get(vec2 p) const {
         T res;
@@ -154,12 +154,12 @@ private:
     using Type = typename Rename<T>::Type;
     cudaTextureObject_t mTexture;
 public:
-    BuiltinSampler(BuiltinArray<T>& array,
+    BuiltinSampler(cudaArray_t array,
         cudaTextureAddressMode am = cudaAddressModeWrap,vec4 borderColor={},
         cudaTextureFilterMode fm = cudaFilterModeLinear,unsigned int maxAnisotropy = 0,
         bool sRGB = false){
         cudaResourceDesc RD;
-        RD.res.array.array = array.get();
+        RD.res.array.array = array;
         RD.resType = cudaResourceType::cudaResourceTypeArray;
         cudaTextureDesc TD;
         memset(&TD, 0, sizeof(TD));
@@ -206,7 +206,7 @@ template<typename T>
 class BuiltinRenderTargetGPU final {
 public:
     using Type = typename Rename<T>::Type;
-    CUDA BuiltinRenderTargetGPU() = default;
+    CUDA BuiltinRenderTargetGPU() {};
     BuiltinRenderTargetGPU(cudaSurfaceObject_t target) :mTarget(target) {}
     CUDA T get(ivec2 p) const {
         auto res = surf2Dread<Type>(mTarget, p.x*sizeof(Type), p.y, cudaBoundaryModeClamp);
@@ -273,15 +273,19 @@ public:
     BuiltinCubeMap(size_t size) {
         auto desc = cudaCreateChannelDesc<Type>();
         cudaExtent extent{ size,size,6 };
-        checkError(cudaMalloc3DArray(&mArray,desc,extent,cudaArrayCubemap));
+        checkError(cudaMalloc3DArray(&mArray,&desc,extent,cudaArrayCubemap));
         cudaResourceDesc RD;
         RD.resType = cudaResourceTypeArray;
         RD.res.array.array = mArray;
         cudaTextureDesc TD;
+        memset(&TD, 0, sizeof(TD));
         TD.filterMode = cudaFilterModeLinear;
         TD.normalizedCoords = 1;
         TD.readMode = cudaReadModeElementType;
         checkError(cudaCreateTextureObject(&mTexture,&RD,&TD,nullptr));
+    }
+    ~BuiltinCubeMap() {
+        checkError(cudaDestroyTextureObject(mTexture));
     }
     cudaArray_t get() const {
         return mArray;
@@ -305,7 +309,7 @@ namespace Impl {
 }
 
 template<typename T>
-inline void BuiltinMipmapedArray<T>::downSample(cudaArray_const_t src, cudaArray_t dst,
+inline void BuiltinMipmapedArray<T>::downSample(cudaArray_t src, cudaArray_t dst,
     uvec2 size,Stream& stream) {
     BuiltinSampler<T> sampler(src);
     BuiltinRenderTarget<T> RT(dst,size);

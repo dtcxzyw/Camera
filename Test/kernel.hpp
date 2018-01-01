@@ -12,9 +12,10 @@
 
 using VI = StaticMesh::Vertex;
 enum OutInfo {
-    pos,normal,tangent
+    pos,normal,tangent,texCoord
 };
-using OI = Args<Var(pos, vec3), Var(normal, vec3),Var(tangent, vec3)>;
+//using OI = Args<Var(pos, vec3), Var(normal, vec3),Var(tangent, vec3)>;
+using OI = Args<Var(pos,vec3),Var(texCoord,vec2)>;
  
 struct FrameBufferGPU final {
     BuiltinRenderTargetGPU<RGBA> color;
@@ -85,14 +86,16 @@ struct FrameBufferCPU final {
 };
  
 struct Uniform final {
-    ALIGN mat4 VP;
     ALIGN mat4 M;
+    ALIGN mat4 V;
+    ALIGN mat4 P;
     ALIGN mat3 invM;
     ALIGN vec3 cp;
     ALIGN vec3 lp;
     ALIGN vec3 lc;
     ALIGN float r;
     ALIGN DisneyBRDFArg arg;
+    ALIGN BuiltinSamplerGPU<RGBA> sampler;
 };
 
 struct PostUniform final {

@@ -61,10 +61,6 @@ class IMGUIWindow final :public GLWindow {
 public:
     IMGUIWindow();
     void newFrame();
-    void renderGUI() {
-        auto wsiz = size();
-        glViewport(0, 0, wsiz.x, wsiz.y);
-        ImGui::Render();
-    }
+    void renderGUI();
     ~IMGUIWindow();
 };

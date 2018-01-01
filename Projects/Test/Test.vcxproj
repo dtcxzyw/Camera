@@ -149,6 +149,9 @@
       <CodeGeneration>compute_52,sm_52</CodeGeneration>
       <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda </AdditionalOptions>
       <MaxRegCount>64</MaxRegCount>
+      <HostDebugInfo>false</HostDebugInfo>
+      <GPUDebugInfo>false</GPUDebugInfo>
+      <GenerateLineInfo>false</GenerateLineInfo>
     </CudaCompile>
     <CudaLink>
       <GPUDebugInfo>false</GPUDebugInfo>
