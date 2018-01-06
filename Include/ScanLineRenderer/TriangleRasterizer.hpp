@@ -5,11 +5,10 @@
 
 template<typename Out>
 struct Triangle final {
-    vec4 rect;
-    mat3 w;
-    vec3 z;
-    vec3 invz;
-    Out out[3];
+    ALIGN vec4 rect;
+    ALIGN vec3 invz;
+    ALIGN mat3 w;
+    ALIGN Out out[3];
 };
 
 CUDAInline float edgeFunction(vec3 a, vec3 b, vec3 c) {
@@ -21,13 +20,6 @@ CUDAInline bool testPoint(mat3 w0, vec2 p, vec3& w) {
     w.y = w0[1].x*p.x + w0[1].y*p.y + w0[1].z;
     w.z = w0[2].x*p.x + w0[2].y*p.y + w0[2].z;
     return w.x >= 0.0f&w.y >= 0.0f&w.z >= 0.0f;
-}
-
-CUDAInline bool calcWeight(mat3 w0, vec2 p, vec3 invz, vec3& w) {
-    bool res = testPoint(w0, p, w);
-    w /= dot(invz, w);
-    w *= invz;
-    return res;
 }
 
 CUDAInline void calcBase(vec3 a, vec3 b, vec3& w) {
@@ -42,24 +34,22 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     auto id = getID();
     if (id >= size)return;
     auto idx = index[id];
-    if (edgeFunction(vert[idx[0]].pos,vert[idx[1]].pos,vert[idx[2]].pos)<0.0f) {
-        auto tmp = idx[0];
-        idx[0] = idx[2];
-        idx[2] = tmp;
-    }
     vec3 a = vert[idx[0]].pos, b = vert[idx[1]].pos, c = vert[idx[2]].pos;
+    float S = edgeFunction(a,b,c);
     vec4 rect= { fmax(0.0f,fmin(a.x,fmin(b.x,c.x))),fmin(fsize.x,fmax(a.x,fmax(b.x,c.x))),
         fmax(0.0f,fmin(a.y,fmin(b.y,c.y))),fmin(fsize.y,fmax(a.y,fmax(b.y,c.y))) };
     float minz = fmax(0.0f, fmin(a.z, fmin(b.z, c.z))), maxz = fmin(1.0f, fmax(a.z, fmax(b.z, c.z)));
     if (rect.x<rect.y & rect.z<rect.w & minz<=maxz) {
         Triangle<Out> res;
         res.rect = rect;
+        res.invz = { 1.0f / a.z,1.0f / b.z,1.0f / c.z };
         calcBase(b, c, res.w[0]);
         calcBase(c, a, res.w[1]);
         calcBase(a, b, res.w[2]);
-        res.z = { a.z,b.z,c.z };
-        res.invz = { 1.0f / a.z,1.0f / b.z,1.0f / c.z };
-        res.out[0] =vert[idx[0]].out, res.out[1] = vert[idx[1]].out, res.out[2] = vert[idx[2]].out;
+        res.w *= 1.0f / S;
+        res.out[0] = vert[idx[0]].out*res.invz.x;
+        res.out[1] = vert[idx[1]].out*res.invz.y;
+        res.out[2] = vert[idx[2]].out*res.invz.z;
         auto tsize = fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z);
         auto x=static_cast<int>(ceil(log2f(fmin(tsize + 1.0f, 50.0f))));
         auto tid = atomicInc(cnt + 8, maxv);
@@ -72,9 +62,10 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
     CUDAInline void drawPoint(Triangle<Out> tri, ivec2 uv, vec2 p, Uniform uni, FrameBuffer& frameBuffer) {
     vec3 w;
-    bool flag = calcWeight(tri.w, p, tri.invz, w);
-    auto z = dot(tri.z, w);
+    bool flag = testPoint(tri.w, p, w);
+    auto z = 1.0f/dot(tri.invz, w);
     if (flag & z >= 0.0f & z <= 1.0f) {
+        w *= z;
         auto fo = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
         fs(uv, z, fo, uni, frameBuffer);
     }
@@ -88,7 +79,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
         const Uniform* ReadOnlyCache uniform, FrameBuffer* frameBuffer) {
     auto tri = info[idx[blockIdx.x]];
     ivec2 uv{ tri.rect.x + threadIdx.x,tri.rect.z + threadIdx.y };
-    vec2 p{ uv.x,uv.y };
+    vec2 p{ uv.x+0.5f,uv.y+0.5f };
     if(p.x<=tri.rect.y & p.y<=tri.rect.w)
         drawPoint<Out, Uniform, FrameBuffer, fs>(tri, uv, p, *uniform, *frameBuffer);
 }
@@ -100,8 +91,8 @@ CALLABLE void cutTriangles(unsigned int size, unsigned int* cnt,
     if (id >= size)return;
     auto info = tri[idx[id]];
     auto rect = info.rect;
-    for (int i = rect[0]; i <= rect[1]; i += 31) {
-        for (int j = rect[2]; j <= rect[3]; j += 31) {
+    for (int i = rect[0]; i <= rect[1]; i += 32) {
+        for (int j = rect[2]; j <= rect[3]; j += 32) {
             auto tid = atomicInc(cnt + 8, maxv);
             out[atomicInc(cnt + 7, maxv)] = tid;
             info.rect[0] = i, info.rect[2] = j;

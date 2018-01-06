@@ -16,7 +16,6 @@
     <ClInclude Include="..\..\Include\Base\Constant.hpp" />
     <ClInclude Include="..\..\Include\Base\DataSet.hpp" />
     <ClInclude Include="..\..\Include\Base\DispatchSystem.hpp" />
-    <ClInclude Include="..\..\Include\Base\MathExt.hpp" />
     <ClInclude Include="..\..\Include\Base\Memory.hpp" />
     <ClInclude Include="..\..\Include\Base\Pipeline.hpp" />
     <ClInclude Include="..\..\Include\Base\Math.hpp" />
@@ -177,13 +176,13 @@
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
-      <FastMath>false</FastMath>
+      <FastMath>true</FastMath>
       <Optimization>O2</Optimization>
       <RuntimeChecks>Default</RuntimeChecks>
       <TypeInfo>false</TypeInfo>
       <Warning>W0</Warning>
       <CodeGeneration>compute_52,sm_52</CodeGeneration>
-      <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda</AdditionalOptions>
+      <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda -w</AdditionalOptions>
       <GPUDebugInfo>false</GPUDebugInfo>
       <GenerateLineInfo>false</GenerateLineInfo>
     </CudaCompile>

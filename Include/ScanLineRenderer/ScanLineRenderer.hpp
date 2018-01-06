@@ -50,14 +50,14 @@ template< typename Out, typename Uniform, typename FrameBuffer,
 template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
     void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
-        Index index, const DataPtr<Uniform>& uniform
-        ,const DataPtr<FrameBuffer>& frameBuffer, uvec2 size) {
+        Index index, const DataPtr<Uniform>& uniform,const DataPtr<FrameBuffer>& frameBuffer,
+        uvec2 size) {
     auto cnt =buffer.allocBuffer<unsigned int>(9);
     buffer.memset(cnt);
     auto info =buffer.allocBuffer<Triangle<Out>>(std::max(65536U,index.size()*2U));
     auto idx = buffer.allocBuffer<unsigned int>(index.size()*10);
     buffer.runKernelLinear(clipTriangles<Index, Out>, index.size(), cnt, vert, index,
-        info,idx, static_cast<vec2>(size));
+        info, idx, static_cast<vec2>(size) - vec2{1.0f, 1.0f});
     buffer.callKernel(renderTrianglesGPU<Out, Uniform,FrameBuffer,ds,fs>,cnt,info,idx
         ,uniform,frameBuffer,index.size());
 }

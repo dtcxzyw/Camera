@@ -111,9 +111,6 @@
     <ClInclude Include="..\..\Include\Base\Math.hpp">
       <Filter>Base</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Base\MathExt.hpp">
-      <Filter>Base</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">

@@ -22,7 +22,7 @@ CUDAInline void VS(VI in, Uniform uniform, vec4& NDC, OI& out) {
     out.get<pos>() = in.pos;
     //out.get<normal>() =uniform.invM*in.normal;
     //out.get<tangent>() =uniform.invM*in.tangent;
-    NDC = uniform.P*uniform.V*wp;
+    NDC = uniform.PV*wp;
     //NDC.z = NDC.w*0.999f;
 }
 

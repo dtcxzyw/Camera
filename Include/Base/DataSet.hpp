@@ -44,13 +44,13 @@ namespace Impl {
             return getImpl(Tag<Enum, name>{});
         }
         template<Enum name>
-        CUDA const auto& get() const{
+        CUDA auto get() const{
             return getImpl(Tag<Enum, name>{});
         }
         CUDA DataSet operator*(float rhs) const {
             return DataSet{ static_cast<T>(data*rhs),DataSet<Others...>::operator*(rhs) };
         }
-        CUDA DataSet operator+(const DataSet& rhs) const {
+        CUDA DataSet operator+(DataSet rhs) const {
             return DataSet{ static_cast<T>(data+rhs.data),DataSet<Others...>::operator+(rhs) };
         }
     };
@@ -61,7 +61,7 @@ namespace Impl {
         CUDA DataSet operator*(float rhs) const {
             return *this;
         }
-        CUDA DataSet operator+(const DataSet& rhs) const {
+        CUDA DataSet operator+(DataSet rhs) const {
             return *this;
         }
     };
