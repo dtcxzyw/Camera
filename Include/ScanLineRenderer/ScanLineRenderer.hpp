@@ -48,19 +48,20 @@ template< typename Out, typename Uniform, typename FrameBuffer,
         ,cnt,idx,lsiz, static_cast<vec2>(size));
 }
 
-template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
+template<typename Index, typename Out, typename Uniform, typename FrameBuffer,typename Converter,
     FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
     void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
         Index index, const DataPtr<Uniform>& uniform,const DataPtr<FrameBuffer>& frameBuffer,
-        uvec2 size) {
+        uvec2 size,Converter converter, CullFace mode = CullFace::Back) {
     auto cnt =buffer.allocBuffer<unsigned int>(9);
     buffer.memset(cnt);
     auto info =buffer.allocBuffer<Triangle<Out>>(std::max(65536U,index.size()*2U));
     auto idx = buffer.allocBuffer<unsigned int>(index.size()*10);
     buffer.runKernelLinear(clipTriangles<Index, Out>, index.size(), cnt, vert, index,
-        info, idx, static_cast<vec2>(size) - vec2{1.0f, 1.0f});
+        info, idx, static_cast<vec2>(size) - vec2{1.0f, 1.0f},mode,converter.near,converter.far);
+    auto invnf =1.0f/(converter.far - converter.near);
     buffer.callKernel(renderTrianglesGPU<Out, Uniform,FrameBuffer,ds,fs>,cnt,info,idx
-        ,uniform,frameBuffer,index.size());
+        ,uniform,frameBuffer,index.size(),converter.near,invnf);
 }
 
 template<typename Uniform, typename FrameBuffer, FSFSF<Uniform, FrameBuffer> fs>

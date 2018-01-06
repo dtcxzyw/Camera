@@ -110,7 +110,7 @@ int main() {
     getEnvironment().init();
     try {
         camera.near = 1.0f;
-        camera.far = 1000.0f;
+        camera.far = 100.0f;
         camera.filmAperture = { 0.980f,0.735f };
         camera.mode = Camera::FitResolutionGate::Overscan;
         camera.focalLength = 15.0f;

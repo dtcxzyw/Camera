@@ -12,20 +12,19 @@ struct Camera final {
     float near,far;
     struct RasterPosConverter final {
         vec2 invSize;
-        float near,invnf;
+        float near,far;
         vec2 halfImageSize;
         CUDAInline vec3 operator()(vec3 CSP) const {
             CSP.z = -CSP.z;
             auto mul =near/CSP.z;
             vec2 screen{CSP.x*mul,CSP.y*mul};
             vec2 NDC{screen.x*invSize.x,screen.y*invSize.y};
-            auto z =(CSP.z - near) * invnf;
-            return {(NDC.x+1.0f)*halfImageSize.x,(1.0f-NDC.y)*halfImageSize.y,z};
+            return {(NDC.x+1.0f)*halfImageSize.x,(1.0f-NDC.y)*halfImageSize.y,CSP.z};
         }
     };
     RasterPosConverter toRasterPos(vec2 imageSize) const {
         RasterPosConverter res;
-        res.near = near,res.invnf=1.0f/(far-near);
+        res.near = near,res.far=far;
         res.halfImageSize = imageSize*0.5f;
         auto fratio = filmAperture.x / filmAperture.y;
         auto iratio = imageSize.x / imageSize.y;

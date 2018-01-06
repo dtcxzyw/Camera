@@ -33,8 +33,10 @@ CUDAInline void setPoint(ivec2 uv,float z, OI out, Uniform uniform, FrameBufferG
 
 CUDAInline void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& fbo) {
     if (fbo.depth.get(uv) ==static_cast<unsigned int>(z*maxdu)) {
+        /*
         auto p = out.get<pos>();
         fbo.color.set(uv, uniform.sampler.getCubeMap(normalize(p)));
+        */
         /*
         vec3 N =normalize(out.get<normal>());
         vec3 X = normalize(out.get<tangent>());
@@ -47,12 +49,10 @@ CUDAInline void drawPoint(ivec2 uv, float z,OI out, Uniform uniform, FrameBuffer
         auto F = disneyBRDF(L, V, N, X, Y, uniform.arg);
         auto res = uniform.lc*F*(distUE4(dis2,uniform.r*uniform.r)*dot(N, L));
         */
-        /*
         auto tex = out.get<texCoord>();
         tex *= 10.0f;
         auto p = (fmod(tex.x, 1.0f) > 0.5f) ^ (fmod(tex.y, 1.0f) < 0.5f);
         fbo.color.set(uv,vec4(p));
-        */
     }
 }
 
@@ -85,8 +85,8 @@ void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const MemoryRef<Uniform>&
     fbo.colorRT->clear(buffer, vec4{ 0.0f,0.0f,0.0f,1.0f });
     fbo.depthBuffer->clear(buffer);
     auto vert = calcVertex<VI, OI, Uniform, VS,Camera::RasterPosConverter>(buffer, vbo, uniform, converter);
-    renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU, setPoint, drawPoint>
-        (buffer, vert, ibo, uniform,fbo.getData(buffer), fbo.size);
+    renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU, Camera::RasterPosConverter,
+        setPoint, drawPoint>(buffer, vert, ibo, uniform,fbo.getData(buffer), fbo.size,converter);
     //auto prim = genPrimitive<3,2,SharedIndex, VI, Uniform, GS>(stream, vbo,ibo,uniform,ibo.size());
     //auto pv= calcVertex<VI, OI, Uniform, VS>(stream, prim, uniform, fbo.size);
     //renderLines<OI, Uniform, FrameBufferGPU, setPoint, drawHair>(stream, pv, uniform

@@ -27,18 +27,24 @@ CUDAInline void calcBase(vec3 a, vec3 b, vec3& w) {
     w.z = -(a.x*w.x + a.y * w.y);
 }
 
+enum class CullFace {
+    Front = 0, Back = 1, None = 2
+};
+
 template<typename Index, typename Out>
 CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     const VertexInfo<Out>* ReadOnlyCache vert, Index index,
-    Triangle<Out>* info, unsigned int* triID, vec2 fsize) {
+    Triangle<Out>* info, unsigned int* triID, vec2 fsize,CullFace mode,float near,float far) {
     auto id = getID();
     if (id >= size)return;
     auto idx = index[id];
     vec3 a = vert[idx[0]].pos, b = vert[idx[1]].pos, c = vert[idx[2]].pos;
     float S = edgeFunction(a,b,c);
+    //int flag = (S < 0.0) ^ static_cast<int>(mode) ? 1 : 0;
     vec4 rect= { fmax(0.0f,fmin(a.x,fmin(b.x,c.x))),fmin(fsize.x,fmax(a.x,fmax(b.x,c.x))),
         fmax(0.0f,fmin(a.y,fmin(b.y,c.y))),fmin(fsize.y,fmax(a.y,fmax(b.y,c.y))) };
-    float minz = fmax(0.0f, fmin(a.z, fmin(b.z, c.z))), maxz = fmin(1.0f, fmax(a.z, fmax(b.z, c.z)));
+    float minz = fmax(near, fmin(a.z, fmin(b.z, c.z))), 
+        maxz = fmin(far,fmax(a.z, fmax(b.z, c.z)));
     if (rect.x<rect.y & rect.z<rect.w & minz<=maxz) {
         Triangle<Out> res;
         res.rect = rect;
@@ -60,14 +66,16 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
 
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CUDAInline void drawPoint(Triangle<Out> tri, ivec2 uv, vec2 p, Uniform uni, FrameBuffer& frameBuffer) {
+    CUDAInline void drawPoint(Triangle<Out> tri, ivec2 uv, vec2 p, Uniform uni, 
+        FrameBuffer& frameBuffer,float near,float invnf) {
     vec3 w;
     bool flag = testPoint(tri.w, p, w);
     auto z = 1.0f/dot(tri.invz, w);
-    if (flag & z >= 0.0f & z <= 1.0f) {
+    auto nz = (z - near)*invnf;//convert z to [0,1]
+    if (flag & nz >= 0.0f & nz <= 1.0f) {
         w *= z;
         auto fo = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
-        fs(uv, z, fo, uni, frameBuffer);
+        fs(uv, nz, fo, uni, frameBuffer);
     }
 }
 
@@ -76,12 +84,12 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void drawMicroT(const Triangle<Out>* ReadOnlyCache info,
         const unsigned int* ReadOnlyCache idx,
-        const Uniform* ReadOnlyCache uniform, FrameBuffer* frameBuffer) {
+        const Uniform* ReadOnlyCache uniform, FrameBuffer* frameBuffer,float near,float invnf) {
     auto tri = info[idx[blockIdx.x]];
     ivec2 uv{ tri.rect.x + threadIdx.x,tri.rect.z + threadIdx.y };
     vec2 p{ uv.x+0.5f,uv.y+0.5f };
     if(p.x<=tri.rect.y & p.y<=tri.rect.w)
-        drawPoint<Out, Uniform, FrameBuffer, fs>(tri, uv, p, *uniform, *frameBuffer);
+        drawPoint<Out, Uniform, FrameBuffer, fs>(tri, uv, p, *uniform, *frameBuffer,near,invnf);
 }
 
 template<typename Out>
@@ -103,8 +111,9 @@ CALLABLE void cutTriangles(unsigned int size, unsigned int* cnt,
 
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void renderTrianglesGPU(unsigned int* cnt, Triangle<Out>* tri
-        , unsigned int* idx, Uniform* uniform, FrameBuffer* frameBuffer, unsigned int size) {
+    CALLABLE void renderTrianglesGPU(unsigned int* cnt, Triangle<Out>* tri, 
+        unsigned int* idx, Uniform* uniform, FrameBuffer* frameBuffer,unsigned int size,
+       float near,float invnf) {
     if (cnt[6]) {
         constexpr auto block = 128U;
         cutTriangles<Out> << <calcSize(cnt[6], block), block >> > (cnt[6], cnt, tri, idx + size * 6, idx + size * 7);
@@ -116,8 +125,8 @@ template<typename Out, typename Uniform, typename FrameBuffer,
             auto bsiz = 1U << i;
             dim3 grid(cnt[i]);
             dim3 block(bsiz, bsiz);
-            drawMicroT<Out, Uniform, FrameBuffer, ds> << <grid, block >> > (tri, idx + size * i,
-                uniform, frameBuffer);
+            drawMicroT<Out, Uniform, FrameBuffer,ds> << <grid, block >> > (tri, idx + size * i,
+                uniform, frameBuffer,near,invnf);
         }
 
     if (cnt[7]) {
@@ -125,7 +134,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
         dim3 grid(cnt[7]);
         dim3 block(bsiz, bsiz);
         drawMicroT<Out, Uniform, FrameBuffer, ds> << <grid, block >> > (tri, idx + size * 7,
-            uniform, frameBuffer);
+            uniform, frameBuffer,near,invnf);
     }
 
     cudaDeviceSynchronize();
@@ -136,7 +145,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
             dim3 grid(cnt[i]);
             dim3 block(bsiz, bsiz);
             drawMicroT<Out, Uniform, FrameBuffer, fs> << <grid, block >> > (tri, idx + size * i,
-                uniform, frameBuffer);
+                uniform, frameBuffer,near,invnf);
         }
 
     if (cnt[7]) {
@@ -144,7 +153,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
         dim3 grid(cnt[7]);
         dim3 block(bsiz, bsiz);
         drawMicroT<Out, Uniform, FrameBuffer, fs> << <grid, block >> > (tri, idx + size * 7,
-            uniform, frameBuffer);
+            uniform, frameBuffer,near,invnf);
     }
 }
 
