@@ -3,18 +3,11 @@
 #include <Base/DispatchSystem.hpp>
 
 template<typename Vert, typename Out, typename Uniform>
-using VSF = void(*)(Vert in,Uniform uniform, vec4& pos,Out& out);
+using VSF = void(*)(Vert in,Uniform uniform, vec3& pos,Out& out);
 
 template<typename Out, typename Uniform, typename FrameBuffer>
 using FSF = void(*)(ivec2 uv,float z, Out in, Uniform uniform,
     FrameBuffer& frameBuffer);
-
-CUDAInline vec3 toNDC(vec4 p, vec2 size) {
-    auto inv = 1.0f / p.w;
-    return { (1.0f + p.x *inv)*0.5f*size.x,
-        (1.0f - p.y*inv)*0.5f*size.y,
-        p.z*inv + epsilon<float>() };
-}
 
 template<typename Out>
 struct VertexInfo {
@@ -22,15 +15,16 @@ struct VertexInfo {
     Out out;
 };
 
-template<typename Vert, typename Out, typename Uniform,VSF<Vert, Out, Uniform> vs>
-CALLABLE void runVS(unsigned int size,const Vert* ReadOnlyCache in,const Uniform* ReadOnlyCache u,
-    VertexInfo<Out>* res,vec2 fsize) {
+template<typename Vert, typename Out, typename Uniform,VSF<Vert, Out, Uniform> vs,
+    typename Converter>
+CALLABLE void runVS(unsigned int size,const Vert* ReadOnlyCache in,
+    const Uniform* ReadOnlyCache u,VertexInfo<Out>* res,Converter converter) {
     auto id = getID();
     if (id >= size)return;
-    vec4 pos;
+    vec3 pos;
     auto& vert = res[id];
     vs(in[id], *u, pos, vert.out);
-    vert.pos=toNDC(pos, fsize);
+    vert.pos = converter(pos);
 }
 
 template<typename Uniform, typename FrameBuffer>

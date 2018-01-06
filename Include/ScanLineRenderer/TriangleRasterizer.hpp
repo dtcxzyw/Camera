@@ -5,10 +5,10 @@
 
 template<typename Out>
 struct Triangle final {
-    ALIGN vec4 rect;
-    ALIGN vec3 invz;
-    ALIGN mat3 w;
-    ALIGN Out out[3];
+    vec4 rect;
+    vec3 invz;
+    mat3 w;
+    Out out[3];
 };
 
 CUDAInline float edgeFunction(vec3 a, vec3 b, vec3 c) {
@@ -42,7 +42,7 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     if (rect.x<rect.y & rect.z<rect.w & minz<=maxz) {
         Triangle<Out> res;
         res.rect = rect;
-        res.invz = { 1.0f / a.z,1.0f / b.z,1.0f / c.z };
+        res.invz = {1.0f/ a.z,1.0f/ b.z,1.0f/c.z };
         calcBase(b, c, res.w[0]);
         calcBase(c, a, res.w[1]);
         calcBase(a, b, res.w[2]);

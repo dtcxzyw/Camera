@@ -4,12 +4,13 @@
 #include "LineRasterizer.hpp"
 #include "TriangleRasterizer.hpp"
 
-template<typename Vert, typename Out, typename Uniform, VSF<Vert, Out, Uniform> vs>
+template<typename Vert, typename Out, typename Uniform, VSF<Vert, Out, Uniform> vs,
+    typename Converter>
 auto calcVertex(CommandBuffer& buffer, const DataPtr<Vert>& vert
-    , const DataPtr<Uniform>& uniform, uvec2 size) {
+    , const DataPtr<Uniform>& uniform, Converter converter) {
     auto vertex = buffer.allocBuffer<VertexInfo<Out>>(vert.size());
-    buffer.runKernelLinear(runVS<Vert, Out, Uniform, vs>, vert.size(),
-        vert, uniform, vertex, static_cast<vec2>(size));
+    buffer.runKernelLinear(runVS<Vert, Out, Uniform, vs,Converter>, vert.size(),
+        vert, uniform, vertex, converter);
     return vertex;
 }
 

@@ -9,6 +9,7 @@
 #include <Base/Constant.hpp>
 #include <ScanLineRenderer/ScanLineRenderer.hpp>
 #include <PBR/BRDF.hpp>
+#include <PBR/PhotorealisticRendering.hpp>
 
 using VI = StaticMesh::Vertex;
 enum OutInfo {
@@ -87,7 +88,7 @@ struct FrameBufferCPU final {
  
 struct Uniform final {
     ALIGN mat4 M;
-    ALIGN mat4 PV;
+    ALIGN mat4 V;
     ALIGN mat3 invM;
     ALIGN vec3 cp;
     ALIGN vec3 lp;
@@ -106,4 +107,5 @@ struct PostUniform final {
 };
 
 void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const MemoryRef<Uniform>& uniform
-    ,FrameBufferCPU& fbo,float* lum,CommandBuffer& buffer);
+    , FrameBufferCPU & fbo, float* lum, Camera::RasterPosConverter converter,
+    CommandBuffer & buffer);

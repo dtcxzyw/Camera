@@ -1,15 +1,15 @@
 #include "kernel.hpp"
 #include <cstdio>
-#include <PBR/PhotorealisticRendering.hpp>
 #include <IO/Image.hpp>
 #include <thread>
 using namespace std::chrono_literals;
 
-auto f = 50.0f, light=5.0f,r=20.0f;
+auto light=5.0f,r=20.0f;
 StaticMesh model;
 std::shared_ptr<BuiltinCubeMap<RGBA>> envMap;
 std::shared_ptr<BuiltinSampler<RGBA>> envMapSampler;
 DisneyBRDFArg arg;
+Camera camera;
 
 void setUIStyle() {
     ImGui::StyleColorsDark();
@@ -32,7 +32,7 @@ void renderGUI(IMGUIWindow& window) {
     ImGui::Text("vertices %d, triangles: %d\n", static_cast<int>(model.mVert.size()),
         static_cast<int>(model.mIndex.size()));
     ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
-    ImGui::SliderFloat("focal length",&f,1.0f,500.0f,"%.1f");
+    ImGui::SliderFloat("focal length",&camera.focalLength,1.0f,500.0f,"%.1f");
     ImGui::SliderFloat("light", &light, 0.0f, 10.0f);
     ImGui::SliderFloat("lightRadius", &r, 0.0f, 20.0f);
 
@@ -71,9 +71,7 @@ Uniform getUniform(float w,float h,float delta) {
     static vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { 0.0f,0.0f,0.0f };
     auto V = lookAt(cp,mid, { 0.0f,1.0f,0.0f });
     static glm::mat4 M = scale(mat4{}, vec3(0.01f));
-    auto fov = toFOV(36.0f*24.0f, f);
-    glm::mat4 P = perspectiveFovRH(fov, w, h, 1.0f, 20.0f);
-    M = rotate(M, delta*0.2f, { 0.0f,1.0f,0.0f });
+    M = rotate(M, 0.2f*delta, { 0.0f,1.0f,0.0f });
     constexpr auto step = 100.0f;
     auto off = ImGui::GetIO().DeltaTime * step;
     if (ImGui::IsKeyPressed(GLFW_KEY_W))cp.x -= off;
@@ -82,7 +80,7 @@ Uniform getUniform(float w,float h,float delta) {
     if (ImGui::IsKeyPressed(GLFW_KEY_D))cp.z += off;
     Uniform u;
     u.M = M;
-    u.PV = P*V;
+    u.V = V;
     u.invM = mat3(transpose(inverse(M)));
     u.lc = vec3(light);
     u.arg = arg;
@@ -104,13 +102,18 @@ auto addTask(DispatchSystem& system,SwapChain_t::SharedFrame frame,uvec2 size,fl
     frame->resize(size.x,size.y);
     auto uni = buffer->allocConstant<Uniform>();
     buffer->memcpy(uni, [uniform](auto call) {call(&uniform); });
-    kernel(model.mVert,model.mIndex,uni,*frame,lum,*buffer);
+    kernel(model.mVert,model.mIndex,uni,*frame,lum,camera.toRasterPos(size),*buffer);
     return std::make_pair(system.submit(std::move(buffer)),frame);
 }
 
 int main() {
     getEnvironment().init();
     try {
+        camera.near = 1.0f;
+        camera.far = 1000.0f;
+        camera.filmAperture = { 0.980f,0.735f };
+        camera.mode = Camera::FitResolutionGate::Overscan;
+        camera.focalLength = 15.0f;
         Stream resLoader;
         model.load("Res/cube.obj");
         envMap = loadCubeMap([](size_t id) {
