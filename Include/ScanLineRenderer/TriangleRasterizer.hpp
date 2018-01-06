@@ -40,12 +40,12 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     auto idx = index[id];
     vec3 a = vert[idx[0]].pos, b = vert[idx[1]].pos, c = vert[idx[2]].pos;
     float S = edgeFunction(a,b,c);
-    //int flag = (S < 0.0) ^ static_cast<int>(mode) ? 1 : 0;
+    int flag = (S < 0.0) ^ static_cast<int>(mode) ? 1 : 0;
     vec4 rect= { fmax(0.0f,fmin(a.x,fmin(b.x,c.x))),fmin(fsize.x,fmax(a.x,fmax(b.x,c.x))),
         fmax(0.0f,fmin(a.y,fmin(b.y,c.y))),fmin(fsize.y,fmax(a.y,fmax(b.y,c.y))) };
     float minz = fmax(near, fmin(a.z, fmin(b.z, c.z))), 
         maxz = fmin(far,fmax(a.z, fmax(b.z, c.z)));
-    if (rect.x<rect.y & rect.z<rect.w & minz<=maxz) {
+    if (flag & rect.x<rect.y & rect.z<rect.w & minz<=maxz) {
         Triangle<Out> res;
         res.rect = rect;
         res.invz = {1.0f/ a.z,1.0f/ b.z,1.0f/c.z };

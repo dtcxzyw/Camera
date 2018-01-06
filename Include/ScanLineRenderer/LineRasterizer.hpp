@@ -12,21 +12,23 @@ struct Line final {
 
 template<typename Out>
 CALLABLE void sortLines(unsigned int size, unsigned int* cnt,
-    const VertexInfo<Out>* ReadOnlyCache vert, Line<Out>* info,unsigned int* lineID,vec2 fsize) {
+    const VertexInfo<Out>* ReadOnlyCache vert, Line<Out>* info,unsigned int* lineID,vec2 fsize,
+    float near,float far) {
     auto id = getID();
     if (id >= size)return;
     auto a = id << 1, b = id << 1 | 1;
     auto pa = vert[a].pos, pb = vert[b].pos;
     auto rect = { fmax(0.0f,fmin(pa.x,pb.x)),fmin(fsize.x,fmax(pa.x,pb.x)),
         fmax(0.0f,fmin(pa.y,pb.y)),fmin(fsize.y,fmax(pa.y,pb.y)) };
-    float minz = fmax(0.0f, fmin(pa.z, pb.z)), maxz = fmin(1.0f, fmax(pa.z, pb.z));
+    float minz = fmax(near, fmin(pa.z, pb.z)), maxz = fmin(far, fmax(pa.z, pb.z));
     if (rect.x<rect.y & rect.z<rect.w & minz<=maxz) {
+        pa.z = 1.0f / pa.z, pb.z = 1.0f / pb.z;
         Line<Out> res;
         res.rect = rect;
         res.pa = pa, res.pb = pb;
         res.oa = vert[a].out, res.ob = vert[b].out;
-        auto len = distance(vec2(res.pa), vec2(res.pb));
-        auto x = static_cast<int>(ceil(log2f(fmin(len + 1.0f, 700.0f))));
+        auto len = distance2(vec2(res.pa), vec2(res.pb));
+        auto x = static_cast<int>(ceil(0.5f*log2f(fmin(len + 1.0f, 5e5f))));
         auto lid = atomicInc(cnt + 11, maxv);
         info[lid] = res;
         lineID[x*size + atomicInc(cnt + x, maxv)] = lid;
@@ -109,7 +111,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void renderLineGPU(const Line<Out>* info,
         const Uniform* uniform, FrameBuffer* frameBuffer,
-        unsigned int* cnt,unsigned int* idx,unsigned int lsiz,vec2 fsize) {
+        unsigned int* cnt,unsigned int* idx,unsigned int lsiz,vec2 fsize,float near,float far) {
     constexpr auto block = 64U;
 
     if (cnt[10]) cutLines<Out><<<calcSize(cnt[10],block),block>>>
