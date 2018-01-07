@@ -72,7 +72,7 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
         ,mode,near,far);
     auto invnf =1.0f/(far - near);
     buffer.callKernel(renderTrianglesGPU<Out, Uniform,FrameBuffer,ds,fs>,cnt,info,idx
-        ,uniform,frameBuffer,index.size(),near,invnf);
+        ,uniform,frameBuffer,index.size(),near,invnf,far);
 }
 
 template<typename Uniform, typename FrameBuffer, FSFSF<Uniform, FrameBuffer> fs>

@@ -6,7 +6,7 @@ template<typename Vert, typename Out, typename Uniform>
 using VSF = void(*)(Vert in,Uniform uniform, vec3& pos,Out& out);
 
 template<typename Out, typename Uniform, typename FrameBuffer>
-using FSF = void(*)(ivec2 uv,float z, Out in, Uniform uniform,
+using FSF = void(*)(unsigned int triID,ivec2 uv,float z, Out in, Uniform uniform,
     FrameBuffer& frameBuffer);
 
 template<typename Out>
