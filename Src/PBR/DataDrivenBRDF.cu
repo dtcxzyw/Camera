@@ -2,7 +2,7 @@
 #include <fstream>
 #include <vector>
 
-BRDFSampler::BRDFSampler(const vec3* ReadOnlyCache data):mData(data) {}
+BRDFSampler::BRDFSampler(ReadOnlyCache(vec3) data):mData(data) {}
 
 MERLBRDFData::MERLBRDFData(const std::string& path) {
     std::ifstream in(path, std::ios::binary);

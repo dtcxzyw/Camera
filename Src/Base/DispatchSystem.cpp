@@ -110,6 +110,9 @@ namespace Impl {
     size_t DMRef::size() const {
         return dynamic_cast<Impl::DeviceMemory&>(*mRef).size();
     }
+    void KernelLaunchLinearDelegate::emit(Stream & stream) {
+        mClosure(stream);
+    }
 }
 
 void CommandBuffer::registerResource(ID id, std::unique_ptr<ResourceInstance>&& instance) {

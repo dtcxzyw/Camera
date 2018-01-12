@@ -8,7 +8,7 @@
 #define BOTH CUDA HOST
 #define CALLABLE __global__
 #define ALIGN __align__(16)
-#define ReadOnlyCache __restrict__
+#define ReadOnlyCache(type) const type* __restrict__
 #include "Math.hpp"
 
 struct Uncopyable {

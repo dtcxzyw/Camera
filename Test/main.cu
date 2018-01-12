@@ -65,10 +65,10 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
 }
 
 Uniform getUniform(float w,float h,float delta) {
-    static vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { -100000.0f,0.0f,0.0f };
+    static vec3 cp = { 3.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { -100000.0f,0.0f,0.0f };
     auto V = lookAt(cp,mid, { 0.0f,1.0f,0.0f });
-    glm::mat4 M = scale(mat4{}, vec3(0.01f));
-    M = rotate(M, 0.5f, { 0.0f,1.0f,0.0f });
+    static glm::mat4 M = scale(mat4{}, vec3(0.01f));
+    M = rotate(M, 0.2f*delta, { 0.0f,1.0f,0.0f });
     constexpr auto step = 10.0f;
     auto off = ImGui::GetIO().DeltaTime * step;
     if (ImGui::IsKeyPressed(GLFW_KEY_W))cp.x -= off;
@@ -106,8 +106,8 @@ auto addTask(DispatchSystem& system,SwapChain_t::SharedFrame frame,uvec2 size,fl
 int main() {
     getEnvironment().init();
     try {
-        camera.near = 0.5f;
-        camera.far = 100.0f;
+        camera.near = 1.0f;
+        camera.far = 1000.0f;
         camera.filmAperture = { 0.980f,0.735f };
         camera.mode = Camera::FitResolutionGate::Overscan;
         camera.focalLength = 15.0f;
@@ -115,7 +115,7 @@ int main() {
         model.load("Res/cube.obj");
         envMap = loadCubeMap([](size_t id) {
             const char* table[] = {"right","left","top","bottom","back","front"};
-            return std::string("Res/face/")+table[id]+".jpg";
+            return std::string("Res/skybox/")+table[id]+".jpg";
         }, resLoader);
         envMapSampler = std::make_shared<BuiltinSampler<RGBA>>(envMap->get());
         arg.baseColor = vec3{ 244,206,120 }/255.0f;

@@ -7,31 +7,30 @@ template<typename Out>
 struct Triangle final {
     vec4 rect;
     vec3 invz;
-    vec3 z;
     mat3 w;
     unsigned int id;
     Out out[3];
+};
+
+enum class CullFace {
+    Front = 0, Back = 1, None = 2
 };
 
 CUDAInline float edgeFunction(vec3 a, vec3 b, vec3 c) {
     return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
 
-CUDAInline bool testPoint(mat3 w0, vec2 p, vec3& w) {
-    w.x = w0[0].x*p.x + w0[0].y*p.y + w0[0].z;
-    w.y = w0[1].x*p.x + w0[1].y*p.y + w0[1].z;
-    w.z = w0[2].x*p.x + w0[2].y*p.y + w0[2].z;
-    return w.x >= 0.0f&w.y >= 0.0f&w.z >= 0.0f;
+template<typename Index,typename Out>
+CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
+    ReadOnlyCache(VertexInfo<Out>) vert, Index index,
+    VertexInfo<Out>* info, int mode) {
+    auto a = vert[idx[0]], b = vert[idx[1]], c = vert[idx[2]];
+    float S = edgeFunction(a.pos, b.pos, c.pos);
+    if ((S < 0.0) ^ mode) {
+        int base=3*atomicInc(cnt, maxv);
+        info[base] = a,info[base+1]=b,info[base+2]=c;
+    }
 }
-
-CUDAInline void calcBase(vec3 a, vec3 b, vec3& w) {
-    w.x = b.y - a.y, w.y = a.x - b.x;
-    w.z = -(a.x*w.x + a.y * w.y);
-}
-
-enum class CullFace {
-    Front = 0, Back = 1, None = 2
-};
 
 CUDAInline float max3(float a, float b, float c) {
     return fmax(a, fmax(b, c));
@@ -41,28 +40,36 @@ CUDAInline float min3(float a, float b, float c) {
     return fmin(a, fmin(b, c));
 }
 
+CUDAInline void calcBase(vec3 a, vec3 b, vec3& w) {
+    w.x = b.y - a.y, w.y = a.x - b.x;
+    w.z = -(a.x*w.x + a.y * w.y);
+}
+
+CUDAInline vec3 toRaster(vec3 p, vec2 hfsize) {
+    auto invz = 1.0f / p.z;
+    return { (1.0f+p.x*invz)*hfsize.x,(1.0f-p.y*invz)*hfsize,p.z };
+}
+
 template<typename Index, typename Out>
-CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
-    const VertexInfo<Out>* ReadOnlyCache vert, Index index,
-    Triangle<Out>* info, unsigned int* triID, vec2 fsize,CullFace mode,float near,float far) {
+CALLABLE void processTriangles(unsigned int size, unsigned int* cnt,
+    ReadOnlyCache(VertexInfo<Out>) vert, Index index,
+    Triangle<Out>* info, unsigned int* triID, vec2 fsize,vec2 hfsize) {
     auto id = getID();
     if (id >= size)return;
     auto idx = index[id];
-    vec3 a = vert[idx[0]].pos, b = vert[idx[1]].pos, c = vert[idx[2]].pos;
-    float S = edgeFunction(a,b,c);
-    int flag =((S < 0.0) ^ static_cast<int>(mode)) >0;
+    auto a = toRaster(vert[idx[0]].pos,hfsize),
+        b = toRaster(vert[idx[1]].pos,hfsize), 
+        c = toRaster(vert[idx[2]].pos,hfsize);
     vec4 rect= { fmax(0.0f,min3(a.x,b.x,c.x)),fmin(fsize.x,max3(a.x,b.x,c.x)),
         fmax(0.0f,min3(a.y,b.y,c.y)),fmin(fsize.y,max3(a.y,b.y,c.y)) };
-    float minz = fmax(near, min3(a.z, b.z, c.z)), maxz = fmin(far,max3(a.z, b.z, c.z));
-    if (flag & rect.x<rect.y & rect.z<rect.w & minz<=maxz) {
+    if (rect.x<rect.y & rect.z<rect.w) {
         Triangle<Out> res;
         res.rect = rect;
-        res.invz = {1.0f/ fabs(a.z),1.0f/ fabs(b.z),1.0f/fabs(c.z)};
-        res.z = { copysignf(1.0f,a.z),copysignf(1.0f,b.z),copysignf(1.0f,c.z) };
+        res.invz = {1.0f/ a.z,1.0f/ b.z,1.0f/c.z};
         calcBase(b, c, res.w[0]);
         calcBase(c, a, res.w[1]);
         calcBase(a, b, res.w[2]);
-        res.w *= 1.0f / S;
+        res.w *= 1.0f / edgeFunction(a, b, c);
         res.id = id;
         res.out[0] = vert[idx[0]].out*res.invz.x;
         res.out[1] = vert[idx[1]].out*res.invz.y;
@@ -75,15 +82,22 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     }
 }
 
+CUDAInline bool testPoint(mat3 w0, vec2 p, vec3& w) {
+    w.x = w0[0].x*p.x + w0[0].y*p.y + w0[0].z;
+    w.y = w0[1].x*p.x + w0[1].y*p.y + w0[1].z;
+    w.z = w0[2].x*p.x + w0[2].y*p.y + w0[2].z;
+    return w.x >= 0.0f&w.y >= 0.0f&w.z >= 0.0f;
+}
+
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
     CUDAInline void drawPoint(Triangle<Out> tri, ivec2 uv, vec2 p, Uniform uni, 
-        FrameBuffer& frameBuffer,float near,float invnf,float far) {
+        FrameBuffer& frameBuffer,float near,float invnf) {
     vec3 w;
     bool flag = testPoint(tri.w, p, w);
-    w *= 1.0f / dot(tri.invz, w);
-    auto z = dot(tri.z,w);
-    if (flag & z >= near & z <= far) {
+    auto z = 1.0f / dot(tri.invz, w);
+    if (flag) {
+        w *= z;
         auto fo = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
         auto nz = (z - near)*invnf;//convert z to [0,1]
         fs(tri.id,uv, nz, fo, uni, frameBuffer);
@@ -93,14 +107,14 @@ template<typename Out, typename Uniform, typename FrameBuffer,
 //1,2,4,8,16,32
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void drawMicroT(const Triangle<Out>* ReadOnlyCache info,
-        const unsigned int* ReadOnlyCache idx,
-        const Uniform* ReadOnlyCache uniform, FrameBuffer* frameBuffer,float near,float invnf,float far) {
+    CALLABLE void drawMicroT(ReadOnlyCache(Triangle<Out>) info,
+        ReadOnlyCache(unsigned int) idx,
+        ReadOnlyCache(Uniform) uniform, FrameBuffer* frameBuffer,float near,float invnf) {
     auto tri = info[idx[blockIdx.x]];
     ivec2 uv{ tri.rect.x + threadIdx.x,tri.rect.z + threadIdx.y };
     vec2 p{ uv.x+0.5f,uv.y+0.5f };
     if(p.x<=tri.rect.y & p.y<=tri.rect.w)
-        drawPoint<Out, Uniform, FrameBuffer, fs>(tri, uv, p, *uniform, *frameBuffer,near,invnf,far);
+        drawPoint<Out, Uniform, FrameBuffer, fs>(tri, uv, p, *uniform, *frameBuffer,near,invnf);
 }
 
 template<typename Out>
@@ -124,7 +138,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void renderTrianglesGPU(unsigned int* cnt, Triangle<Out>* tri, 
         unsigned int* idx, Uniform* uniform, FrameBuffer* frameBuffer,unsigned int size,
-       float near,float invnf,float far) {
+       float near,float invnf) {
     if (cnt[6]) {
         constexpr auto block = 128U;
         cutTriangles<Out> << <calcSize(cnt[6], block), block >> > (cnt[6], cnt, tri, idx + size * 6, idx + size * 7);
@@ -137,7 +151,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
             dim3 grid(cnt[i]);
             dim3 block(bsiz, bsiz);
             drawMicroT<Out, Uniform, FrameBuffer,ds> << <grid, block >> > (tri, idx + size * i,
-                uniform, frameBuffer,near,invnf,far);
+                uniform, frameBuffer,near,invnf);
         }
 
     if (cnt[7]) {
@@ -145,7 +159,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
         dim3 grid(cnt[7]);
         dim3 block(bsiz, bsiz);
         drawMicroT<Out, Uniform, FrameBuffer, ds> << <grid, block >> > (tri, idx + size * 7,
-            uniform, frameBuffer,near,invnf,far);
+            uniform, frameBuffer,near,invnf);
     }
 
     cudaDeviceSynchronize();
@@ -156,7 +170,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
             dim3 grid(cnt[i]);
             dim3 block(bsiz, bsiz);
             drawMicroT<Out, Uniform, FrameBuffer, fs> << <grid, block >> > (tri, idx + size * i,
-                uniform, frameBuffer,near,invnf,far);
+                uniform, frameBuffer,near,invnf);
         }
 
     if (cnt[7]) {
@@ -164,7 +178,96 @@ template<typename Out, typename Uniform, typename FrameBuffer,
         dim3 grid(cnt[7]);
         dim3 block(bsiz, bsiz);
         drawMicroT<Out, Uniform, FrameBuffer, fs> << <grid, block >> > (tri, idx + size * 7,
-            uniform, frameBuffer,near,invnf,far);
+            uniform, frameBuffer,near,invnf);
     }
 }
 
+enum class ClipZMode {
+    Near=0,Far=1
+};
+
+template<ClipZMode mode>
+CUDAInline int compareZ(float z, float base) { return 0; }
+
+template<>
+CUDAInline int compareZ <ClipZMode::Near>(float z, float base) { return z < base; }
+
+template<>
+CUDAInline int compareZ<ClipZMode::Far>(float z, float base) { return z > base; }
+
+template<typename Out,ClipZMode mode>
+CALLABLE void sortTriangles(unsigned int size,ReadOnlyCache(VertexInfo<Out>) vert,
+    unsigned int* cnt, uvec3* clip, float z) {
+    auto id = getID();
+    if (id >= size)return;
+    auto idx = index[id];
+    int type = 0;
+    for (int i = 0; i < 3; ++i)
+        type +=compareZ<mode>(vert[idx[i]].pos.z,z);
+    if (type < 3) {
+        if (compareZ<mode>(vert[idx[1]].pos.z, vert[idx[0]].pos.z))swap(idx[1], idx[0]);
+        if (compareZ<mode>(vert[idx[2]].pos.z, vert[idx[1].pos.z))swap(idx[2], idx[1]);
+        if (compareZ<mode>(vert[idx[1]].pos.z, vert[idx[0]].pos.z))swap(idx[1], idx[0]);
+        auto wpos=atomicInc(cnt+type,maxv);
+        clip[wpos + type * size] =idx;
+    }
+}
+
+template<typename Out>
+CALLABLE void clipVertT0(unsigned int size,unsigned int* cnt ,
+    ReadOnlyCache(VertexInfo<Out>) in, ReadOnlyCache(uvec3) clip,
+    VertexInfo<Out>* out) {
+    auto id = getID();
+    if (id >= size)return;
+    auto idx = clip[id];
+    auto base = atomicInc(cnt,maxv)*3;
+    for (int i = 0; i < 3; ++i)
+        out[base + i] = in[idx[i]];
+}
+
+template<typename Out>
+CALLABLE void clipVertT1(unsigned int size, unsigned int* cnt,
+    ReadOnlyCache(VertexInfo<Out>) in, ReadOnlyCache(uvec3) clip,
+    VertexInfo<Out>* out,float z) {
+    auto id = getID();
+    if (id >= size)return;
+    auto idx = clip[id];
+    auto a = in[idx[0]], b = in[idx[1]], c = in[idx[2]];
+    auto d = lerpZ(a, b, z), e = lerpZ(a, c, z);
+    auto base1 = atomicInc(cnt, maxv) * 3;
+    out[base1] = b, out[base1 + 1] = c, out[base1 + 2] = d;
+    auto base2= atomicInc(cnt, maxv) * 3;
+    out[base2] = d, out[base2 + 1] = e, out[base2 + 2] = c;
+}
+
+template<typename Out>
+CALLABLE void clipVertT2(unsigned int size, unsigned int* cnt,
+    ReadOnlyCache(VertexInfo<Out>) in, ReadOnlyCache(uvec3) clip,
+    VertexInfo<Out>* out,float z) {
+    auto a = in[idx[0]], b = in[idx[1]], c = in[idx[2]];
+    auto d = lerpZ(a, c, z), e = lerpZ(b, c, z);
+    auto base = atomicInc(cnt, maxv) * 3;
+    out[base] = c, out[base + 1] = d, out[base + 2] = e;
+}
+
+template<typename Out,ClipZMode mode>
+CALLABLE void clipVertTGPU(unsigned int size,unsigned int* cntN,unsigned int* cntF,
+    ReadOnlyCache(VertexInfo<Out>) in,ReadOnlyCache(uvec3) clipN,
+    VertexInfo<Out>* outN,VertexInfo<Out>* outF,float z) {
+    constexpr auto block = 1024U;
+    if (cntN[0])clipVertT0<Out> << <calcSize(cntN[0],block), block >> > (cntN[0], cntN[3], clipN, outN);
+    if (cntN[1])clipVertT1<Out> << <calcSize(cntN[1],block), block >> > (cntN[1], cntN[3], clipN+size, outN,z);
+    if (cntN[2])clipVertT2<Out> << <calcSize(cntN[2],block), block >> > (cntN[2], cntN[3], clipN+size*2, outN,z);
+}
+
+template<typename Out,ClipZMode mode>
+auto clipVertT(CommandBuffer& buffer,const DataPtr<VertexInfo<Out>>& vert,
+    Value<unsigned int> size,float z,size_t tsize) {
+    auto outVert=buffer.allocBuffer<VertexInfo<Out>>(tsize*3);
+    auto clip = buffer.allocBuffer<uvec3>(tsize);
+    auto cnt = buffer.allocBuffer<unsigned int>(4);//c0 c1 c2 triNum
+    buffer.memset(cnt);
+    buffer.runKernelLinearDelegate(sortTriangles<Out,mode>,size,index,vert,cnt,clip,z);
+    buffer.callKernel(clipVertTGPU<Out>,tsize,cnt,vert,clip,outVert,z);
+    return std::make_pair(Value<unsigned int>(cnt,3),outVert);
+}

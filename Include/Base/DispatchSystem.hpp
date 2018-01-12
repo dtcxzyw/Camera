@@ -152,6 +152,11 @@ public:
     }
 };
 
+template<typename Func,typename... Args>
+CALLABLE void runKernelLinearDelegateHelper(Func func, unsigned int block, unsigned int* size,Args... args) {
+    if(*size)func << <calcSize(*size, block), block >> > (*size, args...);
+}
+
 namespace Impl {
     class CastTag {
     protected:
@@ -223,6 +228,12 @@ namespace Impl {
                 return cast(rval, buffer);
             };
         }
+        ValueImpl(const DataPtr<T>& val,unsigned int off) {
+            auto rval = castID(val);
+            mClosure = [rval,off](CommandBuffer& buffer) {
+                return cast(rval, buffer)+off;
+            };
+        }
         T get(CommandBuffer& buffer) {
             return mClosure(buffer);
         }
@@ -278,6 +289,22 @@ namespace Impl {
             :Operator(buffer) {
             mClosure = [=,&buffer](Stream& stream) {
                 stream.run(func,size, cast(args,buffer)...);
+            };
+        }
+        void emit(Stream& stream) override;
+    };
+
+    class KernelLaunchLinearDelegate final :public Operator {
+    private:
+        std::function<void(Stream&)> mClosure;
+    public:
+        template<typename Func, typename... Args>
+        KernelLaunchLinearDelegate(CommandBuffer& buffer, Func func, Value<unsigned int> size, 
+            Args... args):Operator(buffer) {
+            auto rsiz = castID(size);
+            mClosure = [=, &buffer](Stream& stream) {
+                stream.run(runKernelLinearDelegateHelper<Func,decltype(cast(args,buffer))...>,1,func,
+                    stream.getMaxBlockSize(),cast(rsiz,buffer), cast(args, buffer)...);
             };
         }
         void emit(Stream& stream) override;
@@ -361,6 +388,12 @@ public:
     void runKernelLinear(Func func, size_t size, Args... args) {
         mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchLinear>(*this,func,size
             , Impl::castID(args)...));
+    }
+
+    template<typename Func,typename... Args>
+    void runKernelLinearDelegate(Func func, Value<unsigned int> size, Args... args) {
+        mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchLinearDelegate>(*this, func,
+            size, Impl::castID(args)...));
     }
 
     void addCallback(cudaStreamCallback_t func,void* data);
