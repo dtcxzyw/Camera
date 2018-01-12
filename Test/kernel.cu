@@ -74,7 +74,8 @@ void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const MemoryRef<Uniform>&
     CommandBuffer & buffer) {
     fbo.colorRT->clear(buffer, vec4{ 0.0f,0.0f,0.0f,1.0f });
     fbo.depthBuffer->clear(buffer);
-    auto vert = calcVertex<VI, OI, Uniform, VS,Camera::RasterPosConverter>(buffer, vbo, uniform, converter);
+    auto vert = calcVertex<VI, OI, Uniform, Camera::RasterPosConverter, VS>(buffer, vbo, uniform, 
+        converter);
     renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU, setPoint, drawPoint>(buffer, vert, 
         ibo, uniform,fbo.getData(buffer), fbo.size,converter.near,converter.far,CullFace::None);
     auto puni = buffer.allocConstant<PostUniform>();

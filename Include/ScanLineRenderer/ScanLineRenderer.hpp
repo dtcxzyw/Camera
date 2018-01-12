@@ -72,7 +72,8 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
         static_cast<int>(mode));
     //pass 2:clipping
     auto tsiz = std::max(65536U, index.size() * 2U);
-    auto triNear = clipVertT<Out,ClipZMode::Near>(buffer,clipedVert,triNum,near,tsiz);
+    auto triNear = clipVertT<Out,ClipZMode::Near>(buffer,clipedVert,LaunchSize(triNum),
+        near,tsiz);
     auto triFar = clipVertT<Out, ClipZMode::Far>(buffer, triNear.second, triNear.first, far, tsiz);
     //pass 3:process triangles
     auto cnt =buffer.allocBuffer<unsigned int>(9);
@@ -80,8 +81,8 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     auto info =buffer.allocBuffer<Triangle<Out>>(tsiz);
     auto idx = buffer.allocBuffer<unsigned int>(tsiz*10);
     auto hfsize = static_cast<vec2>(size)*0.5f;
-    buffer.runKernelLinearDelegate(processTriangles<Out>, triFar.first, cnt, triFar.second, info,
-        idx, fsize,hfsize);
+    buffer.callKernel(processTrianglesGPU<Out>, triFar.first, cnt, triFar.second, info,idx,
+        fsize.x,fsize.y,hfsize.x,hfsize.y);
     //pass 4:render triangles
     auto invnf =1.0f/(far - near);
     buffer.callKernel(renderTrianglesGPU<Out, Uniform,FrameBuffer,ds,fs>,cnt,info,idx

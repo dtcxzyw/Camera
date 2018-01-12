@@ -191,7 +191,7 @@
     </CudaLink>
     <CudaLink>
       <Optimization>O2</Optimization>
-      <PerformDeviceLink>false</PerformDeviceLink>
+      <PerformDeviceLink>true</PerformDeviceLink>
     </CudaLink>
     <Lib>
       <AdditionalDependencies>assimp.lib;glfw3.lib;opengl32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>

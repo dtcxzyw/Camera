@@ -12,7 +12,7 @@ using ID = uintmax_t;
 
 namespace Impl {
     ID getPID();
-    struct ResourceTag{};
+    struct ResourceTag {};
 }
 
 class ResourceInstance :Uncopyable {
@@ -22,7 +22,7 @@ public:
     ResourceInstance();
     virtual ~ResourceInstance() = default;
     bool shouldRelease(ID current) const;
-    virtual void getRes(void*,cudaStream_t) = 0;
+    virtual void getRes(void*, cudaStream_t) = 0;
 };
 
 template<typename T>
@@ -33,7 +33,7 @@ private:
 protected:
     void addInstance(std::unique_ptr<ResourceInstance>&& instance);
 public:
-    Resource(CommandBuffer& buffer) :mID(Impl::getPID()),mBuffer(buffer) {}
+    Resource(CommandBuffer& buffer) :mID(Impl::getPID()), mBuffer(buffer) {}
     virtual ~Resource() = default;
     ID getID() const {
         return mID;
@@ -41,17 +41,17 @@ public:
 };
 
 template<typename T>
-class ResourceRef:Impl::ResourceTag {
+class ResourceRef :Impl::ResourceTag {
 protected:
     std::shared_ptr<Resource<T>> mRef;
 public:
-    ResourceRef(const std::shared_ptr<Resource<T>>& ref):mRef(ref){}
+    ResourceRef(const std::shared_ptr<Resource<T>>& ref) :mRef(ref) {}
     ID getID() const {
         return mRef->getID();
     }
 };
 
-namespace Impl{
+namespace Impl {
     enum MemoryType {
         global, constant
     };
@@ -69,7 +69,7 @@ namespace Impl{
     class DeviceMemoryInstance :public ResourceInstance {
     protected:
         size_t mSize;
-        void getRes(void*,cudaStream_t) override;
+        void getRes(void*, cudaStream_t) override;
     public:
         DeviceMemoryInstance(size_t size);
         virtual ~DeviceMemoryInstance() = default;
@@ -98,7 +98,7 @@ namespace Impl{
         void set(const void* src, Stream& stream) override;
     };
 
-    class DMRef:public ResourceRef<void*> {
+    class DMRef :public ResourceRef<void*> {
     public:
         DMRef(const std::shared_ptr<Impl::DeviceMemory>& ref);
         size_t size() const;
@@ -106,7 +106,7 @@ namespace Impl{
 
     class Operator :Uncopyable {
     protected:
-        CommandBuffer& mBuffer;
+        CommandBuffer & mBuffer;
         ID mID;
         DeviceMemoryInstance& getMemory(ID id) const;
     public:
@@ -144,18 +144,13 @@ public:
 };
 
 template<typename T>
-class MemoryRef final:public Impl::DMRef {
+class MemoryRef final :public Impl::DMRef {
 public:
     MemoryRef(const std::shared_ptr<Impl::DeviceMemory>& ref) :DMRef(ref) {}
     size_t size() const {
         return Impl::DMRef::size() / sizeof(T);
     }
 };
-
-template<typename Func,typename... Args>
-CALLABLE void runKernelLinearDelegateHelper(Func func, unsigned int block, unsigned int* size,Args... args) {
-    if(*size)func << <calcSize(*size, block), block >> > (*size, args...);
-}
 
 namespace Impl {
     class CastTag {
@@ -171,7 +166,7 @@ namespace Impl {
         ResourceID(ID id) :mID(id) {}
         T get(CommandBuffer& buffer) {
             T res;
-            CastTag::get(buffer, mID,&res);
+            CastTag::get(buffer, mID, &res);
             return res;
         }
     };
@@ -192,66 +187,44 @@ namespace Impl {
     }
 
     template<typename T, typename = std::enable_if_t<!std::is_base_of<CastTag, T>::value>>
-    T cast(T arg,CommandBuffer&) {
+    T cast(T arg, CommandBuffer&) {
         return arg;
     }
 
     template<typename T, typename = std::enable_if_t<std::is_base_of<CastTag, T>::value>>
-    auto cast(T ref,CommandBuffer& buffer) {
+    auto cast(T ref, CommandBuffer& buffer) {
         return ref.get(buffer);
     }
 
     template<typename T, typename... Args>
-    class LazyConstructor final:public CastTag {
+    class LazyConstructor final :public CastTag {
     private:
         std::tuple<Args...> mArgs;
         template<size_t... I>
-        auto constructImpl(CommandBuffer& buffer,std::index_sequence<I...>) {
+        auto constructImpl(CommandBuffer& buffer, std::index_sequence<I...>) {
             return T{ cast(std::get<I>(mArgs),buffer)... };
         }
     public:
-        LazyConstructor(Args... args):mArgs(std::make_tuple(args...)){}
+        LazyConstructor(Args... args) :mArgs(std::make_tuple(args...)) {}
         auto get(CommandBuffer& buffer) {
-            return constructImpl(buffer,std::make_index_sequence<std::tuple_size<decltype(mArgs)>::value>());
+            return constructImpl(buffer, std::make_index_sequence<std::tuple_size<decltype(mArgs)>::value>());
         }
     };
 
     template<typename T>
-    class ValueImpl final:public CastTag {
-    private:
-        std::function<T(CommandBuffer&)> mClosure;
-    public:
-        template<typename U>
-        ValueImpl(const U& val) {
-            auto rval = castID(val);
-            mClosure = [rval](CommandBuffer& buffer) {
-                return cast(rval, buffer);
-            };
-        }
-        ValueImpl(const DataPtr<T>& val,unsigned int off) {
-            auto rval = castID(val);
-            mClosure = [rval,off](CommandBuffer& buffer) {
-                return cast(rval, buffer)+off;
-            };
-        }
-        T get(CommandBuffer& buffer) {
-            return mClosure(buffer);
-        }
-    };
-
-    template<typename T>
-    class DataPtrImpl final :public CastTag {
+    class DataPtr final :public CastTag {
     private:
         std::function<T*(CommandBuffer&)> mClosure;
         size_t mSize;
     public:
-        DataPtrImpl(const MemoryRef<T>& ref):mSize(ref.size()) {
+        DataPtr() = default;
+        DataPtr(const MemoryRef<T>& ref) :mSize(ref.size()) {
             auto rval = castID(ref);
             mClosure = [rval](CommandBuffer& buffer) {
                 return cast(rval, buffer);
             };
         }
-        DataPtrImpl(const DataViewer<T>& data):mSize(data.size()) {
+        DataPtr(const DataViewer<T>& data) :mSize(data.size()) {
             auto ptr = data.begin();
             mClosure = [ptr](CommandBuffer& buffer) {
                 return ptr;
@@ -265,6 +238,37 @@ namespace Impl {
         }
     };
 
+    template<typename T>
+    class Value final :public CastTag {
+    private:
+        std::function<T(CommandBuffer&)> mClosure;
+    public:
+        template<typename U>
+        Value(const U& val) {
+            auto rval = castID(val);
+            mClosure = [rval](CommandBuffer& buffer) {
+                return cast(rval, buffer);
+            };
+        }
+        T get(CommandBuffer& buffer) {
+            return mClosure(buffer);
+        }
+    };
+
+    struct LaunchSize final :public CastTag {
+    private:
+        std::function<unsigned int*(CommandBuffer&)> mClosure;
+    public:
+        LaunchSize(const MemoryRef<unsigned int>& ptr,unsigned int off=0) {
+            auto rval = castID(ptr);
+            mClosure = [rval,off](CommandBuffer& buffer) {
+                return cast(rval, buffer)+off;
+            };
+        }
+        unsigned int* get(CommandBuffer& buffer) {
+            return mClosure(buffer);
+        }
+    };
 
     class KernelLaunchDim final :public Operator {
     private:
@@ -273,8 +277,8 @@ namespace Impl {
         template<typename Func, typename... Args>
         KernelLaunchDim(CommandBuffer& buffer, Func func, dim3 grid, dim3 block, Args... args)
             :Operator(buffer) {
-            mClosure = [=,&buffer](Stream& stream) {
-                stream.runDim(func, grid, block, cast(args,buffer)...);
+            mClosure = [=, &buffer](Stream& stream) {
+                stream.runDim(func, grid, block, cast(args, buffer)...);
             };
         }
         void emit(Stream& stream) override;
@@ -287,34 +291,18 @@ namespace Impl {
         template<typename Func, typename... Args>
         KernelLaunchLinear(CommandBuffer& buffer, Func func, size_t size, Args... args)
             :Operator(buffer) {
-            mClosure = [=,&buffer](Stream& stream) {
-                stream.run(func,size, cast(args,buffer)...);
+            mClosure = [=, &buffer](Stream& stream) {
+                stream.run(func, size, cast(args, buffer)...);
             };
         }
         void emit(Stream& stream) override;
     };
 
-    class KernelLaunchLinearDelegate final :public Operator {
-    private:
-        std::function<void(Stream&)> mClosure;
-    public:
-        template<typename Func, typename... Args>
-        KernelLaunchLinearDelegate(CommandBuffer& buffer, Func func, Value<unsigned int> size, 
-            Args... args):Operator(buffer) {
-            auto rsiz = castID(size);
-            mClosure = [=, &buffer](Stream& stream) {
-                stream.run(runKernelLinearDelegateHelper<Func,decltype(cast(args,buffer))...>,1,func,
-                    stream.getMaxBlockSize(),cast(rsiz,buffer), cast(args, buffer)...);
-            };
-        }
-        void emit(Stream& stream) override;
-    };
 }
 
-template<typename T>
-using Value = Impl::ValueImpl<T>;
-template<typename T>
-using DataPtr = Impl::DataPtrImpl<T>;
+using Impl::DataPtr;
+using Impl::Value;
+using Impl::LaunchSize;
 
 class Future final {
 private:
@@ -324,7 +312,7 @@ public:
     bool finished() const;
 };
 
-class CommandBuffer final :Uncopyable{
+class CommandBuffer final :Uncopyable {
 private:
     template<typename T>
     friend class Resource;
@@ -345,22 +333,22 @@ private:
     cudaStream_t getStream();
 public:
     template<typename T>
-    MemoryRef<T> allocBuffer(size_t size=1) {
-        return std::make_shared<Impl::DeviceMemory>(*this, size*sizeof(T),Impl::MemoryType::global);
+    MemoryRef<T> allocBuffer(size_t size = 1) {
+        return std::make_shared<Impl::DeviceMemory>(*this, size * sizeof(T), Impl::MemoryType::global);
     }
 
     template<typename T>
     MemoryRef<T> allocConstant() {
-        return std::make_shared<Impl::DeviceMemory>(*this,sizeof(T),Impl::MemoryType::constant);
+        return std::make_shared<Impl::DeviceMemory>(*this, sizeof(T), Impl::MemoryType::constant);
     }
 
-    void memset(Impl::DMRef& memory, int mark=0);
+    void memset(Impl::DMRef& memory, int mark = 0);
 
     void memcpy(Impl::DMRef& dst, std::function<void(std::function<void(const void*)>)>&& src);
 
     template<typename T>
-    void memcpy(MemoryRef<T>& dst,const DataViewer<T>& src) {
-        memcpy(dst, [src](auto call) {call(src.begin());});
+    void memcpy(MemoryRef<T>& dst, const DataViewer<T>& src) {
+        memcpy(dst, [src](auto call) {call(src.begin()); });
     }
 
     template<typename T>
@@ -373,30 +361,24 @@ public:
         });
     }
 
-    template<typename Func,typename... Args>
-    void runKernelDim(Func func,dim3 grid,dim3 block,Args... args) {
-        mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchDim>(*this,func,grid,block
-            ,Impl::castID(args)...));
+    template<typename Func, typename... Args>
+    void runKernelDim(Func func, dim3 grid, dim3 block, Args... args) {
+        mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchDim>(*this, func, grid, block
+            , Impl::castID(args)...));
     }
 
     template<typename Func, typename... Args>
     void callKernel(Func func, Args... args) {
-        runKernelDim(func, dim3{}, dim3{},args...);
+        runKernelDim(func, dim3{}, dim3{}, args...);
     }
 
     template<typename Func, typename... Args>
     void runKernelLinear(Func func, size_t size, Args... args) {
-        mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchLinear>(*this,func,size
-            , Impl::castID(args)...));
-    }
-
-    template<typename Func,typename... Args>
-    void runKernelLinearDelegate(Func func, Value<unsigned int> size, Args... args) {
-        mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchLinearDelegate>(*this, func,
+        mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchLinear>(*this, func,
             size, Impl::castID(args)...));
     }
 
-    void addCallback(cudaStreamCallback_t func,void* data);
+    void addCallback(cudaStreamCallback_t func, void* data);
 
     void pushOperator(std::unique_ptr<Impl::Operator>&& op);
     void pushOperator(std::function<void(Stream&)>&& op);
@@ -409,10 +391,10 @@ public:
 
 using Clock = std::chrono::high_resolution_clock;
 
-class DispatchSystem final:Uncopyable {
+class DispatchSystem final :Uncopyable {
 private:
     std::queue<std::unique_ptr<CommandBuffer>> mTasks;
-    class StreamInfo final:Uncopyable {
+    class StreamInfo final :Uncopyable {
     private:
         Stream mStream;
         std::unique_ptr<CommandBuffer> mTask;
@@ -437,5 +419,5 @@ public:
 
 template<typename T>
 inline void Resource<T>::addInstance(std::unique_ptr<ResourceInstance>&& instance) {
-    mBuffer.registerResource(mID,std::move(instance));
+    mBuffer.registerResource(mID, std::move(instance));
 }

@@ -39,3 +39,9 @@ CUDAInline unsigned int getID() {
     return blockIdx.x*blockDim.x + threadIdx.x;
 }
 
+template<typename T>
+CUDAInline void cudaSwap(T& a, T& b) {
+    auto c = a;
+    a = b;
+    b = c;
+}
