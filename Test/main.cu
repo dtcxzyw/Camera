@@ -67,8 +67,8 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
 Uniform getUniform(float w,float h,float delta) {
     static vec3 cp = { 3.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { -100000.0f,0.0f,0.0f };
     auto V = lookAt(cp,mid, { 0.0f,1.0f,0.0f });
-    static glm::mat4 M = scale(mat4{}, vec3(0.01f));
-    M = rotate(M, 0.2f*delta, { 0.0f,1.0f,0.0f });
+    glm::mat4 M = scale(mat4{}, vec3(0.01f));
+    M = rotate(M, 0.5f, { 0.0f,1.0f,0.0f });
     constexpr auto step = 10.0f;
     auto off = ImGui::GetIO().DeltaTime * step;
     if (ImGui::IsKeyPressed(GLFW_KEY_W))cp.x -= off;
@@ -107,7 +107,7 @@ int main() {
     getEnvironment().init();
     try {
         camera.near = 1.0f;
-        camera.far = 1000.0f;
+        camera.far = 5.0f;
         camera.filmAperture = { 0.980f,0.735f };
         camera.mode = Camera::FitResolutionGate::Overscan;
         camera.focalLength = 15.0f;

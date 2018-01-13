@@ -212,19 +212,17 @@ namespace Impl {
     };
 
     template<typename T>
-    class DataPtr final :public CastTag {
+    class DataPtrHelper final :public CastTag {
     private:
         std::function<T*(CommandBuffer&)> mClosure;
-        size_t mSize;
     public:
-        DataPtr() = default;
-        DataPtr(const MemoryRef<T>& ref) :mSize(ref.size()) {
+        DataPtrHelper(const MemoryRef<T>& ref) {
             auto rval = castID(ref);
             mClosure = [rval](CommandBuffer& buffer) {
                 return cast(rval, buffer);
             };
         }
-        DataPtr(const DataViewer<T>& data) :mSize(data.size()) {
+        DataPtrHelper(const DataViewer<T>& data) {
             auto ptr = data.begin();
             mClosure = [ptr](CommandBuffer& buffer) {
                 return ptr;
@@ -233,18 +231,35 @@ namespace Impl {
         T* get(CommandBuffer& buffer) {
             return mClosure(buffer);
         }
-        size_t size() const {
+    };
+
+    template<typename T>
+    class DataPtr final {
+    private:
+        std::function<DataPtrHelper<T>()> mClosure;
+        size_t mSize;
+    public:
+        DataPtr(const MemoryRef<T>& ref):mSize(ref.size()) {
+            mClosure = [ref] {return DataPtrHelper<T>(ref); };
+        }
+        DataPtr(const DataViewer<T>& data):mSize(data.size()) {
+            mClosure = [data] {return DataPtrHelper<T>(data);};
+        }
+        auto get() const {
+            return mClosure();
+        }
+        auto size() const {
             return mSize;
         }
     };
 
     template<typename T>
-    class Value final :public CastTag {
+    class ValueHelper final :public CastTag {
     private:
         std::function<T(CommandBuffer&)> mClosure;
     public:
         template<typename U>
-        Value(const U& val) {
+        ValueHelper(const U& val) {
             auto rval = castID(val);
             mClosure = [rval](CommandBuffer& buffer) {
                 return cast(rval, buffer);
@@ -255,11 +270,25 @@ namespace Impl {
         }
     };
 
-    struct LaunchSize final :public CastTag {
+    template<typename T>
+    class Value final {
+    private:
+        std::function<ValueHelper<T>()> mClosure;
+    public:
+        template<typename U>
+        Value(const U& val) {
+            mClosure = [val] {return ValueHelper<T>(val); };
+        }
+        auto get() const {
+            return mClosure();
+        }
+    };
+
+    struct LaunchSizeHelper final :public CastTag {
     private:
         std::function<unsigned int*(CommandBuffer&)> mClosure;
     public:
-        LaunchSize(const MemoryRef<unsigned int>& ptr,unsigned int off=0) {
+        LaunchSizeHelper(const MemoryRef<unsigned int>& ptr,unsigned int off) {
             auto rval = castID(ptr);
             mClosure = [rval,off](CommandBuffer& buffer) {
                 return cast(rval, buffer)+off;
@@ -267,6 +296,18 @@ namespace Impl {
         }
         unsigned int* get(CommandBuffer& buffer) {
             return mClosure(buffer);
+        }
+    };
+
+    struct LaunchSize final {
+    private:
+        LaunchSizeHelper mHelper;
+        MemoryRef<unsigned int> mRef;
+    public:
+        LaunchSize(const MemoryRef<unsigned int>& ptr, unsigned int off = 0)
+            :mHelper(ptr, off), mRef(ptr) {}
+        auto get() {
+            return mHelper;
         }
     };
 

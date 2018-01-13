@@ -13,8 +13,8 @@ template<typename Out>
 struct VertexInfo {
     vec3 pos;
     /*
-    NDC.x=pos.x/pos.z
-    NDC.y=pos.y/pos.z
+    NDC.x=pos.x*kx/pos.z
+    NDC.y=pos.y*ky/pos.z
     z=pos.z
     */
     Out out;
@@ -29,15 +29,14 @@ CUDAInline VertexInfo<Out> lerpZ(VertexInfo<Out> a, VertexInfo<Out> b, float z) 
     return res;
 }
 
-template<typename Vert, typename Out, typename Uniform,typename Converter,
-    VSF<Vert, Out, Uniform> vs>
+template<typename Vert, typename Out, typename Uniform,VSF<Vert, Out, Uniform> vs>
 CALLABLE void runVS(unsigned int size,ReadOnlyCache(Vert) in,
-    ReadOnlyCache(Uniform) u,VertexInfo<Out>* res,Converter converter) {
+    ReadOnlyCache(Uniform) u,VertexInfo<Out>* res) {
     auto id = getID();
     if (id >= size)return;
     auto& vert = res[id];
     vs(in[id], *u, vert.pos, vert.out);
-    vert.pos = converter(vert.pos);
+    vert.pos.z = -vert.pos.z;
 }
 
 template<typename Uniform, typename FrameBuffer>

@@ -106,6 +106,6 @@ struct PostUniform final {
         :in(buf),lum(clum),sum(cnt){}
 };
 
-void kernel(DataViewer<VI> vbo, DataViewer<uvec3> ibo, const MemoryRef<Uniform>& uniform
+void kernel(const DataViewer<VI>& vbo,const DataViewer<uvec3>& ibo,const MemoryRef<Uniform>& uniform
     , FrameBufferCPU & fbo, float* lum, Camera::RasterPosConverter converter,
     CommandBuffer & buffer);

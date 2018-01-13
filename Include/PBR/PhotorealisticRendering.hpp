@@ -11,12 +11,8 @@ struct Camera final {
     vec2 filmAperture;//in inches
     float near,far;
     struct RasterPosConverter final {
-        vec2 invSize;
+        vec2 mul;
         float near,far;
-        CUDAInline vec3 operator()(vec3 CSP) const {
-            CSP.z = -CSP.z;
-            return {CSP.x*near*invSize.x,CSP.y*near*invSize.y,CSP.z};
-        }
     };
     RasterPosConverter toRasterPos(vec2 imageSize) const {
         RasterPosConverter res;
@@ -38,7 +34,7 @@ struct Camera final {
             break;
         }
 
-        res.invSize = {1.0f/right,1.0f/top};
+        res.mul = {near/right,near/top};
         return res;
     }
 
