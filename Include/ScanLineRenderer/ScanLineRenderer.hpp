@@ -83,11 +83,11 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     auto idx = buffer.allocBuffer<unsigned int>(tsiz*10);
     auto hfsize = static_cast<vec2>(size)*0.5f;
     buffer.callKernel(processTrianglesGPU<Out>, triFar.first.get(), cnt, triFar.second, info,idx,
-        fsize.x,fsize.y,hfsize.x,hfsize.y,mul.x,mul.y);
+        fsize.x,fsize.y,hfsize.x,hfsize.y,mul.x,mul.y,tsiz);
     //pass 4:render triangles
     auto invnf =1.0f/(far - near);
     buffer.callKernel(renderTrianglesGPU<Out, Uniform,FrameBuffer,ds,fs>,cnt,info,idx,uniform.get(),
-        frameBuffer.get(),index.size(),near,invnf);
+        frameBuffer.get(),tsiz,near,invnf);
 }
 
 template<typename Uniform, typename FrameBuffer, FSFSF<Uniform, FrameBuffer> fs>

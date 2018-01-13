@@ -64,7 +64,7 @@ CUDAInline vec3 toRaster(vec3 p, float hx, float hy, float kx, float ky) {
 template<typename Out>
 CALLABLE void processTriangles(unsigned int size, unsigned int* cnt,
     ReadOnlyCache(TriangleVert<Out>) in,Triangle<Out>* info, unsigned int* triID,
-    float fx,float fy, float hx, float hy, float kx, float ky) {
+    float fx,float fy, float hx, float hy, float kx, float ky,unsigned int tsiz) {
     auto id = getID();
     if (id >= size)return;
     auto tri = in[id];
@@ -88,7 +88,7 @@ CALLABLE void processTriangles(unsigned int size, unsigned int* cnt,
         auto tsize = fmax(res.rect.y - res.rect.x, res.rect.w - res.rect.z);
         auto x=static_cast<int>(ceil(log2f(fmin(tsize + 1.0f, 50.0f))));
         auto tid = atomicInc(cnt + 8, maxv);
-        triID[atomicInc(cnt + x, maxv) + x * size] = tid;
+        triID[atomicInc(cnt + x, maxv) + x * tsiz] = tid;
         info[tid] = res;
     }
 }
@@ -96,9 +96,9 @@ CALLABLE void processTriangles(unsigned int size, unsigned int* cnt,
 template<typename Out>
 CALLABLE void processTrianglesGPU(unsigned int* size, unsigned int* cnt,
     ReadOnlyCache(TriangleVert<Out>) in, Triangle<Out>* info, unsigned int* triID,
-    float fx, float fy, float hx, float hy,float kx,float ky) {
+    float fx, float fy, float hx, float hy,float kx,float ky,unsigned int tsiz) {
     constexpr auto block = 1024U;
-    run(processTriangles<Out>,block,*size, cnt, in, info, triID, fx, fy, hx, hy,kx,ky);
+    run(processTriangles<Out>,block,*size, cnt, in, info, triID, fx, fy, hx, hy,kx,ky,tsiz);
 }
 
 CUDAInline bool testPoint(mat3 w0, vec2 p, vec3& w) {
@@ -246,7 +246,7 @@ CALLABLE void clipVertT1(unsigned int size, unsigned int* cnt,
     auto tri = in[clip[id]];
     uvec3 idx=sortIndex<Out,func>(tri,uvec3{ 0,1,2 });
     auto a = tri.vert[idx[0]], b = tri.vert[idx[1]], c = tri.vert[idx[2]];
-    auto d = lerpZ(a, b, z), e = lerpZ(a, c, z);
+    auto d = lerpZ(b, a, z), e = lerpZ(c, a, z);
 
     auto base1 = atomicInc(cnt, maxv);
     out[base1].id = tri.id;
