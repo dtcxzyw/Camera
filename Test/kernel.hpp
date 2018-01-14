@@ -15,8 +15,7 @@ using VI = StaticMesh::Vertex;
 enum OutInfo {
     pos,normal,tangent,texCoord
 };
-//using OI = Args<Var(pos, vec3), Var(normal, vec3),Var(tangent, vec3)>;
-using OI = Args<Var(pos,vec3),Var(texCoord,vec2)>;
+using OI = Args<Var(pos, vec3), Var(normal, vec3),Var(tangent, vec3)>;
  
 struct FrameBufferGPU final {
     BuiltinRenderTargetGPU<RGBA> color;
@@ -106,6 +105,6 @@ struct PostUniform final {
         :in(buf),lum(clum),sum(cnt){}
 };
 
-void kernel(const DataViewer<VI>& vbo,const DataViewer<uvec3>& ibo,const MemoryRef<Uniform>& uniform
+void kernel(const StaticMesh& model,const StaticMesh& skybox,const MemoryRef<Uniform>& uniform
     , FrameBufferCPU & fbo, float* lum, Camera::RasterPosConverter converter,
     CommandBuffer & buffer);

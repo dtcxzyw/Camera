@@ -6,10 +6,15 @@
 
 CUDAInline void VS(VI in, Uniform uniform, vec3& cpos, OI& out) {
     auto wp =uniform.M*vec4(in.pos, 1.0f);
-    out.get<texCoord>() = in.uv;
     out.get<pos>() = in.pos;
-    //out.get<normal>() =uniform.invM*in.normal;
-    //out.get<tangent>() =uniform.invM*in.tangent;
+    cpos = uniform.V*wp;
+}
+
+CUDAInline void VSM(VI in, Uniform uniform, vec3& cpos, OI& out) {
+    auto wp = uniform.M*vec4(in.pos, 1.0f);
+    out.get<pos>() = wp;
+    out.get<normal>() =uniform.invM*in.normal;
+    out.get<tangent>() =uniform.invM*in.tangent;
     cpos = uniform.V*wp;
 }
 
@@ -19,20 +24,16 @@ CUDAInline void setPoint(unsigned int triID,ivec2 uv,float z, OI out, Uniform un
     fbo.depth.set(uv, z*maxdu);
 }
 
-CUDAInline void drawPoint(unsigned int triID,ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& fbo) {
+CUDAInline void drawSky(unsigned int triID,ivec2 uv, float z,OI out, Uniform uniform, FrameBufferGPU& fbo) {
     if (fbo.depth.get(uv) ==static_cast<unsigned int>(z*maxdu)) {
         auto p = out.get<pos>();
         fbo.color.set(uv, uniform.sampler.getCubeMap(normalize(p)));
-        /*
-        ++triID;
-        auto r = triID % 3;
-        triID /= 3;
-        auto g = triID % 3;
-        triID /= 3;
-        auto b = triID % 3;
-        fbo.color.set(uv, vec4(r/3.0f,g/3.0f,b/3.0f,1.0f));
-        */
-        /*
+    }
+}
+
+CUDAInline void drawPoint(unsigned int triID, ivec2 uv, float z, OI out, Uniform uniform, FrameBufferGPU& fbo) {
+    if (fbo.depth.get(uv) == static_cast<unsigned int>(z*maxdu)) {
+        auto p = out.get<pos>();
         vec3 N =normalize(out.get<normal>());
         vec3 X = normalize(out.get<tangent>());
         vec3 Y = normalize(cross(N, X));
@@ -43,21 +44,15 @@ CUDAInline void drawPoint(unsigned int triID,ivec2 uv, float z,OI out, Uniform u
         auto V = normalize(uniform.cp - p);
         auto F = disneyBRDF(L, V, N, X, Y, uniform.arg);
         auto res = uniform.lc*F*(distUE4(dis2,uniform.r*uniform.r)*dot(N, L));
-        */
-        /*
-        auto tex = out.get<texCoord>();
-        tex *= 10.0f;
-        auto p = (fmod(tex.x, 1.0f) > 0.5f) ^ (fmod(tex.y, 1.0f) < 0.5f);
-        fbo.color.set(uv,vec4(p));
-        */
+        fbo.color.set(uv, { res,1.0f });
     }
 }
 
 CUDAInline void post(ivec2 NDC, PostUniform uni, BuiltinRenderTargetGPU<RGBA> out) {
     RGB c = uni.in.color.get(NDC);
     auto lum = luminosity(c);
-    if (lum > 0.0f) {
-        atomicAdd(&uni.sum->first, fmin(log(lum), 5.0f));
+    if (lum > 1e-3f) {
+        atomicAdd(&uni.sum->first, log(lum));
         atomicInc(&uni.sum->second, maxv);
     }
     c = pow(ACES(c, *uni.lum), vec3(1.0f / 2.2f));
@@ -69,14 +64,22 @@ CALLABLE void updateLum(PostUniform uniform) {
     *uniform.lum=calcLum(uniform.sum->first/(uniform.sum->second+1));
 }
 
-void kernel(const DataViewer<VI>& vbo,const DataViewer<uvec3>& ibo,
+template<VSF<VI,OI,Uniform> vs,FSF<OI,Uniform,FrameBufferGPU> fs>
+void renderMesh(const StaticMesh& model , const MemoryRef<Uniform>& uniform,
+    FrameBufferCPU & fbo, Camera::RasterPosConverter converter,CullFace mode,CommandBuffer & buffer) {
+    auto vert = calcVertex<VI, OI, Uniform, vs>(buffer, model.mVert, uniform);
+    renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU, setPoint, fs>(buffer, vert,
+        model.mIndex, uniform, fbo.getData(buffer), fbo.size,
+        converter.near, converter.far,converter.mul,mode);
+}
+
+void kernel(const StaticMesh& model, const StaticMesh& skybox,
     const MemoryRef<Uniform>& uniform, FrameBufferCPU & fbo, float* lum,
-    Camera::RasterPosConverter converter,CommandBuffer & buffer) {
+    Camera::RasterPosConverter converter, CommandBuffer & buffer) {
     fbo.colorRT->clear(buffer, vec4{ 0.0f,0.0f,0.0f,1.0f });
     fbo.depthBuffer->clear(buffer);
-    auto vert = calcVertex<VI, OI, Uniform, VS>(buffer, vbo, uniform);
-    renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU, setPoint, drawPoint>(buffer, vert, 
-        ibo, uniform,fbo.getData(buffer), fbo.size,converter.near,converter.far,converter.mul,CullFace::None);
+    renderMesh<VSM,drawPoint>(model,uniform,fbo,converter,CullFace::Back,buffer);
+    renderMesh<VS, drawSky>(skybox, uniform, fbo, converter,CullFace::Front, buffer);
     auto puni = buffer.allocConstant<PostUniform>();
     auto sum = buffer.allocBuffer<std::pair<float, unsigned int>>();
     buffer.memset(sum);

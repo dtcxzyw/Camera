@@ -32,6 +32,7 @@ private:
     }
 public:
     void* memAlloc(size_t size) {
+        if (size == 0)return nullptr;
         auto level = count(size);
         if (mPool[level].size()) {
             auto ptr = mPool[level].back();
@@ -42,7 +43,7 @@ public:
     }
 
     void memFree(void* ptr, size_t size) {
-        mPool[count(size)].push_back(ptr);
+        if(size)mPool[count(size)].push_back(ptr);
     }
 
     ~MemoryPool() {

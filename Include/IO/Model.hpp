@@ -12,5 +12,5 @@ struct StaticMesh final {
     };
     DataViewer<Vertex> mVert;
     DataViewer<uvec3> mIndex;
-    bool load(const std::string& path);
+    void load(const std::string& path);
 };

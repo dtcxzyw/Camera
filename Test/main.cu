@@ -4,8 +4,8 @@
 #include <thread>
 using namespace std::chrono_literals;
 
-auto light=5.0f,r=20.0f;
-StaticMesh model;
+auto light=65.0f,r=20.0f;
+StaticMesh box,model;
 std::shared_ptr<BuiltinCubeMap<RGBA>> envMap;
 std::shared_ptr<BuiltinSampler<RGBA>> envMapSampler;
 DisneyBRDFArg arg;
@@ -34,7 +34,7 @@ void renderGUI(IMGUIWindow& window) {
     ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
     ImGui::Text("FOV %.1f ",degrees(camera.toFOV()));
     ImGui::SliderFloat("focal length",&camera.focalLength,1.0f,500.0f,"%.1f");
-    ImGui::SliderFloat("light", &light, 0.0f, 10.0f);
+    ImGui::SliderFloat("light", &light, 0.0f, 100.0f);
     ImGui::SliderFloat("lightRadius", &r, 0.0f, 20.0f);
 
 #define Color(name)\
@@ -65,10 +65,10 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
 }
 
 Uniform getUniform(float w,float h,float delta) {
-    static vec3 cp = { 3.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { -100000.0f,0.0f,0.0f };
+    static vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { -100000.0f,0.0f,0.0f };
     auto V = lookAt(cp,mid, { 0.0f,1.0f,0.0f });
-    static glm::mat4 M = scale(mat4{}, vec3(1.0f));
-    M = rotate(M, 0.2f*delta, { 0.0f,1.0f,0.0f });
+    glm::mat4 M = scale(mat4{}, vec3(1.0f));
+    M = rotate(M, half_pi<float>(), { 0.0f,1.0f,0.0f });
     constexpr auto step = 10.0f;
     auto off = ImGui::GetIO().DeltaTime * step;
     if (ImGui::IsKeyPressed(GLFW_KEY_W))cp.x -= off;
@@ -99,7 +99,7 @@ auto addTask(DispatchSystem& system,SwapChain_t::SharedFrame frame,uvec2 size,fl
     frame->resize(size.x,size.y);
     auto uni = buffer->allocConstant<Uniform>();
     buffer->memcpy(uni, [uniform](auto call) {call(&uniform); });
-    kernel(model.mVert,model.mIndex,uni,*frame,lum,camera.toRasterPos(size),*buffer);
+    kernel(model,box,uni,*frame,lum,camera.toRasterPos(size),*buffer);
     return std::make_pair(system.submit(std::move(buffer)),frame);
 }
 
@@ -112,7 +112,8 @@ int main() {
         camera.mode = Camera::FitResolutionGate::Overscan;
         camera.focalLength = 15.0f;
         Stream resLoader;
-        model.load("Res/cube.obj");
+        model.load("Res/mitsuba/mitsuba-sphere.obj");
+        box.load("Res/cube.obj");
         envMap = loadCubeMap([](size_t id) {
             const char* table[] = {"right","left","top","bottom","back","front"};
             return std::string("Res/skybox/")+table[id]+".jpg";

@@ -3,7 +3,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
-bool StaticMesh::load(const std::string & path) {
+void StaticMesh::load(const std::string & path) {
     Assimp::Importer loader;
     auto scene = loader.ReadFile(path, aiProcess_Triangulate |
         aiProcess_JoinIdenticalVertices |
@@ -15,7 +15,7 @@ bool StaticMesh::load(const std::string & path) {
     );
 
     if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE)
-        return false;
+        throw std::exception("Failed to load the scene.");
     auto mesh=scene->mMeshes[0];
     {
         mVert = allocBuffer<Vertex>(mesh->mNumVertices);
@@ -33,5 +33,4 @@ bool StaticMesh::load(const std::string & path) {
             mIndex[i] = *reinterpret_cast<uvec3*>(mesh->mFaces[i].mIndices);
     }
     loader.FreeScene();
-    return true;
 }

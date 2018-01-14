@@ -71,16 +71,16 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     buffer.memset(triNum);
     auto clipedVert = buffer.allocBuffer<TriangleVert<Out>>(index.size());
     buffer.runKernelLinear(clipTriangles<Index, Out>, index.size(), triNum, vert.get(), index, clipedVert,
-        static_cast<int>(mode));
+        static_cast<int>(mode),mul.x,mul.y);
     //pass 2:clipping
-    auto tsiz = std::max(65536U, index.size() * 2U);
+    auto tsiz = std::max(2048U, index.size() * 2U);
     auto triNear = clipVertT<Out,compareZNear>(buffer,clipedVert,LaunchSize(triNum),near,tsiz);
     auto triFar = clipVertT<Out, compareZFar>(buffer, triNear.second, triNear.first, far, tsiz);
     //pass 3:process triangles
     auto cnt =buffer.allocBuffer<unsigned int>(9);
     buffer.memset(cnt);
     auto info =buffer.allocBuffer<Triangle<Out>>(tsiz);
-    auto idx = buffer.allocBuffer<unsigned int>(tsiz*10);
+    auto idx = buffer.allocBuffer<TriangleRef>(tsiz*10);
     auto hfsize = static_cast<vec2>(size)*0.5f;
     buffer.callKernel(processTrianglesGPU<Out>, triFar.first.get(), cnt, triFar.second, info,idx,
         fsize.x,fsize.y,hfsize.x,hfsize.y,mul.x,mul.y,tsiz);
