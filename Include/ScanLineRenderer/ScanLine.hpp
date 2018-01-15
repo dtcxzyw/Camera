@@ -6,7 +6,7 @@ template<typename Vert, typename Out, typename Uniform>
 using VSF = void(*)(Vert in,Uniform uniform, vec3& pos,Out& out);
 
 template<typename Out, typename Uniform, typename FrameBuffer>
-using FSF = void(*)(unsigned int triID,ivec2 uv,float z, Out in, Uniform uniform,
+using FSF = void(*)(unsigned int id,ivec2 uv,float z, Out in, Uniform uniform,
     FrameBuffer& frameBuffer);
 
 template<typename Out>
@@ -79,5 +79,10 @@ public:
         return mPtr[off];
     }
 };
+
+CUDAInline vec3 toRaster(vec3 p, float hx, float hy, float kx, float ky) {
+    auto invz = 1.0f / p.z;
+    return { (1.0f + p.x*kx*invz)*hx,(1.0f - p.y*ky*invz)*hy,invz };
+}
 
 constexpr auto maxv = std::numeric_limits<unsigned int>::max();

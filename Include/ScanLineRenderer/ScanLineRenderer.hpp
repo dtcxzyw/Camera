@@ -12,34 +12,36 @@ auto calcVertex(CommandBuffer& buffer,const DataPtr<Vert>& vert,const DataPtr<Un
     return vertex;
 }
 
-/*
 template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void drawPointHelper(unsigned int size, ReadOnlyCache(VertexInfo<Out>) vert,
-        ReadOnlyCache(Uniform) uniform, FrameBuffer* frameBuffer, uvec2 fsize,
-        float near,float far,float invnf) {
+        ReadOnlyCache(Uniform) uniform, FrameBuffer* frameBuffer, vec2 fsize,
+        float near,float invnf,vec2 mul,vec2 hfsize) {
     auto id = getID();
     if (id >= size)return;
     auto p = vert[id];
-    if (0.0f<=p.pos.x & p.pos.x<=fsize.x & 0.0f<=p.pos.y & p.pos.y<=fsize.y 
-        & near<=p.pos.z & p.pos.z<=far)
-        fs({ p.pos.x,p.pos.y }, p.pos.z, p.out, *uniform, *frameBuffer);
+    auto nz = (p.pos.z - near)*invnf;
+    p.pos = toRaster(p.pos, hfsize.x,hfsize.y,mul.x,mul.y);
+    if (0.0f <= p.pos.x & p.pos.x <= fsize.x & 0.0f <= p.pos.y & p.pos.y <= fsize.y
+        & 0.0f <= nz & nz <= 1.0f) {
+        fs(id,{ p.pos.x,p.pos.y },nz, p.out, *uniform, *frameBuffer);
+    }
 }
-*/
 
-/*
 template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
     void renderPoints(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
-        const DataPtr<Uniform>& uniform, FrameBuffer* frameBuffer, uvec2 size,float near,float far) {
+        const DataPtr<Uniform>& uniform, FrameBuffer* frameBuffer, uvec2 size,float near,float far,
+        vec2 mul) {
     vec2 fsize = size - uvec2{1, 1};
+    auto hfsize = static_cast<vec2>(size) * 0.5f;
     auto invnf = 1.0f / (far - near);
     buffer.runKernelLinear(drawPointHelper<Out, Uniform, FrameBuffer, ds>, vert.size(), vert, uniform,
-        frameBuffer, fsize,near,far,invnf);
+        frameBuffer, fsize,near,invnf,mul,hfsize);
     buffer.runKernelLinear(drawPointHelper<Out, Uniform, FrameBuffer, fs>, vert.size(), vert, uniform, 
-        frameBuffer, fsize,near,far,invnf);
+        frameBuffer, fsize,near,invnf,mul,hfsize);
 }
-*/
+
 
 /*
 template< typename Out, typename Uniform, typename FrameBuffer,
@@ -73,7 +75,7 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     buffer.runKernelLinear(clipTriangles<Index, Out>, index.size(), triNum, vert.get(), index, clipedVert,
         static_cast<int>(mode),mul.x,mul.y);
     //pass 2:clipping
-    auto tsiz = std::max(2048U, index.size() * 2U);
+    auto tsiz = std::max(2048U, index.size()+index.size()/10);
     auto triNear = clipVertT<Out,compareZNear>(buffer,clipedVert,LaunchSize(triNum),near,tsiz);
     auto triFar = clipVertT<Out, compareZFar>(buffer, triNear.second, triNear.first, far, tsiz);
     //pass 3:process triangles

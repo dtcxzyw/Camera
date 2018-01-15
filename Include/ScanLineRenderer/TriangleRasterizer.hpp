@@ -157,11 +157,6 @@ CUDAInline void calcBase(vec3 a, vec3 b, vec3& w) {
     w.z = -(a.x*w.x + a.y * w.y);
 }
 
-CUDAInline vec3 toRaster(vec3 p, float hx, float hy, float kx, float ky) {
-    auto invz = 1.0f / p.z;
-    return { (1.0f+p.x*kx*invz)*hx,(1.0f-p.y*ky*invz)*hy,invz };
-}
-
 template<typename Out>
 struct Triangle final {
     vec3 invz;
