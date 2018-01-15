@@ -239,7 +239,7 @@ namespace Impl {
         std::function<DataPtrHelper<T>()> mClosure;
         size_t mSize;
     public:
-        DataPtr(const MemoryRef<T>& ref):mSize(ref.size()) {
+        DataPtr(MemoryRef<T> ref):mSize(ref.size()) {
             mClosure = [ref] {return DataPtrHelper<T>(ref); };
         }
         DataPtr(const DataViewer<T>& data):mSize(data.size()) {
@@ -276,7 +276,7 @@ namespace Impl {
         std::function<ValueHelper<T>()> mClosure;
     public:
         template<typename U>
-        Value(const U& val) {
+        Value(U val) {
             mClosure = [val] {return ValueHelper<T>(val); };
         }
         auto get() const {
@@ -306,7 +306,7 @@ namespace Impl {
     public:
         LaunchSize(const MemoryRef<unsigned int>& ptr, unsigned int off = 0)
             :mHelper(ptr, off), mRef(ptr) {}
-        auto get() {
+        auto get() const {
             return mHelper;
         }
     };

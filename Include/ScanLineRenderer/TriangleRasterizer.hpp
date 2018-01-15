@@ -20,7 +20,7 @@ CUDAInline float edgeFunction(T a, T b, T c) {
 }
 
 CUDAInline vec2 fixPos(vec3 p, float kx, float ky) {
-    auto invz = 1.0f / p.z;
+    auto invz = 1.0f / fabs(p.z);
     return { p.x*kx*invz,p.y*ky*invz };
 }
 
@@ -258,8 +258,8 @@ CALLABLE void cutTriangles(unsigned int size, unsigned int* cnt,TriangleRef* idx
     if (id >= size)return; 
     auto ref = idx[id];
     auto rect = ref.rect;
-    for (int i = rect[0]; i <= rect[1]; i += 32) {
-        for (int j = rect[2]; j <= rect[3]; j += 32) {
+    for (float i = rect[0]; i <= rect[1]; i += 31.0f) {
+        for (float j = rect[2]; j <= rect[3]; j += 31.0f) {
             ref.rect[0] = i, ref.rect[2] = j;
             out[atomicInc(cnt + 7, maxv)] = ref;
         }
@@ -272,7 +272,7 @@ template<typename Out, typename Uniform, typename FrameBuffer,
         TriangleRef* idx, Uniform* uniform, FrameBuffer* frameBuffer,unsigned int size,
        float near,float invnf) {
     if (cnt[6]) {
-        constexpr auto block = 128U;
+        constexpr auto block = 1024U;
         run(cutTriangles<Out>,block,cnt[6], cnt, idx + size * 6, idx + size * 7);
         cudaDeviceSynchronize();
     }

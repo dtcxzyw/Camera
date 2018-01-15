@@ -79,16 +79,17 @@ struct FrameBufferCPU final {
     }
     MemoryRef<FrameBufferGPU> getData(CommandBuffer& buffer) {
         auto dataGPU = buffer.allocConstant<FrameBufferGPU>();
-        auto buf = data;
-        buffer.memcpy(dataGPU, [buf](auto call) {call(&buf); });
+        buffer.memcpy(dataGPU, [buf=data](auto call) {call(&buf); });
         return dataGPU;
     }
 };
  
 struct Uniform final {
     ALIGN mat4 M;
+    ALIGN mat4 Msky;
     ALIGN mat4 V;
     ALIGN mat3 invM;
+    ALIGN mat3 invMsky;
     ALIGN vec3 cp;
     ALIGN vec3 lp;
     ALIGN vec3 lc;

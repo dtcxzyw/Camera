@@ -24,7 +24,6 @@ void StaticMesh::load(const std::string & path) {
             mVert[i].normal = *reinterpret_cast<vec3*>(mesh->mNormals + i);
             mVert[i].uv = *reinterpret_cast<UV*>(mesh->mTextureCoords[0] + i);
             mVert[i].tangent = *reinterpret_cast<vec3*>(mesh->mTangents+i);
-            mVert[i].biTangent = *reinterpret_cast<vec3*>(mesh->mBitangents + i);
         }
     }
     {

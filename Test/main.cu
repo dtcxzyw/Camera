@@ -67,18 +67,22 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
 Uniform getUniform(float w,float h,float delta) {
     static vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { -100000.0f,0.0f,0.0f };
     auto V = lookAt(cp,mid, { 0.0f,1.0f,0.0f });
-    glm::mat4 M = scale(mat4{}, vec3(1.0f));
-    M = rotate(M, half_pi<float>(), { 0.0f,1.0f,0.0f });
-    constexpr auto step = 10.0f;
+    static glm::mat4 M1 = scale(mat4{}, vec3(1.0f)),M2= scale(mat4{}, vec3(1.0f)),M3= scale(mat4{}, vec3(1.0f));
+    //M1 = rotate(M1, 0.2f*delta, { 0.0f,1.0f,0.0f });
+    //M2 = rotate(M2, -0.2f*delta, { 0.0f,1.0f,0.0f });
+    M3 = rotate(M3, 0.2f*delta, { 0.0f,1.0f,0.0f });
+    constexpr auto step = 50.0f;
     auto off = ImGui::GetIO().DeltaTime * step;
     if (ImGui::IsKeyPressed(GLFW_KEY_W))cp.x -= off;
     if (ImGui::IsKeyPressed(GLFW_KEY_S))cp.x += off;
     if (ImGui::IsKeyPressed(GLFW_KEY_A))cp.z -= off;
     if (ImGui::IsKeyPressed(GLFW_KEY_D))cp.z += off;
     Uniform u;
-    u.M = M;
+    u.Msky = M1;
+    u.M = M3;
     u.V = V;
-    u.invM = mat3(transpose(inverse(M)));
+    u.invM = mat3(transpose(inverse(u.M)));
+    u.invMsky = mat3(transpose(inverse(M2)));
     u.lc = vec3(light);
     u.arg = arg;
     u.cp = cp;
@@ -107,17 +111,19 @@ int main() {
     getEnvironment().init();
     try {
         camera.near = 1.0f;
-        camera.far = 1000.0f;
+        camera.far = 300.0f;
         camera.filmAperture = { 0.980f,0.735f };
         camera.mode = Camera::FitResolutionGate::Overscan;
         camera.focalLength = 15.0f;
         Stream resLoader;
         model.load("Res/mitsuba/mitsuba-sphere.obj");
         box.load("Res/cube.obj");
+        
         envMap = loadCubeMap([](size_t id) {
             const char* table[] = {"right","left","top","bottom","back","front"};
             return std::string("Res/skybox/")+table[id]+".jpg";
         }, resLoader);
+        //envMap = loadRGBA("Res/Helipad_Afternoon/LA_Downtown_Afternoon_Fishing_B_8k.jpg",resLoader);
         envMapSampler = std::make_shared<BuiltinSampler<RGBA>>(envMap->get());
         arg.baseColor = vec3{ 244,206,120 }/255.0f;
         //arg.edgeTint = vec3{ 254,249,205 } / 255.0f;
@@ -128,7 +134,7 @@ int main() {
         SwapChain_t swapChain(8);
         std::queue<std::pair<Future, SwapChain_t::SharedFrame>> futures;
         {
-            DispatchSystem system(3);
+            DispatchSystem system(2);
             auto lum = allocBuffer<float>();
             while (window.update()) {
                 auto size = window.size();

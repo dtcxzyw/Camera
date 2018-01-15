@@ -3,11 +3,10 @@
 #include <string>
 
 struct StaticMesh final {
-    struct Vertex {
+    struct Vertex final {
         ALIGN vec3 pos;
         ALIGN vec3 normal;
         ALIGN vec3 tangent;
-        ALIGN vec3 biTangent;
         ALIGN UV uv;
     };
     DataViewer<Vertex> mVert;
