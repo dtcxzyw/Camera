@@ -85,6 +85,7 @@ struct FrameBufferCPU final {
 };
  
 struct Uniform final {
+    ALIGN vec2 mul;
     ALIGN mat4 M;
     ALIGN mat4 Msky;
     ALIGN mat4 V;

@@ -64,7 +64,7 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
     window.renderGUI();
 }
 
-Uniform getUniform(float w,float h,float delta) {
+Uniform getUniform(float w,float h,float delta,vec2 mul) {
     static vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { -100000.0f,0.0f,0.0f };
     auto V = lookAt(cp,mid, { 0.0f,1.0f,0.0f });
     static glm::mat4 M1 = scale(mat4{}, vec3(1.0f)),M2= scale(mat4{}, vec3(1.0f)),M3= scale(mat4{}, vec3(1.0f));
@@ -78,6 +78,7 @@ Uniform getUniform(float w,float h,float delta) {
     if (ImGui::IsKeyPressed(GLFW_KEY_A))cp.z -= off;
     if (ImGui::IsKeyPressed(GLFW_KEY_D))cp.z += off;
     Uniform u;
+    u.mul = mul;
     u.Msky = M1;
     u.M = M3;
     u.V = V;
@@ -97,13 +98,14 @@ using SwapChain_t = SwapChain<FrameBufferCPU>;
 auto addTask(DispatchSystem& system,SwapChain_t::SharedFrame frame,uvec2 size,float* lum) {
     static float last = glfwGetTime();
     float now = glfwGetTime();
-    auto uniform = getUniform(size.x,size.y,now-last);
+    auto converter = camera.toRasterPos(size);
+    auto uniform = getUniform(size.x,size.y,now-last,converter.mul);
     last = now;
     auto buffer=std::make_unique<CommandBuffer>();
     frame->resize(size.x,size.y);
     auto uni = buffer->allocConstant<Uniform>();
     buffer->memcpy(uni, [uniform](auto call) {call(&uniform); });
-    kernel(model,box,uni,*frame,lum,camera.toRasterPos(size),*buffer);
+    kernel(model,box,uni,*frame,lum,converter,*buffer);
     return std::make_pair(system.submit(std::move(buffer)),frame);
 }
 

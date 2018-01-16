@@ -16,12 +16,12 @@ template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
     CALLABLE void drawPointHelperGPU(unsigned int size, ReadOnlyCache(VertexInfo<Out>) vert,
         ReadOnlyCache(Uniform) uniform, FrameBuffer* frameBuffer, vec2 fsize,
-        float near,float invnf,vec2 mul,vec2 hfsize) {
+        float near,float invnf,vec2 hfsize) {
     auto id = getID();
     if (id >= size)return;
     auto p = vert[id];
     auto nz = (p.pos.z - near)*invnf;
-    p.pos = toRaster(p.pos, hfsize.x,hfsize.y,mul.x,mul.y);
+    p.pos = toRaster(p.pos, hfsize.x,hfsize.y);
     if (0.0f <= p.pos.x & p.pos.x <= fsize.x & 0.0f <= p.pos.y & p.pos.y <= fsize.y
         & 0.0f <= nz & nz <= 1.0f) {
         fs(id,{ p.pos.x,p.pos.y },nz, p.out, *uniform, *frameBuffer);
@@ -31,31 +31,29 @@ template< typename Out, typename Uniform, typename FrameBuffer,
 template< typename Out, typename Uniform, typename FrameBuffer>
     void drawPointHelper(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
         const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer, vec2 fsize, 
-        float near, float invnf,vec2 mul, vec2 hfsize){}
+        float near, float invnf,vec2 hfsize){}
 
 template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> first,FSF<Out,Uniform,FrameBuffer>... then>
     void drawPointHelper(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
         const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer, vec2 fsize,
-        float near, float invnf,vec2 mul,vec2 hfsize) {
+        float near, float invnf,vec2 hfsize) {
     buffer.runKernelLinear(drawPointHelperGPU<Out, Uniform, FrameBuffer, first>, vert.size(), vert,
-        uniform,frameBuffer, fsize, near, invnf, mul, hfsize);
+        uniform,frameBuffer, fsize, near, invnf, hfsize);
     drawPointHelper<Out,Uniform,FrameBuffer,then...>(buffer,vert,uniform,frameBuffer,fsize,
-        near,invnf,mul,hfsize);
+        near,invnf,hfsize);
 }
 
 template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer>... fs>
     void renderPoints(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
-        const DataPtr<Uniform>& uniform, FrameBuffer* frameBuffer, uvec2 size,float near,float far,
-        vec2 mul) {
+        const DataPtr<Uniform>& uniform, FrameBuffer* frameBuffer, uvec2 size,float near,float far) {
     vec2 fsize = size - uvec2{1, 1};
     auto hfsize = static_cast<vec2>(size) * 0.5f;
     auto invnf = 1.0f / (far - near);
     drawPointHelper<Out, Uniform, FrameBuffer, fs...>(buffer,vert,uniform,frameBuffer,fsize,
-        near,invnf,mul,hfsize);
+        near,invnf,hfsize);
 }
-
 
 /*
 template< typename Out, typename Uniform, typename FrameBuffer,
@@ -80,14 +78,14 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer>... fs>
     void renderTriangles(CommandBuffer& buffer,const DataPtr<VertexInfo<Out>>& vert,
         Index index,const DataPtr<Uniform>& uniform,const DataPtr<FrameBuffer>& frameBuffer,
-        uvec2 size,float near,float far,vec2 mul, CullFace mode = CullFace::Back) {
+        uvec2 size,float near,float far, CullFace mode = CullFace::Back) {
     vec2 fsize = size - uvec2{ 1,1 };
     //pass 1:cull faces
     auto triNum = buffer.allocBuffer<unsigned int>(1);
     buffer.memset(triNum);
     auto clipedVert = buffer.allocBuffer<TriangleVert<Out>>(index.size());
     buffer.runKernelLinear(clipTriangles<Index, Out>, index.size(), triNum, vert.get(), index, clipedVert,
-        static_cast<int>(mode),mul.x,mul.y);
+        static_cast<int>(mode));
     //pass 2:clipping
     auto tsiz = std::max(2048U, index.size()+index.size()/10);
     auto triNear = clipVertT<Out,compareZNear>(buffer,clipedVert,LaunchSize(triNum),near,tsiz);
@@ -99,7 +97,7 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     auto idx = buffer.allocBuffer<TriangleRef>(tsiz*10);
     auto hfsize = static_cast<vec2>(size)*0.5f;
     buffer.callKernel(processTrianglesGPU<Out>, triFar.first.get(), cnt, triFar.second, info,idx,
-        fsize.x,fsize.y,hfsize.x,hfsize.y,mul.x,mul.y,tsiz);
+        fsize.x,fsize.y,hfsize.x,hfsize.y,tsiz);
     //pass 4:render triangles
     auto invnf =1.0f/(far - near);
     buffer.callKernel(renderTrianglesGPU<Out, Uniform,FrameBuffer,fs...>,cnt,info,idx,uniform.get(),

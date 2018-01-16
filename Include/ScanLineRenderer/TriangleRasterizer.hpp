@@ -19,22 +19,22 @@ CUDAInline float edgeFunction(T a, T b, T c) {
     return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
 
-CUDAInline vec2 fixPos(vec3 p, float kx, float ky) {
+CUDAInline vec2 fixPos(vec3 p) {
     auto invz = 1.0f / fabs(p.z);
-    return { p.x*kx*invz,p.y*ky*invz };
+    return { p.x*invz,p.y*invz };
 }
 
 template<typename Index,typename Out>
 CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     ReadOnlyCache(VertexInfo<Out>) vert, Index index,
-    TriangleVert<Out>* out, int mode,float kx,float ky) {
+    TriangleVert<Out>* out, int mode) {
     auto id = getID();
     if (id >= size)return;
     auto idx = index[id];
     auto a = vert[idx[0]], b = vert[idx[1]], c = vert[idx[2]];
-    auto pa = fixPos(a.pos, kx, ky),
-        pb = fixPos(b.pos,kx, ky),
-        pc = fixPos(c.pos, kx, ky);
+    auto pa = fixPos(a.pos),
+        pb = fixPos(b.pos),
+        pc = fixPos(c.pos);
     auto S = edgeFunction(pa,pb,pc);
     if ((S > 0.0f) ^ mode) {
         auto base=atomicInc(cnt, maxv);
@@ -173,13 +173,13 @@ struct TriangleRef final {
 template<typename Out>
 CALLABLE void processTriangles(unsigned int size, unsigned int* cnt,
     ReadOnlyCache(TriangleVert<Out>) in,Triangle<Out>* info,TriangleRef* out,
-    float fx,float fy, float hx, float hy, float kx, float ky,unsigned int tsiz) {
+    float fx,float fy, float hx, float hy,unsigned int tsiz) {
     auto id = getID();
     if (id >= size)return;
     auto tri = in[id];
-    auto a = toRaster(tri.vert[0].pos,hx,hy,kx,ky),
-        b = toRaster(tri.vert[1].pos,hx,hy,kx,ky),
-        c = toRaster(tri.vert[2].pos,hx,hy,kx,ky);
+    auto a = toRaster(tri.vert[0].pos,hx,hy),
+        b = toRaster(tri.vert[1].pos,hx,hy),
+        c = toRaster(tri.vert[2].pos,hx,hy);
     vec4 rect= { fmax(0.0f,min3(a.x,b.x,c.x)),fmin(fx,max3(a.x,b.x,c.x)),
         fmax(0.0f,min3(a.y,b.y,c.y)),fmin(fy,max3(a.y,b.y,c.y)) };
     if (rect.x<rect.y & rect.z<rect.w) {
@@ -206,9 +206,9 @@ CALLABLE void processTriangles(unsigned int size, unsigned int* cnt,
 template<typename Out>
 CALLABLE void processTrianglesGPU(unsigned int* size, unsigned int* cnt,
     ReadOnlyCache(TriangleVert<Out>) in, Triangle<Out>* info, TriangleRef* triID,
-    float fx, float fy, float hx, float hy,float kx,float ky,unsigned int tsiz) {
+    float fx, float fy, float hx, float hy,unsigned int tsiz) {
     constexpr auto block = 1024U;
-    run(processTriangles<Out>,block,*size, cnt, in, info, triID, fx, fy, hx, hy,kx,ky,tsiz);
+    run(processTriangles<Out>,block,*size, cnt, in, info, triID, fx, fy, hx, hy,tsiz);
 }
 
 CUDAInline bool testPoint(mat3 w0, vec2 p, vec3& w) {

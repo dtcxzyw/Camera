@@ -4,10 +4,14 @@
 #include <device_atomic_functions.h>
 #include <PBR/Dist.hpp>
 
+CUDAInline vec3 toPos(vec3 p,vec2 mul) {
+    return { p.x*mul.x,p.y*mul.y,-p.z };
+}
+
 CUDAInline void VS(VI in, Uniform uniform, vec3& cpos, OI& out) {
     auto wp =uniform.Msky*vec4(in.pos, 1.0f);
     out.get<pos>() = in.pos;
-    cpos = uniform.V*wp;
+    cpos = toPos(uniform.V*wp,uniform.mul);
 }
 
 CUDAInline void VSM(VI in, Uniform uniform, vec3& cpos, OI& out) {
@@ -15,7 +19,7 @@ CUDAInline void VSM(VI in, Uniform uniform, vec3& cpos, OI& out) {
     out.get<pos>() = wp;
     out.get<normal>() =uniform.invM*in.normal;
     out.get<tangent>() =uniform.invM*in.tangent;
-    cpos = uniform.V*wp;
+    cpos = toPos(uniform.V*wp,uniform.mul);
 }
 
 constexpr float maxdu = std::numeric_limits<unsigned int>::max();
@@ -77,7 +81,7 @@ void renderMesh(const StaticMesh& model , const MemoryRef<Uniform>& uniform,
     auto vert = calcVertex<VI, OI, Uniform, vs>(buffer, model.mVert, uniform);
     renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU, ds, fs>(buffer, vert,
         model.mIndex, uniform, fbo.getData(buffer), fbo.size,
-        converter.near, converter.far,converter.mul,mode);
+        converter.near, converter.far,mode);
 }
 
 void kernel(const StaticMesh& model, const StaticMesh& skybox,

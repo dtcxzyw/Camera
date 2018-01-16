@@ -13,8 +13,8 @@ template<typename Out>
 struct VertexInfo {
     vec3 pos;
     /*
-    NDC.x=pos.x*kx/pos.z
-    NDC.y=pos.y*ky/pos.z
+    NDC.x=pos.x/pos.z
+    NDC.y=pos.y/pos.z
     z=pos.z
     */
     Out out;
@@ -36,7 +36,6 @@ CALLABLE void runVS(unsigned int size,ReadOnlyCache(Vert) in,
     if (id >= size)return;
     auto& vert = res[id];
     vs(in[id], *u, vert.pos, vert.out);
-    vert.pos.z = -vert.pos.z;
 }
 
 template<typename Uniform, typename FrameBuffer>
@@ -80,9 +79,9 @@ public:
     }
 };
 
-CUDAInline vec3 toRaster(vec3 p, float hx, float hy, float kx, float ky) {
+CUDAInline vec3 toRaster(vec3 p, float hx, float hy) {
     auto invz = 1.0f / p.z;
-    return { (1.0f + p.x*kx*invz)*hx,(1.0f - p.y*ky*invz)*hy,invz };
+    return { (1.0f + p.x*invz)*hx,(1.0f - p.y*invz)*hy,invz };
 }
 
 constexpr auto maxv = std::numeric_limits<unsigned int>::max();
