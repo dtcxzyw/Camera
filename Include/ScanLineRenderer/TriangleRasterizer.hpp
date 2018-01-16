@@ -262,50 +262,47 @@ CALLABLE void cutTriangles(unsigned int size, unsigned int* cnt,TriangleRef* idx
 }
 
 template<typename Out, typename Uniform, typename FrameBuffer,
-    FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void renderTrianglesGPU(unsigned int* cnt, Triangle<Out>* tri, 
-        TriangleRef* idx, Uniform* uniform, FrameBuffer* frameBuffer,unsigned int size,
-       float near,float invnf) {
-    if (cnt[6]) {
-        constexpr auto block = 1024U;
-        run(cutTriangles<Out>,block,cnt[6], cnt, idx + size * 6, idx + size * 7);
-        cudaDeviceSynchronize();
-    }
-
+    FSF<Out, Uniform, FrameBuffer> first, FSF<Out, Uniform, FrameBuffer>... then>
+    CUDAInline void applyTFS(unsigned int* cnt, Triangle<Out>* tri,
+        TriangleRef* idx, Uniform* uniform, FrameBuffer* frameBuffer, unsigned int size,
+        float near, float invnf) {
     for (auto i = 0; i < 6; ++i)
         if (cnt[i]) {
             auto bsiz = 1U << i;
             dim3 grid(cnt[i]);
             dim3 block(bsiz, bsiz);
-            drawMicroT<Out, Uniform, FrameBuffer,ds> << <grid, block >> > (tri, idx + size * i,
-                uniform, frameBuffer,near,invnf);
+            drawMicroT<Out, Uniform, FrameBuffer, first> << <grid, block >> > (tri, idx + size * i,
+                uniform, frameBuffer, near, invnf);
         }
 
     if (cnt[7]) {
         auto bsiz = 1U << 5;
         dim3 grid(cnt[7]);
         dim3 block(bsiz, bsiz);
-        drawMicroT<Out, Uniform, FrameBuffer, ds> << <grid, block >> > (tri, idx + size * 7,
-            uniform, frameBuffer,near,invnf);
+        drawMicroT<Out, Uniform, FrameBuffer, first> << <grid, block >> > (tri, idx + size * 7,
+            uniform, frameBuffer, near, invnf);
     }
 
     cudaDeviceSynchronize();
+    applyTFS<Out, Uniform, FrameBuffer, then...>(cnt, tri, idx, uniform, frameBuffer, size, near, invnf);
+}
 
-    for (auto i = 0; i < 6; ++i)
-        if (cnt[i]) {
-            auto bsiz = 1U << i;
-            dim3 grid(cnt[i]);
-            dim3 block(bsiz, bsiz);
-            drawMicroT<Out, Uniform, FrameBuffer, fs> << <grid, block >> > (tri, idx + size * i,
-                uniform, frameBuffer,near,invnf);
-        }
+template<typename Out, typename Uniform, typename FrameBuffer>
+CUDAInline void applyTFS(unsigned int* cnt, Triangle<Out>* tri,
+    TriangleRef* idx, Uniform* uniform, FrameBuffer* frameBuffer, unsigned int size,
+    float near, float invnf) {}
 
-    if (cnt[7]) {
-        auto bsiz = 1U << 5;
-        dim3 grid(cnt[7]);
-        dim3 block(bsiz, bsiz);
-        drawMicroT<Out, Uniform, FrameBuffer, fs> << <grid, block >> > (tri, idx + size * 7,
-            uniform, frameBuffer,near,invnf);
+template<typename Out, typename Uniform, typename FrameBuffer,
+    FSF<Out, Uniform, FrameBuffer>... fs>
+    CALLABLE void renderTrianglesGPU(unsigned int* cnt, Triangle<Out>* tri,
+        TriangleRef* idx, Uniform* uniform, FrameBuffer* frameBuffer, unsigned int size,
+        float near, float invnf) {
+    if (cnt[6]) {
+        constexpr auto block = 1024U;
+        run(cutTriangles<Out>, block, cnt[6], cnt, idx + size * 6, idx + size * 7);
+        cudaDeviceSynchronize();
     }
+
+    applyTFS<Out, Uniform, FrameBuffer, fs...>(cnt, tri, idx, uniform, frameBuffer, size, near, invnf);
 }
 

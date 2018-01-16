@@ -26,7 +26,7 @@ CUDAInline void setSkyPoint(unsigned int,ivec2 uv,float, OI, Uniform, FrameBuffe
 
 CUDAInline void drawSky(unsigned int triID,ivec2 uv, float,OI out, Uniform uniform, FrameBufferGPU& fbo) {
     if (fbo.depth.get(uv) == 0xfffffffc) {
-        auto p =normalize(out.get<pos>());
+        auto p =out.get<pos>();
         fbo.color.set(uv, uniform.sampler.getCubeMap(p));
         //fbo.color.set(uv, uniform.sampler.get(calcHDRUV(p)));
     }
@@ -48,7 +48,7 @@ CUDAInline void drawPoint(unsigned int triID, ivec2 uv, float z, OI out, Uniform
         auto L = off/dis;
         auto V = normalize(uniform.cp - p);
         auto F = disneyBRDF(L, V, N, X, Y, uniform.arg);
-        auto lc = uniform.lc +60.0f*vec3(uniform.sampler.getCubeMap(normalize(uniform.invMsky*p)));
+        auto lc = uniform.lc +100.0f*vec3(uniform.sampler.getCubeMap(uniform.invMsky*p));
         auto res = lc*F*(distUE4(dis2,uniform.r*uniform.r)*dot(N, L));
         fbo.color.set(uv, { res,1.0f });
     }

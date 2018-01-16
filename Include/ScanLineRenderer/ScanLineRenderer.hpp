@@ -14,7 +14,7 @@ auto calcVertex(CommandBuffer& buffer,const DataPtr<Vert>& vert,const DataPtr<Un
 
 template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void drawPointHelper(unsigned int size, ReadOnlyCache(VertexInfo<Out>) vert,
+    CALLABLE void drawPointHelperGPU(unsigned int size, ReadOnlyCache(VertexInfo<Out>) vert,
         ReadOnlyCache(Uniform) uniform, FrameBuffer* frameBuffer, vec2 fsize,
         float near,float invnf,vec2 mul,vec2 hfsize) {
     auto id = getID();
@@ -28,18 +28,32 @@ template< typename Out, typename Uniform, typename FrameBuffer,
     }
 }
 
+template< typename Out, typename Uniform, typename FrameBuffer>
+    void drawPointHelper(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
+        const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer, vec2 fsize, 
+        float near, float invnf,vec2 mul, vec2 hfsize){}
+
 template< typename Out, typename Uniform, typename FrameBuffer,
-    FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
+    FSF<Out, Uniform, FrameBuffer> first,FSF<Out,Uniform,FrameBuffer>... then>
+    void drawPointHelper(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
+        const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer, vec2 fsize,
+        float near, float invnf,vec2 mul,vec2 hfsize) {
+    buffer.runKernelLinear(drawPointHelperGPU<Out, Uniform, FrameBuffer, first>, vert.size(), vert,
+        uniform,frameBuffer, fsize, near, invnf, mul, hfsize);
+    drawPointHelper<Out,Uniform,FrameBuffer,then...>(buffer,vert,uniform,frameBuffer,fsize,
+        near,invnf,mul,hfsize);
+}
+
+template< typename Out, typename Uniform, typename FrameBuffer,
+    FSF<Out, Uniform, FrameBuffer>... fs>
     void renderPoints(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
         const DataPtr<Uniform>& uniform, FrameBuffer* frameBuffer, uvec2 size,float near,float far,
         vec2 mul) {
     vec2 fsize = size - uvec2{1, 1};
     auto hfsize = static_cast<vec2>(size) * 0.5f;
     auto invnf = 1.0f / (far - near);
-    buffer.runKernelLinear(drawPointHelper<Out, Uniform, FrameBuffer, ds>, vert.size(), vert, uniform,
-        frameBuffer, fsize,near,invnf,mul,hfsize);
-    buffer.runKernelLinear(drawPointHelper<Out, Uniform, FrameBuffer, fs>, vert.size(), vert, uniform, 
-        frameBuffer, fsize,near,invnf,mul,hfsize);
+    drawPointHelper<Out, Uniform, FrameBuffer, fs...>(buffer,vert,uniform,frameBuffer,fsize,
+        near,invnf,mul,hfsize);
 }
 
 
@@ -63,7 +77,7 @@ template< typename Out, typename Uniform, typename FrameBuffer,
 */
 
 template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
-    FSF<Out, Uniform, FrameBuffer> ds, FSF<Out, Uniform, FrameBuffer> fs>
+    FSF<Out, Uniform, FrameBuffer>... fs>
     void renderTriangles(CommandBuffer& buffer,const DataPtr<VertexInfo<Out>>& vert,
         Index index,const DataPtr<Uniform>& uniform,const DataPtr<FrameBuffer>& frameBuffer,
         uvec2 size,float near,float far,vec2 mul, CullFace mode = CullFace::Back) {
@@ -88,7 +102,7 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
         fsize.x,fsize.y,hfsize.x,hfsize.y,mul.x,mul.y,tsiz);
     //pass 4:render triangles
     auto invnf =1.0f/(far - near);
-    buffer.callKernel(renderTrianglesGPU<Out, Uniform,FrameBuffer,ds,fs>,cnt,info,idx,uniform.get(),
+    buffer.callKernel(renderTrianglesGPU<Out, Uniform,FrameBuffer,fs...>,cnt,info,idx,uniform.get(),
         frameBuffer.get(),tsiz,near,invnf);
 }
 
