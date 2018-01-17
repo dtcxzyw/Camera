@@ -118,8 +118,9 @@ int main() {
         camera.mode = Camera::FitResolutionGate::Overscan;
         camera.focalLength = 15.0f;
         Stream resLoader;
-        model.load("Res/mitsuba/mitsuba-sphere.obj");
-        box.load("Res/cube.obj");
+        //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
+        model.load("Res/dragon.obj",resLoader);
+        box.load("Res/cube.obj",resLoader);
         
         envMap = loadCubeMap([](size_t id) {
             const char* table[] = {"right","left","top","bottom","back","front"};
@@ -133,7 +134,7 @@ int main() {
         setUIStyle();
         ImGui::GetIO().WantCaptureKeyboard = true;
 
-        SwapChain_t swapChain(8);
+        SwapChain_t swapChain(3);
         std::queue<std::pair<Future, SwapChain_t::SharedFrame>> futures;
         {
             DispatchSystem system(2);

@@ -75,21 +75,23 @@ template< typename Out, typename Uniform, typename FrameBuffer,
 */
 
 template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
-    FSF<Out, Uniform, FrameBuffer>... fs>
+    TCSF<Uniform> cs,FSF<Out, Uniform, FrameBuffer>... fs>
     void renderTriangles(CommandBuffer& buffer,const DataPtr<VertexInfo<Out>>& vert,
         Index index,const DataPtr<Uniform>& uniform,const DataPtr<FrameBuffer>& frameBuffer,
-        uvec2 size,float near,float far, CullFace mode = CullFace::Back) {
+        uvec2 size,float near,float far) {
     vec2 fsize = size - uvec2{ 1,1 };
     //pass 1:cull faces
     auto triNum = buffer.allocBuffer<unsigned int>(1);
     buffer.memset(triNum);
     auto clipedVert = buffer.allocBuffer<TriangleVert<Out>>(index.size());
-    buffer.runKernelLinear(clipTriangles<Index, Out>, index.size(), triNum, vert.get(), index, clipedVert,
-        static_cast<int>(mode));
+    buffer.runKernelLinear(clipTriangles<Index, Out,Uniform,cs>, index.size(), triNum, vert.get(),
+        index,uniform.get(), clipedVert);
     //pass 2:clipping
     auto tsiz = std::max(2048U, index.size()+index.size()/10);
     auto triNear = clipVertT<Out,compareZNear>(buffer,clipedVert,LaunchSize(triNum),near,tsiz);
+    triNum.earlyRelease(),clipedVert.earlyRelease();
     auto triFar = clipVertT<Out, compareZFar>(buffer, triNear.second, triNear.first, far, tsiz);
+    triNear.second.earlyRelease();
     //pass 3:process triangles
     auto cnt =buffer.allocBuffer<unsigned int>(9);
     buffer.memset(cnt);

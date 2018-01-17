@@ -1,6 +1,7 @@
 #pragma once
 #include <Base/Common.hpp>
 #include <Base/Memory.hpp>
+#include <Base/Pipeline.hpp>
 
 /*
 http://www.merl.com/brdf/
@@ -109,6 +110,6 @@ class MERLBRDFData final {
 private:
     DataViewer<vec3> mData;
 public:
-    MERLBRDFData(const std::string& path);
+    MERLBRDFData(const std::string& path,Stream& loader);
     BRDFSampler toSampler() const;
 };

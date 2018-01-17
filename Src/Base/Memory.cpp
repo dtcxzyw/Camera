@@ -10,7 +10,7 @@ private:
         auto size = 1 << level;
         void* ptr;
         cudaError_t err;
-        while ((err = cudaMallocManaged(&ptr, size)) != cudaSuccess) {
+        while ((err = cudaMalloc(&ptr, size)) != cudaSuccess) {
             auto flag = true;
             for (auto&& p : mPool) {
                 if (p.size()) {

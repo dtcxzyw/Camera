@@ -14,20 +14,27 @@ enum class CullFace {
     Front = 0, Back = 1, None = 2
 };
 
-template<typename T>
-CUDAInline float edgeFunction(T a, T b, T c) {
+CUDAInline float edgeFunction(vec3 a, vec3 b, vec3 c) {
     return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
 
-CUDAInline vec2 fixPos(vec3 p) {
+CUDAInline vec3 fixPos(vec3 p) {
     auto invz = 1.0f / fabs(p.z);
-    return { p.x*invz,p.y*invz };
+    return { p.x*invz,p.y*invz,p.z };
 }
 
-template<typename Index,typename Out>
+template<typename Uniform>
+using TCSF = bool(*)(unsigned int idx,vec3 pa,vec3 pb,vec3 pc,Uniform uniform);
+
+CUDAInline bool cullFace(vec3 pa,vec3 pb,vec3 pc,int mode) {
+    auto S = edgeFunction(pa, pb, pc);
+    return (S > 0.0f) ^ mode;
+}
+
+template<typename Index,typename Out,typename Uniform,TCSF<Uniform> cs>
 CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
-    ReadOnlyCache(VertexInfo<Out>) vert, Index index,
-    TriangleVert<Out>* out, int mode) {
+    ReadOnlyCache(VertexInfo<Out>) vert, Index index,ReadOnlyCache(Uniform) uniform,
+    TriangleVert<Out>* out) {
     auto id = getID();
     if (id >= size)return;
     auto idx = index[id];
@@ -35,8 +42,7 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     auto pa = fixPos(a.pos),
         pb = fixPos(b.pos),
         pc = fixPos(c.pos);
-    auto S = edgeFunction(pa,pb,pc);
-    if ((S > 0.0f) ^ mode) {
+    if (cs(id,pa,pb,pc,*uniform)) {
         auto base=atomicInc(cnt, maxv);
         out[base].id = id;
         out[base].vert[0] = a,out[base].vert[1]=b,out[base].vert[2]=c;

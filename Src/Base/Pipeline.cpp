@@ -37,8 +37,6 @@ void Environment::init() {
         checkError(cudaGetDeviceProperties(&prop, i));
         int ver = prop.major * 10000 + prop.minor;
         if (ver < 50002)continue;
-        if (!prop.unifiedAddressing)continue;
-        if (!prop.managedMemory)continue;
         if (maxwell < ver || (maxwell==ver && prop.totalGlobalMem>size))
             id = i, maxwell = ver,size=prop.totalGlobalMem;
     }

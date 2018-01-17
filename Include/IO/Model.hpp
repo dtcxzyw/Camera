@@ -1,6 +1,7 @@
 #pragma once
 #include <Base/Memory.hpp>
 #include <string>
+#include <Base/Pipeline.hpp>
 
 struct StaticMesh final {
     struct Vertex final {
@@ -11,5 +12,5 @@ struct StaticMesh final {
     };
     DataViewer<Vertex> mVert;
     DataViewer<uvec3> mIndex;
-    void load(const std::string& path);
+    void load(const std::string& path,Stream& loader);
 };

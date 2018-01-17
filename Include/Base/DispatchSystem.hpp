@@ -46,6 +46,9 @@ protected:
     std::shared_ptr<Resource<T>> mRef;
 public:
     ResourceRef(const std::shared_ptr<Resource<T>>& ref) :mRef(ref) {}
+    void earlyRelease() {
+        mRef.reset();
+    }
     ID getID() const {
         return mRef->getID();
     }

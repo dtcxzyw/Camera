@@ -35,15 +35,6 @@ public:
     T* end() const {
         return mPtr + mSize;
     }
-    decltype(auto) operator[](size_t i) {
-        return *(mPtr + i);
-    }
-    decltype(auto) operator->() {
-        return mPtr;
-    }
-    decltype(auto) operator*() {
-        return *mPtr;
-    }
     size_t size() const {
         return mSize;
     }
