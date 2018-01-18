@@ -67,10 +67,8 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
 Uniform getUniform(float w,float h,float delta,vec2 mul) {
     static vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { -100000.0f,0.0f,0.0f };
     auto V = lookAt(cp,mid, { 0.0f,1.0f,0.0f });
-    static glm::mat4 M1 = scale(mat4{}, vec3(1.0f)),M2= scale(mat4{}, vec3(1.0f)),M3= scale(mat4{}, vec3(1.0f));
-    //M1 = rotate(M1, 0.2f*delta, { 0.0f,1.0f,0.0f });
-    //M2 = rotate(M2, -0.2f*delta, { 0.0f,1.0f,0.0f });
-    M3 = rotate(M3, 0.2f*delta, { 0.0f,1.0f,0.0f });
+    static glm::mat4 M= scale(mat4{}, vec3(5.0f));
+    M = rotate(M, 0.2f*delta, { 0.0f,1.0f,0.0f });
     constexpr auto step = 50.0f;
     auto off = ImGui::GetIO().DeltaTime * step;
     if (ImGui::IsKeyPressed(GLFW_KEY_W))cp.x -= off;
@@ -79,11 +77,10 @@ Uniform getUniform(float w,float h,float delta,vec2 mul) {
     if (ImGui::IsKeyPressed(GLFW_KEY_D))cp.z += off;
     Uniform u;
     u.mul = mul;
-    u.Msky = M1;
-    u.M = M3;
+    u.Msky = {};
+    u.M = M;
     u.V = V;
     u.invM = mat3(transpose(inverse(u.M)));
-    u.invMsky = mat3(transpose(inverse(M2)));
     u.lc = vec3(light);
     u.arg = arg;
     u.cp = cp;

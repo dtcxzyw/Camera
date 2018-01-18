@@ -90,7 +90,6 @@ struct Uniform final {
     ALIGN mat4 Msky;
     ALIGN mat4 V;
     ALIGN mat3 invM;
-    ALIGN mat3 invMsky;
     ALIGN vec3 cp;
     ALIGN vec3 lp;
     ALIGN vec3 lc;

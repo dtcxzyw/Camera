@@ -4,32 +4,22 @@
 #include <math_functions.h>
 #include <device_atomic_functions.h>
 
+struct TriangleRenderingHistory final {
+    unsigned int nearSize, farSize;
+    TriangleRenderingHistory(unsigned int size) :nearSize(size),farSize(size){}
+    void reset(unsigned int size) {
+        nearSize = farSize = size;
+    }
+};
+
 template<typename Out>
 struct TriangleVert final {
     unsigned int id;
     VertexInfo<Out> vert[3];
 };
 
-enum class CullFace {
-    Front = 0, Back = 1, None = 2
-};
-
-CUDAInline float edgeFunction(vec3 a, vec3 b, vec3 c) {
-    return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
-}
-
-CUDAInline vec3 fixPos(vec3 p) {
-    auto invz = 1.0f / fabs(p.z);
-    return { p.x*invz,p.y*invz,p.z };
-}
-
 template<typename Uniform>
-using TCSF = bool(*)(unsigned int idx,vec3 pa,vec3 pb,vec3 pc,Uniform uniform);
-
-CUDAInline bool cullFace(vec3 pa,vec3 pb,vec3 pc,int mode) {
-    auto S = edgeFunction(pa, pb, pc);
-    return (S > 0.0f) ^ mode;
-}
+using TCSF = bool(*)(unsigned int idx,vec3& pa,vec3& pb,vec3& pc,Uniform uniform);
 
 template<typename Index,typename Out,typename Uniform,TCSF<Uniform> cs>
 CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
@@ -39,10 +29,7 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     if (id >= size)return;
     auto idx = index[id];
     auto a = vert[idx[0]], b = vert[idx[1]], c = vert[idx[2]];
-    auto pa = fixPos(a.pos),
-        pb = fixPos(b.pos),
-        pc = fixPos(c.pos);
-    if (cs(id,pa,pb,pc,*uniform)) {
+    if (cs(id,a.pos,b.pos,c.pos,*uniform)) {
         auto base=atomicInc(cnt, maxv);
         out[base].id = id;
         out[base].vert[0] = a,out[base].vert[1]=b,out[base].vert[2]=c;
@@ -150,6 +137,10 @@ auto clipVertT(CommandBuffer& buffer, const MemoryRef<TriangleVert<Out>>& vert,
     return std::make_pair(LaunchSize(cnt, 3), outVert);
 }
 
+CUDAInline float edgeFunction(vec3 a, vec3 b, vec3 c) {
+    return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
+}
+
 CUDAInline float max3(float a, float b, float c) {
     return fmax(a, fmax(b, c));
 }
@@ -176,10 +167,18 @@ struct TriangleRef final {
     vec4 rect;
 };
 
+enum class CullFace {
+    Front = 0, Back = 1, None = 2
+};
+
+CUDAInline bool cullFace(vec3 pa, vec3 pb, vec3 pc, int mode) {
+    return (edgeFunction(pa, pb, pc) < 0.0f) ^ mode;
+}
+
 template<typename Out>
 CALLABLE void processTriangles(unsigned int size, unsigned int* cnt,
     ReadOnlyCache(TriangleVert<Out>) in,Triangle<Out>* info,TriangleRef* out,
-    float fx,float fy, float hx, float hy,unsigned int tsiz) {
+    float fx,float fy, float hx, float hy,unsigned int tsiz,int mode) {
     auto id = getID();
     if (id >= size)return;
     auto tri = in[id];
@@ -188,7 +187,7 @@ CALLABLE void processTriangles(unsigned int size, unsigned int* cnt,
         c = toRaster(tri.vert[2].pos,hx,hy);
     vec4 rect= { fmax(0.0f,min3(a.x,b.x,c.x)),fmin(fx,max3(a.x,b.x,c.x)),
         fmax(0.0f,min3(a.y,b.y,c.y)),fmin(fy,max3(a.y,b.y,c.y)) };
-    if (rect.x<rect.y & rect.z<rect.w) {
+    if (cullFace(a,b,c,mode) & rect.x<rect.y & rect.z<rect.w) {
         Triangle<Out> res;
         res.invz = {a.z, b.z,c.z};
         calcBase(b, c, res.w[0]);
@@ -212,9 +211,9 @@ CALLABLE void processTriangles(unsigned int size, unsigned int* cnt,
 template<typename Out>
 CALLABLE void processTrianglesGPU(unsigned int* size, unsigned int* cnt,
     ReadOnlyCache(TriangleVert<Out>) in, Triangle<Out>* info, TriangleRef* triID,
-    float fx, float fy, float hx, float hy,unsigned int tsiz) {
+    float fx, float fy, float hx, float hy,unsigned int tsiz,int mode) {
     constexpr auto block = 1024U;
-    run(processTriangles<Out>,block,*size, cnt, in, info, triID, fx, fy, hx, hy,tsiz);
+    run(processTriangles<Out>,block,*size, cnt, in, info, triID, fx, fy, hx, hy,tsiz,mode);
 }
 
 CUDAInline bool testPoint(mat3 w0, vec2 p, vec3& w) {

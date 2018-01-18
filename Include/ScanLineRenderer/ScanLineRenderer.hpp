@@ -78,18 +78,18 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     TCSF<Uniform> cs,FSF<Out, Uniform, FrameBuffer>... fs>
     void renderTriangles(CommandBuffer& buffer,const DataPtr<VertexInfo<Out>>& vert,
         Index index,const DataPtr<Uniform>& uniform,const DataPtr<FrameBuffer>& frameBuffer,
-        uvec2 size,float near,float far) {
+        uvec2 size,float near,float far,TriangleRenderingHistory& history,CullFace mode=CullFace::Back) {
     vec2 fsize = size - uvec2{ 1,1 };
     //pass 1:cull faces
     auto triNum = buffer.allocBuffer<unsigned int>(1);
     buffer.memset(triNum);
-    auto clipedVert = buffer.allocBuffer<TriangleVert<Out>>(index.size());
+    auto vertBuffer = buffer.allocBuffer<TriangleVert<Out>>(index.size());
     buffer.runKernelLinear(clipTriangles<Index, Out,Uniform,cs>, index.size(), triNum, vert.get(),
-        index,uniform.get(), clipedVert);
+        index,uniform.get(), vertBuffer);
     //pass 2:clipping
-    auto tsiz = std::max(2048U, index.size()+index.size()/10);
-    auto triNear = clipVertT<Out,compareZNear>(buffer,clipedVert,LaunchSize(triNum),near,tsiz);
-    triNum.earlyRelease(),clipedVert.earlyRelease();
+    auto tsiz = 2048U+index.size()+index.size()/10U;
+    auto triNear = clipVertT<Out,compareZNear>(buffer, vertBuffer,LaunchSize(triNum),near,tsiz);
+    triNum.earlyRelease(),vertBuffer.earlyRelease();
     auto triFar = clipVertT<Out, compareZFar>(buffer, triNear.second, triNear.first, far, tsiz);
     triNear.second.earlyRelease();
     //pass 3:process triangles
@@ -99,7 +99,7 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     auto idx = buffer.allocBuffer<TriangleRef>(tsiz*10);
     auto hfsize = static_cast<vec2>(size)*0.5f;
     buffer.callKernel(processTrianglesGPU<Out>, triFar.first.get(), cnt, triFar.second, info,idx,
-        fsize.x,fsize.y,hfsize.x,hfsize.y,tsiz);
+        fsize.x,fsize.y,hfsize.x,hfsize.y,tsiz,static_cast<int>(mode));
     //pass 4:render triangles
     auto invnf =1.0f/(far - near);
     buffer.callKernel(renderTrianglesGPU<Out, Uniform,FrameBuffer,fs...>,cnt,info,idx,uniform.get(),
