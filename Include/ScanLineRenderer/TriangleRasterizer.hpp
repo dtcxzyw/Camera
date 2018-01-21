@@ -85,12 +85,17 @@ CALLABLE void clipVertT1(unsigned int size, unsigned int* cnt,
 
     auto base1 = atomicInc(cnt, maxv);
     out[base1].id = tri.id;
-    out[base1].vert[0] = b, out[base1].vert[1] = c, out[base1].vert[2] = d;
+    if((idx[1]+1)%3==idx[2])
+        out[base1].vert[0] = b, out[base1].vert[1] = c, out[base1].vert[2] = d;
+    else
+        out[base1].vert[0] = b, out[base1].vert[1] = d, out[base1].vert[2] = c;
 
     auto base2 = atomicInc(cnt, maxv);
     out[base2].id = tri.id;
-    out[base2].vert[0] = d, out[base2].vert[1] = e, out[base2].vert[2] = c;
-
+    if((idx[0]+1)%3==idx[2])
+        out[base2].vert[0] = d, out[base2].vert[1] = e, out[base2].vert[2] = c;
+    else
+        out[base2].vert[0] = e, out[base2].vert[1] = d, out[base2].vert[2] = c;
 }
 
 template<typename Out, CompareZ func>
@@ -105,7 +110,10 @@ CALLABLE void clipVertT2(unsigned int size, unsigned int* cnt,
     auto d = lerpZ(a, c, z), e = lerpZ(b, c, z);
     auto base = atomicInc(cnt, maxv);
     out[base].id = tri.id;
-    out[base].vert[0] = d, out[base].vert[1] = e, out[base].vert[2] = c;
+    if ((idx[2] + 1) % 3 == idx[0])
+        out[base].vert[0] = d, out[base].vert[1] = e, out[base].vert[2] = c;
+    else
+        out[base].vert[0] = e, out[base].vert[1] = d, out[base].vert[2] = c;
 }
 
 template<typename Out, CompareZ func>
