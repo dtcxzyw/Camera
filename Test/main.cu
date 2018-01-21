@@ -6,6 +6,8 @@ using namespace std::chrono_literals;
 
 auto light=65.0f,r=20.0f;
 StaticMesh box,model;
+TriangleRenderingHistory mh;
+TriangleRenderingHistory sh;
 std::shared_ptr<BuiltinCubeMap<RGBA>> envMap;
 std::shared_ptr<BuiltinSampler<RGBA>> envMapSampler;
 DisneyBRDFArg arg;
@@ -99,10 +101,14 @@ auto addTask(DispatchSystem& system,SwapChain_t::SharedFrame frame,uvec2 size,fl
     auto uniform = getUniform(size.x,size.y,now-last,converter.mul);
     last = now;
     auto buffer=std::make_unique<CommandBuffer>();
+    if (frame->size != size) {
+        mh.reset(model.mIndex.size());
+        sh.reset(box.mIndex.size());
+    }
     frame->resize(size.x,size.y);
     auto uni = buffer->allocConstant<Uniform>();
     buffer->memcpy(uni, [uniform](auto call) {call(&uniform); });
-    kernel(model,box,uni,*frame,lum,converter,*buffer);
+    kernel(model,mh,box,sh,uni,*frame,lum,converter,*buffer);
     return std::make_pair(system.submit(std::move(buffer)),frame);
 }
 
@@ -114,11 +120,14 @@ int main() {
         camera.filmAperture = { 0.980f,0.735f };
         camera.mode = Camera::FitResolutionGate::Overscan;
         camera.focalLength = 15.0f;
+
         Stream resLoader;
         //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
         model.load("Res/dragon.obj",resLoader);
+        mh.reset(model.mIndex.size());
         box.load("Res/cube.obj",resLoader);
-        
+        sh.reset(box.mIndex.size());
+
         envMap = loadCubeMap([](size_t id) {
             const char* table[] = {"right","left","top","bottom","back","front"};
             return std::string("Res/skybox/")+table[id]+".jpg";

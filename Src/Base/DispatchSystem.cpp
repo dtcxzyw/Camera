@@ -110,6 +110,22 @@ namespace Impl {
     size_t DMRef::size() const {
         return dynamic_cast<Impl::DeviceMemory&>(*mRef).size();
     }
+
+    void CUDART_CB downloadCallback(cudaStream_t stream, cudaError_t status, void *userData) {
+        auto info = reinterpret_cast<std::pair<unsigned int, std::atomic_uint*>*>(userData);
+        *info->second = info->first;
+        delete info;
+    }
+
+    void LaunchSize::download(std::atomic_uint & dst, CommandBuffer & buffer) {
+        auto id = mHelper;
+        auto tmp = new std::pair<unsigned int, std::atomic_uint*>(0,&dst);
+        buffer.pushOperator([id,&buffer,tmp](Stream& stream) {
+            checkError(cudaMemcpyAsync(&tmp->first,Impl::cast(id,buffer),sizeof(unsigned int),
+                cudaMemcpyDeviceToHost,stream.getID()));
+        });
+        buffer.addCallback(downloadCallback,tmp);
+    }
 }
 
 void CommandBuffer::registerResource(ID id, std::unique_ptr<ResourceInstance>&& instance) {

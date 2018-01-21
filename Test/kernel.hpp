@@ -106,6 +106,8 @@ struct PostUniform final {
         :in(buf),lum(clum),sum(cnt){}
 };
 
-void kernel(const StaticMesh& model,const StaticMesh& skybox,const MemoryRef<Uniform>& uniform
-    , FrameBufferCPU & fbo, float* lum, Camera::RasterPosConverter converter,
-    CommandBuffer & buffer);
+void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
+    const StaticMesh& skybox, TriangleRenderingHistory& sh,
+    const MemoryRef<Uniform>& uniform, FrameBufferCPU & fbo, float* lum,
+    Camera::RasterPosConverter converter, CommandBuffer & buffer);
+

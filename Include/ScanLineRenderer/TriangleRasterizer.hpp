@@ -5,12 +5,15 @@
 #include <device_atomic_functions.h>
 
 struct TriangleRenderingHistory final {
-    unsigned int nearSize, farSize;
-    TriangleRenderingHistory(unsigned int size) :nearSize(size),farSize(size){}
+    std::atomic_uint triNum,processSize;
     void reset(unsigned int size) {
-        nearSize = farSize = size;
+        triNum=processSize = size;
     }
 };
+
+inline auto calcBufferSize(unsigned int history, unsigned int maxv) {
+    return 2048U+std::min(history + history / 10U,maxv);
+}
 
 template<typename Out>
 struct TriangleVert final {

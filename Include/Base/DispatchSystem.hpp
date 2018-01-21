@@ -6,6 +6,7 @@
 #include <chrono>
 #include <tuple>
 #include <functional>
+#include <atomic>
 
 class CommandBuffer;
 using ID = uintmax_t;
@@ -312,6 +313,7 @@ namespace Impl {
         auto get() const {
             return mHelper;
         }
+        void download(std::atomic_uint & dst,CommandBuffer& buffer);
     };
 
     class KernelLaunchDim final :public Operator {

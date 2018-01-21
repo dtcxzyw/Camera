@@ -1,11 +1,29 @@
 #include <Base/Memory.hpp>
 #include <vector>
+#include <algorithm>
 
 class MemoryPool final :Singletion {
 private:
-    std::vector<void*> mPool[42];
-    MemoryPool() {}
+    std::vector<void*> mPool[41];
+    uintmax_t mLastRequireTimeStamp[41];
+    uintmax_t mTimeCount;
+    MemoryPool():mTimeCount(0) {
+        std::fill(std::begin(mLastRequireTimeStamp),std::end(mLastRequireTimeStamp),0);
+    }
     friend MemoryPool& getMemoryPool();
+    void clearLevel(std::vector<void*>& level) {
+        for (auto&& p : level)
+            checkError(cudaFree(p));
+        level.clear();
+    }
+    void GC() {
+        int x=-1;
+        for (auto i = 1; i <= 40; ++i)
+            if (!mPool[i].empty() && (x == -1 || mLastRequireTimeStamp[i] < mLastRequireTimeStamp[x]))
+                x = i;
+        if (mTimeCount - mLastRequireTimeStamp[x] > 1000U)
+            clearLevel(mPool[x]),printf("GC %d\n",int(x));
+    }
     void* add(size_t level) {
         auto size = 1 << level;
         void* ptr;
@@ -33,6 +51,8 @@ private:
 public:
     void* memAlloc(size_t size) {
         auto level = count(size);
+        mLastRequireTimeStamp[level] = ++mTimeCount;
+        GC();
         if (mPool[level].size()) {
             auto ptr = mPool[level].back();
             mPool[level].pop_back();
@@ -46,11 +66,8 @@ public:
     }
 
     ~MemoryPool() {
-        for (auto&& p : mPool) {
-            for (auto&& ptr : p)
-                checkError(cudaFree(ptr));
-            p.clear();
-        }
+        for (auto&& p : mPool)
+            clearLevel(p);
     }
 };
 

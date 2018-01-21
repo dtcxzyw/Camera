@@ -79,31 +79,39 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
     void renderTriangles(CommandBuffer& buffer,const DataPtr<VertexInfo<Out>>& vert,
         Index index,const DataPtr<Uniform>& uniform,const DataPtr<FrameBuffer>& frameBuffer,
         uvec2 size,float near,float far,TriangleRenderingHistory& history,CullFace mode=CullFace::Back) {
-    vec2 fsize = size - uvec2{ 1,1 };
     //pass 1:cull faces
     auto triNum = buffer.allocBuffer<unsigned int>(1);
     buffer.memset(triNum);
-    auto vertBuffer = buffer.allocBuffer<TriangleVert<Out>>(index.size());
+    auto tsiz = calcBufferSize(history.triNum, index.size());
+    auto vertBuffer = buffer.allocBuffer<TriangleVert<Out>>(tsiz);
     buffer.runKernelLinear(clipTriangles<Index, Out,Uniform,cs>, index.size(), triNum, vert.get(),
         index,uniform.get(), vertBuffer);
+    LaunchSize triNumData(triNum);
+    triNumData.download(history.triNum,buffer);
+
     //pass 2:clipping
-    auto tsiz = 2048U+index.size()+index.size()/10U;
     auto triNear = clipVertT<Out,compareZNear>(buffer, vertBuffer,LaunchSize(triNum),near,tsiz);
-    triNum.earlyRelease(),vertBuffer.earlyRelease();
+    triNum.earlyRelease(), vertBuffer.earlyRelease();
+
     auto triFar = clipVertT<Out, compareZFar>(buffer, triNear.second, triNear.first, far, tsiz);
     triNear.second.earlyRelease();
+
     //pass 3:process triangles
+    vec2 fsize = size - uvec2{ 1,1 };
+    auto psiz = calcBufferSize(history.processSize,tsiz);
     auto cnt =buffer.allocBuffer<unsigned int>(9);
     buffer.memset(cnt);
-    auto info =buffer.allocBuffer<Triangle<Out>>(tsiz);
-    auto idx = buffer.allocBuffer<TriangleRef>(tsiz*10);
+    auto info =buffer.allocBuffer<Triangle<Out>>(psiz);
+    auto idx = buffer.allocBuffer<TriangleRef>(psiz*10);
     auto hfsize = static_cast<vec2>(size)*0.5f;
     buffer.callKernel(processTrianglesGPU<Out>, triFar.first.get(), cnt, triFar.second, info,idx,
-        fsize.x,fsize.y,hfsize.x,hfsize.y,tsiz,static_cast<int>(mode));
+        fsize.x,fsize.y,hfsize.x,hfsize.y, psiz,static_cast<int>(mode));
+    LaunchSize processSizeData(cnt, 8);
+    processSizeData.download(history.processSize, buffer);
     //pass 4:render triangles
     auto invnf =1.0f/(far - near);
     buffer.callKernel(renderTrianglesGPU<Out, Uniform,FrameBuffer,fs...>,cnt,info,idx,uniform.get(),
-        frameBuffer.get(),tsiz,near,invnf);
+        frameBuffer.get(), psiz,near,invnf);
 }
 
 template<typename Uniform, typename FrameBuffer, FSFSF<Uniform, FrameBuffer> fs>

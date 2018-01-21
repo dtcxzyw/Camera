@@ -93,21 +93,21 @@ template<VSF<VI,OI,Uniform> vs,TCSF<Uniform> cs, FSF<OI, Uniform, FrameBufferGPU
     FSF<OI,Uniform,FrameBufferGPU> fs>
 void renderMesh(const StaticMesh& model , const MemoryRef<Uniform>& uniform,
     FrameBufferCPU & fbo, Camera::RasterPosConverter converter,CullFace mode,
-    CommandBuffer & buffer) {
+   TriangleRenderingHistory& history, CommandBuffer & buffer) {
     auto vert = calcVertex<VI, OI, Uniform, vs>(buffer, model.mVert, uniform);
-    TriangleRenderingHistory history(model.mIndex.size());
     renderTriangles<SharedIndex, OI, Uniform, FrameBufferGPU,cs, ds, fs>(buffer, vert,
         model.mIndex, uniform, fbo.getData(buffer), fbo.size,
         converter.near, converter.far,history,mode);
 }
 
-void kernel(const StaticMesh& model, const StaticMesh& skybox,
+void kernel(const StaticMesh& model,TriangleRenderingHistory& mh,
+    const StaticMesh& skybox,TriangleRenderingHistory& sh,
     const MemoryRef<Uniform>& uniform, FrameBufferCPU & fbo, float* lum,
     Camera::RasterPosConverter converter, CommandBuffer & buffer) {
     fbo.colorRT->clear(buffer, vec4{ 0.0f,0.0f,0.0f,1.0f });
     fbo.depthBuffer->clear(buffer);
-    renderMesh<VS,CS, setSkyPoint, drawSky>(skybox, uniform, fbo, converter,CullFace::Front,buffer);
-    renderMesh<VSM,CSM,setPoint,drawPoint>(model,uniform,fbo,converter,CullFace::Back,buffer);
+    renderMesh<VS,CS, setSkyPoint, drawSky>(skybox, uniform, fbo, converter,CullFace::Front,sh,buffer);
+    renderMesh<VSM,CSM,setPoint,drawPoint>(model,uniform,fbo,converter,CullFace::Back,mh,buffer);
     auto puni = buffer.allocConstant<PostUniform>();
     auto sum = buffer.allocBuffer<std::pair<float, unsigned int>>();
     buffer.memset(sum);

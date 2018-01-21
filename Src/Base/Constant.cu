@@ -72,7 +72,7 @@ namespace Impl {
                 modify(1,blockNum,1,l,l+size-1,0);
                 return l;
             }
-            return 0;
+            throw std::exception("Out of memory.");
         }
         void returnSpace(uint off,uint size) {
             modify(1, blockNum, 1, off, off + size - 1, 1);
