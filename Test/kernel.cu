@@ -76,11 +76,14 @@ CUDAInline void drawPoint(unsigned int triID, ivec2 uv, float z, OI out, Uniform
 CUDAInline void post(ivec2 NDC, PostUniform uni, BuiltinRenderTargetGPU<RGBA> out) {
     RGB c = uni.in.color.get(NDC);
     auto lum = luminosity(c);
-    if (lum > 0.0f) {
-        atomicAdd(&uni.sum->first,log(lum));
-        atomicInc(&uni.sum->second, maxv);
+    if (uni.in.depth.get(NDC)<0xfffffffc) {
+        if (lum > 0.0f) {
+            atomicAdd(&uni.sum->first, log(lum));
+            atomicInc(&uni.sum->second, maxv);
+        }
+        c = ACES(c, *uni.lum);
     }
-    c = pow(ACES(c, *uni.lum), vec3(1.0f / 2.2f));
+    c = pow(c, vec3(1.0f / 2.2f));
     NDC.y = uni.in.mSize.y - 1 - NDC.y;
     out.set(NDC, { c,1.0f });
 }

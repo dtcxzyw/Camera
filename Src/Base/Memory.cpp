@@ -22,7 +22,7 @@ private:
             if (!mPool[i].empty() && (x == -1 || mLastRequireTimeStamp[i] < mLastRequireTimeStamp[x]))
                 x = i;
         if (mTimeCount - mLastRequireTimeStamp[x] > 1000U)
-            clearLevel(mPool[x]),printf("GC %d\n",int(x));
+            clearLevel(mPool[x]);
     }
     void* add(size_t level) {
         auto size = 1 << level;

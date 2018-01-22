@@ -122,8 +122,8 @@ int main() {
         camera.focalLength = 15.0f;
 
         Stream resLoader;
-        //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
-        model.load("Res/dragon.obj",resLoader);
+        model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
+        //model.load("Res/dragon.obj",resLoader);
         mh.reset(model.mIndex.size());
         box.load("Res/cube.obj",resLoader);
         sh.reset(box.mIndex.size());
@@ -134,7 +134,8 @@ int main() {
         }, resLoader);
         //envMap = loadRGBA("Res/Helipad_Afternoon/LA_Downtown_Afternoon_Fishing_B_8k.jpg",resLoader);
         envMapSampler = std::make_shared<BuiltinSampler<RGBA>>(envMap->get());
-        arg.baseColor = vec3{ 244,206,120 }/255.0f;
+        //arg.baseColor = vec3{ 244,206,120 }/255.0f;
+        arg.baseColor = vec3{220,223,227}/255.0f;
         //arg.edgeTint = vec3{ 254,249,205 } / 255.0f;
         IMGUIWindow window;
         setUIStyle();
