@@ -80,9 +80,9 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
         Index index,const DataPtr<Uniform>& uniform,const DataPtr<FrameBuffer>& frameBuffer,
         uvec2 size,float near,float far,TriangleRenderingHistory& history,CullFace mode=CullFace::Back) {
     //pass 1:cull faces
-    auto triNum = buffer.allocBuffer<unsigned int>(1);
+    auto triNum = buffer.allocBuffer<unsigned int>();
     buffer.memset(triNum);
-    auto tsiz = calcBufferSize(history.triNum, index.size());
+    auto tsiz = calcBufferSize(history.triNum,history.baseSize,index.size());
     auto vertBuffer = buffer.allocBuffer<TriangleVert<Out>>(tsiz);
     buffer.runKernelLinear(clipTriangles<Index, Out,Uniform,cs>, index.size(), triNum, vert.get(),
         index,uniform.get(), vertBuffer);
@@ -98,7 +98,7 @@ template<typename Index, typename Out, typename Uniform, typename FrameBuffer,
 
     //pass 3:process triangles
     vec2 fsize = size - uvec2{ 1,1 };
-    auto psiz = calcBufferSize(history.processSize,tsiz);
+    auto psiz = calcBufferSize(history.processSize,history.baseSize,tsiz);
     auto cnt =buffer.allocBuffer<unsigned int>(9);
     buffer.memset(cnt);
     auto info =buffer.allocBuffer<Triangle<Out>>(psiz);

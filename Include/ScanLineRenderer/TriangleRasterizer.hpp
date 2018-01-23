@@ -5,14 +5,15 @@
 #include <device_atomic_functions.h>
 
 struct TriangleRenderingHistory final {
-    std::atomic_uint triNum,processSize;
-    void reset(unsigned int size) {
+    std::atomic_uint triNum,processSize,baseSize;
+    void reset(unsigned int size,unsigned int base=2048U) {
         triNum=processSize = size;
+        baseSize = base;
     }
 };
 
-inline auto calcBufferSize(unsigned int history, unsigned int maxv) {
-    return 2048U+std::min(history + history / 10U,maxv);
+inline auto calcBufferSize(unsigned int history,unsigned int base,unsigned int maxv) {
+    return base+std::min(history + history / 10U,maxv);
 }
 
 template<typename Out>

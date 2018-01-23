@@ -8,7 +8,7 @@ class DepthBufferGPU final {
 private:
     T* mPtr;
     ivec3 mInfo;
-    CUDA int toPos(ivec2 p) const {
+    CUDAInline int toPos(ivec2 p) const {
         p.x = clamp(p.x, 0, mInfo.x);
         p.y = clamp(p.y, 0, mInfo.y);
         return p.y*mInfo.z + p.x;
@@ -16,10 +16,10 @@ private:
 public:
     DepthBufferGPU() = default;
     DepthBufferGPU(T* buf, ivec3 info):mPtr(buf), mInfo(info){}
-    CUDA T get(ivec2 uv) const {
+    CUDAInline T get(ivec2 uv) const {
         return mPtr[toPos(uv)];
     }
-    CUDA void set(ivec2 uv, T z) const {
+    CUDAInline void set(ivec2 uv, T z) const {
         atomicMin(mPtr+toPos(uv),z);
     }
 };

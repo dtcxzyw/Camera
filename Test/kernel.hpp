@@ -10,6 +10,7 @@
 #include <ScanLineRenderer/ScanLineRenderer.hpp>
 #include <PBR/BRDF.hpp>
 #include <PBR/PhotorealisticRendering.hpp>
+#include <ScanLineRenderer/RenderingCache.hpp>
 
 using VI = StaticMesh::Vertex;
 enum OutInfo {
@@ -96,6 +97,7 @@ struct Uniform final {
     ALIGN float r;
     ALIGN DisneyBRDFArg arg;
     ALIGN BuiltinSamplerGPU<RGBA> sampler;
+    ALIGN RC8::BlockGPU cache;
 };
 
 struct PostUniform final {

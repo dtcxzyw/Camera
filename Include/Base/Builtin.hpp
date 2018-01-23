@@ -112,29 +112,29 @@ template<typename T>
 class BuiltinSamplerGPU final {
 public:
     using Type = typename Rename<T>::Type;
-    CUDA BuiltinSamplerGPU() {};
+    CUDAInline BuiltinSamplerGPU() {};
     BuiltinSamplerGPU(cudaTextureObject_t texture):mTexture(texture){}
-    CUDA T get(vec2 p) const {
+    CUDAInline T get(vec2 p) const {
         T res;
         tex2D<Type>(reinterpret_cast<Type*>(&res),mTexture,p.x,p.y);
         return res;
     }
-    CUDA T getGather(vec2 p,int comp) const {
+    CUDAInline T getGather(vec2 p,int comp) const {
         T res;
         tex2Dgather<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y,comp);
         return res;
     }
-    CUDA T getGrad(vec2 p, float dPdx,float dPdy) const {
+    CUDAInline T getGrad(vec2 p, float dPdx,float dPdy) const {
         T res;
         tex2DGrad<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y, dPdx,dPdy);
         return res;
     }
-    CUDA T getLod(vec2 p,float lod) const {
+    CUDAInline T getLod(vec2 p,float lod) const {
         T res;
         tex2DLod<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y,lod);
         return res;
     }
-    CUDA T getCubeMap(vec3 p) const {
+    CUDAInline T getCubeMap(vec3 p) const {
         T res;
         texCubemap<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y, p.z);
         return res;
@@ -206,13 +206,13 @@ template<typename T>
 class BuiltinRenderTargetGPU final {
 public:
     using Type = typename Rename<T>::Type;
-    CUDA BuiltinRenderTargetGPU() {};
+    CUDAInline BuiltinRenderTargetGPU() {};
     BuiltinRenderTargetGPU(cudaSurfaceObject_t target) :mTarget(target) {}
-    CUDA T get(ivec2 p) const {
+    CUDAInline T get(ivec2 p) const {
         auto res = surf2Dread<Type>(mTarget, p.x*sizeof(Type), p.y, cudaBoundaryModeClamp);
         return *reinterpret_cast<T*>(&res);
     }
-    CUDA void set(ivec2 p,T v) {
+    CUDAInline void set(ivec2 p,T v) {
         auto val = *reinterpret_cast<Type*>(&v);
         surf2Dwrite(val, mTarget, p.x*sizeof(Type), p.y, cudaBoundaryModeZero);
     }

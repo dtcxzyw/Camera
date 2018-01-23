@@ -41,11 +41,11 @@ CUDAInline void VSM(VI in, Uniform uniform, vec3& cpos, OI& out) {
     cpos = uniform.V*wp;
 }
 
-CUDAInline bool CSM(unsigned int, vec3& pa, vec3& pb, vec3& pc, Uniform u) {
+CUDAInline bool CSM(unsigned int id, vec3& pa, vec3& pb, vec3& pc, Uniform u) {
     pa = toPos(pa, u.mul);
     pb = toPos(pb, u.mul);
     pc = toPos(pc, u.mul);
-    return true;
+    return u.cache.query(id);
 }
 
 constexpr float maxdu = std::numeric_limits<unsigned int>::max();
@@ -56,6 +56,7 @@ CUDAInline void setPoint(unsigned int, ivec2 uv, float z, OI, Uniform, FrameBuff
 
 CUDAInline void drawPoint(unsigned int triID, ivec2 uv, float z, OI out, Uniform uniform, FrameBufferGPU& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z*maxdu)) {
+        uniform.cache.record(triID);
         auto p = out.get<pos>();
         vec3 N =normalize(out.get<normal>());
         vec3 X = normalize(out.get<tangent>());

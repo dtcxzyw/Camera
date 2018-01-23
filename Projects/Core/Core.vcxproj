@@ -35,6 +35,7 @@
     <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLine.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLineRenderer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\TriangleRasterizer.hpp" />
+    <ClInclude Include="..\..\Include\ScanLineRenderer\RenderingCache.hpp" />
     <ClInclude Include="..\..\ThirdParty\IMGUI\imconfig.h" />
     <ClInclude Include="..\..\ThirdParty\IMGUI\imgui.h" />
     <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_impl_glfw_gl3.h" />
