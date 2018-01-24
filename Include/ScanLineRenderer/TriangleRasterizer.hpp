@@ -4,7 +4,7 @@
 #include <math_functions.h>
 #include <device_atomic_functions.h>
 
-struct TriangleRenderingHistory final {
+struct TriangleRenderingHistory final:Uncopyable {
     std::atomic_uint triNum,processSize,baseSize;
     void reset(unsigned int size,unsigned int base=2048U) {
         triNum=processSize = size;
@@ -185,10 +185,6 @@ enum class CullFace {
     Front = 0, Back = 1, None = 2
 };
 
-CUDAInline bool cullFace(vec3 pa, vec3 pb, vec3 pc, int mode) {
-    return (edgeFunction(pa, pb, pc) < 0.0f) ^ mode;
-}
-
 template<typename Out>
 CALLABLE void processTriangles(unsigned int size, unsigned int* cnt,
     ReadOnlyCache(TriangleVert<Out>) in,Triangle<Out>* info,TriangleRef* out,
@@ -201,13 +197,14 @@ CALLABLE void processTriangles(unsigned int size, unsigned int* cnt,
         c = toRaster(tri.vert[2].pos,hx,hy);
     vec4 rect= { fmax(0.0f,min3(a.x,b.x,c.x)),fmin(fx,max3(a.x,b.x,c.x)),
         fmax(0.0f,min3(a.y,b.y,c.y)),fmin(fy,max3(a.y,b.y,c.y)) };
-    if (cullFace(a,b,c,mode) & rect.x<rect.y & rect.z<rect.w) {
+    auto S = edgeFunction(a, b, c);
+    if (static_cast<bool>((S<0.0f) ^ mode) & rect.x<rect.y & rect.z<rect.w) {
         Triangle<Out> res;
         res.invz = {a.z, b.z,c.z};
         calcBase(b, c, res.w[0]);
         calcBase(c, a, res.w[1]);
         calcBase(a, b, res.w[2]);
-        res.w *= 1.0f / edgeFunction(a, b, c);
+        res.w *= 1.0f / S;
         res.id = tri.id;
         res.out[0] = tri.vert[0].out*res.invz.x;
         res.out[1] = tri.vert[1].out*res.invz.y;
@@ -242,9 +239,8 @@ template<typename Out, typename Uniform, typename FrameBuffer,
     CUDAInline void drawPoint(Triangle<Out> tri, ivec2 uv, vec2 p, Uniform uni, 
         FrameBuffer& frameBuffer,float near,float invnf) {
     vec3 w;
-    bool flag = testPoint(tri.w, p, w);
-    auto z = 1.0f / dot(tri.invz, w);
-    if (flag) {
+    if (testPoint(tri.w, p, w)) {
+        auto z = 1.0f / dot(tri.invz, w);
         w *= z;
         auto fo = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
         auto nz = (z - near)*invnf;//convert z to [0,1]
@@ -272,8 +268,8 @@ CALLABLE void cutTriangles(unsigned int size, unsigned int* cnt,TriangleRef* idx
     if (id >= size)return; 
     auto ref = idx[id];
     auto rect = ref.rect;
-    for (float i = rect[0]; i <= rect[1]; i += 31.0f) {
-        for (float j = rect[2]; j <= rect[3]; j += 31.0f) {
+    for (float i = rect[0]; i <= rect[1]; i += 32.0f) {
+        for (float j = rect[2]; j <= rect[3]; j += 32.0f) {
             ref.rect[0] = i, ref.rect[2] = j;
             out[atomicInc(cnt + 7, maxv)] = ref;
         }

@@ -7,15 +7,13 @@ template<typename T>
 class DepthBufferGPU final {
 private:
     T* mPtr;
-    ivec3 mInfo;
+    int mOffset;
     CUDAInline int toPos(ivec2 p) const {
-        p.x = clamp(p.x, 0, mInfo.x);
-        p.y = clamp(p.y, 0, mInfo.y);
-        return p.y*mInfo.z + p.x;
+        return p.y*mOffset + p.x;
     }
 public:
     DepthBufferGPU() = default;
-    DepthBufferGPU(T* buf, ivec3 info):mPtr(buf), mInfo(info){}
+    DepthBufferGPU(T* buf, int offset):mPtr(buf), mOffset(offset){}
     CUDAInline T get(ivec2 uv) const {
         return mPtr[toPos(uv)];
     }
@@ -35,6 +33,6 @@ public:
         buffer.pushOperator([=](Stream& stream) {stream.memset(mData, 0xff); });
     }
     DepthBufferGPU<T> toBuffer() {
-        return { mData.begin(),{mSize.x-1,mSize.y-1,mSize.x} };
+        return { mData.begin(),static_cast<int>(mSize.x) };
     }
 };
