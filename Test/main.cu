@@ -29,7 +29,7 @@ void renderGUI(IMGUIWindow& window) {
     window.newFrame();
     ImGui::Begin("Debug");
     ImGui::SetWindowPos({ 0, 0 });
-    ImGui::SetWindowSize({ 500,530 });
+    ImGui::SetWindowSize({ 500,550 });
     ImGui::SetWindowFontScale(1.5f);
     ImGui::Text("vertices: %d, triangles: %d\n", static_cast<int>(model.mVert.size()),
         static_cast<int>(model.mIndex.size()));

@@ -40,6 +40,8 @@ CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
     }
 }
 
+constexpr auto invaildFlag = maxv;
+
 using CompareZ = bool(*)(float, float);
 CUDAInline bool compareZNear(float z, float base) { return z < base; }
 CUDAInline bool compareZFar(float z, float base) { return z > base; }

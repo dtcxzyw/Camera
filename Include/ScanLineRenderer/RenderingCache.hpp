@@ -35,14 +35,18 @@ private:
     T* mAddress;
     T* mBegin;
     T* mEnd;
+    bool mIsBlock;
 public:
-    RenderingCacheBlock(T* address, T* begin, T* end)
-        :mAddress(address), mBegin(begin), mEnd(end) {}
+    RenderingCacheBlock(T* address, T* begin, T* end,bool isBlock=false)
+        :mAddress(address), mBegin(begin), mEnd(end),mIsBlock(isBlock) {}
     void update(CommandBuffer& buffer) {
         buffer.runKernelLinear(Impl::updateCache<T>,mEnd-mBegin,mBegin);
     }
     auto toBlock() const {
         return RenderingCacheBlockGPU<T>{mAddress,mBegin,mEnd};
+    }
+    auto isBlock() const {
+        return mIsBlock;
     }
 };
 
@@ -52,28 +56,33 @@ private:
     DataViewer<T> mData;
     std::queue<RenderingCacheBlock<T>> mBlocks;
     unsigned int mBlockSize;
+    bool mShouldReset;
 public:
     using Block = RenderingCacheBlock<T>;
     using BlockGPU = RenderingCacheBlockGPU<T>;
     void reset() {
-        checkError(cudaMemset(mData.begin(), 0xff, sizeof(T)*mData.size()));
+        mShouldReset = true;
     }
     RenderingCache(size_t size, size_t blockNum = 30)
         :mData(allocBuffer<T>(size)),mBlockSize(std::max(static_cast<size_t>(1), size / blockNum)) {
         auto begin = mData.begin();
         auto end = begin + mBlockSize;
         while (end < mData.end()) {
-            mBlocks.emplace(mData.begin(),begin, end);
+            mBlocks.emplace(mData.begin(),begin, end,true);
             begin += mBlockSize;
             end += mBlockSize;
         }
-        mBlocks.emplace(mData.begin(),begin, mData.end());
+        mBlocks.emplace(mData.begin(),begin, mData.end(),true);
         reset();
     }
     auto blockSize() const {
         return mBlockSize;
     }
     auto pop(CommandBuffer& buffer) {
+        if (mShouldReset) {
+            mShouldReset = false;
+            return Block{mData.begin(),mData.begin(),mData.end()};
+        }
         if (mBlocks.empty())return Block{ mData.begin(),nullptr,nullptr };
         Block block = mBlocks.front();
         block.update(buffer);
@@ -81,7 +90,8 @@ public:
         return block;
     }
     void push(Block block) {
-        mBlocks.push(block);
+        if(block.isBlock())
+            mBlocks.push(block);
     }
 };
 
