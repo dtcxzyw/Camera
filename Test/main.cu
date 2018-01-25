@@ -110,7 +110,7 @@ auto addTask(DispatchSystem& system,SwapChain_t::SharedFrame frame,uvec2 size,
     last = now;
     auto buffer=std::make_unique<CommandBuffer>();
     if (frame->size != size) {
-        mh.reset(model.mIndex.size(),cache.blockSize());
+        mh.reset(model.mIndex.size(),cache.blockSize(),true);
         sh.reset(box.mIndex.size());
         cache.reset();
     }
@@ -136,7 +136,7 @@ int main() {
         //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
         model.load("Res/dragon.obj",resLoader);
         RC8 cache(model.mIndex.size(),30);
-        mh.reset(model.mIndex.size(),cache.blockSize()*3);
+        mh.reset(model.mIndex.size(),cache.blockSize(),true);
 
         box.load("Res/cube.obj",resLoader);
         sh.reset(box.mIndex.size());
