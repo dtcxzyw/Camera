@@ -4,6 +4,7 @@
 
 class MemoryPool final :Singletion {
 private:
+    static constexpr auto timeBlock = 1024U;
     std::vector<void*> mPool[41];
     uintmax_t mLastRequireTimeStamp[41];
     uintmax_t mTimeCount;
@@ -21,7 +22,7 @@ private:
         for (auto i = 1; i <= 40; ++i)
             if (!mPool[i].empty() && (x == -1 || mLastRequireTimeStamp[i] < mLastRequireTimeStamp[x]))
                 x = i;
-        if (mTimeCount - mLastRequireTimeStamp[x] > 1000U)
+        if (mTimeCount - mLastRequireTimeStamp[x] > timeBlock)
             clearLevel(mPool[x]);
     }
     void* add(size_t level) {
@@ -52,7 +53,7 @@ public:
     void* memAlloc(size_t size) {
         auto level = count(size);
         mLastRequireTimeStamp[level] = ++mTimeCount;
-        GC();
+        if(mTimeCount%timeBlock==0)GC();
         if (mPool[level].size()) {
             auto ptr = mPool[level].back();
             mPool[level].pop_back();
