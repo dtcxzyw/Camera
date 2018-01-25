@@ -10,7 +10,7 @@ private:
     int mOffset;
     CUDAInline int toPos(ivec2 p) const {
         auto bx=p.x>>5,ox = p.x & 0b11111,by=p.y>>5,oy = p.y & 0b11111;
-        return (bx*mOffset + by) << 10 | (ox<<5|oy);
+        return ((bx*mOffset + by) << 10) | (ox<<5) | oy;
     }
 public:
     DepthBufferGPU() = default;
@@ -33,6 +33,9 @@ public:
         mData(allocBuffer<T>(calcSize(size.x,32U)*calcSize(size.y,32U)*1024U)) {}
     void clear(CommandBuffer& buffer) {
         buffer.pushOperator([=](Stream& stream) {stream.memset(mData, 0xff); });
+    }
+    auto size() const {
+        return mSize;
     }
     DepthBufferGPU<T> toBuffer() {
         return { mData.begin(),static_cast<int>(calcSize(mSize.y,32U)) };
