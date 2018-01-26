@@ -12,7 +12,7 @@ struct Line final {
 
 template<typename Out>
 CALLABLE void sortLines(unsigned int size, unsigned int* cnt,
-    ReadOnlyCache(VertexInfo<Out>) vert, Line<Out>* info,unsigned int* lineID,vec2 fsize,
+    READONLY(VertexInfo<Out>) vert, Line<Out>* info,unsigned int* lineID,vec2 fsize,
     float near,float far) {
     auto id = getID();
     if (id >= size)return;
@@ -36,7 +36,7 @@ CALLABLE void sortLines(unsigned int size, unsigned int* cnt,
 }
 
 template<typename Out>
-CUDAInline void calcX(Line<Out>& line, float x) {
+CUDAINLINE void calcX(Line<Out>& line, float x) {
     auto k = (line.pa.y - line.pb.y) / (line.pa.x - line.pb.x);
     auto b =line.pa.y-line.pa.x*k;
     auto y = k*x + b;
@@ -48,7 +48,7 @@ CUDAInline void calcX(Line<Out>& line, float x) {
 }
 
 template<typename Out>
-CUDAInline void calcY(Line<Out>& line, float y) {
+CUDAINLINE void calcY(Line<Out>& line, float y) {
     auto k = (line.pa.x - line.pb.x) / (line.pa.y - line.pb.y);
     auto b = line.pa.x - line.pa.y*k;
     auto x = k*y + b;
@@ -61,7 +61,7 @@ CUDAInline void calcY(Line<Out>& line, float y) {
 
 template<typename Out>
 CALLABLE void cutLines(unsigned int size, unsigned int* cnt,unsigned int* wp,
-    ReadOnlyCache(Line<Out>) data,unsigned int* iidx,unsigned int* oidx, vec2 fsize, float len) {
+    READONLY(Line<Out>) data,unsigned int* iidx,unsigned int* oidx, vec2 fsize, float len) {
     auto id = getID();
     if (id >= size)return;
     auto line=data[iidx[id]];
@@ -88,7 +88,7 @@ CALLABLE void cutLines(unsigned int size, unsigned int* cnt,unsigned int* wp,
 
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CUDAInline void drawPoint(Line<Out> line, float w, Uniform uni, FrameBuffer& frameBuffer) {
+    CUDAINLINE void drawPoint(Line<Out> line, float w, Uniform uni, FrameBuffer& frameBuffer) {
     auto p = line.pa*w + line.pb*(1.0f - w);
     if (p.z >= 0.0f & p.z <= 1.0f) {
         auto fo = line.oa*w + line.ob*(1.0f - w);
@@ -99,8 +99,8 @@ template<typename Out, typename Uniform, typename FrameBuffer,
 //1...512
 template<typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void drawMicroL(ReadOnlyCache(Line<Out>) info, 
-        ReadOnlyCache(unsigned int) idx,ReadOnlyCache(Uniform) uniform, 
+    CALLABLE void drawMicroL(READONLY(Line<Out>) info, 
+        READONLY(unsigned int) idx,READONLY(Uniform) uniform, 
         FrameBuffer* frameBuffer, float len) {
     auto line = info[idx[blockIdx.x]];
     auto w = threadIdx.x / len;

@@ -6,7 +6,7 @@
 
 void StaticMesh::load(const std::string & path,Stream& loader) {
     Assimp::Importer importer;
-    auto scene = importer.ReadFile(path, aiProcess_Triangulate |
+    const auto scene = importer.ReadFile(path, aiProcess_Triangulate |
         aiProcess_JoinIdenticalVertices |
         aiProcess_SortByPType |
         aiProcess_GenSmoothNormals |
@@ -17,26 +17,26 @@ void StaticMesh::load(const std::string & path,Stream& loader) {
 
     if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE)
         throw std::exception("Failed to load the scene.");
-    auto mesh=scene->mMeshes[0];
+    const auto mesh=scene->mMeshes[0];
     {
-        mVert = allocBuffer<Vertex>(mesh->mNumVertices);
-        std::vector<Vertex> vert(mesh->mNumVertices);
+        vert = allocBuffer<Vertex>(mesh->mNumVertices);
+        std::vector<Vertex> temp(mesh->mNumVertices);
         for (uint i = 0; i < mesh->mNumVertices; ++i) {
-            vert[i].pos = *reinterpret_cast<vec3*>(mesh->mVertices + i);
-            vert[i].normal = *reinterpret_cast<vec3*>(mesh->mNormals + i);
-            vert[i].uv = *reinterpret_cast<UV*>(mesh->mTextureCoords[0] + i);
-            vert[i].tangent = *reinterpret_cast<vec3*>(mesh->mTangents+i);
+            temp[i].pos = *reinterpret_cast<vec3*>(mesh->mVertices + i);
+            temp[i].normal = *reinterpret_cast<vec3*>(mesh->mNormals + i);
+            temp[i].uv = *reinterpret_cast<UV*>(mesh->mTextureCoords[0] + i);
+            temp[i].tangent = *reinterpret_cast<vec3*>(mesh->mTangents+i);
         }
-        checkError(cudaMemcpyAsync(mVert.begin(),vert.data(),sizeof(Vertex)*vert.size(),
+        checkError(cudaMemcpyAsync(vert.begin(),temp.data(),sizeof(Vertex)*vert.size(),
             cudaMemcpyHostToDevice,loader.getID()));
         loader.sync();
     }
     {
-        mIndex = allocBuffer<uvec3>(mesh->mNumFaces);
-        std::vector<uvec3> index(mesh->mNumFaces);
+        index = allocBuffer<uvec3>(mesh->mNumFaces);
+        std::vector<uvec3> temp(mesh->mNumFaces);
         for (uint i = 0; i < mesh->mNumFaces; ++i)
-            index[i] = *reinterpret_cast<uvec3*>(mesh->mFaces[i].mIndices);
-        checkError(cudaMemcpyAsync(mIndex.begin(), index.data(), sizeof(uvec3)*index.size(),
+            temp[i] = *reinterpret_cast<uvec3*>(mesh->mFaces[i].mIndices);
+        checkError(cudaMemcpyAsync(index.begin(), temp.data(), sizeof(uvec3)*index.size(),
             cudaMemcpyHostToDevice, loader.getID()));
         loader.sync();
     }

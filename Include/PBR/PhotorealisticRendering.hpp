@@ -45,7 +45,7 @@ struct Camera final {
 };
 
 //https://developer.nvidia.com/gpugems/GPUGems/gpugems_ch23.html
-CUDAInline float DoFRadius(float z, float znear, float zfar, float f, float aperture, float df) {
+CUDAINLINE float DoFRadius(float z, float znear, float zfar, float f, float aperture, float df) {
     auto CoCScale = (aperture * f * df * (zfar - znear)) / ((df - f) * znear * zfar);
     auto CoCBias = (aperture * f * (znear - df)) / ((df * f) * znear);
     auto CoC = fabs(z * CoCScale + CoCBias);

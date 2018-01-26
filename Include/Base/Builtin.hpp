@@ -1,5 +1,6 @@
 #pragma once
-#include "Common.hpp"
+#include  <Base/Math.hpp>
+#include <Base/Common.hpp>
 #define __CUDACC__
 #include <cuda_runtime.h>
 #include <cuda_texture_types.h>
@@ -112,29 +113,29 @@ template<typename T>
 class BuiltinSamplerGPU final {
 public:
     using Type = typename Rename<T>::Type;
-    CUDAInline BuiltinSamplerGPU() {};
+    CUDAINLINE BuiltinSamplerGPU() {};
     BuiltinSamplerGPU(cudaTextureObject_t texture):mTexture(texture){}
-    CUDAInline T get(vec2 p) const {
+    CUDAINLINE T get(vec2 p) const {
         T res;
         tex2D<Type>(reinterpret_cast<Type*>(&res),mTexture,p.x,p.y);
         return res;
     }
-    CUDAInline T getGather(vec2 p,int comp) const {
+    CUDAINLINE T getGather(vec2 p,int comp) const {
         T res;
         tex2Dgather<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y,comp);
         return res;
     }
-    CUDAInline T getGrad(vec2 p, float dPdx,float dPdy) const {
+    CUDAINLINE T getGrad(vec2 p, float dPdx,float dPdy) const {
         T res;
         tex2DGrad<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y, dPdx,dPdy);
         return res;
     }
-    CUDAInline T getLod(vec2 p,float lod) const {
+    CUDAINLINE T getLod(vec2 p,float lod) const {
         T res;
         tex2DLod<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y,lod);
         return res;
     }
-    CUDAInline T getCubeMap(vec3 p) const {
+    CUDAINLINE T getCubeMap(vec3 p) const {
         T res;
         texCubemap<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y, p.z);
         return res;
@@ -144,7 +145,7 @@ private:
 };
 
 //The trick comes from https://learnopengl.com/#!PBR/IBL/Diffuse-irradiance.
-CUDAInline vec2 calcHDRUV(vec3 p) {
+CUDAINLINE vec2 calcHDRUV(vec3 p) {
     return {atan(p.z,p.x)*0.1591f+0.5f,asin(p.y)*0.3183f+0.5f};
 }
 
@@ -206,13 +207,13 @@ template<typename T>
 class BuiltinRenderTargetGPU final {
 public:
     using Type = typename Rename<T>::Type;
-    CUDAInline BuiltinRenderTargetGPU() {};
+    CUDAINLINE BuiltinRenderTargetGPU() {};
     BuiltinRenderTargetGPU(cudaSurfaceObject_t target) :mTarget(target) {}
-    CUDAInline T get(ivec2 p) const {
+    CUDAINLINE T get(ivec2 p) const {
         auto res = surf2Dread<Type>(mTarget, p.x*sizeof(Type), p.y, cudaBoundaryModeClamp);
         return *reinterpret_cast<T*>(&res);
     }
-    CUDAInline void set(ivec2 p,T v) {
+    CUDAINLINE void set(ivec2 p,T v) {
         auto val = *reinterpret_cast<Type*>(&v);
         surf2Dwrite(val, mTarget, p.x*sizeof(Type), p.y, cudaBoundaryModeZero);
     }

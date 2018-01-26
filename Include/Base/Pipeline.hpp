@@ -3,7 +3,7 @@
 #include <Base/Memory.hpp>
 
 template<typename Func, typename... Args>
-CUDAInline void run(Func func,unsigned int block, unsigned int size, Args... args) {
+CUDAINLINE void run(Func func,unsigned int block, unsigned int size, Args... args) {
     if (size)func << <calcSize(size, block), min(block, size)>> > (size, args...);
 }
 

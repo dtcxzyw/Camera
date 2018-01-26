@@ -19,12 +19,12 @@ private:
 public:
     RenderingCacheBlockGPU(T* address, T* begin, T* end)
         :mAddress(address), mBegin(begin), mEnd(end) {}
-    CUDAInline RenderingCacheBlockGPU(){}
-    CUDAInline bool query(unsigned int id) {
+    CUDAINLINE RenderingCacheBlockGPU(){}
+    CUDAINLINE bool query(unsigned int id) {
         auto ptr = mAddress + id;
         return (mBegin <= ptr & ptr < mEnd) | (*ptr);
     }
-    CUDAInline void record(unsigned int id) {
+    CUDAINLINE void record(unsigned int id) {
         mAddress[id] =std::numeric_limits<T>::max();
     }
 };

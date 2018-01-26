@@ -2,19 +2,19 @@
 #include <Base/Common.hpp>
 #include <device_functions.h>
 
-CUDAInline vec3 calcHalf(vec3 in, vec3 out) {
+CUDAINLINE vec3 calcHalf(vec3 in, vec3 out) {
     return normalize(in + out);
 }
 
 //F
-CUDAInline float fresnelSchlick(float d) {
+CUDAINLINE float fresnelSchlick(float d) {
     auto x =saturate(1.0f - d);
     auto x2 = x * x;
     return x*x2*x2;
 }
 
 //Real Shading in Unreal Engine 4
-CUDAInline float fresnelSchlickUE4(float vdh) {
+CUDAINLINE float fresnelSchlickUE4(float vdh) {
     return powf(2.0f, (-5.55473f*vdh-6.98316f)*vdh);
 }
 
@@ -22,7 +22,7 @@ CUDAInline float fresnelSchlickUE4(float vdh) {
 Artist Friendly Metallic Fresnel(JCGT, 2014)
 http://jcgt.org/published/0003/04/03/
 */
-CUDAInline vec3 fresnelGulbrandsen(vec3 r,vec3 g,float u) {
+CUDAINLINE vec3 fresnelGulbrandsen(vec3 r,vec3 g,float u) {
     auto nMin = (1.0f - r) / (1.0f + r);
     auto sqrtr = sqrt(r);
     auto nMax = (1.0f + sqrtr) / (1.0f - sqrtr);
@@ -38,20 +38,20 @@ CUDAInline vec3 fresnelGulbrandsen(vec3 r,vec3 g,float u) {
 }
 
 //D
-CUDAInline float GGXD(float ndh, float roughness) {
+CUDAINLINE float GGXD(float ndh, float roughness) {
     auto a = roughness*roughness;
     auto root = a / ((a*a-1.0f)*ndh*ndh+1.0f);
     return one_over_pi<float>()*root*root;
 }
 
-CUDAInline float DGTR2Aniso(float ndh, float ax,float ay,float xdh,float ydh) {
+CUDAINLINE float DGTR2Aniso(float ndh, float ax,float ay,float xdh,float ydh) {
     auto d1 = xdh/ ax,d2=ydh/ay;
     auto k = d1*d1+d2*d2+ ndh * ndh;
     auto div = ax*ay*k*k;
     return one_over_pi<float>() /div;
 }
 
-CUDAInline float DGTR1(float ndh, float alpha) {
+CUDAINLINE float DGTR1(float ndh, float alpha) {
     if (alpha >= 1.0f)return one_over_pi<float>();
     float sqra = alpha * alpha;
     float k = sqra - 1.0f;
@@ -60,44 +60,44 @@ CUDAInline float DGTR1(float ndh, float alpha) {
 }
 
 //G
-CUDAInline float GGXG(float ndv, float k) {
+CUDAINLINE float GGXG(float ndv, float k) {
     auto div = ndv * (1.0f - k) + k;
     return ndv / div;
 }
 
-CUDAInline float smithGUE4(float ndl, float ndv, float roughness) {
+CUDAINLINE float smithGUE4(float ndl, float ndv, float roughness) {
     auto alpha = roughness + 1.0f;
     auto k = alpha*alpha / 8.0f;
     return GGXG(ndl, k) * GGXG(ndv, k);
 }
 
-CUDAInline float smithGGGX(float ndv, float alpha2) {
+CUDAINLINE float smithGGGX(float ndv, float alpha2) {
     auto ndv2 = ndv * ndv;
     return 1.0f / (ndv+sqrt(ndv2+alpha2-ndv2*alpha2));
 }
 
-CUDAInline float smithGAniso(float ndv, float vdx,float vdy, float ax,float ay) {
+CUDAINLINE float smithGAniso(float ndv, float vdx,float vdy, float ax,float ay) {
     auto mx = vdx * ax, my = vdy * ay;
     return 1.0f / (ndv +sqrt(mx*mx+my*my+ndv*ndv));
 }
 
-CUDAInline float GLambda(float u,float alpha2) {
+CUDAINLINE float GLambda(float u,float alpha2) {
     auto cosu2 = u * u;
     auto sinu2 = 1.0f - cosu2;
     return (-1.0f+sqrt(1.0f+alpha2*sinu2/cosu2))*0.5f;
 }
 
-CUDAInline float smithGHeightCorrelated(float ndl,float ndv,float ldh,float vdh,float alpha2) {
+CUDAINLINE float smithGHeightCorrelated(float ndl,float ndv,float ldh,float vdh,float alpha2) {
     return fmin(ldh, vdh) > 0.0f ?1.0f/(1.0f+GLambda(ndl,alpha2)+GLambda(ndv,alpha2)) :0.0f;
 }
 
 //Diffuse
-CUDAInline float lambertian() {
+CUDAINLINE float lambertian() {
     return one_over_pi<float>();
 }
 
 //https://disney-animation.s3.amazonaws.com/library/s2012_pbs_disney_brdf_notes_v2.pdf
-CUDAInline float disneyDiffuse(float ndl, float ndv, float ldh, float roughness) {
+CUDAINLINE float disneyDiffuse(float ndl, float ndv, float ldh, float roughness) {
     auto cosi = 1.0f - ndl;
     auto cosi2 = cosi*cosi;
     auto coso = 1.0f - ndv;
@@ -107,7 +107,7 @@ CUDAInline float disneyDiffuse(float ndl, float ndv, float ldh, float roughness)
         *(1.0f + fd90sub1*coso*coso2*coso2);
 }
 
-CUDAInline float disneyDiffuse2015(float ndl, float ndv, float ldh, float roughness) {
+CUDAINLINE float disneyDiffuse2015(float ndl, float ndv, float ldh, float roughness) {
     auto cosi = 1.0f - ndl;
     auto cosi2 = cosi * cosi;
     auto coso = 1.0f - ndv;
@@ -145,7 +145,7 @@ struct DisneyBRDFArg final {
     vec3 baseColor;//linear color space
 };
 
-CUDAInline vec3 disneyBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y,DisneyBRDFArg arg) {
+CUDAINLINE vec3 disneyBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y,DisneyBRDFArg arg) {
     auto ndl = dot(L, N);
     auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);
@@ -209,7 +209,7 @@ struct UE4BRDFArg final {
     vec3 baseColor;//linear color space
 };
 //ratio = dis/radius
-CUDAInline vec3 UE4BRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, UE4BRDFArg arg,float ratio) {
+CUDAINLINE vec3 UE4BRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, UE4BRDFArg arg,float ratio) {
     auto ndl = dot(L, N);
     auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);
@@ -278,12 +278,12 @@ struct FrostbiteBRDFArg final {
     float smoothness;
     float reflectance;
 };
-CUDAInline float calcFv(float r) {
+CUDAINLINE float calcFv(float r) {
     constexpr auto A = 0.2281399812785982f, B = -0.22673613288218408f
         , C = 0.20285923208572978f, D = -0.03326308048214361f;
     return saturate(((A*r +B)*r + C)*r + D);
 }
-CUDAInline vec3 frostbiteBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, FrostbiteBRDFArg arg) {
+CUDAINLINE vec3 frostbiteBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, FrostbiteBRDFArg arg) {
     auto ndl = dot(L, N);
     auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);
@@ -325,7 +325,7 @@ struct MixedBRDFArg final{
     float roughness;
     float anisotropic;
 };
-CUDAInline vec3 mixedBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, MixedBRDFArg arg) {
+CUDAINLINE vec3 mixedBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, MixedBRDFArg arg) {
     auto ndl = dot(L, N);
     auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);

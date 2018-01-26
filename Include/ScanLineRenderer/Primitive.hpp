@@ -20,8 +20,8 @@ using GSF = void(*)(Vert* in, Uniform uniform,Queue<Vert,size> queue);
 
 template<unsigned int inv,unsigned int outv,typename Index, typename Vert, typename Uniform
     , GSF<Vert, Uniform,outv> gs>
-CALLABLE void GTHelper(unsigned int size,ReadOnlyCache(Vert) vert, Index idx,
-    ReadOnlyCache(Uniform) uniform,Queue<Vert,outv> queue) {
+CALLABLE void GTHelper(unsigned int size,READONLY(Vert) vert, Index idx,
+    READONLY(Uniform) uniform,Queue<Vert,outv> queue) {
     auto id = getID();
     if (id >= size)return;
     Vert in[inv];

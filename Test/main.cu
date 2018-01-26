@@ -31,8 +31,8 @@ void renderGUI(IMGUIWindow& window) {
     ImGui::SetWindowPos({ 0, 0 });
     ImGui::SetWindowSize({ 500,550 });
     ImGui::SetWindowFontScale(1.5f);
-    ImGui::Text("vertices: %d, triangles: %d\n", static_cast<int>(model.mVert.size()),
-        static_cast<int>(model.mIndex.size()));
+    ImGui::Text("vertices: %d, triangles: %d\n", static_cast<int>(model.vert.size()),
+        static_cast<int>(model.index.size()));
     ImGui::Text("triNum: %d, processSize: %d\n", static_cast<int>(mh.triNum),
         static_cast<int>(mh.processSize));
     ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
@@ -110,8 +110,8 @@ auto addTask(DispatchSystem& system,SwapChain_t::SharedFrame frame,uvec2 size,
     last = now;
     auto buffer=std::make_unique<CommandBuffer>();
     if (frame->size != size) {
-        mh.reset(model.mIndex.size(),cache.blockSize(),true);
-        sh.reset(box.mIndex.size());
+        mh.reset(model.index.size(),cache.blockSize(),true);
+        sh.reset(box.index.size());
         cache.reset();
     }
     frame->resize(size.x,size.y);
@@ -135,11 +135,11 @@ int main() {
         Stream resLoader;
         //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
         model.load("Res/dragon.obj",resLoader);
-        RC8 cache(model.mIndex.size(),30);
-        mh.reset(model.mIndex.size(),cache.blockSize(),true);
+        RC8 cache(model.index.size(),30);
+        mh.reset(model.index.size(),cache.blockSize(),true);
 
         box.load("Res/cube.obj",resLoader);
-        sh.reset(box.mIndex.size());
+        sh.reset(box.index.size());
         
         envMap = loadCubeMap([](size_t id) {
             const char* table[] = {"right","left","top","bottom","back","front"};

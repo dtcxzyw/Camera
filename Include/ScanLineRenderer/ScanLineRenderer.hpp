@@ -14,8 +14,8 @@ auto calcVertex(CommandBuffer& buffer,const DataPtr<Vert>& vert,const DataPtr<Un
 
 template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void drawPointHelperGPU(unsigned int size, ReadOnlyCache(VertexInfo<Out>) vert,
-        ReadOnlyCache(Uniform) uniform, FrameBuffer* frameBuffer, vec2 fsize,
+    CALLABLE void drawPointHelperGPU(unsigned int size, READONLY(VertexInfo<Out>) vert,
+        READONLY(Uniform) uniform, FrameBuffer* frameBuffer, vec2 fsize,
         float near,float invnf,vec2 hfsize) {
     auto id = getID();
     if (id >= size)return;

@@ -9,6 +9,8 @@ void checkError(cudaError_t error) {
         __debugbreak();
         throw std::exception(cudaGetErrorString(error));
     }
+    //reset error
+    cudaGetLastError();
 }
 
 void checkError() {
