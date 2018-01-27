@@ -7,6 +7,7 @@
 #include <tuple>
 #include <functional>
 #include <atomic>
+#include <utility>
 
 class CommandBuffer;
 using ID = uintmax_t;
@@ -32,9 +33,9 @@ private:
     ID mID;
     CommandBuffer& mBuffer;
 protected:
-    void addInstance(std::unique_ptr<ResourceInstance>&& instance);
+    void addInstance(std::unique_ptr<ResourceInstance>&& instance) const;
 public:
-    Resource(CommandBuffer& buffer) :mID(Impl::getPID()), mBuffer(buffer) {}
+    explicit Resource(CommandBuffer& buffer) :mID(Impl::getPID()), mBuffer(buffer) {}
     virtual ~Resource() = default;
     ID getID() const {
         return mID;
@@ -46,7 +47,7 @@ class ResourceRef :Impl::ResourceTag {
 protected:
     std::shared_ptr<Resource<T>> mRef;
 public:
-    ResourceRef(const std::shared_ptr<Resource<T>>& ref) :mRef(ref) {}
+    explicit ResourceRef(std::shared_ptr<Resource<T>>  ref) :mRef(std::move(ref)) {}
     void earlyRelease() {
         mRef.reset();
     }
@@ -75,7 +76,7 @@ namespace Impl {
         size_t mSize;
         void getRes(void*, cudaStream_t) override;
     public:
-        DeviceMemoryInstance(size_t size);
+        explicit DeviceMemoryInstance(size_t size);
         virtual ~DeviceMemoryInstance() = default;
         virtual void* get() = 0;
         virtual void set(const void* src, Stream& stream) = 0;
@@ -86,7 +87,7 @@ namespace Impl {
     private:
         SharedMemory mMemory;
     public:
-        GlobalMemory(size_t size);
+        explicit GlobalMemory(size_t size);
         void* get() override;
         void set(const void* src, Stream& stream) override;
         void memset(int mask, Stream& stream) override;
@@ -96,7 +97,7 @@ namespace Impl {
     private:
         void* mPtr;
     public:
-        ConstantMemory(size_t size);
+        explicit ConstantMemory(size_t size);
         ~ConstantMemory();
         void* get() override;
         void set(const void* src, Stream& stream) override;
@@ -104,7 +105,7 @@ namespace Impl {
 
     class DMRef :public ResourceRef<void*> {
     public:
-        DMRef(const std::shared_ptr<Impl::DeviceMemory>& ref);
+        explicit DMRef(const std::shared_ptr<Impl::DeviceMemory>& ref);
         size_t size() const;
     };
 
@@ -114,8 +115,9 @@ namespace Impl {
         ID mID;
         DeviceMemoryInstance& getMemory(ID id) const;
     public:
-        Operator(CommandBuffer& buffer);
-        ID getID();
+        explicit Operator(CommandBuffer& buffer);
+        virtual ~Operator() = default;
+        ID getID() const;
         virtual void emit(Stream& stream) = 0;
     };
 
@@ -159,7 +161,7 @@ public:
 namespace Impl {
     class CastTag {
     protected:
-        void get(CommandBuffer & buffer, ID id, void* ptr);
+        static void get(CommandBuffer & buffer, ID id, void* ptr);
     };
 
     template<typename T>
@@ -298,7 +300,7 @@ namespace Impl {
                 return cast(rval, buffer)+off;
             };
         }
-        unsigned int* get(CommandBuffer& buffer) {
+        unsigned int* get(CommandBuffer& buffer) const {
             return mClosure(buffer);
         }
     };
@@ -313,7 +315,7 @@ namespace Impl {
         auto get() const {
             return mHelper;
         }
-        void download(std::atomic_uint & dst,CommandBuffer& buffer);
+        void download(std::atomic_uint & dst,CommandBuffer& buffer) const;
     };
 
     class KernelLaunchDim final :public Operator {
@@ -354,7 +356,7 @@ class Future final {
 private:
     std::shared_ptr<bool> mPromise;
 public:
-    Future(const std::shared_ptr<bool>& promise);
+    explicit Future(std::shared_ptr<bool>  promise);
     bool finished() const;
 };
 
@@ -369,15 +371,16 @@ private:
     std::queue<std::unique_ptr<Impl::Operator>> mCommandQueue;
     ID mLast;
     std::shared_ptr<bool> mPromise;
-    cudaStream_t mStream;
+    cudaStream_t mStream = nullptr;
     void registerResource(ID id, std::unique_ptr<ResourceInstance>&& instance);
     void setPromise(const std::shared_ptr<bool>& promise);
     void update(Stream& stream);
     bool finished() const;
     bool isDone() const;
     ResourceInstance& getResource(ID id);
-    cudaStream_t getStream();
+    cudaStream_t getStream() const;
 public:
+    CommandBuffer();
     template<typename T>
     MemoryRef<T> allocBuffer(size_t size = 1) {
         return std::make_shared<Impl::DeviceMemory>(*this, size * sizeof(T), Impl::MemoryType::global);
@@ -456,7 +459,7 @@ private:
     std::vector<StreamInfo> mStreams;
     void update(Clock::time_point t);
 public:
-    DispatchSystem(size_t size);
+    explicit DispatchSystem(size_t size);
     Future submit(std::unique_ptr<CommandBuffer>&& buffer);
     size_t size() const;
     void update(std::chrono::nanoseconds tot);
@@ -464,6 +467,6 @@ public:
 };
 
 template<typename T>
-inline void Resource<T>::addInstance(std::unique_ptr<ResourceInstance>&& instance) {
+void Resource<T>::addInstance(std::unique_ptr<ResourceInstance>&& instance) const {
     mBuffer.registerResource(mID, std::move(instance));
 }

@@ -18,15 +18,15 @@ public:
             throw std::exception("Failed to allocate CUDA Constant Memory.");
     }
 
-    Constant(const T& rhs) :Constant() {
+    explicit Constant(const T& rhs) :Constant() {
         set(rhs);
     }
 
-    Constant(Constant&& rhs):mAddress(rhs.mAddress) {
+    Constant(Constant&& rhs) noexcept:mAddress(rhs.mAddress) {
         rhs.mAddress = nullptr;
     }
 
-    Constant& operator=(Constant&& rhs) {
+    Constant& operator=(Constant&& rhs) noexcept {
         if (this != &rhs) {
             Impl::constantFree(mAddress,sizeof(T));
             mAddress = rhs.mAddress;

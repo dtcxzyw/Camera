@@ -91,7 +91,7 @@ public:
     BuiltinMipmapedArray(const void* src,size_t width,size_t height,Stream& stream,
         int flags=cudaArrayDefault,size_t level=0) :mSize(width, height) {
         auto desc = cudaCreateChannelDesc<Type>();
-        auto maxLevel = calcMaxMipmapLevel(width, height);
+        const auto maxLevel = calcMaxMipmapLevel(width, height);
         if (level == 0)level = maxLevel;
         else level = std::max(level, maxLevel);
         checkError(cudaMallocMipmappedArray(&mArray, &desc,
@@ -113,14 +113,14 @@ template<typename T>
 class BuiltinSamplerGPU final {
 public:
     using Type = typename Rename<T>::Type;
-    CUDAINLINE BuiltinSamplerGPU() {};
-    BuiltinSamplerGPU(cudaTextureObject_t texture):mTexture(texture){}
-    CUDAINLINE T get(vec2 p) const {
+    CUDAINLINE BuiltinSamplerGPU():mTexture(0) {};
+    BuiltinSamplerGPU(const cudaTextureObject_t texture):mTexture(texture){}
+    CUDAINLINE T get(const vec2 p) const {
         T res;
         tex2D<Type>(reinterpret_cast<Type*>(&res),mTexture,p.x,p.y);
         return res;
     }
-    CUDAINLINE T getGather(vec2 p,int comp) const {
+    CUDAINLINE T getGather(const vec2 p, const int comp) const {
         T res;
         tex2Dgather<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y,comp);
         return res;
@@ -207,8 +207,8 @@ template<typename T>
 class BuiltinRenderTargetGPU final {
 public:
     using Type = typename Rename<T>::Type;
-    CUDAINLINE BuiltinRenderTargetGPU() {};
-    BuiltinRenderTargetGPU(cudaSurfaceObject_t target) :mTarget(target) {}
+    CUDAINLINE BuiltinRenderTargetGPU():mTarget(0) {};
+    BuiltinRenderTargetGPU(const cudaSurfaceObject_t target) :mTarget(target) {}
     CUDAINLINE T get(ivec2 p) const {
         auto res = surf2Dread<Type>(mTarget, p.x*sizeof(Type), p.y, cudaBoundaryModeClamp);
         return *reinterpret_cast<T*>(&res);
@@ -240,15 +240,16 @@ public:
     BuiltinRenderTarget(cudaArray_t array,uvec2 size) :mArray(array),mSize(size) {
         cudaResourceDesc RD;
         RD.res.array.array = mArray;
-        RD.resType = cudaResourceType::cudaResourceTypeArray;
+        RD.resType = cudaResourceTypeArray;
         checkError(cudaCreateSurfaceObject(&mTarget,&RD));
     }
-    BuiltinRenderTarget(BuiltinArray<T>& array):BuiltinRenderTarget(array.get(),array.size()) {}
+
+    explicit BuiltinRenderTarget(BuiltinArray<T>& array):BuiltinRenderTarget(array.get(),array.size()) {}
     BuiltinRenderTargetGPU<T> toTarget() const {
         return mTarget;
     }
     void clear(CommandBuffer& buffer, T val) {
-        uint mul = sqrt(getEnvironment().getProp().maxThreadsPerBlock);
+        const uint mul = sqrt(getEnvironment().getProp().maxThreadsPerBlock);
         dim3 grid(calcSize(mSize.x, mul), calcSize(mSize.y, mul));
         dim3 block(mul, mul);
         buffer.runKernelDim(Impl::clear<T>, grid, block, toTarget(), val);
@@ -271,9 +272,9 @@ private:
     cudaArray_t mArray;
     cudaTextureObject_t mTexture;
 public:
-    BuiltinCubeMap(size_t size) {
+    BuiltinCubeMap(const size_t size) {
         auto desc = cudaCreateChannelDesc<Type>();
-        cudaExtent extent{ size,size,6 };
+        const cudaExtent extent{ size,size,6 };
         checkError(cudaMalloc3DArray(&mArray,&desc,extent,cudaArrayCubemap));
         cudaResourceDesc RD;
         RD.resType = cudaResourceTypeArray;
@@ -299,8 +300,8 @@ public:
 namespace Impl {
     template<typename T>
     CALLABLE void downSample(BuiltinSamplerGPU<T> src,BuiltinRenderTargetGPU<T> rt) {
-        uvec2 p = { blockIdx.x*blockDim.x + threadIdx.x,blockIdx.y*blockDim.y + threadIdx.y };
-        uvec2 base = { p.x * 2,p.y * 2 };
+        uvec2 p { blockIdx.x*blockDim.x + threadIdx.x,blockIdx.y*blockDim.y + threadIdx.y };
+        const uvec2 base = { p.x * 2,p.y * 2 };
         T val = {};
         for (auto i = 0; i < 2; ++i)
             for (auto j = 0; j < 2; ++j)
@@ -310,11 +311,11 @@ namespace Impl {
 }
 
 template<typename T>
-inline void BuiltinMipmapedArray<T>::downSample(cudaArray_t src, cudaArray_t dst,
+void BuiltinMipmapedArray<T>::downSample(cudaArray_t src, cudaArray_t dst,
     uvec2 size,Stream& stream) {
     BuiltinSampler<T> sampler(src);
     BuiltinRenderTarget<T> RT(dst,size);
-    uint mul = sqrt(getEnvironment().getProp().maxThreadsPerBlock);
+    const uint mul = sqrt(getEnvironment().getProp().maxThreadsPerBlock);
     dim3 grid(calcSize(size.x, mul), calcSize(size.y, mul));
     dim3 block(mul, mul);
     stream.runDim(Impl::downSample<T>,grid,block,sampler.toSampler(),RT.toTarget());

@@ -1,6 +1,7 @@
 #include <Base/DispatchSystem.hpp>
 #include <Base/Constant.hpp>
 #include <algorithm>
+#include <utility>
 
 namespace Impl {
 
@@ -68,7 +69,7 @@ namespace Impl {
 
     Operator::Operator(CommandBuffer & buffer):mBuffer(buffer),mID(getPID()) {}
 
-    ID Operator::getID() {
+    ID Operator::getID() const {
         return mID;
     }
 
@@ -112,12 +113,12 @@ namespace Impl {
     }
 
     void CUDART_CB downloadCallback(cudaStream_t stream, cudaError_t status, void *userData) {
-        auto info = reinterpret_cast<std::pair<unsigned int, std::atomic_uint*>*>(userData);
+        const auto info = reinterpret_cast<std::pair<unsigned int, std::atomic_uint*>*>(userData);
         *info->second = info->first;
         delete info;
     }
 
-    void LaunchSize::download(std::atomic_uint & dst, CommandBuffer & buffer) {
+    void LaunchSize::download(std::atomic_uint & dst, CommandBuffer & buffer) const {
         auto id = mHelper;
         auto tmp = new std::pair<unsigned int, std::atomic_uint*>(0,&dst);
         buffer.pushOperator([id,&buffer,tmp](Stream& stream) {
@@ -189,9 +190,11 @@ ResourceInstance & CommandBuffer::getResource(ID id) {
     return *mResource.find(id)->second;
 }
 
-cudaStream_t CommandBuffer::getStream() {
+cudaStream_t CommandBuffer::getStream() const {
     return mStream;
 }
+
+CommandBuffer::CommandBuffer(): mLast(0) {}
 
 void DispatchSystem::update(Clock::time_point t) {
     auto& stream = *std::min_element(mStreams.begin(), mStreams.end());
@@ -206,9 +209,9 @@ DispatchSystem::DispatchSystem(size_t size):mStreams(size){}
 
 Future DispatchSystem::submit(std::unique_ptr<CommandBuffer>&& buffer) {
     mTasks.push(std::move(buffer));
-    auto promise = std::make_shared<bool>(false);
+    const auto promise = std::make_shared<bool>(false);
     mTasks.back()->setPromise(promise);
-    return promise;
+    return Future{ promise };
 }
 
 size_t DispatchSystem::size() const {
@@ -216,9 +219,9 @@ size_t DispatchSystem::size() const {
 }
 
 void DispatchSystem::update(std::chrono::nanoseconds tot) {
-    auto begin = Clock::now();
+    const auto begin = Clock::now();
     while (true) {
-        auto t = Clock::now();
+        const auto t = Clock::now();
         update(t);
         if (t - begin > tot)return;
         if (mTasks.empty() && std::all_of(mStreams.cbegin(), mStreams.cend(), [](const auto& info) {
@@ -231,7 +234,7 @@ void DispatchSystem::update() {
     update(Clock::now());
 }
 
-Future::Future(const std::shared_ptr<bool>& promise):mPromise(promise) {}
+Future::Future(std::shared_ptr<bool>  promise):mPromise(std::move(promise)) {}
 
 bool Future::finished() const {
     return *mPromise;

@@ -70,11 +70,11 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
 
 Uniform getUniform(float w,float h,float delta,vec2 mul) {
     static vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { -100000.0f,0.0f,0.0f };
-    auto V = lookAt(cp,mid, { 0.0f,1.0f,0.0f });
-    glm::mat4 M= scale(mat4{}, vec3(5.0f));
+    const auto V = lookAt(cp,mid, { 0.0f,1.0f,0.0f });
+    auto M= scale(mat4{}, vec3(5.0f));
     M = rotate(M, half_pi<float>(), { 0.0f,1.0f,0.0f });
     constexpr auto step = 50.0f;
-    auto off = ImGui::GetIO().DeltaTime * step;
+    const auto off = ImGui::GetIO().DeltaTime * step;
     if (ImGui::IsKeyPressed(GLFW_KEY_W))cp.x -= off;
     if (ImGui::IsKeyPressed(GLFW_KEY_S))cp.x += off;
     if (ImGui::IsKeyPressed(GLFW_KEY_A))cp.z -= off;
@@ -99,13 +99,15 @@ struct RenderingTask {
     Future future;
     SwapChain_t::SharedFrame frame;
     RC8::Block block;
+    RenderingTask(const Future& fut, const SwapChain_t::SharedFrame& fbo, const RC8::Block blockInfo)
+    :future(fut), frame(fbo),block(blockInfo){}
 };
 
 auto addTask(DispatchSystem& system,SwapChain_t::SharedFrame frame,uvec2 size,
     float* lum,RC8& cache) {
     static float last = glfwGetTime();
-    float now = glfwGetTime();
-    auto converter = camera.toRasterPos(size);
+    const float now = glfwGetTime();
+    const auto converter = camera.toRasterPos(size);
     auto uniform = getUniform(size.x,size.y,now-last,converter.mul);
     last = now;
     auto buffer=std::make_unique<CommandBuffer>();
@@ -160,7 +162,7 @@ int main() {
             DispatchSystem system(2);
             auto lum = allocBuffer<float>();
             while (window.update()) {
-                auto size = window.size();
+                const auto size = window.size();
                 if (size.x == 0 || size.y == 0) {
                     std::this_thread::sleep_for(1ms);
                     continue;

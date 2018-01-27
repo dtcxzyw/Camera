@@ -18,7 +18,7 @@ template <typename Uniform>
 using TCSF = bool(*)(unsigned int idx, vec3& pa, vec3& pb, vec3& pc, Uniform uniform);
 
 template <typename Index, typename Out, typename Uniform, TCSF<Uniform> cs>
-CALLABLE void clipTriangles(unsigned int size, unsigned int* cnt,
+CALLABLE void clipTriangles(const unsigned int size, unsigned int* cnt,
                             READONLY(VertexInfo<Out>) vert, Index index,READONLY(Uniform) uniform,
                             TriangleVert<Out>* out) {
     const auto id = getID();
@@ -76,7 +76,7 @@ CUDAINLINE uvec3 sortIndex(TriangleVert<Out> tri, uvec3 idx) {
 }
 
 template <typename Out, CompareZ func>
-CALLABLE void clipVertT1(unsigned int size, unsigned int* cnt,
+CALLABLE void clipVertT1(const unsigned int size, unsigned int* cnt,
                          READONLY(TriangleVert<Out>) in, READONLY(unsigned int) clip,
                          TriangleVert<Out>* out, float z) {
     const auto id = getID();
@@ -102,7 +102,7 @@ CALLABLE void clipVertT1(unsigned int size, unsigned int* cnt,
 }
 
 template <typename Out, CompareZ func>
-CALLABLE void clipVertT2(unsigned int size, unsigned int* cnt,
+CALLABLE void clipVertT2(const unsigned int size, unsigned int* cnt,
                          READONLY(TriangleVert<Out>) in, READONLY(unsigned int) clip,
                          TriangleVert<Out>* out, float z) {
     const auto id = getID();
@@ -229,7 +229,7 @@ CALLABLE void processTrianglesGPU(unsigned int* size, unsigned int* cnt,
     run(processTriangles<Out>, block, *size, cnt, in, info, triID, fx, fy, hx, hy, tsiz, mode);
 }
 
-CUDAINLINE bool testPoint(mat3 w0, vec2 p, vec3& w) {
+CUDAINLINE bool testPoint(mat3 w0, const vec2 p, vec3& w) {
     w.x = w0[0].x * p.x + w0[0].y * p.y + w0[0].z;
     w.y = w0[1].x * p.x + w0[1].y * p.y + w0[1].z;
     w.z = w0[2].x * p.x + w0[2].y * p.y + w0[2].z;
@@ -265,7 +265,7 @@ CALLABLE void drawMicroT(READONLY(Triangle<Out>) info,
 }
 
 template <typename Out>
-CALLABLE void cutTriangles(unsigned int size, unsigned int* cnt, TriangleRef* idx, TriangleRef* out) {
+CALLABLE void cutTriangles(const unsigned int size, unsigned int* cnt, TriangleRef* idx, TriangleRef* out) {
     const auto id = getID();
     if (id >= size)return;
     auto ref = idx[id];
@@ -305,15 +305,15 @@ CUDAINLINE void applyTFS(unsigned int* cnt, Triangle<Out>* tri,
 }
 
 template <typename Out, typename Uniform, typename FrameBuffer>
-CUDAINLINE void applyTFS(unsigned int* cnt, Triangle<Out>* tri,
-                         TriangleRef* idx, Uniform* uniform, FrameBuffer* frameBuffer, unsigned int size,
-                         float near, float invnf) {}
+CUDAINLINE void applyTFS(unsigned int*, Triangle<Out>*,
+                         TriangleRef*, Uniform*, FrameBuffer*, unsigned int,
+                         float, float) {}
 
 template <typename Out, typename Uniform, typename FrameBuffer,
           FSF<Out, Uniform, FrameBuffer>... fs>
 CALLABLE void renderTrianglesGPU(unsigned int* cnt, Triangle<Out>* tri,
-                                 TriangleRef* idx, Uniform* uniform, FrameBuffer* frameBuffer, unsigned int size,
-                                 float near, float invnf) {
+                                 TriangleRef* idx, Uniform* uniform, FrameBuffer* frameBuffer, const unsigned int size,
+                                 const float near, const float invnf) {
     if (cnt[6]) {
         constexpr auto block = 1024U;
         run(cutTriangles<Out>, block, cnt[6], cnt, idx + size * 6, idx + size * 7);
@@ -328,7 +328,7 @@ struct TriangleRenderingHistory final : Uncopyable {
     uint64 baseSize;
     bool enableSelfAdaptiveAllocation;
 
-    void reset(unsigned int size, unsigned int base = 2048U, bool SAA = false) {
+    void reset(const unsigned int size, const unsigned int base = 2048U, const bool SAA = false) {
         triNum = processSize = size;
         baseSize = base;
         enableSelfAdaptiveAllocation = SAA;
@@ -339,7 +339,7 @@ template <typename Index, typename Out, typename Uniform, typename FrameBuffer,
           TCSF<Uniform> cs, FSF<Out, Uniform, FrameBuffer>... fs>
 void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
                      Index index, const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
-                     uvec2 size, float near, float far, TriangleRenderingHistory& history,
+                     const uvec2 size, float near, float far, TriangleRenderingHistory& history,
                      CullFace mode = CullFace::Back) {
     //pass 1:cull faces
     auto triNum = buffer.allocBuffer<unsigned int>();
