@@ -19,6 +19,7 @@
     <ClInclude Include="..\..\Include\Base\Memory.hpp" />
     <ClInclude Include="..\..\Include\Base\Pipeline.hpp" />
     <ClInclude Include="..\..\Include\Base\Math.hpp" />
+    <ClInclude Include="..\..\Include\Base\Queue.hpp" />
     <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp" />
     <ClInclude Include="..\..\Include\IO\Image.hpp" />
     <ClInclude Include="..\..\Include\IO\Model.hpp" />

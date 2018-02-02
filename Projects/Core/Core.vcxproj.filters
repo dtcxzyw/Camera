@@ -114,6 +114,9 @@
     <ClInclude Include="..\..\Include\ScanLineRenderer\RenderingCache.hpp">
       <Filter>ScanLineRenderer</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Base\Queue.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">
