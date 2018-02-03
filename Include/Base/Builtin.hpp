@@ -1,12 +1,15 @@
 #pragma once
 #include  <Base/Math.hpp>
 #include <Base/Common.hpp>
-#define __CUDACC__
+
+#include <Base/CompileBegin.hpp>
 #include <cuda_runtime.h>
 #include <cuda_texture_types.h>
 #include <texture_indirect_functions.h>
 #include <cuda_surface_types.h>
 #include <surface_indirect_functions.h>
+#include <Base/CompileEnd.hpp>
+
 #include <Base/Pipeline.hpp>
 #include <Base/DispatchSystem.hpp>
 

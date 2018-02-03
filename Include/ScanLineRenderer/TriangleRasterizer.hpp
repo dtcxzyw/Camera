@@ -1,9 +1,10 @@
 #pragma once
 #include "ScanLine.hpp"
 #include <Base/DispatchSystem.hpp>
+#include <Base/CompileBegin.hpp>
 #include <math_functions.h>
 #include <device_atomic_functions.h>
-#include <Base/Queue.hpp>
+#include <Base/CompileEnd.hpp>
 
 inline auto calcBufferSize(const unsigned int history, const unsigned int base, const unsigned int maxv) {
     return base + std::min(history + (history >> 3), maxv);
@@ -14,6 +15,89 @@ struct TriangleVert final {
     unsigned int id;
     VertexInfo<Out> vert[3];
 };
+
+CUDAINLINE float edgeFunction(const vec3 a, const vec3 b, const vec3 c) {
+    return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
+}
+
+CUDAINLINE float max3(const float a, const float b, const float c) {
+    return fmax(a, fmax(b, c));
+}
+
+CUDAINLINE float min3(const float a, const float b, const float c) {
+    return fmin(a, fmin(b, c));
+}
+
+CUDAINLINE vec3 calcBase(const vec3 a, const vec3 b) {
+    vec3 w;
+    w.x = b.y - a.y, w.y = a.x - b.x;
+    w.z = -(a.x * w.x + a.y * w.y);
+    return  w;
+}
+
+template <typename Out>
+struct Triangle final {
+    vec3 invz;
+    mat3 w;
+    unsigned int id;
+    Out out[3];
+};
+
+struct TriangleRef final {
+    unsigned int id;
+    vec4 rect;
+};
+
+enum class CullFace {
+    Front = 0,
+    Back = 1,
+    None = 2
+};
+
+template<typename Out>
+struct TriangleProcessingArgs final {
+    unsigned int* cnt; 
+    Triangle<Out>* info;
+    TriangleRef* out; 
+    vec2 fsiz;
+    vec2 hsiz;
+    unsigned int tsiz;
+    int mode;
+    TriangleProcessingArgs(unsigned int* iCnt,
+        Triangle<Out>* iInfo, TriangleRef* iOut, const vec2 iFsiz, const vec2 iHsiz, const unsigned int iTsiz,
+        const int iMode):cnt(iCnt),info(iInfo),out(iOut),fsiz(iFsiz),hsiz(iHsiz),tsiz(iTsiz),mode(iMode) {}
+};
+
+template <typename Out>
+CUDAINLINE void calcTriangleInfo(TriangleVert<Out> tri,const TriangleProcessingArgs<Out>& args) {
+    const auto a = toRaster(tri.vert[0].pos,args.hsiz),
+        b = toRaster(tri.vert[1].pos, args.hsiz),
+        c = toRaster(tri.vert[2].pos, args.hsiz);
+    const vec4 rect = {
+        fmax(0.0f, min3(a.x, b.x, c.x)), fmin(args.fsiz.x, max3(a.x, b.x, c.x)),
+        fmax(0.0f, min3(a.y, b.y, c.y)), fmin(args.fsiz.y, max3(a.y, b.y, c.y))
+    };
+    const auto S = edgeFunction(a, b, c);
+    if (static_cast<bool>((S < 0.0f) ^ args.mode) & rect.x < rect.y & rect.z < rect.w) {
+        Triangle<Out> res;
+        res.invz = { a.z, b.z, c.z };
+        res.w[0] = calcBase(b, c);
+        res.w[1] = calcBase(c, a);
+        res.w[2] = calcBase(a, b);
+        res.w *= 1.0f / S;
+        res.id = tri.id;
+        res.out[0] = tri.vert[0].out * res.invz.x;
+        res.out[1] = tri.vert[1].out * res.invz.y;
+        res.out[2] = tri.vert[2].out * res.invz.z;
+        const auto tsize = fmax(rect.y - rect.x, rect.w - rect.z);
+        const auto x = static_cast<int>(ceil(log2f(fmin(tsize + 1.0f, 50.0f))));
+        TriangleRef ref;
+        ref.id = atomicInc(args.cnt + 8, maxv);
+        ref.rect = rect;
+        args.out[atomicInc(args.cnt + x, maxv) + x * args.tsiz] = ref;
+        args.info[ref.id] = res;
+    }
+}
 
 using CompareZ = bool(*)(float, float);
 CUDAINLINE bool compareZNear(const float z, const float base) {
@@ -41,7 +125,7 @@ CUDAINLINE uvec3 sortIndex(TriangleVert<Out> tri, uvec3 idx) {
 }
 
 template <typename Out, CompareZ Func,typename Callable>
-CUDAINLINE void clipVertT1(TriangleVert<Out> tri, float z,Callable emit) {
+CUDANOINLINE void clipVertT1(TriangleVert<Out> tri,const float z,Callable emit) {
     uvec3 idx = sortIndex<Out,Func>(tri, uvec3{ 0, 1, 2 });
     auto a = tri.vert[idx[0]], b = tri.vert[idx[1]], c = tri.vert[idx[2]];
     auto d = lerpZ(b, a, z), e = lerpZ(c, a, z);
@@ -63,7 +147,7 @@ CUDAINLINE void clipVertT1(TriangleVert<Out> tri, float z,Callable emit) {
 }
 
 template <typename Out, CompareZ Func,typename Callable>
-CUDAINLINE void clipVertT2(TriangleVert<Out> tri, float z,Callable emit) {
+CUDANOINLINE void clipVertT2(TriangleVert<Out> tri,const float z,Callable emit) {
     uvec3 idx = sortIndex<Out, Func>(tri, uvec3{ 0, 1, 2 });
     auto a = tri.vert[idx[0]], b = tri.vert[idx[1]], c = tri.vert[idx[2]];
     auto d = lerpZ(a, c, z), e = lerpZ(b, c, z);
@@ -78,7 +162,7 @@ CUDAINLINE void clipVertT2(TriangleVert<Out> tri, float z,Callable emit) {
 }
 
 template <typename Out,CompareZ Func,typename Callable>
-CUDAINLINE void clipTriangle(TriangleVert<Out> tri,float z,Callable emit) {
+CUDAINLINE void clipTriangle(TriangleVert<Out> tri, const float z,Callable emit) {
     const auto type = calcTriangleType<Out, Func>(tri,z);
     switch (type) {
     case 0:emit(tri); break;
@@ -92,105 +176,23 @@ template <typename Uniform>
 using TCSF = bool(*)(unsigned int idx, vec3& pa, vec3& pb, vec3& pc, Uniform uniform);
 
 template <typename Index, typename Out, typename Uniform, TCSF<Uniform> cs>
-CALLABLE void clipTriangles(const unsigned int size, QueueGPU<TriangleVert<Out>> queue,
-                            READONLY(VertexInfo<Out>) vert, Index index,READONLY(Uniform) uniform,
-                            const float near, const float far) {
+CALLABLE void processTriangles(const unsigned int size,READONLY(VertexInfo<Out>) vert,
+    Index index,READONLY(Uniform) uniform,const float near, const float far,
+    TriangleProcessingArgs<Out> args) {
     const auto id = getID();
     if (id >= size)return;
-    auto idx = index[id];
-    auto a = vert[idx[0]], b = vert[idx[1]], c = vert[idx[2]];
-    if (cs(id, a.pos, b.pos, c.pos, *uniform)) {
-        TriangleVert<Out> tri;
-        tri.id = id, tri.vert[0] = a, tri.vert[1] = b, tri.vert[2] = c;
-        const auto emitF=[&queue](TriangleVert<Out> t) {
-            queue.push(t);
+    const auto idx = index[id];
+    TriangleVert<Out> tri;
+    tri.id = id, tri.vert[0] = vert[idx[0]], tri.vert[1] = vert[idx[1]], tri.vert[2] = vert[idx[2]];
+    if (cs(id, tri.vert[0].pos, tri.vert[1].pos, tri.vert[2].pos, *uniform)) {
+        const auto emitF=[&args](TriangleVert<Out> t) {
+            calcTriangleInfo<Out>(t,args);
         };
-        const auto emitN= [=](TriangleVert<Out> t) {
+        const auto emitN= [far,emitF](TriangleVert<Out> t) {
             clipTriangle<Out, compareZFar, decltype(emitF)>(t, far, emitF);
         };
         clipTriangle<Out,compareZNear,decltype(emitN)>(tri, near,emitN);
     }
-}
-
-CUDAINLINE float edgeFunction(vec3 a, vec3 b, vec3 c) {
-    return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
-}
-
-CUDAINLINE float max3(float a, float b, float c) {
-    return fmax(a, fmax(b, c));
-}
-
-CUDAINLINE float min3(float a, float b, float c) {
-    return fmin(a, fmin(b, c));
-}
-
-CUDAINLINE void calcBase(vec3 a, vec3 b, vec3& w) {
-    w.x = b.y - a.y, w.y = a.x - b.x;
-    w.z = -(a.x * w.x + a.y * w.y);
-}
-
-template <typename Out>
-struct Triangle final {
-    vec3 invz;
-    mat3 w;
-    unsigned int id;
-    Out out[3];
-};
-
-struct TriangleRef final {
-    unsigned int id;
-    vec4 rect;
-};
-
-enum class CullFace {
-    Front = 0,
-    Back = 1,
-    None = 2
-};
-
-template <typename Out>
-CALLABLE void processTriangles(const unsigned int size, unsigned int* cnt,
-                               READONLY(TriangleVert<Out>) in, Triangle<Out>* info, TriangleRef* out,
-                               const float fx, const float fy, const float hx, const float hy, const unsigned int tsiz,
-                               const int mode) {
-    const auto id = getID();
-    if (id >= size)return;
-    auto tri = in[id];
-    auto a = toRaster(tri.vert[0].pos, hx, hy),
-         b = toRaster(tri.vert[1].pos, hx, hy),
-         c = toRaster(tri.vert[2].pos, hx, hy);
-    const vec4 rect = {
-        fmax(0.0f, min3(a.x, b.x, c.x)), fmin(fx, max3(a.x, b.x, c.x)),
-        fmax(0.0f, min3(a.y, b.y, c.y)), fmin(fy, max3(a.y, b.y, c.y))
-    };
-    const auto S = edgeFunction(a, b, c);
-    if (static_cast<bool>((S < 0.0f) ^ mode) & rect.x < rect.y & rect.z < rect.w) {
-        Triangle<Out> res;
-        res.invz = {a.z, b.z, c.z};
-        calcBase(b, c, res.w[0]);
-        calcBase(c, a, res.w[1]);
-        calcBase(a, b, res.w[2]);
-        res.w *= 1.0f / S;
-        res.id = tri.id;
-        res.out[0] = tri.vert[0].out * res.invz.x;
-        res.out[1] = tri.vert[1].out * res.invz.y;
-        res.out[2] = tri.vert[2].out * res.invz.z;
-        const auto tsize = fmax(rect.y - rect.x, rect.w - rect.z);
-        const auto x = static_cast<int>(ceil(log2f(fmin(tsize + 1.0f, 50.0f))));
-        TriangleRef ref;
-        ref.id = atomicInc(cnt + 8, maxv);
-        ref.rect = rect;
-        out[atomicInc(cnt + x, maxv) + x * tsiz] = ref;
-        info[ref.id] = res;
-    }
-}
-
-template <typename Out>
-CALLABLE void processTrianglesGPU(unsigned int* size, unsigned int* cnt,
-                                  READONLY(TriangleVert<Out>) in, Triangle<Out>* info, TriangleRef* triID,
-                                  float fx, float fy, float hx, float hy, unsigned int tsiz, int mode) {
-    constexpr auto block = 1024U;
-    run(processTriangles<Out>, block, *size, cnt, in, info, triID, fx, fy, hx, hy, tsiz, mode);
 }
 
 CUDAINLINE bool testPoint(mat3 w0, const vec2 p, vec3& w) {
@@ -202,8 +204,8 @@ CUDAINLINE bool testPoint(mat3 w0, const vec2 p, vec3& w) {
 
 template <typename Out, typename Uniform, typename FrameBuffer,
           FSF<Out, Uniform, FrameBuffer> fs>
-CUDAINLINE void drawPoint(Triangle<Out> tri, ivec2 uv, vec2 p, Uniform uni,
-                          FrameBuffer& frameBuffer, float near, float invnf) {
+CUDAINLINE void drawPoint(Triangle<Out> tri, ivec2 uv, const vec2 p, Uniform uni,
+                          FrameBuffer& frameBuffer, const float near, const float invnf) {
     vec3 w;
     if (testPoint(tri.w, p, w)) {
         auto z = 1.0f / dot(tri.invz, w);
@@ -287,12 +289,12 @@ CALLABLE void renderTrianglesGPU(unsigned int* cnt, Triangle<Out>* tri,
 }
 
 struct TriangleRenderingHistory final : Uncopyable {
-    std::atomic_uint triNum, processSize;
+    std::atomic_uint triNum;
     uint64 baseSize;
     bool enableSelfAdaptiveAllocation;
 
     void reset(const unsigned int size, const unsigned int base = 2048U, const bool SAA = false) {
-        triNum = processSize = size;
+        triNum = size;
         baseSize = base;
         enableSelfAdaptiveAllocation = SAA;
     }
@@ -304,36 +306,26 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
                      Index index, const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
                      const uvec2 size, float near, float far, TriangleRenderingHistory& history,
                      CullFace mode = CullFace::Back) {
-    //pass 1:clip triangles
-    auto tsiz = calcBufferSize(history.triNum, history.baseSize, index.size());
-    Queue<TriangleVert<Out>> triBuffer(buffer,tsiz);
-    auto triBufferGPU = triBuffer.get(buffer);
-    buffer.runKernelLinear(clipTriangles<Index, Out, Uniform, cs>, index.size(), triBufferGPU, vert.get(),
-                           index, uniform.get(),near,far);
-
-    if (history.enableSelfAdaptiveAllocation) {
-        LaunchSize triNumData(triBuffer.size());
-        triNumData.download(history.triNum, buffer);
-    }
-
-    //pass 2:process triangles
-    vec2 fsize = size - uvec2{1, 1};
-    auto psiz = calcBufferSize(history.processSize, history.baseSize, tsiz);
+    //pass 1:process triangles
+    auto psiz = calcBufferSize(history.triNum, history.baseSize, index.size());
     auto cnt = buffer.allocBuffer<unsigned int>(9);
     buffer.memset(cnt);
     auto info = buffer.allocBuffer<Triangle<Out>>(psiz);
     auto idx = buffer.allocBuffer<TriangleRef>(psiz * 10);
+    vec2 fsize = size - uvec2{ 1, 1 };
     auto hfsize = static_cast<vec2>(size) * 0.5f;
-    buffer.callKernel(processTrianglesGPU<Out>,triBuffer.size(),cnt,triBuffer.data(), info, idx,
-                      fsize.x, fsize.y, hfsize.x, hfsize.y, psiz, static_cast<int>(mode));
-    if (history.enableSelfAdaptiveAllocation) {
-        LaunchSize processSizeData(cnt, 8);
-        processSizeData.download(history.processSize, buffer);
-    }
-    triBuffer.earlyRelease();
+    buffer.runKernelLinear(processTriangles<Index, Out, Uniform, cs>, index.size(), vert.get(),
+                           index, uniform.get(),near,far,
+        buffer.makeLazyConstructor<TriangleProcessingArgs<Out>>(cnt, info, idx,fsize,hfsize, psiz,
+            static_cast<int>(mode)));
 
-    //pass 3:render triangles
-    auto invnf = 1.0f / (far - near);
+    if (history.enableSelfAdaptiveAllocation) {
+        LaunchSize triNumData(cnt,8);
+        triNumData.download(history.triNum, buffer);
+    }
+
+    //pass 2:render triangles
+    const auto invnf = 1.0f / (far - near);
     buffer.callKernel(renderTrianglesGPU<Out, Uniform, FrameBuffer, fs...>, cnt, info, idx, uniform.get(),
                       frameBuffer.get(), psiz, near, invnf);
 }

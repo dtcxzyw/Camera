@@ -33,8 +33,7 @@ void renderGUI(IMGUIWindow& window) {
     ImGui::SetWindowFontScale(1.5f);
     ImGui::Text("vertices: %d, triangles: %d\n", static_cast<int>(model.vert.size()),
         static_cast<int>(model.index.size()));
-    ImGui::Text("triNum: %d, processSize: %d\n", static_cast<int>(mh.triNum),
-        static_cast<int>(mh.processSize));
+    ImGui::Text("triNum: %d\n", static_cast<int>(mh.triNum));
     ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
     ImGui::Text("FOV %.1f ",degrees(camera.toFOV()));
     ImGui::SliderFloat("focal length",&camera.focalLength,1.0f,500.0f,"%.1f");
@@ -68,7 +67,7 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
     window.renderGUI();
 }
 
-Uniform getUniform(float w,float h,float delta,vec2 mul) {
+Uniform getUniform(float delta,vec2 mul) {
     static vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { -100000.0f,0.0f,0.0f };
     const auto V = lookAt(cp,mid, { 0.0f,1.0f,0.0f });
     auto M= scale(mat4{}, vec3(5.0f));
@@ -108,7 +107,7 @@ auto addTask(DispatchSystem& system,SwapChain_t::SharedFrame frame,uvec2 size,
     static float last = glfwGetTime();
     const float now = glfwGetTime();
     const auto converter = camera.toRasterPos(size);
-    auto uniform = getUniform(size.x,size.y,now-last,converter.mul);
+    auto uniform = getUniform(now-last,converter.mul);
     last = now;
     auto buffer=std::make_unique<CommandBuffer>();
     if (frame->size != size) {

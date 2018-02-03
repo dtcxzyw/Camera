@@ -1,6 +1,9 @@
 #include <IO/Image.hpp>
+
+#include <Base/CompileBegin.hpp>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
+#include <Base/CompileEnd.hpp>
 
 std::shared_ptr<BuiltinArray<RGBA>> loadRGBA(const std::string& path,Stream& stream) {
     stbi_set_flip_vertically_on_load(true);

@@ -25,8 +25,6 @@ void Stream::wait(Event & event) {
     checkError(cudaStreamWaitEvent(mStream,event.get(),0));
 }
 
-Environment::Environment(){}
-
 void Environment::init() {
     int cnt;
     checkError(cudaGetDeviceCount(&cnt));

@@ -3,6 +3,7 @@
 #include <Base/Common.hpp>
 #include <Base/Memory.hpp>
 #include <Base/Pipeline.hpp>
+#include <string>
 
 /*
 http://www.merl.com/brdf/

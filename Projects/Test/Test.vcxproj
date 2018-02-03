@@ -98,7 +98,7 @@
       <Optimization>O2</Optimization>
       <RuntimeChecks>Default</RuntimeChecks>
       <TypeInfo>false</TypeInfo>
-      <Warning>W0</Warning>
+      <Warning>W4</Warning>
     </CudaCompile>
     <CudaLink>
       <AdditionalDependencies>
@@ -147,11 +147,13 @@
       <TypeInfo>false</TypeInfo>
       <Warning>W0</Warning>
       <CodeGeneration>compute_52,sm_52</CodeGeneration>
-      <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda -w</AdditionalOptions>
+      <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda  -w</AdditionalOptions>
       <MaxRegCount>64</MaxRegCount>
       <HostDebugInfo>false</HostDebugInfo>
       <GPUDebugInfo>false</GPUDebugInfo>
       <GenerateLineInfo>false</GenerateLineInfo>
+      <Keep>true</Keep>
+      <PtxAsOptionV>false</PtxAsOptionV>
     </CudaCompile>
     <CudaLink>
       <GPUDebugInfo>false</GPUDebugInfo>

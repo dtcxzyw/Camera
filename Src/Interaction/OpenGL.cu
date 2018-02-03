@@ -1,6 +1,9 @@
+#include <Base/CompileBegin.hpp>
 #include <GL/glew.h>
 #include <Interaction/OpenGL.hpp>
 #include <IMGUI/imgui_impl_glfw_gl3.h>
+#include <Base/CompileEnd.hpp>
+
 #include <exception>
 
 class GLContext final:Singletion {

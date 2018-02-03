@@ -80,7 +80,7 @@ using SharedEvent = std::shared_ptr<Event>;
 
 class Environment final :Singletion {
 private:
-    Environment();
+    Environment() = default;
     friend Environment& getEnvironment();
     cudaDeviceProp mProp;
 public:

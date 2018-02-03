@@ -31,9 +31,9 @@ CUDAINLINE VertexInfo<Out> lerpZ(VertexInfo<Out> a, VertexInfo<Out> b, float z) 
 }
 
 template<typename Vert, typename Out, typename Uniform,VSF<Vert, Out, Uniform> vs>
-CALLABLE void runVS(unsigned int size,READONLY(Vert) in,
+CALLABLE void runVS(const unsigned int size,READONLY(Vert) in,
     READONLY(Uniform) u,VertexInfo<Out>* res) {
-    auto id = getID();
+    const auto id = getID();
     if (id >= size)return;
     auto& vert = res[id];
     vs(in[id], *u, vert.pos, vert.out);
@@ -45,8 +45,8 @@ using FSFSF = void(*)(ivec2 NDC, Uniform uniform, FrameBuffer frameBuffer);
 template<typename Uniform, typename FrameBuffer,FSFSF<Uniform,FrameBuffer> fs>
     CALLABLE void runFSFS(READONLY(Uniform) u,
         FrameBuffer frameBuffer,uvec2 size) {
-    auto x = blockIdx.x*blockDim.x + threadIdx.x;
-    auto y = blockIdx.y*blockDim.y + threadIdx.y;
+    const auto x = blockIdx.x*blockDim.x + threadIdx.x;
+    const auto y = blockIdx.y*blockDim.y + threadIdx.y;
     if(x<size.x & y<size.y)
         fs(ivec2{ x,y }, *u, frameBuffer);
 }
@@ -60,7 +60,7 @@ public:
         return mSize;
     }
     CUDA uvec3 operator[](unsigned int off) const {
-        auto base = off * 3;
+        const auto base = off * 3;
         return { base,base + 1,base + 2 };
     }
 };
@@ -70,19 +70,19 @@ private:
     READONLY(uvec3) mPtr;
     unsigned int mSize;
 public:
-    SharedIndex(READONLY(uvec3) idx, unsigned int size) :mPtr(idx), mSize(size) {}
-    SharedIndex(DataViewer<uvec3> ibo) :mPtr(ibo.begin()), mSize(ibo.size()) {}
+    SharedIndex(READONLY(uvec3) idx, const unsigned int size) :mPtr(idx), mSize(size) {}
+    explicit SharedIndex(DataViewer<uvec3> ibo) :mPtr(ibo.begin()), mSize(ibo.size()) {}
     BOTH auto size() const {
         return mSize;
     }
-    CUDA auto operator[](unsigned int off) const {
+    CUDA auto operator[](const unsigned int off) const {
         return mPtr[off];
     }
 };
 
-CUDAINLINE vec3 toRaster(vec3 p, float hx, float hy) {
-    auto invz = 1.0f / p.z;
-    return { (1.0f + p.x*invz)*hx,(1.0f - p.y*invz)*hy,invz };
+CUDAINLINE vec3 toRaster(const vec3 p, const vec2 hsiz) {
+    const auto invz = 1.0f / p.z;
+    return { (1.0f + p.x*invz)*hsiz.x,(1.0f - p.y*invz)*hsiz.y,invz };
 }
 
 constexpr auto maxv = std::numeric_limits<unsigned int>::max();

@@ -13,6 +13,8 @@
   <ItemGroup>
     <ClInclude Include="..\..\Include\Base\Builtin.hpp" />
     <ClInclude Include="..\..\Include\Base\Common.hpp" />
+    <ClInclude Include="..\..\Include\Base\CompileBegin.hpp" />
+    <ClInclude Include="..\..\Include\Base\CompileEnd.hpp" />
     <ClInclude Include="..\..\Include\Base\Constant.hpp" />
     <ClInclude Include="..\..\Include\Base\DataSet.hpp" />
     <ClInclude Include="..\..\Include\Base\DispatchSystem.hpp" />
@@ -133,6 +135,7 @@
       <RuntimeChecks>Default</RuntimeChecks>
       <TypeInfo>false</TypeInfo>
       <Warning>W0</Warning>
+      <Keep>true</Keep>
     </CudaCompile>
     <CudaLink>
       <PerformDeviceLink>false</PerformDeviceLink>
@@ -162,6 +165,7 @@
       <OpenMPSupport>true</OpenMPSupport>
       <CompileAs>CompileAsCpp</CompileAs>
       <PreprocessToFile>false</PreprocessToFile>
+      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -184,9 +188,11 @@
       <TypeInfo>false</TypeInfo>
       <Warning>W0</Warning>
       <CodeGeneration>compute_52,sm_52</CodeGeneration>
-      <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda -w</AdditionalOptions>
+      <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda   -w</AdditionalOptions>
       <GPUDebugInfo>false</GPUDebugInfo>
       <GenerateLineInfo>false</GenerateLineInfo>
+      <Keep>true</Keep>
+      <MaxRegCount>64</MaxRegCount>
     </CudaCompile>
     <CudaLink>
       <GPUDebugInfo>false</GPUDebugInfo>

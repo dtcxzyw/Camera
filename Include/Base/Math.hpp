@@ -1,11 +1,13 @@
 #pragma once
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <Base/CompileBegin.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/color_space.hpp>
 #include <glm/gtx/color_space.hpp>
+#include <Base/CompileEnd.hpp>
 using namespace glm;
 
 using UV = vec2;

@@ -117,6 +117,12 @@
     <ClInclude Include="..\..\Include\Base\Queue.hpp">
       <Filter>Base</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Base\CompileBegin.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Base\CompileEnd.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">

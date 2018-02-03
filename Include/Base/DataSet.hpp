@@ -8,7 +8,7 @@ struct UnitInfo {
     using Type = T;
 };
 
-#define Var(name,type) UnitInfo<decltype(name),name,type>
+#define VAR(name,type) UnitInfo<decltype(name),name,type>
 
 namespace Impl {
 

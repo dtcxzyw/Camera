@@ -1,6 +1,8 @@
 #pragma once
 #include <Base/DispatchSystem.hpp>
+#include <Base/CompileBegin.hpp>
 #include <device_atomic_functions.h>
+#include <Base/CompileEnd.hpp>
 
 template<typename T>
 class QueueGPU final {

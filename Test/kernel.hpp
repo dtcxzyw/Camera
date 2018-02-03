@@ -16,7 +16,7 @@ using VI = StaticMesh::Vertex;
 enum OutInfo {
     pos,normal,tangent,texCoord
 };
-using OI = Args<Var(pos, vec3), Var(normal, vec3),Var(tangent, vec3)>;
+using OI = Args<VAR(pos, vec3), VAR(normal, vec3),VAR(tangent, vec3)>;
  
 struct FrameBufferGPU final {
     BuiltinRenderTargetGPU<RGBA> color;

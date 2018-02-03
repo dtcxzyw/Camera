@@ -1,6 +1,8 @@
 #pragma once
 #include <Base/Common.hpp>
+#include <Base/CompileBegin.hpp>
 #include <device_functions.h>
+#include <Base/CompileEnd.hpp>
 
 CUDAINLINE float dist(float dis) {
     return 1.0f / (dis*dis);

@@ -1,9 +1,12 @@
 #pragma once
+#include <Base/CompileBegin.hpp>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
+#include <Base/CompileEnd.hpp>
 
 #define CUDA __device__
 #define CUDAINLINE __forceinline__ CUDA
+#define CUDANOINLINE __noinline__ CUDA
 #define HOST __host__
 #define BOTH CUDA HOST
 #define CALLABLE __global__

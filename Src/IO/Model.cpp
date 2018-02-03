@@ -1,7 +1,11 @@
 #include <IO/Model.hpp>
+
+#include <Base/CompileBegin.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <Base/CompileEnd.hpp>
+
 #include <vector>
 
 void StaticMesh::load(const std::string & path,Stream& loader) {

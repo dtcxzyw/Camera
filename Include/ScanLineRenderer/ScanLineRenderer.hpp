@@ -14,14 +14,14 @@ auto calcVertex(CommandBuffer& buffer,const DataPtr<Vert>& vert,const DataPtr<Un
 
 template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> fs>
-    CALLABLE void drawPointHelperGPU(unsigned int size, READONLY(VertexInfo<Out>) vert,
-        READONLY(Uniform) uniform, FrameBuffer* frameBuffer, vec2 fsize,
-        float near,float invnf,vec2 hfsize) {
-    auto id = getID();
+    CALLABLE void drawPointHelperGPU(const unsigned int size, READONLY(VertexInfo<Out>) vert,
+        READONLY(Uniform) uniform, FrameBuffer* frameBuffer, const vec2 fsize,
+                                     const float near, const float invnf, const vec2 hfsize) {
+    const auto id = getID();
     if (id >= size)return;
     auto p = vert[id];
     auto nz = (p.pos.z - near)*invnf;
-    p.pos = toRaster(p.pos, hfsize.x,hfsize.y);
+    p.pos = toRaster(p.pos, hfsize);
     if (0.0f <= p.pos.x & p.pos.x <= fsize.x & 0.0f <= p.pos.y & p.pos.y <= fsize.y
         & 0.0f <= nz & nz <= 1.0f) {
         fs(id,{ p.pos.x,p.pos.y },nz, p.out, *uniform, *frameBuffer);
@@ -29,9 +29,9 @@ template< typename Out, typename Uniform, typename FrameBuffer,
 }
 
 template< typename Out, typename Uniform, typename FrameBuffer>
-    void drawPointHelper(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
-        const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer, vec2 fsize, 
-        float near, float invnf,vec2 hfsize){}
+    void drawPointHelper(CommandBuffer&, const DataPtr<VertexInfo<Out>>&,
+        const DataPtr<Uniform>&, const DataPtr<FrameBuffer>&, vec2, 
+        float, float,vec2){}
 
 template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer> first,FSF<Out,Uniform,FrameBuffer>... then>
@@ -47,7 +47,7 @@ template< typename Out, typename Uniform, typename FrameBuffer,
 template< typename Out, typename Uniform, typename FrameBuffer,
     FSF<Out, Uniform, FrameBuffer>... fs>
     void renderPoints(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
-        const DataPtr<Uniform>& uniform, FrameBuffer* frameBuffer, uvec2 size,float near,float far) {
+        const DataPtr<Uniform>& uniform, FrameBuffer* frameBuffer, const uvec2 size,float near,float far) {
     vec2 fsize = size - uvec2{1, 1};
     auto hfsize = static_cast<vec2>(size) * 0.5f;
     auto invnf = 1.0f / (far - near);

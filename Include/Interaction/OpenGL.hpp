@@ -1,8 +1,10 @@
 #pragma once
+#include <Base/CompileBegin.hpp>
 #include <IMGUI/imgui.h>
 #include <GLFW/glfw3.h>
-#include <Base/Builtin.hpp>
 #include <cuda_gl_interop.h>
+#include <Base/CompileEnd.hpp>
+#include <Base/Builtin.hpp>
 
 class Image final :Uncopyable {
 private:
