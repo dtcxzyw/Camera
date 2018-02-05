@@ -58,6 +58,7 @@
       <FileType>Document</FileType>
     </CudaCompile>
     <CudaCompile Include="..\..\Src\PBR\DataDrivenBRDF.cu" />
+    <CudaCompile Include="..\..\Src\ScanLineRenderer\TriangleRasterizer.cu" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\IO\Image.cu" />
@@ -96,14 +97,14 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(SolutionDir)Include;$(SolutionDir)ThirdParty;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)Bin\</OutDir>
-    <TargetName>$(ProjectName)_x64</TargetName>
-    <IntDir>$(ProjectDir)$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>$(ProjectName)</TargetName>
+    <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)Include;$(SolutionDir)ThirdParty;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)Bin\</OutDir>
-    <TargetName>$(ProjectName)_x64</TargetName>
-    <IntDir>$(ProjectDir)$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>$(ProjectName)</TargetName>
+    <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -136,11 +137,14 @@
       <TypeInfo>false</TypeInfo>
       <Warning>W0</Warning>
       <Keep>true</Keep>
+      <MaxRegCount>64</MaxRegCount>
     </CudaCompile>
     <CudaLink>
       <PerformDeviceLink>false</PerformDeviceLink>
       <GPUDebugInfo>false</GPUDebugInfo>
       <Optimization>O2</Optimization>
+      <AdditionalLibraryDirectories>$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cudart.lib;cudadevrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </CudaLink>
     <Lib>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -199,13 +203,15 @@
     </CudaLink>
     <CudaLink>
       <Optimization>O2</Optimization>
-      <PerformDeviceLink>true</PerformDeviceLink>
+      <PerformDeviceLink>false</PerformDeviceLink>
+      <AdditionalLibraryDirectories>$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cudart.lib;cudadevrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </CudaLink>
     <Lib>
-      <AdditionalDependencies>assimp.lib;glfw3.lib;opengl32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>assimp.lib;glfw3.lib;opengl32.lib;glew32.lib;cudart.lib;cudadevrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <Lib>
-      <AdditionalLibraryDirectories>$(SolutionDir)Bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Bin;$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

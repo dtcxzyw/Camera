@@ -40,34 +40,34 @@ void renderGUI(IMGUIWindow& window) {
     ImGui::SliderFloat("light", &light, 0.0f, 100.0f);
     ImGui::SliderFloat("lightRadius", &r, 0.0f, 20.0f);
 
-#define Color(name)\
+#define COLOR(name)\
 arg.##name=clamp(arg.##name,vec3(0.01f),vec3(0.999f));\
 ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
 
-    Color(baseColor);
+    COLOR(baseColor);
     //Color(edgeTint);
-#undef Color
+#undef COLOR
 
-#define Arg(name)\
+#define ARG(name)\
  arg.##name=clamp(arg.##name,0.01f,0.999f);\
  ImGui::SliderFloat(#name, &arg.##name, 0.01f, 0.999f);\
 
-    Arg(metallic);
-    Arg(subsurface);
-    Arg(specular);
-    Arg(roughness);
-    Arg(specularTint);
-    Arg(anisotropic);
-    Arg(sheen);
-    Arg(sheenTint);
-    Arg(clearcoat);
-    Arg(clearcoatGloss);
-#undef Arg
+    ARG(metallic);
+    ARG(subsurface);
+    ARG(specular);
+    ARG(roughness);
+    ARG(specularTint);
+    ARG(anisotropic);
+    ARG(sheen);
+    ARG(sheenTint);
+    ARG(clearcoat);
+    ARG(clearcoatGloss);
+#undef ARG
     ImGui::End();
     window.renderGUI();
 }
 
-Uniform getUniform(float delta,vec2 mul) {
+Uniform getUniform(float delta, const vec2 mul) {
     static vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { -100000.0f,0.0f,0.0f };
     const auto V = lookAt(cp,mid, { 0.0f,1.0f,0.0f });
     auto M= scale(mat4{}, vec3(5.0f));
@@ -111,9 +111,9 @@ auto addTask(DispatchSystem& system,SwapChain_t::SharedFrame frame,uvec2 size,
     last = now;
     auto buffer=std::make_unique<CommandBuffer>();
     if (frame->size != size) {
-        mh.reset(model.index.size(),cache.blockSize(),true);
-        sh.reset(box.index.size());
+        mh.reset(model.index.size(),cache.blockSize()*3,true);
         cache.reset();
+        sh.reset(box.index.size());
     }
     frame->resize(size.x,size.y);
     auto uni = buffer->allocConstant<Uniform>();
@@ -137,7 +137,7 @@ int main() {
         //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
         model.load("Res/dragon.obj",resLoader);
         RC8 cache(model.index.size(),30);
-        mh.reset(model.index.size(),cache.blockSize(),true);
+        mh.reset(model.index.size(),cache.blockSize()*3,true);
 
         box.load("Res/cube.obj",resLoader);
         sh.reset(box.index.size());

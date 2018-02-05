@@ -4,7 +4,7 @@
 #include <device_functions.h>
 #include <Base/CompileEnd.hpp>
 
-CUDAINLINE vec3 calcHalf(vec3 in, vec3 out) {
+CUDAINLINE vec3 calcHalf(const vec3 in, const vec3 out) {
     return normalize(in + out);
 }
 
@@ -16,7 +16,7 @@ CUDAINLINE float fresnelSchlick(float d) {
 }
 
 //Real Shading in Unreal Engine 4
-CUDAINLINE float fresnelSchlickUE4(float vdh) {
+CUDAINLINE float fresnelSchlickUE4(const float vdh) {
     return powf(2.0f, (-5.55473f*vdh-6.98316f)*vdh);
 }
 
@@ -24,72 +24,80 @@ CUDAINLINE float fresnelSchlickUE4(float vdh) {
 Artist Friendly Metallic Fresnel(JCGT, 2014)
 http://jcgt.org/published/0003/04/03/
 */
-CUDAINLINE vec3 fresnelGulbrandsen(vec3 r,vec3 g,float u) {
-    auto nMin = (1.0f - r) / (1.0f + r);
-    auto sqrtr = sqrt(r);
-    auto nMax = (1.0f + sqrtr) / (1.0f - sqrtr);
-    auto n = mix(nMax,nMin,g);
-    auto na1 = n + 1.0f,ns1=n-1.0f;
-    auto k2 =(na1*na1*r-ns1*ns1) / (1.0f - r);
-    auto sum = n * n+k2, n2u = 2.0f*u*n;
-    auto u2 = u * u;
-    auto sau2 = sum + u2, smu2 = sum * u2+1.0f;
-    auto rs = (sau2 - n2u)/ (sau2 + n2u);
-    auto rp = (smu2 - n2u) / (smu2 + n2u);
+CUDAINLINE vec3 fresnelGulbrandsen(const vec3 r, const vec3 g, const float u) {
+    const auto nMin = (1.0f - r) / (1.0f + r);
+    const auto sqrtr = sqrt(r);
+    const auto nMax = (1.0f + sqrtr) / (1.0f - sqrtr);
+    const auto n = mix(nMax,nMin,g);
+    const auto na1 = n + 1.0f;
+    const auto ns1 = n - 1.0f;
+    const auto k2 =(na1*na1*r-ns1*ns1) / (1.0f - r);
+    const auto sum = n * n+k2;
+    const auto n2u = 2.0f*u*n;
+    const auto u2 = u * u;
+    const auto sau2 = sum + u2;
+    const auto smu2 = sum * u2+1.0f;
+    const auto rs = (sau2 - n2u)/ (sau2 + n2u);
+    const auto rp = (smu2 - n2u) / (smu2 + n2u);
     return 0.5f*(rs + rp);
 }
 
 //D
-CUDAINLINE float GGXD(float ndh, float roughness) {
-    auto a = roughness*roughness;
-    auto root = a / ((a*a-1.0f)*ndh*ndh+1.0f);
+CUDAINLINE float GGXD(const float ndh, const float roughness) {
+    const auto a = roughness*roughness;
+    const auto root = a / ((a*a-1.0f)*ndh*ndh+1.0f);
     return one_over_pi<float>()*root*root;
 }
 
-CUDAINLINE float DGTR2Aniso(float ndh, float ax,float ay,float xdh,float ydh) {
-    auto d1 = xdh/ ax,d2=ydh/ay;
-    auto k = d1*d1+d2*d2+ ndh * ndh;
-    auto div = ax*ay*k*k;
+CUDAINLINE float DGTR2Aniso(const float ndh, const float ax, const float ay,
+    const float xdh, const float ydh) {
+    const auto d1 = xdh/ ax;
+    const auto d2=ydh/ay;
+    const auto k = d1*d1+d2*d2+ ndh * ndh;
+    const auto div = ax*ay*k*k;
     return one_over_pi<float>() /div;
 }
 
-CUDAINLINE float DGTR1(float ndh, float alpha) {
+CUDAINLINE float DGTR1(const float ndh, const float alpha) {
     if (alpha >= 1.0f)return one_over_pi<float>();
-    float sqra = alpha * alpha;
-    float k = sqra - 1.0f;
-    float t = 1.0f +k*ndh*ndh;
+    const auto sqra = alpha * alpha;
+    const auto k = sqra - 1.0f;
+    const auto t = 1.0f +k*ndh*ndh;
     return k / (pi<float>()*log(sqra)*t);
 }
 
 //G
-CUDAINLINE float GGXG(float ndv, float k) {
-    auto div = ndv * (1.0f - k) + k;
+CUDAINLINE float GGXG(const float ndv, const float k) {
+    const auto div = ndv * (1.0f - k) + k;
     return ndv / div;
 }
 
-CUDAINLINE float smithGUE4(float ndl, float ndv, float roughness) {
-    auto alpha = roughness + 1.0f;
-    auto k = alpha*alpha / 8.0f;
+CUDAINLINE float smithGUE4(const float ndl, const float ndv, const float roughness) {
+    const auto alpha = roughness + 1.0f;
+    const auto k = alpha*alpha / 8.0f;
     return GGXG(ndl, k) * GGXG(ndv, k);
 }
 
-CUDAINLINE float smithGGGX(float ndv, float alpha2) {
-    auto ndv2 = ndv * ndv;
+CUDAINLINE float smithGGGX(const float ndv, const float alpha2) {
+    const auto ndv2 = ndv * ndv;
     return 1.0f / (ndv+sqrt(ndv2+alpha2-ndv2*alpha2));
 }
 
-CUDAINLINE float smithGAniso(float ndv, float vdx,float vdy, float ax,float ay) {
-    auto mx = vdx * ax, my = vdy * ay;
+CUDAINLINE float smithGAniso(const float ndv, const float vdx, const float vdy,
+    const float ax, const float ay) {
+    const auto mx = vdx * ax;
+    const auto my = vdy * ay;
     return 1.0f / (ndv +sqrt(mx*mx+my*my+ndv*ndv));
 }
 
-CUDAINLINE float GLambda(float u,float alpha2) {
-    auto cosu2 = u * u;
-    auto sinu2 = 1.0f - cosu2;
+CUDAINLINE float GLambda(const float u, const float alpha2) {
+    const auto cosu2 = u * u;
+    const auto sinu2 = 1.0f - cosu2;
     return (-1.0f+sqrt(1.0f+alpha2*sinu2/cosu2))*0.5f;
 }
 
-CUDAINLINE float smithGHeightCorrelated(float ndl,float ndv,float ldh,float vdh,float alpha2) {
+CUDAINLINE float smithGHeightCorrelated(const float ndl, const float ndv, const float ldh,
+    const float vdh, const float alpha2) {
     return fmin(ldh, vdh) > 0.0f ?1.0f/(1.0f+GLambda(ndl,alpha2)+GLambda(ndv,alpha2)) :0.0f;
 }
 
@@ -99,26 +107,26 @@ CUDAINLINE float lambertian() {
 }
 
 //https://disney-animation.s3.amazonaws.com/library/s2012_pbs_disney_brdf_notes_v2.pdf
-CUDAINLINE float disneyDiffuse(float ndl, float ndv, float ldh, float roughness) {
-    auto cosi = 1.0f - ndl;
-    auto cosi2 = cosi*cosi;
-    auto coso = 1.0f - ndv;
-    auto coso2 = coso*coso;
-    auto fd90sub1 = 2.0f*ldh*ldh*roughness - 0.5f;
-    return one_over_pi<float>()*(1.0f + fd90sub1*cosi*cosi2*cosi2)
-        *(1.0f + fd90sub1*coso*coso2*coso2);
+CUDAINLINE float disneyDiffuse(const float ndl, const float ndv, const float ldh, const float roughness) {
+    const auto cosi = 1.0f - ndl;
+    const auto cosi2 = cosi*cosi;
+    const auto coso = 1.0f - ndv;
+    const auto coso2 = coso*coso;
+    const auto fd90Sub1 = 2.0f*ldh*ldh*roughness - 0.5f;
+    return one_over_pi<float>()*(1.0f + fd90Sub1*cosi*cosi2*cosi2)
+        *(1.0f + fd90Sub1*coso*coso2*coso2);
 }
 
-CUDAINLINE float disneyDiffuse2015(float ndl, float ndv, float ldh, float roughness) {
-    auto cosi = 1.0f - ndl;
-    auto cosi2 = cosi * cosi;
-    auto coso = 1.0f - ndv;
-    auto coso2 = coso * coso;
-    auto fl = cosi * cosi2*cosi2;
-    auto fv = coso * coso2*coso2;
-    auto rr = 2.0f*ldh*ldh*roughness;
-    auto lambert = (1.0f - 0.5f*fl)*(1.0f - 0.5f*fv);
-    auto retroReflection = rr * (fl + fv + fl * fv * (rr - 1.0f));
+CUDAINLINE float disneyDiffuse2015(const float ndl, const float ndv, const float ldh, const float roughness) {
+    const auto cosi = 1.0f - ndl;
+    const auto cosi2 = cosi * cosi;
+    const auto coso = 1.0f - ndv;
+    const auto coso2 = coso * coso;
+    const auto fl = cosi * cosi2*cosi2;
+    const auto fv = coso * coso2*coso2;
+    const auto rr = 2.0f*ldh*ldh*roughness;
+    const auto lambert = (1.0f - 0.5f*fl)*(1.0f - 0.5f*fv);
+    const auto retroReflection = rr * (fl + fv + fl * fv * (rr - 1.0f));
     return one_over_pi<float>()*(lambert+retroReflection);
 }
 
@@ -147,49 +155,50 @@ struct DisneyBRDFArg final {
     vec3 baseColor;//linear color space
 };
 
-CUDAINLINE vec3 disneyBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y,DisneyBRDFArg arg) {
-    auto ndl = dot(L, N);
-    auto ndv = dot(V, N);
+CUDAINLINE vec3 disneyBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, const DisneyBRDFArg arg) {
+    const auto ndl = dot(L, N);
+    const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);
-    auto H = calcHalf(L, V);
-    auto ldh = dot(L, H);
-    auto ndh = dot(N,H);
+    const auto H = calcHalf(L, V);
+    const auto ldh = dot(L, H);
+    const auto ndh = dot(N,H);
 
     //sheen
-    auto lum = luminosity(arg.baseColor);
-    auto ctint = arg.baseColor / lum;
-    auto cspec = mix(arg.specular*0.08f*mix(vec3(1.0f), ctint, arg.specularTint), arg.baseColor, arg.metallic);
-    auto csheen = mix(vec3(1.0f), ctint,arg.sheenTint);
-    auto fh = fresnelSchlick(ldh);
-    auto sheen = fh * arg.sheen * csheen;
+    const auto lum = luminosity(arg.baseColor);
+    const auto ctint = arg.baseColor / lum;
+    const auto cspec = mix(arg.specular*0.08f*mix(vec3(1.0f), ctint, arg.specularTint), arg.baseColor, arg.metallic);
+    const auto csheen = mix(vec3(1.0f), ctint,arg.sheenTint);
+    const auto fh = fresnelSchlick(ldh);
+    const auto sheen = fh * arg.sheen * csheen;
 
     //subsurface
-    auto fl = fresnelSchlick(ndl), fv = fresnelSchlick(ndv);
-    auto fss90 = ldh * ldh*arg.roughness;
-    auto fss = mix(1.0f, fss90, fl)*mix(1.0f, fss90, fv);
-    auto ss = 1.25f * (fss * (1.0f / (ndl + ndv) - 0.5f) + 0.5f);
+    const auto fl = fresnelSchlick(ndl);
+    const auto fv = fresnelSchlick(ndv);
+    const auto fss90 = ldh * ldh*arg.roughness;
+    const auto fss = mix(1.0f, fss90, fl)*mix(1.0f, fss90, fv);
+    const auto ss = 1.25f * (fss * (1.0f / (ndl + ndv) - 0.5f) + 0.5f);
 
     //diffuse fresnel
-    auto fd90 = 0.5f + 2.0f*fss90;
-    auto fd = mix(1.0f, fd90, fl)*mix(1.0f, fd90, fv);
+    const auto fd90 = 0.5f + 2.0f*fss90;
+    const auto fd = mix(1.0f, fd90, fl)*mix(1.0f, fd90, fv);
 
     //specular
-    auto aspect = sqrt(1.0f - arg.anisotropic*0.9f);
-    auto sqrr = arg.roughness*arg.roughness;
-    auto ax = fmax(0.001f, sqrr/aspect);
-    auto ay = fmax(0.001f, sqrr*aspect);
-    auto D = DGTR2Aniso(ndh, ax, ay,dot(X,H),dot(Y,H));
-    auto F = mix(cspec,vec3(1.0f),fh);
-    auto G = smithGAniso(ndl, dot(L, X), dot(L, Y), ax, ay)*
+    const auto aspect = sqrt(1.0f - arg.anisotropic*0.9f);
+    const auto sqrr = arg.roughness*arg.roughness;
+    const auto ax = fmax(0.001f, sqrr/aspect);
+    const auto ay = fmax(0.001f, sqrr*aspect);
+    const auto D = DGTR2Aniso(ndh, ax, ay,dot(X,H),dot(Y,H));
+    const auto F = mix(cspec,vec3(1.0f),fh);
+    const auto G = smithGAniso(ndl, dot(L, X), dot(L, Y), ax, ay)*
         smithGAniso(ndv,dot(V,X),dot(V,Y),ax,ay);
-    auto Vs = D * G * F;
+    const auto Vs = D * G * F;
 
     //clearcoat
-    auto Dc = DGTR1(ndh,mix(0.1f,0.001f,arg.clearcoatGloss));
-    auto Fc = mix(0.04f, 1.0f, fh);
+    const auto Dc = DGTR1(ndh,mix(0.1f,0.001f,arg.clearcoatGloss));
+    const auto Fc = mix(0.04f, 1.0f, fh);
     constexpr auto a2 = 0.25f*0.25f;
-    auto Gc = smithGGGX(ndl,a2)*smithGGGX(ndv,a2);
-    auto Vc = Dc * Fc*Gc;
+    const auto Gc = smithGGGX(ndl,a2)*smithGGGX(ndv,a2);
+    const auto Vc = Dc * Fc*Gc;
 
     return (one_over_pi<float>()*mix(fd, ss, arg.subsurface)*arg.baseColor + sheen)
         *(1.0f - arg.metallic) + Vs + 0.25f*arg.clearcoat*Vc;
@@ -211,46 +220,47 @@ struct UE4BRDFArg final {
     vec3 baseColor;//linear color space
 };
 //ratio = dis/radius
-CUDAINLINE vec3 UE4BRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, UE4BRDFArg arg,float ratio) {
-    auto ndl = dot(L, N);
-    auto ndv = dot(V, N);
+CUDAINLINE vec3 UE4BRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, const UE4BRDFArg arg, const float ratio) {
+    const auto ndl = dot(L, N);
+    const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);
-    auto H = calcHalf(L, V);
-    auto ldh = dot(L, H);
-    auto ndh = dot(N, H);
+    const auto H = calcHalf(L, V);
+    const auto ldh = dot(L, H);
+    const auto ndh = dot(N, H);
 
     //sheen
-    auto lum = luminosity(arg.baseColor);
-    auto ctint = arg.baseColor / lum;
-    auto cspec = mix(arg.cavity*0.08f*ctint, arg.baseColor, arg.metallic);
-    auto fh = fresnelSchlickUE4(ldh);
-    auto sheen = fh * arg.sheen * ctint;
+    const auto lum = luminosity(arg.baseColor);
+    const auto ctint = arg.baseColor / lum;
+    const auto cspec = mix(arg.cavity*0.08f*ctint, arg.baseColor, arg.metallic);
+    const auto fh = fresnelSchlickUE4(ldh);
+    const auto sheen = fh * arg.sheen * ctint;
 
     //subsurface
-    auto fl = fresnelSchlickUE4(ndl), fv = fresnelSchlickUE4(ndv);
-    auto fss90 = ldh * ldh*arg.roughness;
-    auto fss = mix(1.0f, fss90, fl)*mix(1.0f, fss90, fv);
-    auto ss = 1.25f * (fss * (1.0f / (ndl + ndv) - 0.5f) + 0.5f);
+    const auto fl = fresnelSchlickUE4(ndl);
+    const auto fv = fresnelSchlickUE4(ndv);
+    const auto fss90 = ldh * ldh*arg.roughness;
+    const auto fss = mix(1.0f, fss90, fl)*mix(1.0f, fss90, fv);
+    const auto ss = 1.25f * (fss * (1.0f / (ndl + ndv) - 0.5f) + 0.5f);
 
     //diffuse fresnel
-    auto fd = 1.0f;
+    const auto fd = 1.0f;
 
     //specular
-    auto aspect = sqrt(1.0f - arg.anisotropy*0.9f);
-    auto alpha = saturate(arg.roughness*arg.roughness+0.5f*ratio);
-    auto ax = fmax(0.001f, alpha/aspect);
-    auto ay = fmax(0.001f, alpha*aspect);
-    auto D = DGTR2Aniso(ndh, ax, ay, dot(X, H), dot(Y, H));
-    auto F = mix(cspec, vec3(1.0f), fh);
-    auto G = smithGUE4(ndl,ndv,arg.roughness);
-    auto Vs = D * G * F;
+    const auto aspect = sqrt(1.0f - arg.anisotropy*0.9f);
+    const auto alpha = saturate(arg.roughness*arg.roughness+0.5f*ratio);
+    const auto ax = fmax(0.001f, alpha/aspect);
+    const auto ay = fmax(0.001f, alpha*aspect);
+    const auto D = DGTR2Aniso(ndh, ax, ay, dot(X, H), dot(Y, H));
+    const auto F = mix(cspec, vec3(1.0f), fh);
+    const auto G = smithGUE4(ndl,ndv,arg.roughness);
+    const auto Vs = D * G * F;
 
     //clearcoat
-    auto Dc = DGTR1(ndh, 0.05f);
-    auto Fc = mix(0.04f, 1.0f, fh);
+    const auto Dc = DGTR1(ndh, 0.05f);
+    const auto Fc = mix(0.04f, 1.0f, fh);
     constexpr auto a2 = 0.25f*0.25f;
-    auto Gc = smithGGGX(ndl, a2)*smithGGGX(ndv, a2);
-    auto Vc = Dc * Fc*Gc;
+    const auto Gc = smithGGGX(ndl, a2)*smithGGGX(ndv, a2);
+    const auto Vc = Dc * Fc*Gc;
 
     return (one_over_pi<float>()*mix(fd, ss, arg.subsurface)*arg.baseColor + sheen)
         *(1.0f - arg.metallic) + Vs + 0.25f*arg.clearcoat*Vc;
@@ -286,25 +296,25 @@ CUDAINLINE float calcFv(float r) {
     return saturate(((A*r +B)*r + C)*r + D);
 }
 CUDAINLINE vec3 frostbiteBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, FrostbiteBRDFArg arg) {
-    auto ndl = dot(L, N);
-    auto ndv = dot(V, N);
+    const auto ndl = dot(L, N);
+    const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);
-    auto H = calcHalf(L, V);
-    auto ldh = dot(L, H);
-    auto ndh = dot(N, H);
-    auto vdh = dot(V, H);
+    const auto H = calcHalf(L, V);
+    const auto ldh = dot(L, H);
+    const auto ndh = dot(N, H);
+    const auto vdh = dot(V, H);
 
     //diffuse
-    auto k = 1.0f - arg.smoothness;
-    auto roughness = k*k;
-    auto fd =arg.baseColor * (disneyDiffuse(ndl,ndv,ldh,roughness)*(1.0f-arg.metallic));
+    const auto k = 1.0f - arg.smoothness;
+    const auto roughness = k*k;
+    const auto fd =arg.baseColor * (disneyDiffuse(ndl,ndv,ldh,roughness)*(1.0f-arg.metallic));
 
     //specular
-    auto D = GGXD(ndh,roughness);
-    auto f0 =mix(vec3(calcFv(arg.reflectance)),arg.baseColor,arg.metallic);
-    auto F =mix(f0,vec3(1.0f),fresnelSchlick(ldh));
-    auto G = smithGHeightCorrelated(ndl,ndv,ldh,vdh,roughness*roughness);
-    auto fs =F*(D*G / (4.0f*ndl*ndv));
+    const auto D = GGXD(ndh,roughness);
+    const auto f0 =mix(vec3(calcFv(arg.reflectance)),arg.baseColor,arg.metallic);
+    const auto F =mix(f0,vec3(1.0f),fresnelSchlick(ldh));
+    const auto G = smithGHeightCorrelated(ndl,ndv,ldh,vdh,roughness*roughness);
+    const auto fs =F*(D*G / (4.0f*ndl*ndv));
     return fd+fs;
 }
 
@@ -328,23 +338,23 @@ struct MixedBRDFArg final{
     float anisotropic;
 };
 CUDAINLINE vec3 mixedBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, MixedBRDFArg arg) {
-    auto ndl = dot(L, N);
-    auto ndv = dot(V, N);
+    const auto ndl = dot(L, N);
+    const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);
-    auto H = calcHalf(L, V);
-    auto ldh = dot(L, H);
-    auto vdh = dot(V, H);
-    auto ndh = dot(N, H);
+    const auto H = calcHalf(L, V);
+    const auto ldh = dot(L, H);
+    const auto vdh = dot(V, H);
+    const auto ndh = dot(N, H);
 
-    auto fd = arg.baseColor*(disneyDiffuse2015(ndl,ndv,ldh,arg.roughness)*(1.0f-arg.metallic));
-    auto F = fresnelGulbrandsen(arg.baseColor,arg.edgeTint,ldh);
-    auto aspect = sqrt(1.0f - arg.anisotropic*0.9f);
-    auto sqrr = arg.roughness*arg.roughness;
-    auto ax = fmax(0.001f, sqrr / aspect);
-    auto ay = fmax(0.001f, sqrr*aspect);
-    auto kx=ax*dot(X,V), ky =ay*dot(Y,V) ;
-    auto G = smithGHeightCorrelated(ndl, ndv, ldh, vdh, kx*kx+ky*ky);
-    auto D = DGTR2Aniso(ndh,ax,ay,dot(X,H),dot(Y,H));
-    auto fs=F*(D*G/(4.0f*ndl*ndv));
+    const auto fd = arg.baseColor*(disneyDiffuse2015(ndl,ndv,ldh,arg.roughness)*(1.0f-arg.metallic));
+    const auto F = fresnelGulbrandsen(arg.baseColor,arg.edgeTint,ldh);
+    const auto aspect = sqrt(1.0f - arg.anisotropic*0.9f);
+    const auto sqrr = arg.roughness*arg.roughness;
+    const auto ax = fmax(0.001f, sqrr / aspect);
+    const auto ay = fmax(0.001f, sqrr*aspect);
+    const auto kx=ax*dot(X,V), ky =ay*dot(Y,V) ;
+    const auto G = smithGHeightCorrelated(ndl, ndv, ldh, vdh, kx*kx+ky*ky);
+    const auto D = DGTR2Aniso(ndh,ax,ay,dot(X,H),dot(Y,H));
+    const auto fs=F*(D*G/(4.0f*ndl*ndv));
     return fd+fs;
 }

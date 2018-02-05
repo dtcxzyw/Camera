@@ -163,5 +163,8 @@
     <CudaCompile Include="..\..\Src\Base\Constant.cu">
       <Filter>Base</Filter>
     </CudaCompile>
+    <CudaCompile Include="..\..\Src\ScanLineRenderer\TriangleRasterizer.cu">
+      <Filter>ScanLineRenderer</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
