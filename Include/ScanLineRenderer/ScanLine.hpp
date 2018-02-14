@@ -4,10 +4,10 @@
 #include <Base/Memory.hpp>
 
 template<typename Vert, typename Out, typename Uniform>
-using VSF = void(*)(Vert in,Uniform uniform, vec3& pos,Out& out);
+using VSF = void(*)(Vert in,const Uniform& uniform, vec3& pos,Out& out);
 
 template<typename Out, typename Uniform, typename FrameBuffer>
-using FSF = void(*)(unsigned int id,ivec2 uv,float z, Out in, Uniform uniform,
+using FSF = void(*)(unsigned int id,ivec2 uv,float z, Out in,const Uniform& uniform,
     FrameBuffer& frameBuffer);
 
 template<typename Out>
@@ -40,7 +40,7 @@ CALLABLE void runVS(const unsigned int size,READONLY(Vert) in,
 }
 
 template<typename Uniform, typename FrameBuffer>
-using FSFSF = void(*)(ivec2 NDC, Uniform uniform, FrameBuffer frameBuffer);
+using FSFSF = void(*)(ivec2 NDC,const Uniform& uniform, FrameBuffer frameBuffer);
 
 template<typename Uniform, typename FrameBuffer,FSFSF<Uniform,FrameBuffer> fs>
     CALLABLE void runFSFS(READONLY(Uniform) u,

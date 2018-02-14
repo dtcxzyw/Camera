@@ -16,7 +16,8 @@ void StaticMesh::load(const std::string & path,Stream& loader) {
         aiProcess_GenSmoothNormals |
         aiProcess_GenUVCoords|
         aiProcess_CalcTangentSpace|
-        aiProcess_FixInfacingNormals
+        aiProcess_FixInfacingNormals|
+        aiProcess_ImproveCacheLocality
     );
 
     if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE)

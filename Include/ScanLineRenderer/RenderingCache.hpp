@@ -3,8 +3,8 @@
 
 namespace Impl {
     template<typename T>
-    CALLABLE void updateCache(unsigned int size, T* address) {
-        auto id = getID();
+    CALLABLE void updateCache(const unsigned int size, T* address) {
+        const auto id = getID();
         if (id >= size)return;
         address[id] <<= 1;
     }
@@ -20,11 +20,11 @@ public:
     RenderingCacheBlockGPU(T* address, T* begin, T* end)
         :mAddress(address), mBegin(begin), mEnd(end) {}
     CUDAINLINE RenderingCacheBlockGPU(){}
-    CUDAINLINE bool query(unsigned int id) {
+    CUDAINLINE bool query(const unsigned int id) const {
         auto ptr = mAddress + id;
         return (mBegin <= ptr & ptr < mEnd) | (*ptr);
     }
-    CUDAINLINE void record(unsigned int id) {
+    CUDAINLINE void record(const unsigned int id) const {
         mAddress[id] =std::numeric_limits<T>::max();
     }
 };
@@ -37,7 +37,7 @@ private:
     T* mEnd;
     bool mIsBlock;
 public:
-    RenderingCacheBlock(T* address, T* begin, T* end,bool isBlock=false)
+    RenderingCacheBlock(T* address, T* begin, T* end, const bool isBlock=false)
         :mAddress(address), mBegin(begin), mEnd(end),mIsBlock(isBlock) {}
     void update(CommandBuffer& buffer) {
         buffer.runKernelLinear(Impl::updateCache<T>,mEnd-mBegin,mBegin);
@@ -63,7 +63,7 @@ public:
     void reset() {
         mShouldReset = true;
     }
-    RenderingCache(size_t size, size_t blockNum = 30)
+    RenderingCache(const size_t size, const size_t blockNum = 30)
         :mData(allocBuffer<T>(size)),mBlockSize(std::max(static_cast<size_t>(1), size / blockNum)) {
         auto begin = mData.begin();
         auto end = begin + mBlockSize;

@@ -3,7 +3,7 @@
 #include <Base/Queue.hpp>
 
 template<typename Vert, typename Uniform>
-using GSF = void(*)(Vert* in, Uniform uniform,QueueGPU<Vert> queue);
+using GSF = void(*)(Vert* in,const Uniform& uniform,QueueGPU<Vert> queue);
 
 template<unsigned int inv,typename Index, typename Vert, typename Uniform,
     GSF<Vert, Uniform> gs>
