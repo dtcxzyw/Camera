@@ -167,7 +167,7 @@ void CommandBuffer::pushOperator(std::function<void(Stream&)>&& op) {
 }
 
 void CommandBuffer::update(Stream& stream) {
-    if (!mPromise)throw std::exception("The command buffer is imcomplete.");
+    if (!mPromise)throw std::runtime_error("The command buffer is imcomplete.");
     if (!mCommandQueue.empty()) {
         mStream = stream.getID();
         mCommandQueue.front()->emit(stream);

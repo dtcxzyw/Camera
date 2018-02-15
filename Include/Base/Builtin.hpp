@@ -67,12 +67,14 @@ inline auto calcMaxMipmapLevel(const uvec2 size) {
 }
 
 template <typename T>
+void downSample(cudaArray_t src, cudaArray_t dst, uvec2 size, Stream& stream);
+
+template <typename T>
 class BuiltinMipmapedArray final : Uncopyable {
 private:
     cudaMipmappedArray_t mArray;
     using Type = typename Rename<T>::Type;
     uvec2 mSize;
-    void downSample(cudaArray_t src, cudaArray_t dst, uvec2 size, Stream& stream);
 
     void genMipmaps(const void* src, const unsigned int level, Stream& stream) {
         cudaArray_t srcArray;
@@ -90,7 +92,7 @@ private:
             size = max(size / 2U, uvec2{1, 1});
             cudaArray_t dstArray;
             checkError(cudaGetMipmappedArrayLevel(&dstArray, mArray, i));
-            downSample(srcArray, dstArray, size, stream);
+            downSample<T>(srcArray, dstArray, size, stream);
             srcArray = dstArray;
         }
         stream.sync();
@@ -98,7 +100,7 @@ private:
 
 public:
     BuiltinMipmapedArray(const void* src, const uvec2 size, Stream& stream,
-                         int flags = cudaArrayDefault, unsigned int level = 0) : mSize(size) {
+                         const int flags = cudaArrayDefault, unsigned int level = 0) : mSize(size) {
         auto desc = cudaCreateChannelDesc<Type>();
         const auto maxLevel = calcMaxMipmapLevel(size);
         if (level == 0)level = maxLevel;
@@ -319,6 +321,7 @@ public:
 
     ~BuiltinCubeMap() {
         checkError(cudaDestroyTextureObject(mTexture));
+        checkError(cudaFreeArray(mArray));
     }
 
     cudaArray_t get() const {
@@ -330,22 +333,58 @@ public:
     }
 };
 
+//TODO:complete mipmaped cube map
+template <typename T>
+class BuiltinMipmapedCubeMap final : Uncopyable {
+private:
+    using Type = typename Rename<T>::Type;
+    cudaMipmappedArray_t mArray;
+    cudaTextureObject_t mTexture;
+public:
+    explicit BuiltinMipmapedCubeMap(const size_t size) {
+        auto desc = cudaCreateChannelDesc<Type>();
+        const cudaExtent extent{ size, size, 6 };
+        checkError(cudaMallocMipmappedArray(&mArray, &desc, extent, cudaArrayCubemap));
+        cudaResourceDesc RD;
+        RD.resType = cudaResourceTypeMipmappedArray;
+        RD.res.mipmap.mipmap = mArray;
+        cudaTextureDesc TD;
+        memset(&TD, 0, sizeof(TD));
+        TD.filterMode = cudaFilterModeLinear;
+        TD.normalizedCoords = 1;
+        TD.readMode = cudaReadModeElementType;
+        checkError(cudaCreateTextureObject(&mTexture, &RD, &TD, nullptr));
+    }
+
+    ~BuiltinMipmapedCubeMap() {
+        checkError(cudaDestroyTextureObject(mTexture));
+        checkError(cudaFreeMipmappedArray(mArray));
+    }
+
+    cudaMipmappedArray_t get() const {
+        return mArray;
+    }
+
+    BuiltinSamplerGPU<T> toSampler() const {
+        return mTexture;
+    }
+};
+
 namespace Impl {
     template <typename T>
     CALLABLE void downSample(BuiltinSamplerGPU<T> src, BuiltinRenderTargetGPU<T> rt) {
-        uvec2 p{blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
-        const uvec2 base = {p.x * 2, p.y * 2};
+        uvec2 p{ blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y };
+        const uvec2 base = { p.x * 2, p.y * 2 };
         T val = {};
         for (auto i = 0; i < 2; ++i)
             for (auto j = 0; j < 2; ++j)
-                val += src.get(base + uvec2{i, j});
+                val += src.get(base + uvec2{ i, j });
         rt.set(p, val * 0.25f);
     }
 }
 
 template <typename T>
-void BuiltinMipmapedArray<T>::downSample(cudaArray_t src, cudaArray_t dst,
-                                         uvec2 size, Stream& stream) {
+void downSample(cudaArray_t src, cudaArray_t dst, uvec2 size, Stream& stream) {
     BuiltinSampler<T> sampler(src);
     BuiltinRenderTarget<T> RT(dst, size);
     const uint mul = sqrt(getEnvironment().getProp().maxThreadsPerBlock);
@@ -353,3 +392,4 @@ void BuiltinMipmapedArray<T>::downSample(cudaArray_t src, cudaArray_t dst,
     dim3 block(mul, mul);
     stream.runDim(Impl::downSample<T>, grid, block, sampler.toSampler(), RT.toTarget());
 }
+

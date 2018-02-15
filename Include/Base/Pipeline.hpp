@@ -11,7 +11,7 @@ class Event;
 
 class Stream final:Uncopyable {
 private:
-    cudaStream_t mStream;
+    cudaStream_t mStream{};
     unsigned int mMaxThread;
 public:
     Stream();
@@ -68,11 +68,11 @@ public:
 
 class Event final :Uncopyable {
 private:
-    cudaEvent_t mEvent;
+    cudaEvent_t mEvent{};
 public:
     Event(Stream& stream);
     void wait();
-    cudaEvent_t get();
+    cudaEvent_t get() const;
     ~Event();
 };
 

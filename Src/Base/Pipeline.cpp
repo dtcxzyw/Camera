@@ -1,4 +1,5 @@
 #include <Base/Pipeline.hpp>
+#include <stdexcept>
 
 Stream::Stream() {
     checkError(cudaStreamCreateWithFlags(&mStream,cudaStreamNonBlocking));
@@ -28,18 +29,18 @@ void Stream::wait(Event & event) {
 void Environment::init() {
     int cnt;
     checkError(cudaGetDeviceCount(&cnt));
-    cudaDeviceProp prop;
-    int id = -1, maxwell = 0;
+    cudaDeviceProp prop{};
+    auto id = -1, maxwell = 0;
     size_t size = 0;
-    for (int i = 0; i < cnt; ++i) {
+    for (auto i = 0; i < cnt; ++i) {
         checkError(cudaGetDeviceProperties(&prop, i));
-        int ver = prop.major * 10000 + prop.minor;
+        const auto ver = prop.major * 10000 + prop.minor;
         if (ver < 50002)continue;
         if (maxwell < ver || (maxwell==ver && prop.totalGlobalMem>size))
             id = i, maxwell = ver,size=prop.totalGlobalMem;
     }
     if (id == -1)
-        throw std::exception("Failed to initialize the CUDA environment.");
+        throw std::runtime_error("Failed to initialize the CUDA environment.");
     checkError(cudaSetDevice(id));
     checkError(cudaGetDeviceProperties(&mProp, id));
 }
@@ -67,7 +68,7 @@ void Event::wait() {
     checkError(cudaEventSynchronize(mEvent));
 }
 
-cudaEvent_t Event::get() {
+cudaEvent_t Event::get() const {
     return mEvent;
 }
 

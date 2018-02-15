@@ -1,13 +1,13 @@
 #include <Base/Common.hpp>
-#include <exception>
 #include <cstdio>
+#include <stdexcept>
 
-void checkError(cudaError_t error) {
+void checkError(const cudaError_t error) {
     if (error != cudaSuccess) {
         puts(cudaGetErrorName(error));
         puts(cudaGetErrorString(error));
         __debugbreak();
-        throw std::exception(cudaGetErrorString(error));
+        throw std::runtime_error(cudaGetErrorString(error));
     }
     //reset error
     cudaGetLastError();

@@ -19,7 +19,7 @@ void StaticMesh::load(const std::string & path,Stream& loader) {
     );
 
     if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE)
-        throw std::exception("Failed to load the scene.");
+        throw std::runtime_error("Failed to load the scene.");
     const auto mesh=scene->mMeshes[0];
     {
         vert = allocBuffer<Vertex>(mesh->mNumVertices);

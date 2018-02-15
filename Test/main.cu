@@ -187,7 +187,7 @@ int main() {
         envMapSampler.reset();
         envMap.reset();
     }
-    catch (const std::exception& e) {
+    catch (const std::runtime_error& e) {
         puts("Catched an error:");
         puts(e.what());
         system("pause");

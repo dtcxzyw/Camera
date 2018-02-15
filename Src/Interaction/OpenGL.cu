@@ -4,14 +4,12 @@
 #include <IMGUI/imgui_impl_glfw_gl3.h>
 #include <Base/CompileEnd.hpp>
 
-#include <exception>
-
 class GLContext final:Singletion {
 private:
     bool mFlag;
     GLContext():mFlag(false) {
         if (!glfwInit())
-            throw std::exception("Failed to initialize glfw.");
+            throw std::runtime_error("Failed to initialize glfw.");
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -27,7 +25,7 @@ public:
             if (!mFlag) {
                 glewExperimental = true;
                 if (glewInit() != GLEW_NO_ERROR)
-                    throw std::exception("Failed to initialize glew.");
+                    throw std::runtime_error("Failed to initialize glew.");
                 mFlag = true;
             }
         }
@@ -46,7 +44,7 @@ GLWindow::GLWindow() {
     auto& context=getContext();
     mWindow = glfwCreateWindow(800, 600, "OpenGL Viewer", nullptr, nullptr);
     if (!mWindow)
-        throw std::exception("Failed to create a window.");
+        throw std::runtime_error("Failed to create a window.");
     context.makeContext(mWindow);
     glfwSwapInterval(0);
     glGenFramebuffers(1, &mFBO);
@@ -97,7 +95,7 @@ GLWindow::~GLWindow() {
 
 IMGUIWindow::IMGUIWindow() {
     if (!ImGui_ImplGlfwGL3_Init(mWindow,true))
-        throw std::exception("Failed to setup ImGui binding.");
+        throw std::runtime_error("Failed to setup ImGui binding.");
 }
 
 void IMGUIWindow::newFrame() {

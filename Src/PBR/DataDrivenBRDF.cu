@@ -7,12 +7,12 @@ BRDFSampler::BRDFSampler(READONLY(vec3) data):mData(data) {}
 MERLBRDFData::MERLBRDFData(const std::string& path, Stream& loader) {
     std::ifstream in(path, std::ios::binary);
     if (!in.is_open())
-        throw std::exception("Failed to load the BRDF database.");
+        throw std::runtime_error("Failed to load the BRDF database.");
     int dims[3];
     in.read(reinterpret_cast<char*>(dims),sizeof(dims));
     const auto rsiz = dims[0] * dims[1] * dims[2];
     if (rsiz != size)
-        throw std::exception("Failed to load the BRDF database.");
+        throw std::runtime_error("Failed to load the BRDF database.");
     std::vector<double> brdf(3*rsiz);
     in.read(reinterpret_cast<char*>(brdf.data()),brdf.size()*sizeof(double));
     mData = allocBuffer<vec3>(rsiz);

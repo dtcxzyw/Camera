@@ -1,5 +1,6 @@
 #pragma once
 #include "Pipeline.hpp"
+#include <stdexcept>
 
 namespace Impl {
     constexpr auto blockNum = 512U, blockSize = 32U;
@@ -15,7 +16,7 @@ private:
 public:
     Constant():mAddress(static_cast<T*>(Impl::constantAlloc(sizeof(T)))) {
         if (!mAddress)
-            throw std::exception("Failed to allocate CUDA Constant Memory.");
+            throw std::runtime_error("Failed to allocate CUDA Constant Memory.");
     }
 
     explicit Constant(const T& rhs) :Constant() {
