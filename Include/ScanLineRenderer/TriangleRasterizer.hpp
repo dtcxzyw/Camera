@@ -5,6 +5,7 @@
 #include <math_functions.h>
 #include <device_atomic_functions.h>
 #include <cuda_device_runtime_api.h>
+#include <sm_30_intrinsics.h>
 #include <Base/CompileEnd.hpp>
 
 inline auto calcBufferSize(const unsigned int history, const unsigned int base, const unsigned int maxv) {
@@ -209,15 +210,24 @@ std::pair<MemoryRef<unsigned int>, MemoryRef<TriangleRef>> sortTriangles(Command
                                                                          const MemoryRef<TriangleRef>& ref);
 
 CUDAINLINE bool calcWeight(const mat4 w0, const vec2 p, const vec3 invz,
-    const float near,const float invnf,vec4& w) {
+    const float near,const float invnf,vec3& w,float& nz) {
     w.x = w0[0].x * p.x + w0[0].y * p.y + w0[0].z;
     w.y = w0[1].x * p.x + w0[1].y * p.y + w0[1].z;
     w.z = w0[2].x * p.x + w0[2].y * p.y + w0[2].z;
     const bool flag = w.x >= 0.0f & w.y >= 0.0f & w.z >= 0.0f;
     const auto z = 1.0f / (invz.x*w.x+invz.y*w.y+invz.z*w.z);
     w.x *= z, w.y *= z, w.z *= z;
-    w.w = (z - near)*invnf;
+    nz = (z - near)*invnf;
     return flag;
+}
+
+CUDAINLINE vec3 shuffleWeight(vec3 w,int laneMask) {
+    constexpr auto mask = 0xffffffff;
+    return {
+        __shfl_xor_sync(mask,w.x,laneMask),
+        __shfl_xor_sync(mask,w.y,laneMask),
+        __shfl_xor_sync(mask,w.z,laneMask)
+    };
 }
 
 //2,4,8,16,32
@@ -228,14 +238,19 @@ CALLABLE void drawMicroT(READONLY(Triangle<Out>) info,READONLY(TriangleRef) idx,
                          const float near, const float invnf) {
     const auto ref = idx[blockIdx.x];
     const auto tri = info[ref.id];
-    const auto offX = threadIdx.z >> 1U, offY = threadIdx.z & 1U;
-    const ivec2 uv{ref.rect.x + (threadIdx.x<<1)+offX, ref.rect.z + (threadIdx.y<<1)+offY};
+    const auto offX = threadIdx.x >> 1U, offY = threadIdx.x & 1U;
+    const ivec2 uv{ref.rect.x + (threadIdx.y<<1)+offX, ref.rect.z + (threadIdx.z<<1)+offY};
     const vec2 p{uv.x + 0.5f, uv.y + 0.5f};
-    vec4 w;
-    const auto flag = calcWeight(tri.w,p,tri.invz,near,invnf,w);
+    vec3 w;
+    float z;
+    const auto flag = calcWeight(tri.w,p,tri.invz,near,invnf,w,z);
+    const auto ddx = (shuffleWeight(w,0b10)-w)*(offX?1.0f:-1.0f);
+    const auto ddy = (shuffleWeight(w,0b01)-w)*(offY?1.0f:-1.0f);
     if (p.x <= ref.rect.y & p.y <= ref.rect.w & flag) {
         const auto fout = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
-        fs(tri.id,uv,w.w,fout,*uniform,*frameBuffer);
+        const auto ddxo= tri.out[0] * ddx.x + tri.out[1] * ddx.y + tri.out[2] * ddx.z;
+        const auto ddyo = tri.out[0] * ddy.x + tri.out[1] * ddy.y + tri.out[2] * ddy.z;
+        fs(tri.id, uv, z, fout,ddxo, ddyo, *uniform, *frameBuffer);
     }
 }
 
@@ -248,7 +263,7 @@ CUDAINLINE void applyTFS(unsigned int* offset, Triangle<Out>* tri, TriangleRef* 
         if (size) {
             const auto bsiz = 1U << i;
             dim3 grid(size);
-            dim3 block(bsiz, bsiz,4);
+            dim3 block(4,bsiz, bsiz);
             drawMicroT<Out, Uniform, FrameBuffer, first> << <grid, block >> >(tri, idx + offset[i],
                                                                               uniform, frameBuffer, near, invnf);
         }

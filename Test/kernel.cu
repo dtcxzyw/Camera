@@ -19,11 +19,13 @@ CUDAINLINE void VS(VI in, const Uniform& uniform, vec3& cpos, OI& out) {
     cpos = mat4(mat3(uniform.V)) * wp;
 }
 
-CUDAINLINE void setSkyPoint(unsigned int, ivec2 uv, float, OI, const Uniform&, FrameBufferGPU& fbo) {
+CUDAINLINE void setSkyPoint(unsigned int, ivec2 uv, float, const OI&, const OI&, const OI&,
+    const Uniform&, FrameBufferGPU& fbo) {
     fbo.depth.set(uv, 0xffffff00);
 }
 
-CUDAINLINE void drawSky(unsigned int, ivec2 uv, float, OI out, const Uniform& uniform, FrameBufferGPU& fbo) {
+CUDAINLINE void drawSky(unsigned int, ivec2 uv, float, const OI& out, const OI&, const OI&, 
+    const Uniform& uniform, FrameBufferGPU& fbo) {
     if (fbo.depth.get(uv) == 0xffffff00) {
         const vec3 p = out.get<pos>();
         fbo.color.set(uv, uniform.sampler.getCubeMap(p));
@@ -48,11 +50,13 @@ CUDAINLINE bool CSM(unsigned int id, vec3& pa, vec3& pb, vec3& pc, const Uniform
 
 constexpr float maxdu = std::numeric_limits<unsigned int>::max();
 
-CUDAINLINE void setPoint(unsigned int, ivec2 uv, float z, OI, const Uniform&, FrameBufferGPU& fbo) {
+CUDAINLINE void setPoint(unsigned int, ivec2 uv, float z,const OI&,const OI&,const OI&, 
+    const Uniform&, FrameBufferGPU& fbo) {
     fbo.depth.set(uv, z * maxdu);
 }
 
-CUDAINLINE void drawPoint(unsigned int triID, ivec2 uv, float z, OI out, const Uniform& uniform, FrameBufferGPU& fbo) {
+CUDAINLINE void drawPoint(unsigned int triID, ivec2 uv, float z, const OI& out, const OI&,
+    const OI&, const Uniform& uniform, FrameBufferGPU& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
         uniform.cache.record(triID);
         const vec3 p = out.get<pos>();
@@ -109,8 +113,8 @@ void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
             const Camera::RasterPosConverter converter, CommandBuffer& buffer) {
     fbo.colorRT->clear(buffer, vec4{0.0f, 0.0f, 0.0f, 1.0f});
     fbo.depthBuffer->clear(buffer);
-    renderMesh<VS, CS, setSkyPoint, drawSky>(skybox, uniform, fbo, converter, CullFace::Front, sh, buffer);
     renderMesh<VSM, CSM, setPoint, drawPoint>(model, uniform, fbo, converter, CullFace::Back, mh, buffer);
+    renderMesh<VS, CS, setSkyPoint, drawSky>(skybox, uniform, fbo, converter, CullFace::Front, sh, buffer);
     auto puni = buffer.allocConstant<PostUniform>();
     auto sum = buffer.allocBuffer<std::pair<float, unsigned int>>();
     buffer.memset(sum);

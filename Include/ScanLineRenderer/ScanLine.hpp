@@ -7,8 +7,8 @@ template<typename Vert, typename Out, typename Uniform>
 using VSF = void(*)(Vert in,const Uniform& uniform, vec3& pos,Out& out);
 
 template<typename Out, typename Uniform, typename FrameBuffer>
-using FSF = void(*)(unsigned int id,ivec2 uv,float z, Out in,const Uniform& uniform,
-    FrameBuffer& frameBuffer);
+using FSF = void(*)(unsigned int id,ivec2 uv,float z,const Out& in, const Out& ddx, const Out& ddy,
+    const Uniform& uniform,FrameBuffer& frameBuffer);
 
 template<typename Out>
 struct VertexInfo {
