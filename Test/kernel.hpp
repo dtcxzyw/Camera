@@ -14,9 +14,9 @@
 
 using VI = StaticMesh::Vertex;
 enum OutInfo {
-    pos,normal,tangent,texCoord
+    Pos,Normal,Tangent,TexCoord
 };
-using OI = Args<VAR(pos, vec3), VAR(normal, vec3),VAR(tangent, vec3)>;
+using OI = Args<VAR(Pos, vec3), VAR(Normal, vec3),VAR(Tangent, vec3)>;
  
 struct FrameBufferGPU final {
     BuiltinRenderTargetGPU<RGBA> color;
@@ -37,8 +37,7 @@ public:
 
     void getRes(void* ptr, const cudaStream_t stream) override {
         if (!mTarget) {
-            mTarget=std::make_shared<BuiltinRenderTarget<RGBA>>(mImage.bind(stream)
-                ,mImage.size());
+            mTarget=std::make_shared<BuiltinRenderTarget<RGBA>>(mImage.bind(stream),mImage.size());
             mStream = stream;
         }
         *reinterpret_cast<BuiltinRenderTargetGPU<RGBA>*>(ptr) = mTarget->toTarget();
@@ -68,10 +67,10 @@ struct FrameBufferCPU final {
     Image image;
     uvec2 size;
     FrameBufferGPU data;
-    void resize(size_t width, size_t height) {
-        if (size.x == width && size.y == height)return;
-        size = { width,height };
-        colorBuffer = std::make_unique<BuiltinArray<RGBA>>(width, height,cudaArraySurfaceLoadStore);
+    void resize(uvec2 nsiz) {
+        if (size==nsiz)return;
+        size = nsiz;
+        colorBuffer = std::make_unique<BuiltinArray<RGBA>>(size,cudaArraySurfaceLoadStore);
         colorRT = std::make_unique <BuiltinRenderTarget<RGBA>>(*colorBuffer);
         depthBuffer = std::make_unique<DepthBuffer<unsigned int>>(size);
         image.resize(size);

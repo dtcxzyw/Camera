@@ -115,7 +115,7 @@ auto addTask(DispatchSystem& system,SwapChainT::SharedFrame frame,uvec2 size,
         cache.reset();
         sh.reset(box.index.size());
     }
-    frame->resize(size.x,size.y);
+    frame->resize(size);
     auto uni = buffer->allocConstant<Uniform>();
     auto block = cache.pop(*buffer);
     uniform.cache = block.toBlock();

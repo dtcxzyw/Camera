@@ -15,7 +15,7 @@ CUDAINLINE bool CS(unsigned int, vec3& pa, vec3& pb, vec3& pc, const Uniform& u)
 
 CUDAINLINE void VS(VI in, const Uniform& uniform, vec3& cpos, OI& out) {
     const auto wp = uniform.Msky * vec4(in.pos, 1.0f);
-    out.get<pos>() = in.pos;
+    out.get<Pos>() = in.pos;
     cpos = mat4(mat3(uniform.V)) * wp;
 }
 
@@ -27,7 +27,7 @@ CUDAINLINE void setSkyPoint(unsigned int, ivec2 uv, float, const OI&, const OI&,
 CUDAINLINE void drawSky(unsigned int, ivec2 uv, float, const OI& out, const OI&, const OI&, 
     const Uniform& uniform, FrameBufferGPU& fbo) {
     if (fbo.depth.get(uv) == 0xffffff00) {
-        const vec3 p = out.get<pos>();
+        const vec3 p = out.get<Pos>();
         fbo.color.set(uv, uniform.sampler.getCubeMap(p));
         //fbo.color.set(uv, uniform.sampler.get(calcHDRUV(p)));
     }
@@ -35,9 +35,9 @@ CUDAINLINE void drawSky(unsigned int, ivec2 uv, float, const OI& out, const OI&,
 
 CUDAINLINE void VSM(VI in, const Uniform& uniform, vec3& cpos, OI& out) {
     const auto wp = uniform.M * vec4(in.pos, 1.0f);
-    out.get<pos>() = wp;
-    out.get<normal>() = uniform.invM * in.normal;
-    out.get<tangent>() = uniform.invM * in.tangent;
+    out.get<Pos>() = wp;
+    out.get<Normal>() = uniform.invM * in.normal;
+    out.get<Tangent>() = uniform.invM * in.tangent;
     cpos = uniform.V * wp;
 }
 
@@ -59,9 +59,9 @@ CUDAINLINE void drawPoint(unsigned int triID, ivec2 uv, float z, const OI& out, 
     const OI&, const Uniform& uniform, FrameBufferGPU& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
         uniform.cache.record(triID);
-        const vec3 p = out.get<pos>();
-        const vec3 N = normalize(out.get<normal>());
-        const vec3 X = normalize(out.get<tangent>());
+        const vec3 p = out.get<Pos>();
+        const vec3 N = normalize(out.get<Normal>());
+        const vec3 X = normalize(out.get<Tangent>());
         const auto Y = normalize(cross(N, X));
         const auto off = uniform.lp - p;
         const auto dis2 = length2(off);
