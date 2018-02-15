@@ -10,7 +10,7 @@ MERLBRDFData::MERLBRDFData(const std::string& path, Stream& loader) {
         throw std::exception("Failed to load the BRDF database.");
     int dims[3];
     in.read(reinterpret_cast<char*>(dims),sizeof(dims));
-    auto rsiz = dims[0] * dims[1] * dims[2];
+    const auto rsiz = dims[0] * dims[1] * dims[2];
     if (rsiz != size)
         throw std::exception("Failed to load the BRDF database.");
     std::vector<double> brdf(3*rsiz);

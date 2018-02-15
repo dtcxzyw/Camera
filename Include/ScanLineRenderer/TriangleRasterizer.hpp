@@ -313,4 +313,5 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
     const auto invnf = 1.0f / (far - near);
     buffer.callKernel(renderTrianglesGPU<Out, Uniform, FrameBuffer, fs...>, sortedTri.first, info,
                       sortedTri.second, uniform.get(), frameBuffer.get(), near, invnf);
+    buffer.sync();
 }

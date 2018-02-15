@@ -2,16 +2,18 @@
 #include  <Base/Math.hpp>
 #include <Base/Pipeline.hpp>
 #include <Base/DispatchSystem.hpp>
+#include <Base/CompileBegin.hpp>
 #include <device_atomic_functions.h>
+#include <Base/CompileEnd.hpp>
 
 template<typename T>
 class DepthBufferGPU final {
 private:
     T* mPtr;
     int mOffset;
-    CUDAINLINE int toPos(ivec2 p) const {
+    CUDAINLINE int toPos(const ivec2 p) const {
         const auto bx=p.x>>5,ox = p.x & 0b11111,by=p.y>>5,oy = p.y & 0b11111;
-        return ((bx*mOffset + by) << 10) | (ox<<5) | oy;
+        return (bx*mOffset + by) << 10 | ox<<5 | oy;
     }
 public:
     DepthBufferGPU() = default;

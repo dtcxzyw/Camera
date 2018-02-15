@@ -33,8 +33,9 @@ private:
     std::shared_ptr<BuiltinRenderTarget<RGBA>> mTarget;
     cudaStream_t mStream;
 public:
-    ImageResourceInstance(Image& image):mImage(image){}
-    void getRes(void* ptr, cudaStream_t stream) override {
+    explicit ImageResourceInstance(Image& image): mImage(image), mStream(nullptr) {}
+
+    void getRes(void* ptr, const cudaStream_t stream) override {
         if (!mTarget) {
             mTarget=std::make_shared<BuiltinRenderTarget<RGBA>>(mImage.bind(stream)
                 ,mImage.size());
@@ -69,16 +70,16 @@ struct FrameBufferCPU final {
     FrameBufferGPU data;
     void resize(size_t width, size_t height) {
         if (size.x == width && size.y == height)return;
+        size = { width,height };
         colorBuffer = std::make_unique<BuiltinArray<RGBA>>(width, height,cudaArraySurfaceLoadStore);
         colorRT = std::make_unique <BuiltinRenderTarget<RGBA>>(*colorBuffer);
-        depthBuffer = std::make_unique<DepthBuffer<unsigned int>>(uvec2(width, height));
-        size = { width,height };
+        depthBuffer = std::make_unique<DepthBuffer<unsigned int>>(size);
         image.resize(size);
         data.color = colorRT->toTarget();
         data.depth = depthBuffer->toBuffer();
         data.mSize = size;
     }
-    MemoryRef<FrameBufferGPU> getData(CommandBuffer& buffer) {
+    MemoryRef<FrameBufferGPU> getData(CommandBuffer& buffer) const {
         auto dataGPU = buffer.allocConstant<FrameBufferGPU>();
         buffer.memcpy(dataGPU, [buf=data](auto call) {call(&buf); });
         return dataGPU;
@@ -104,7 +105,7 @@ struct PostUniform final {
     ALIGN FrameBufferGPU in;
     ALIGN float* lum;
     ALIGN std::pair<float, unsigned int>* sum;
-    PostUniform(FrameBufferGPU buf,float* clum, std::pair<float, unsigned int>* cnt)
+    PostUniform(const FrameBufferGPU buf,float* clum, std::pair<float, unsigned int>* cnt)
         :in(buf),lum(clum),sum(cnt){}
 };
 

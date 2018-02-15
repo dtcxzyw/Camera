@@ -154,6 +154,10 @@ void CommandBuffer::addCallback(cudaStreamCallback_t func, void * data) {
     });
 }
 
+void CommandBuffer::sync() {
+    pushOperator([](Stream& stream) {stream.sync(); });
+}
+
 void CommandBuffer::pushOperator(std::unique_ptr<Impl::Operator>&& op) {
     mCommandQueue.emplace(std::move(op));
 }

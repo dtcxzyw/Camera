@@ -44,3 +44,27 @@ template<typename T>
 auto allocBuffer(size_t size = 1) {
     return DataViewer<T>(std::make_shared<Memory>(size * sizeof(T)));
 }
+
+class PinnedMemory final:Uncopyable {
+private:
+    void* mPtr;
+public:
+    explicit PinnedMemory(size_t size);
+    ~PinnedMemory();
+    void* get() const noexcept;
+};
+
+template<typename T>
+class PinnedBuffer final:Uncopyable {
+private:
+    PinnedMemory mMemory;
+public:
+    explicit PinnedBuffer(const size_t size) :mMemory(size * sizeof(T)) {}
+    T* get() const noexcept{
+        return reinterpret_cast<T*>(mMemory.get());
+    }
+    T& operator[](const size_t idx) {
+        return get()[idx];
+    }
+};
+

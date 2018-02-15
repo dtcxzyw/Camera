@@ -14,11 +14,11 @@ struct Camera final {
         vec2 mul;
         float near,far;
     };
-    RasterPosConverter toRasterPos(vec2 imageSize) const {
+    RasterPosConverter toRasterPos(const vec2 imageSize) const {
         RasterPosConverter res;
         res.near = near,res.far=far;
-        auto fratio = filmAperture.x / filmAperture.y;
-        auto iratio = imageSize.x / imageSize.y;
+        const auto fratio = filmAperture.x / filmAperture.y;
+        const auto iratio = imageSize.x / imageSize.y;
 
         auto right = ((filmAperture.x*inch2mm / 2.0f) / focalLength) / near;
         auto top = ((filmAperture.y*inch2mm / 2.0f) / focalLength) / near;
@@ -39,15 +39,16 @@ struct Camera final {
     }
 
     //horizontal
-    float toFOV() const {
+    float toFov() const {
         return 2.0f*atan((filmAperture.x*inch2mm / 2.0f) / focalLength);
     }
 };
 
 //https://developer.nvidia.com/gpugems/GPUGems/gpugems_ch23.html
-CUDAINLINE float DoFRadius(float z, float znear, float zfar, float f, float aperture, float df) {
-    auto CoCScale = (aperture * f * df * (zfar - znear)) / ((df - f) * znear * zfar);
-    auto CoCBias = (aperture * f * (znear - df)) / ((df * f) * znear);
-    auto CoC = fabs(z * CoCScale + CoCBias);
+CUDAINLINE float DoFRadius(const float z, const float znear, const float zfar, const float f, 
+    const float aperture, const float df) {
+    const auto CoCScale = (aperture * f * df * (zfar - znear)) / ((df - f) * znear * zfar);
+    const auto CoCBias = (aperture * f * (znear - df)) / ((df * f) * znear);
+    const auto CoC = fabs(z * CoCScale + CoCBias);
     return CoC;
 }

@@ -35,7 +35,7 @@ void renderGUI(IMGUIWindow& window) {
         static_cast<int>(model.index.size()));
     ImGui::Text("triNum: %d\n", static_cast<int>(mh.triNum));
     ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
-    ImGui::Text("FOV %.1f ",degrees(camera.toFOV()));
+    ImGui::Text("FOV %.1f ",degrees(camera.toFov()));
     ImGui::SliderFloat("focal length",&camera.focalLength,1.0f,500.0f,"%.1f");
     ImGui::SliderFloat("light", &light, 0.0f, 100.0f);
     ImGui::SliderFloat("lightRadius", &r, 0.0f, 20.0f);
@@ -67,7 +67,7 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
     window.renderGUI();
 }
 
-Uniform getUniform(float delta, const vec2 mul) {
+Uniform getUniform(float, const vec2 mul) {
     static vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { -100000.0f,0.0f,0.0f };
     const auto V = lookAt(cp,mid, { 0.0f,1.0f,0.0f });
     auto M= scale(mat4{}, vec3(5.0f));
@@ -93,16 +93,16 @@ Uniform getUniform(float delta, const vec2 mul) {
     return u;
 }
 
-using SwapChain_t = SwapChain<FrameBufferCPU>;
+using SwapChainT = SwapChain<FrameBufferCPU>;
 struct RenderingTask {
     Future future;
-    SwapChain_t::SharedFrame frame;
+    SwapChainT::SharedFrame frame;
     RC8::Block block;
-    RenderingTask(const Future& fut, const SwapChain_t::SharedFrame& fbo, const RC8::Block blockInfo)
+    RenderingTask(const Future& fut, const SwapChainT::SharedFrame& fbo, const RC8::Block blockInfo)
     :future(fut), frame(fbo),block(blockInfo){}
 };
 
-auto addTask(DispatchSystem& system,SwapChain_t::SharedFrame frame,uvec2 size,
+auto addTask(DispatchSystem& system,SwapChainT::SharedFrame frame,uvec2 size,
     float* lum,RC8& cache) {
     static float last = glfwGetTime();
     const float now = glfwGetTime();
@@ -128,7 +128,7 @@ int main() {
     getEnvironment().init();
     try {
         camera.near = 1.0f;
-        camera.far = 300.0f;
+        camera.far = 200.0f;
         camera.filmAperture = { 0.980f,0.735f };
         camera.mode = Camera::FitResolutionGate::Overscan;
         camera.focalLength = 15.0f;
@@ -148,14 +148,13 @@ int main() {
         }, resLoader);
         //envMap = loadRGBA("Res/Helipad_Afternoon/LA_Downtown_Afternoon_Fishing_B_8k.jpg",resLoader);
         envMapSampler = std::make_shared<BuiltinSampler<RGBA>>(envMap->get());
-        //arg.baseColor = vec3{ 244,206,120 }/255.0f;
         arg.baseColor = vec3{220,223,227}/255.0f;
-        //arg.edgeTint = vec3{ 254,249,205 } / 255.0f;
+
         IMGUIWindow window;
         setUIStyle();
         ImGui::GetIO().WantCaptureKeyboard = true;
 
-        SwapChain_t swapChain(3);
+        SwapChainT swapChain(3);
         std::queue<RenderingTask> tasks;
         {
             DispatchSystem system(2);
@@ -166,7 +165,7 @@ int main() {
                     std::this_thread::sleep_for(1ms);
                     continue;
                 }
-                SwapChain_t::SharedFrame frame;
+                SwapChainT::SharedFrame frame;
                 while (true) {
                     system.update(1ms);
                     if (!swapChain.empty())

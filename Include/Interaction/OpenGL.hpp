@@ -27,7 +27,7 @@ private:
     std::vector<std::shared_ptr<Frame>> mImages;
 public:
     using SharedFrame = std::shared_ptr<Frame>;
-    SwapChain(size_t size) {
+    SwapChain(const size_t size) {
         for (size_t i = 0; i < size; ++i)
             mImages.emplace_back(std::make_shared<Frame>());
     }
@@ -52,9 +52,10 @@ protected:
 public:
     GLWindow();
     void present(Image& image);
+    void setVSync(bool enable);
     void swapBuffers();
     bool update();
-    void resize(size_t width, size_t height);
+    void resize(uvec2 size);
     uvec2 size() const;
     ~GLWindow();
 };

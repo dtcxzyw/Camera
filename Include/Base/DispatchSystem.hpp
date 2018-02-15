@@ -37,7 +37,7 @@ protected:
 public:
     explicit Resource(CommandBuffer& buffer) :mID(Impl::getPID()), mBuffer(buffer) {}
     virtual ~Resource() = default;
-    ID getID() const {
+    ID getID() const noexcept{
         return mID;
     }
 };
@@ -428,6 +428,7 @@ public:
     }
 
     void addCallback(cudaStreamCallback_t func, void* data);
+    void sync();
 
     void pushOperator(std::unique_ptr<Impl::Operator>&& op);
     void pushOperator(std::function<void(Stream&)>&& op);

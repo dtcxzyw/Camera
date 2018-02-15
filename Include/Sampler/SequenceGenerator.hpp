@@ -1,5 +1,6 @@
 #pragma once
 #include <Base/Common.hpp>
+#include <Base/Math.hpp>
 
 /*
 Hammersley Sequence
@@ -14,6 +15,6 @@ CUDAINLINE float radicalInverse(unsigned int bits) {
     bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
     return bits * 2.3283064365386963e-10f; //0x100000000
 }
-CUDAINLINE vec2 hammersley(unsigned int i, unsigned int N) {
-    return vec2(static_cast<float>(i) / static_cast<float>(N), radicalInverse(i));
+CUDAINLINE vec2 hammersley(const unsigned int i, const unsigned int n) {
+    return vec2(static_cast<float>(i) / static_cast<float>(n), radicalInverse(i));
 }

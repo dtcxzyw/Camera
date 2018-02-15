@@ -57,12 +57,16 @@ void GLWindow::present(Image& image) {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, mFBO);
     glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D
         , image.get(), 0);
-    auto isiz = image.size();
-    auto frame = size();
+    const auto isiz = image.size();
+    const auto frameSize = size();
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(0, 0, frame.x, frame.y, 0, 0, isiz.x, isiz.y
+    glBlitFramebuffer(0, 0, frameSize.x, frameSize.y, 0, 0, isiz.x, isiz.y
         , GL_COLOR_BUFFER_BIT, GL_NEAREST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+}
+
+void GLWindow::setVSync(const bool enable) {
+    glfwSwapInterval(enable);
 }
 
 void GLWindow::swapBuffers() {
@@ -76,8 +80,8 @@ bool GLWindow::update() {
     return true;
 }
 
-void GLWindow::resize(size_t width, size_t height) {
-    glfwSetWindowSize(mWindow, width, height);
+void GLWindow::resize(const uvec2 size) {
+    glfwSetWindowSize(mWindow, size.x,size.y);
 }
 
 uvec2 GLWindow::size() const {

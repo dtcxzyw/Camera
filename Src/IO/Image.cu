@@ -8,7 +8,7 @@
 std::shared_ptr<BuiltinArray<RGBA>> loadRGBA(const std::string& path,Stream& stream) {
     stbi_set_flip_vertically_on_load(true);
     int w, h, channel;
-    auto p = stbi_loadf(path.c_str(), &w, &h, &channel, STBI_rgb_alpha);
+    const auto p = stbi_loadf(path.c_str(), &w, &h, &channel, STBI_rgb_alpha);
     if (p == nullptr)
         throw std::exception(stbi_failure_reason());
     auto res = std::make_shared<BuiltinArray<RGBA>>(w,h);
