@@ -1,24 +1,25 @@
 #include <Base/Common.hpp>
+#include "Base/Math.hpp"
 
-CUDAINLINE RGB Reinhard(RGB color, float exposure) {
+CUDAINLINE RGB reinhard(RGB color, const float exposure) {
     color = 1.0f-exp(-color*exposure);
     return pow(color, RGB(1.0f/2.2f));
 }
 
 //https://zhuanlan.zhihu.com/p/21983679
-CUDAINLINE RGB Reinhard(RGB color,float lum, float grey) {
+CUDAINLINE RGB reinhard(RGB color, const float lum, const float grey) {
     color *= grey / lum;
     return color / (1.0f + color);
 }
 
-CUDAINLINE RGB CEExp(RGB color, float lum) {
+CUDAINLINE RGB CEExp(const RGB color, const float lum) {
     return 1.0f-exp(-lum*color);
 }
 
 namespace Impl {
-    constexpr auto A = 0.22f, B = 0.30f, C = 0.10f, D = 0.20f, E = 0.01f, F = 0.30f,white = 11.2f;
+    constexpr auto a = 0.22f, b = 0.30f, c = 0.10f, d = 0.20f, e = 0.01f, f = 0.30f,white = 11.2f;
     CUDAINLINE float func(float x) {
-        return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
+        return ((x * (a * x + c * b) + d * e) / (x * (a * x + b) + d * f)) - e / f;
     }
 }
 
@@ -30,11 +31,11 @@ CUDAINLINE RGB Uncharted(RGB color, float lum) {
 
 //https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
 CUDAINLINE RGB ACES(RGB color, float lum) {
-    constexpr float A = 2.51f,B = 0.03f,C = 2.43f,D = 0.59f,E = 0.14f;
+    constexpr auto a = 2.51f,b = 0.03f,c = 2.43f,d = 0.59f,e = 0.14f;
     color *= lum;
-    return clamp((color * (A * color + B)) / (color * (C * color + D) + E), 0.0f, 1.0f);
+    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), 0.0f, 1.0f);
 }
 
-CUDAINLINE float calcLum(float ave, float alpha = 0.18f) {
+CUDAINLINE float calcLum(const float ave, const float alpha = 0.18f) {
     return alpha / exp(ave);
 }

@@ -5,12 +5,10 @@
 #include <Base/Builtin.hpp>
 #include <ScanLineRenderer/DepthBuffer.hpp>
 #include <IO/Model.hpp> 
-#include <PostProcess/ToneMapping.hpp>
-#include <Base/Constant.hpp>
-#include <ScanLineRenderer/ScanLineRenderer.hpp>
 #include <PBR/BRDF.hpp>
 #include <PBR/PhotorealisticRendering.hpp>
 #include <ScanLineRenderer/RenderingCache.hpp>
+#include <ScanLineRenderer/TriangleRasterizer.hpp>
 
 using VI = StaticMesh::Vertex;
 enum OutInfo {

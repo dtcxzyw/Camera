@@ -34,11 +34,12 @@
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\DepthBuffer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\LineRasterizer.hpp" />
+    <ClInclude Include="..\..\Include\ScanLineRenderer\PointRasterizer.hpp" />
+    <ClInclude Include="..\..\Include\ScanLineRenderer\PostProcess.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\Primitive.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLine.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLineRenderer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\TriangleRasterizer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\RenderingCache.hpp" />
+    <ClInclude Include="..\..\Include\ScanLineRenderer\Vertex.hpp" />
     <ClInclude Include="..\..\ThirdParty\IMGUI\imconfig.h" />
     <ClInclude Include="..\..\ThirdParty\IMGUI\imgui.h" />
     <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_impl_glfw_gl3.h" />
@@ -58,6 +59,7 @@
       <FileType>Document</FileType>
     </CudaCompile>
     <CudaCompile Include="..\..\Src\PBR\DataDrivenBRDF.cu" />
+    <CudaCompile Include="..\..\Src\ScanLineRenderer\LineRasterizer.cu" />
     <CudaCompile Include="..\..\Src\ScanLineRenderer\TriangleRasterizer.cu" />
   </ItemGroup>
   <ItemGroup>

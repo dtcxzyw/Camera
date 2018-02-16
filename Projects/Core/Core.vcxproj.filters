@@ -33,12 +33,6 @@
     <ClInclude Include="..\..\Include\Base\DataSet.hpp">
       <Filter>Base</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLine.hpp">
-      <Filter>ScanLineRenderer</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\ScanLineRenderer\ScanLineRenderer.hpp">
-      <Filter>ScanLineRenderer</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Base\Pipeline.hpp">
       <Filter>Base</Filter>
     </ClInclude>
@@ -123,6 +117,15 @@
     <ClInclude Include="..\..\Include\Base\CompileEnd.hpp">
       <Filter>Base</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\ScanLineRenderer\Vertex.hpp">
+      <Filter>ScanLineRenderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\ScanLineRenderer\PointRasterizer.hpp">
+      <Filter>ScanLineRenderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\ScanLineRenderer\PostProcess.hpp">
+      <Filter>ScanLineRenderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">
@@ -164,6 +167,9 @@
       <Filter>Base</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\Src\ScanLineRenderer\TriangleRasterizer.cu">
+      <Filter>ScanLineRenderer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\ScanLineRenderer\LineRasterizer.cu">
       <Filter>ScanLineRenderer</Filter>
     </CudaCompile>
   </ItemGroup>

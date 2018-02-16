@@ -1,6 +1,5 @@
 #pragma once
-#include "ScanLine.hpp"
-#include <Base/DispatchSystem.hpp>
+#include <ScanLineRenderer/Vertex.hpp>
 #include <Base/CompileBegin.hpp>
 #include <math_functions.h>
 #include <device_atomic_functions.h>
@@ -65,8 +64,8 @@ struct TriangleProcessingArgs final {
     vec2 hsiz;
     int mode;
 
-    TriangleProcessingArgs(unsigned int* iCnt,
-                           Triangle<Out>* iInfo, TriangleRef* iOut, const vec2 iFsiz, const vec2 iHsiz, const int iMode)
+    TriangleProcessingArgs(unsigned int* iCnt,Triangle<Out>* iInfo, TriangleRef* iOut,
+        const vec2 iFsiz, const vec2 iHsiz, const int iMode)
         : cnt(iCnt), info(iInfo), out(iOut), fsiz(iFsiz), hsiz(iHsiz), mode(iMode) {}
 };
 
@@ -186,7 +185,7 @@ template <typename Uniform>
 using TCSF = bool(*)(unsigned int idx, vec3& pa, vec3& pb, vec3& pc,const Uniform& uniform);
 
 template <typename Index, typename Out, typename Uniform, TCSF<Uniform> cs>
-CALLABLE void processTriangles(const unsigned int size,READONLY(VertexInfo<Out>) vert,
+GLOBAL void processTriangles(const unsigned int size,READONLY(VertexInfo<Out>) vert,
                                Index index,READONLY(Uniform) uniform, const float near, const float far,
                                TriangleProcessingArgs<Out> args) {
     const auto id = getID();
@@ -230,10 +229,14 @@ CUDAINLINE vec3 shuffleWeight(vec3 w,int laneMask) {
     };
 }
 
+template<typename Out, typename Uniform, typename FrameBuffer>
+using FSFT = void(*)(unsigned int id, ivec2 uv, float z, const Out& in,
+    const Out& ddx, const Out& ddy, const Uniform& uniform, FrameBuffer& frameBuffer);
+
 //2,4,8,16,32
 template <typename Out, typename Uniform, typename FrameBuffer,
-          FSF<Out, Uniform, FrameBuffer> fs>
-CALLABLE void drawMicroT(READONLY(Triangle<Out>) info,READONLY(TriangleRef) idx,
+          FSFT<Out, Uniform, FrameBuffer> fs>
+GLOBAL void drawMicroT(READONLY(Triangle<Out>) info,READONLY(TriangleRef) idx,
                          READONLY(Uniform) uniform, FrameBuffer* frameBuffer,
                          const float near, const float invnf) {
     const auto ref = idx[blockIdx.x];
@@ -255,9 +258,9 @@ CALLABLE void drawMicroT(READONLY(Triangle<Out>) info,READONLY(TriangleRef) idx,
 }
 
 template <typename Out, typename Uniform, typename FrameBuffer,
-          FSF<Out, Uniform, FrameBuffer> first, FSF<Out, Uniform, FrameBuffer>... then>
+          FSFT<Out, Uniform, FrameBuffer> first, FSFT<Out, Uniform, FrameBuffer>... then>
 CUDAINLINE void applyTFS(unsigned int* offset, Triangle<Out>* tri, TriangleRef* idx, Uniform* uniform,
-                         FrameBuffer* frameBuffer, float near, float invnf) {
+                         FrameBuffer* frameBuffer,const float near,const float invnf) {
     for (auto i = 0; i < 5; ++i) {
         const auto size = offset[i + 1] - offset[i];
         if (size) {
@@ -278,8 +281,8 @@ CUDAINLINE void applyTFS(unsigned int*, Triangle<Out>*, TriangleRef*, Uniform*, 
                          float, float) {}
 
 template <typename Out, typename Uniform, typename FrameBuffer,
-          FSF<Out, Uniform, FrameBuffer>... fs>
-CALLABLE void renderTrianglesGPU(unsigned int* offset, Triangle<Out>* tri, TriangleRef* idx,
+          FSFT<Out, Uniform, FrameBuffer>... fs>
+GLOBAL void renderTrianglesGPU(unsigned int* offset, Triangle<Out>* tri, TriangleRef* idx,
                                  Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float invnf) {
     applyTFS<Out, Uniform, FrameBuffer, fs...>(offset, tri, idx, uniform, frameBuffer, near, invnf);
 }
@@ -297,7 +300,7 @@ struct TriangleRenderingHistory final : Uncopyable {
 };
 
 template <typename Index, typename Out, typename Uniform, typename FrameBuffer,
-          TCSF<Uniform> cs, FSF<Out, Uniform, FrameBuffer>... fs>
+          TCSF<Uniform> cs, FSFT<Out, Uniform, FrameBuffer>... fs>
 void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
                      Index index, const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
                      const uvec2 size, float near, float far, TriangleRenderingHistory& history,

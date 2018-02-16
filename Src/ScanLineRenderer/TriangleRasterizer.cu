@@ -9,7 +9,7 @@ CUDAINLINE void cutTriangle(TriangleRef ref,unsigned int* cnt, TriangleRef* out)
     }
 }
 
-CALLABLE void emitTriangle(const unsigned int size,unsigned int* cnt,
+GLOBAL void emitTriangle(const unsigned int size,unsigned int* cnt,
     READONLY(unsigned int) offset,const TriangleRef* in,TriangleRef* out) {
     const auto id = getID();
     if(id>=size)return;
@@ -18,7 +18,7 @@ CALLABLE void emitTriangle(const unsigned int size,unsigned int* cnt,
     else out[offset[ref.size] + atomicInc(cnt+ref.size,maxv)]=ref;
 }
 
-CALLABLE void sortTrianglesGPU(unsigned int* cnt, unsigned int* offset,unsigned int* tmp,
+GLOBAL void sortTrianglesGPU(unsigned int* cnt, unsigned int* offset,unsigned int* tmp,
     TriangleRef* ref, TriangleRef* out){
     offset[0] = 0;
     for (auto i = 1; i < 5; ++i)offset[i] = offset[i - 1] + cnt[i - 1];

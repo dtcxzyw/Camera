@@ -250,7 +250,7 @@ private:
 
 namespace Impl {
     template <typename T>
-    CALLABLE void clear(BuiltinRenderTargetGPU<T> rt, T val) {
+    GLOBAL void clear(BuiltinRenderTargetGPU<T> rt, T val) {
         uvec2 p = {blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
         rt.set(p, val);
     }
@@ -372,7 +372,7 @@ public:
 
 namespace Impl {
     template <typename T>
-    CALLABLE void downSample(BuiltinSamplerGPU<T> src, BuiltinRenderTargetGPU<T> rt) {
+    GLOBAL void downSample(BuiltinSamplerGPU<T> src, BuiltinRenderTargetGPU<T> rt) {
         uvec2 p{ blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y };
         const uvec2 base = { p.x * 2, p.y * 2 };
         T val = {};

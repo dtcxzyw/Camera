@@ -9,7 +9,7 @@
 #define CUDANOINLINE __noinline__ CUDA
 #define HOST __host__
 #define BOTH CUDA HOST
-#define CALLABLE __global__
+#define GLOBAL __global__
 #define ALIGN __align__(16)
 #define READONLY(type) const type* __restrict__ const
 

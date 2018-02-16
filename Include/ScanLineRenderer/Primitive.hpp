@@ -7,7 +7,7 @@ using GSF = void(*)(Vert* in,const Uniform& uniform,QueueGPU<Vert> queue);
 
 template<unsigned int inv,typename Index, typename Vert, typename Uniform,
     GSF<Vert, Uniform> gs>
-CALLABLE void GTHelper(const unsigned int size,READONLY(Vert) vert, Index idx,
+GLOBAL void GTHelper(const unsigned int size,READONLY(Vert) vert, Index idx,
     READONLY(Uniform) uniform,QueueGPU<Vert> queue) {
     const auto id = getID();
     if (id >= size)return;

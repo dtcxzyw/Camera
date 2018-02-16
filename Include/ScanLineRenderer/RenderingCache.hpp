@@ -3,7 +3,7 @@
 
 namespace Impl {
     template<typename T>
-    CALLABLE void updateCache(const unsigned int size, T* address) {
+    GLOBAL void updateCache(const unsigned int size, T* address) {
         const auto id = getID();
         if (id >= size)return;
         address[id] <<= 1;

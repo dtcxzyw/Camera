@@ -1,4 +1,5 @@
-#include <ScanLineRenderer/ScanLineRenderer.hpp>
+#include <PostProcess/ToneMapping.hpp>
+#include <ScanLineRenderer/PostProcess.hpp>
 #include "kernel.hpp"
 #include <PBR/Dist.hpp>
 
@@ -91,12 +92,12 @@ CUDAINLINE void post(ivec2 NDC, const PostUniform& uni, BuiltinRenderTargetGPU<R
     out.set(NDC, {c, 1.0f});
 }
 
-CALLABLE void updateLum(PostUniform uniform) {
+GLOBAL void updateLum(PostUniform uniform) {
     *uniform.lum = calcLum(uniform.sum->first / (uniform.sum->second + 1));
 }
 
-template <VSF<VI, OI, Uniform> vs, TCSF<Uniform> cs, FSF<OI, Uniform, FrameBufferGPU> ds,
-          FSF<OI, Uniform, FrameBufferGPU> fs>
+template <VSF<VI, OI, Uniform> vs, TCSF<Uniform> cs, FSFT<OI, Uniform, FrameBufferGPU> ds,
+          FSFT<OI, Uniform, FrameBufferGPU> fs>
 void renderMesh(const StaticMesh& model, const MemoryRef<Uniform>& uniform,
                 FrameBufferCPU& fbo, const Camera::RasterPosConverter converter,
                 const CullFace mode, TriangleRenderingHistory& history, CommandBuffer& buffer) {
