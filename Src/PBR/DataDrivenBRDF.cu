@@ -16,13 +16,13 @@ MERLBRDFData::MERLBRDFData(const std::string& path, Stream& loader) {
     std::vector<double> brdf(3*rsiz);
     in.read(reinterpret_cast<char*>(brdf.data()),brdf.size()*sizeof(double));
     mData = allocBuffer<vec3>(rsiz);
-    std::vector<vec3> data(rsiz);
+    PinnedBuffer<vec3> data(rsiz);
     for (int i = 0; i < mData.size(); ++i) {
         data[i].r = static_cast<float>(brdf[i])*rfac;
         data[i].g = static_cast<float>(brdf[i+size])*gfac;
         data[i].b = static_cast<float>(brdf[i + size * 2])*bfac;
     }
-    checkError(cudaMemcpyAsync(mData.begin(), data.data(), sizeof(vec3)*data.size(),
+    checkError(cudaMemcpyAsync(mData.begin(), data.get(), sizeof(vec3)*rsiz,
         cudaMemcpyHostToDevice,loader.getID()));
     loader.sync();
 }

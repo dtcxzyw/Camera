@@ -88,11 +88,11 @@ CUDAINLINE void post(ivec2 NDC, const PostUniform& uni, BuiltinRenderTargetGPU<R
         c = ACES(c, *uni.lum);
     }
     c = pow(c, vec3(1.0f / 2.2f));
-    NDC.y = uni.in.mSize.y - 1 - NDC.y;
+    NDC.y = uni.in.fsize.y - 1 - NDC.y;
     out.set(NDC, {c, 1.0f});
 }
 
-GLOBAL void updateLum(PostUniform uniform) {
+GLOBAL void updateLum(const PostUniform uniform) {
     *uniform.lum = calcLum(uniform.sum->first / (uniform.sum->second + 1));
 }
 
