@@ -6,7 +6,7 @@ CUDAINLINE void cutTriangle(LineRef ref, unsigned int* cnt, LineRef* out) {
     for(auto x=0.0f;x<=dis;x+=1024.0f) {
         const auto y = fmin(dis,x+1024.0f);
         ref.range.x = x / dis;
-        ref.range.y = y / dis;
+        ref.range.y = (y-x) / dis;
         out[atomicInc(cnt,maxv)]=ref;
     }
 }

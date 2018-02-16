@@ -14,7 +14,7 @@ struct LineInfo final {
 struct LineRef final {
     unsigned int id,size;
     vec4 rect;
-    vec2 range;
+    vec2 range;//begin,len
 };
 
 template <typename Out, typename Uniform, typename FrameBuffer>
@@ -71,13 +71,13 @@ template <typename Out, typename Uniform, typename FrameBuffer,
         const float near, const float invnf) {
     const auto ref = idx[blockIdx.x];
     const auto line = info[ref.id];
-    const auto w = static_cast<float>(threadIdx.x) / blockDim.x;
+    const auto w = ref.range.x + ref.range.y*threadIdx.x / blockDim.x;
     vec2 weight = { w,1.0f - w };
     const auto p = line.a.pos*weight.x + line.b.pos*weight.y;
     const auto z = 1.0f / p.z;
     weight *= z;
     const auto fout =line.a.out*weight.x+line.b.out*weight.y;
-    fs(line.id, ivec2{ p.x,p.y }, z, fout, *uniform, *frameBuffer);
+    fs(line.id, ivec2{ p.x,p.y }, (z-near)*invnf, fout, *uniform, *frameBuffer);
 }
 
 template <typename Out, typename Uniform, typename FrameBuffer,
