@@ -17,7 +17,7 @@ private:
     friend GLContext& getContext();
 public:
     void makeContext(GLFWwindow* window) {
-        GLFWwindow* current = nullptr;
+        static GLFWwindow* current = nullptr;
         if (current != window) {
             glfwMakeContextCurrent(window);
             glDisable(GL_FRAMEBUFFER_SRGB);
@@ -64,6 +64,7 @@ void GLWindow::present(Image& image) {
 }
 
 void GLWindow::setVSync(const bool enable) {
+    getContext().makeContext(mWindow);
     glfwSwapInterval(enable);
 }
 
@@ -72,6 +73,7 @@ void GLWindow::swapBuffers() {
 }
 
 bool GLWindow::update() {
+    getContext().makeContext(mWindow);
     glfwPollEvents();
     if (glfwWindowShouldClose(mWindow))
         return false;
@@ -104,7 +106,8 @@ void IMGUIWindow::newFrame() {
 }
 
 void IMGUIWindow::renderGUI() {
-    auto wsiz = size();
+    getContext().makeContext(mWindow);
+    const auto wsiz = size();
     glViewport(0, 0, wsiz.x, wsiz.y);
     ImGui::Render();
 }
@@ -114,7 +117,7 @@ IMGUIWindow::~IMGUIWindow() {
     ImGui_ImplGlfwGL3_Shutdown();
 }
 
-Image::Image():mRes(0) {
+Image::Image():mRes(nullptr) {
     glGenTextures(1, &mTexture);
 }
 
@@ -127,11 +130,11 @@ uvec2 Image::size() const {
     return mSize;
 }
 
-void Image::resize(uvec2 size) {
+void Image::resize(const uvec2 size) {
     if (mSize != size) {
         if (mRes) {
             checkError(cudaGraphicsUnregisterResource(mRes));
-            mRes = 0;
+            mRes = nullptr;
         }
         glBindTexture(GL_TEXTURE_2D, mTexture);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, size.x, size.y
@@ -142,14 +145,14 @@ void Image::resize(uvec2 size) {
     }
 }
 
-cudaArray_t Image::bind(cudaStream_t stream) {
+cudaArray_t Image::bind(const cudaStream_t stream) {
     checkError(cudaGraphicsMapResources(1, &mRes, stream));
     cudaArray_t data;
     checkError(cudaGraphicsSubResourceGetMappedArray(&data, mRes, 0, 0));
     return data;
 }
 
-void Image::unbind(cudaStream_t stream) {
+void Image::unbind(const cudaStream_t stream) {
     checkError(cudaGraphicsUnmapResources(1, &mRes, stream));
 }
 

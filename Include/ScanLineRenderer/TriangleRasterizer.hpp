@@ -261,6 +261,7 @@ template <typename Out, typename Uniform, typename FrameBuffer,
           FSFT<Out, Uniform, FrameBuffer> first, FSFT<Out, Uniform, FrameBuffer>... then>
 CUDAINLINE void applyTFS(unsigned int* offset, Triangle<Out>* tri, TriangleRef* idx, Uniform* uniform,
                          FrameBuffer* frameBuffer, const float near, const float invnf) {
+#pragma unroll
     for (auto i = 0; i < 5; ++i) {
         const auto size = offset[i + 1] - offset[i];
         if (size) {

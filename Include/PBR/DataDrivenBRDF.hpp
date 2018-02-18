@@ -33,9 +33,9 @@ namespace Impl {
 
     // rotate vector along one axis
     CUDAINLINE vec3 rotateVector(vec3 vector, vec3 axis, float angle) {
-        float cosAng = cos(angle);
-        float sinAng = sin(angle);
-        vec3 out = vector * cosAng;
+        const auto cosAng = cos(angle);
+        const auto sinAng = sin(angle);
+        auto out = vector * cosAng;
         out += axis * dot(axis, vector)*(1.0f - cosAng);
         out += glm::cross(axis, vector) * sinAng;
         return out;
@@ -50,8 +50,8 @@ namespace Impl {
         phalf = atan2(half[1], half[0]);
 
         // compute diff vector
-        vec3 temp=rotateVector(in, normal, -phalf);
-        vec3 diff=rotateVector(temp, bin, -thalf);
+        const auto temp=rotateVector(in, normal, -phalf);
+        auto diff=rotateVector(temp, bin, -thalf);
 
         // compute  theta_diff, fi_diff	
         tdiff = acos(diff[2]);
@@ -63,7 +63,7 @@ namespace Impl {
     // In:  [0 .. pi/2]
     // Out: [0 .. 89]
     CUDAINLINE int thid(float thalf) {
-        int res =rth*sqrt(fmax(thalf,0.0f) / half_pi<float>());
+        const int res =rth*sqrt(fmax(thalf,0.0f) / half_pi<float>());
         return clamp(res,0,rth-1);
     }
 

@@ -4,7 +4,7 @@
 
 class Memory final :Uncopyable {
 public:
-    Memory(size_t size);
+    explicit Memory(size_t size);
     ~Memory();
     char* getPtr() const;
     size_t size() const;
@@ -21,10 +21,11 @@ class DataViewer final {
 private:
     SharedMemory mMem;
     T* mPtr;
-    size_t mSize;
+    size_t mSize{};
 public:
     DataViewer() = default;
-    DataViewer(SharedMemory memory, size_t offset = 0, size_t size = 0)
+
+    explicit DataViewer(const SharedMemory memory, const size_t offset = 0, const size_t size = 0)
         :mMem(memory), mPtr(reinterpret_cast<T*>(memory->getPtr() + offset)), mSize(size) {
         if (size == 0)
             mSize = (mMem->size() - offset) / sizeof(T);

@@ -14,7 +14,7 @@ namespace Impl {
         :Resource(buffer), mSize(size), mType(type) {}
 
     DeviceMemory::~DeviceMemory() {
-        if (mType == MemoryType::global)
+        if (mType == MemoryType::Global)
             addInstance(std::make_unique<GlobalMemory>(mSize));
         else
             addInstance(std::make_unique<ConstantMemory>(mSize));

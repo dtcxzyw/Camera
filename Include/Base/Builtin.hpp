@@ -127,7 +127,7 @@ template <typename T>
 class BuiltinSamplerGPU final {
 public:
     using Type = typename Rename<T>::Type;
-    CUDAINLINE BuiltinSamplerGPU(): mTexture(0) {};
+    CUDAINLINE BuiltinSamplerGPU(): mTexture(0) {}
     explicit BuiltinSamplerGPU(const cudaTextureObject_t texture): mTexture(texture) {}
     CUDAINLINE T get(const vec2 p) const {
         T res;

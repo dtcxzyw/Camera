@@ -1,6 +1,7 @@
 #pragma once
 #include <Base/Common.hpp>
 #include <Base/Memory.hpp>
+#include <Base/Math.hpp>
 
 template<typename Func, typename... Args>
 CUDAINLINE void run(Func func,unsigned int block, unsigned int size, Args... args) {
@@ -82,7 +83,7 @@ class Environment final :Singletion {
 private:
     Environment() = default;
     friend Environment& getEnvironment();
-    cudaDeviceProp mProp;
+    cudaDeviceProp mProp{};
 public:
     void init();
     const cudaDeviceProp& getProp() const;

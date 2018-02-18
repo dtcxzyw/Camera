@@ -102,6 +102,8 @@ struct RenderingTask {
     :future(fut), frame(fbo),block(blockInfo){}
 };
 
+constexpr auto enableSAA = true;
+
 auto addTask(DispatchSystem& system,SwapChainT::SharedFrame frame,uvec2 size,
     float* lum,RC8& cache) {
     static float last = glfwGetTime();
@@ -111,7 +113,7 @@ auto addTask(DispatchSystem& system,SwapChainT::SharedFrame frame,uvec2 size,
     last = now;
     auto buffer=std::make_unique<CommandBuffer>();
     if (frame->size != size) {
-        mh.reset(model.index.size(),cache.blockSize()*3,true);
+        mh.reset(model.index.size(),cache.blockSize()*3,enableSAA);
         cache.reset();
         sh.reset(box.index.size());
     }
@@ -137,7 +139,7 @@ int main() {
         //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
         model.load("Res/dragon.obj",resLoader);
         RC8 cache(model.index.size(),30);
-        mh.reset(model.index.size(),cache.blockSize()*3,true);
+        mh.reset(model.index.size(),cache.blockSize()*3,enableSAA);
 
         box.load("Res/cube.obj",resLoader);
         sh.reset(box.index.size());

@@ -23,7 +23,9 @@ GLOBAL void emitTriangle(const unsigned int size, unsigned int* cnt,
 GLOBAL void sortTrianglesGPU(unsigned int* cnt, unsigned int* offset, unsigned int* tmp,
                              LineRef* ref, LineRef* out) {
     offset[0] = 0;
+#pragma unroll
     for (auto i = 1; i < 11; ++i)offset[i] = offset[i - 1] + cnt[i - 1];
+#pragma unroll
     for (auto i = 0; i < 11; ++i)tmp[i] = 0;
     constexpr auto block = 1024U;
     run(emitTriangle, block, cnt[12], tmp, offset, ref, out);

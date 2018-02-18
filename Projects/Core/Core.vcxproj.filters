@@ -25,6 +25,12 @@
     <Filter Include="Sampler">
       <UniqueIdentifier>{c10a63ef-cb26-4541-9ac6-04574f25aa48}</UniqueIdentifier>
     </Filter>
+    <Filter Include="RayTracer">
+      <UniqueIdentifier>{7028f743-4946-4801-ac62-23e81bcdbe13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scene">
+      <UniqueIdentifier>{02e18c51-ac76-4382-a724-e00e0a85c5fd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Include\Base\Common.hpp">
@@ -126,6 +132,9 @@
     <ClInclude Include="..\..\Include\ScanLineRenderer\PostProcess.hpp">
       <Filter>ScanLineRenderer</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Scene\ECS.hpp">
+      <Filter>Scene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">
@@ -151,6 +160,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Base\Pipeline.cpp">
       <Filter>Base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Scene\ECS.cpp">
+      <Filter>Scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

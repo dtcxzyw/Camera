@@ -8,14 +8,14 @@
 #define CUDAINLINE __forceinline__ CUDA
 #define CUDANOINLINE __noinline__ CUDA
 #define HOST __host__
-#define BOTH CUDA HOST
+#define BOTH CUDAINLINE HOST
 #define GLOBAL __global__
 #define ALIGN __align__(16)
 #define READONLY(type) const type* __restrict__ const
 
 struct Uncopyable {
     Uncopyable() = default;
-    ~Uncopyable() = default;
+    virtual ~Uncopyable() = default;
     Uncopyable(const Uncopyable&) = delete;
     Uncopyable(Uncopyable&&) = default;
     Uncopyable& operator=(const Uncopyable&) = delete;
@@ -25,7 +25,7 @@ struct Uncopyable {
 class Singletion {
 protected:
     Singletion() = default;
-    ~Singletion() = default;
+    virtual ~Singletion() = default;
 public:
     Singletion(const Singletion&) = delete;
     Singletion(Singletion&&) = delete;

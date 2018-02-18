@@ -58,7 +58,7 @@ public:
 
 namespace Impl {
     enum MemoryType {
-        global, constant
+        Global, Constant
     };
 
     class DeviceMemory final :public Resource<void*> {
@@ -383,12 +383,12 @@ public:
     CommandBuffer();
     template<typename T>
     MemoryRef<T> allocBuffer(size_t size = 1) {
-        return std::make_shared<Impl::DeviceMemory>(*this, size * sizeof(T), Impl::MemoryType::global);
+        return std::make_shared<Impl::DeviceMemory>(*this, size * sizeof(T), Impl::MemoryType::Global);
     }
 
     template<typename T>
     MemoryRef<T> allocConstant() {
-        return std::make_shared<Impl::DeviceMemory>(*this, sizeof(T), Impl::MemoryType::constant);
+        return std::make_shared<Impl::DeviceMemory>(*this, sizeof(T), Impl::MemoryType::Constant);
     }
 
     void memset(Impl::DMRef& memory, int mark = 0);

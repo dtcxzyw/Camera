@@ -40,6 +40,7 @@
     <ClInclude Include="..\..\Include\ScanLineRenderer\TriangleRasterizer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\RenderingCache.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\Vertex.hpp" />
+    <ClInclude Include="..\..\Include\Scene\ECS.hpp" />
     <ClInclude Include="..\..\ThirdParty\IMGUI\imconfig.h" />
     <ClInclude Include="..\..\ThirdParty\IMGUI\imgui.h" />
     <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_impl_glfw_gl3.h" />
@@ -51,6 +52,7 @@
     <ClCompile Include="..\..\Src\Base\Memory.cpp" />
     <ClCompile Include="..\..\Src\Base\Pipeline.cpp" />
     <ClCompile Include="..\..\Src\IO\Model.cpp" />
+    <ClCompile Include="..\..\Src\Scene\ECS.cpp" />
     <ClCompile Include="..\..\ThirdParty\IMGUI\imgui.cpp" />
     <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_draw.cpp" />
     <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_impl_glfw_gl3.cpp" />
@@ -138,7 +140,7 @@
       <RuntimeChecks>Default</RuntimeChecks>
       <TypeInfo>false</TypeInfo>
       <Warning>W0</Warning>
-      <Keep>true</Keep>
+      <Keep>false</Keep>
       <MaxRegCount>64</MaxRegCount>
     </CudaCompile>
     <CudaLink>
@@ -197,7 +199,7 @@
       <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda   -w</AdditionalOptions>
       <GPUDebugInfo>false</GPUDebugInfo>
       <GenerateLineInfo>false</GenerateLineInfo>
-      <Keep>true</Keep>
+      <Keep>false</Keep>
       <MaxRegCount>64</MaxRegCount>
     </CudaCompile>
     <CudaLink>

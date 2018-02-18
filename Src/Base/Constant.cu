@@ -72,7 +72,7 @@ namespace Impl {
         }
         uint allocSpace(uint size) {
             if (mSiz[1] >= size) {
-                auto l = query(1, blockNum, 1, size);
+                const auto l = query(1, blockNum, 1, size);
                 modify(1,blockNum,1,l,l+size-1,0);
                 return l;
             }

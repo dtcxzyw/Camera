@@ -71,8 +71,9 @@ CUDAINLINE void drawPoint(unsigned int triID, ivec2 uv, float z, const OI& out, 
         const auto V = normalize(uniform.cp - p);
         const auto F = disneyBRDF(L, V, N, X, Y, uniform.arg);
         const auto ref = reflect(-V, N);
-        const auto lc = uniform.lc + 100.0f * vec3(uniform.sampler.getCubeMap(ref));
-        const auto res = lc * F * (distUE4(dis2, uniform.r * uniform.r) * dot(N, L));
+        const auto lc = uniform.lc*distUE4(dis2, uniform.r * uniform.r) +
+            vec3(uniform.sampler.getCubeMap(ref));
+        const auto res = lc * F * fabs(dot(N, L));
         fbo.color.set(uv, {res, 1.0f});
     }
 }

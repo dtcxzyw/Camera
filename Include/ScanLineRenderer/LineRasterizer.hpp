@@ -87,6 +87,8 @@ template <typename Out, typename Uniform, typename FrameBuffer,
           FSFL<Out, Uniform, FrameBuffer> first, FSFL<Out, Uniform, FrameBuffer>... then>
 CUDAINLINE void applyLFS(unsigned int* offset, LineInfo<Out>* tri, LineRef* idx,
                          Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float invnf) {
+
+#pragma unroll
     for (auto i = 0; i < 11; ++i) {
         const auto size = offset[i + 1] - offset[i];
         if (size) {
