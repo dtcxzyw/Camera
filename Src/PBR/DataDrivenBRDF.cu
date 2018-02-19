@@ -23,7 +23,7 @@ MERLBRDFData::MERLBRDFData(const std::string& path, Stream& loader) {
         data[i].b = static_cast<float>(brdf[i + size * 2])*bfac;
     }
     checkError(cudaMemcpyAsync(mData.begin(), data.get(), sizeof(vec3)*rsiz,
-        cudaMemcpyHostToDevice,loader.getID()));
+        cudaMemcpyHostToDevice,loader.get()));
     loader.sync();
 }
 

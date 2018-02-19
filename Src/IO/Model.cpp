@@ -31,7 +31,7 @@ void StaticMesh::load(const std::string & path,Stream& loader) {
             temp[i].tangent = *reinterpret_cast<vec3*>(mesh->mTangents+i);
         }
         checkError(cudaMemcpyAsync(vert.begin(),temp.get(),sizeof(Vertex)*vert.size(),
-            cudaMemcpyHostToDevice,loader.getID()));
+            cudaMemcpyHostToDevice,loader.get()));
         loader.sync();
     }
     {
@@ -40,7 +40,7 @@ void StaticMesh::load(const std::string & path,Stream& loader) {
         for (uint i = 0; i < mesh->mNumFaces; ++i)
             temp[i] = *reinterpret_cast<uvec3*>(mesh->mFaces[i].mIndices);
         checkError(cudaMemcpyAsync(index.begin(), temp.get(), sizeof(uvec3)*index.size(),
-            cudaMemcpyHostToDevice, loader.getID()));
+            cudaMemcpyHostToDevice, loader.get()));
         loader.sync();
     }
     importer.FreeScene();

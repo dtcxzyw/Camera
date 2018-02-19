@@ -41,7 +41,7 @@ public:
     }
 
     void set(const T& rhs,Stream& stream) {
-        Impl::constantSet(mAddress, &rhs,sizeof(T),stream.getID());
+        Impl::constantSet(mAddress, &rhs,sizeof(T),stream.get());
     }
 
     ~Constant() {

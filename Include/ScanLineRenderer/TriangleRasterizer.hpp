@@ -70,8 +70,8 @@ struct TriangleProcessingArgs final {
 };
 
 CUDAINLINE int calcTileSize(const vec4 rect) {
-    const auto tsize = fmax(fmax(rect.y - rect.x, rect.w - rect.z) + 0.5f, 1.5f);
-    return fmin(log2f(tsize), 5.5f);
+    const auto tsiz = fmax(rect.y - rect.x, rect.w - rect.z);
+    return ceil(fmin(log2f(fmax(0.5f*(tsiz + 0.5f), 1.0f)), 4.9f));
 }
 
 template <typename Out>
@@ -240,16 +240,20 @@ GLOBAL void drawMicroT(READONLY(Triangle<Out>) info,READONLY(TriangleRef) idx,
                        READONLY(Uniform) uniform, FrameBuffer* frameBuffer,
                        const float near, const float invnf) {
     const auto ref = idx[blockIdx.x];
-    const auto tri = info[ref.id];
     const auto offX = threadIdx.x >> 1U, offY = threadIdx.x & 1U;
     const ivec2 uv{ref.rect.x + (threadIdx.y << 1) + offX, ref.rect.z + (threadIdx.z << 1) + offY};
     const vec2 p{uv.x + 0.5f, uv.y + 0.5f};
+    /*
+    const auto outSide = p.x > ref.rect.y | p.y > ref.rect.w;
+    if(__all_sync(0xffffffff,outSide))return;
+    */
+    const auto tri = info[ref.id];
     vec3 w;
     float z;
     const auto flag = calcWeight(tri.w, p, tri.invz, near, invnf, w, z);
     const auto ddx = (shuffleWeight(w, 0b10) - w) * (offX ? -1.0f : 1.0f);
     const auto ddy = (shuffleWeight(w, 0b01) - w) * (offY ? -1.0f : 1.0f);
-    if (p.x <= ref.rect.y & p.y <= ref.rect.w & flag) {
+    if (flag) {
         const auto fout = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
         const auto ddxo = tri.out[0] * ddx.x + tri.out[1] * ddx.y + tri.out[2] * ddx.z;
         const auto ddyo = tri.out[0] * ddy.x + tri.out[1] * ddy.y + tri.out[2] * ddy.z;
@@ -262,16 +266,16 @@ template <typename Out, typename Uniform, typename FrameBuffer,
 CUDAINLINE void applyTFS(unsigned int* offset, Triangle<Out>* tri, TriangleRef* idx, Uniform* uniform,
                          FrameBuffer* frameBuffer, const float near, const float invnf) {
 #pragma unroll
-    for (auto i = 0; i < 5; ++i) {
-        const auto size = offset[i + 1] - offset[i];
-        if (size) {
-            const auto bsiz = 1U << i;
-            dim3 grid(size);
-            dim3 block(4, bsiz, bsiz);
-            drawMicroT<Out, Uniform, FrameBuffer, first> << <grid, block >> >(tri, idx + offset[i],
-                                                                              uniform, frameBuffer, near, invnf);
+    for (auto i = 0; i < 5; ++i)  {
+            const auto size = offset[i + 1] - offset[i];
+            if (size) {
+                dim3 grid(size);
+                const auto bsiz = 1 << i;
+                dim3 block(4, bsiz,bsiz);
+                drawMicroT<Out, Uniform, FrameBuffer, first> << <grid, block >> >(tri, idx + offset[i],
+                                                                                  uniform, frameBuffer, near, invnf);
+            }
         }
-    }
 
     cudaDeviceSynchronize();
     applyTFS<Out, Uniform, FrameBuffer, then...>(offset, tri, idx, uniform, frameBuffer, near, invnf);
@@ -308,6 +312,7 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
                      CullFace mode = CullFace::Back) {
     //pass 1:process triangles
     auto psiz = calcBufferSize(history.triNum, history.baseSize, index.size());
+    //5+ext+cnt=7
     auto cnt = buffer.allocBuffer<unsigned int>(7);
     buffer.memset(cnt);
     auto info = buffer.allocBuffer<Triangle<Out>>(psiz);
@@ -332,5 +337,4 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
     const auto invnf = 1.0f / (far - near);
     buffer.callKernel(renderTrianglesGPU<Out, Uniform, FrameBuffer, fs...>, sortedTri.first, info,
                       sortedTri.second, uniform.get(), frameBuffer.get(), near, invnf);
-    buffer.sync();
 }

@@ -19,7 +19,7 @@ public:
     ~Stream();
 
     void sync();
-    cudaStream_t getID() const;
+    cudaStream_t get() const;
     cudaError_t query() const;
 
     template<typename Func, typename... Args>

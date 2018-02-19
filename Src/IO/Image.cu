@@ -20,7 +20,7 @@ std::shared_ptr<BuiltinArray<RGBA>> loadRGBA(const std::string& path,Stream& str
     if (!image)throw std::runtime_error(stbi_failure_reason());
     auto res = std::make_shared<BuiltinArray<RGBA>>(uvec2(w,h));
     checkError(cudaMemcpyToArrayAsync(res->get(), 0, 0, image.get(), w*h * sizeof(RGBA)
-        , cudaMemcpyHostToDevice,stream.getID()));
+        , cudaMemcpyHostToDevice,stream.get()));
     stream.sync();
     return res;
 }
@@ -52,7 +52,7 @@ std::shared_ptr<BuiltinCubeMap<RGBA>> loadCubeMap(const std::function<std::strin
         parm.srcPtr =make_cudaPitchedPtr(image.get(),sizeof(RGBA)*w,w,h);
         parm.dstArray = res->get();
         parm.dstPos = make_cudaPos(0,0,i);
-        checkError(cudaMemcpy3DAsync(&parm,stream.getID()));
+        checkError(cudaMemcpy3DAsync(&parm,stream.get()));
         freeList.emplace_back(std::move(image));
     }
     stream.sync();

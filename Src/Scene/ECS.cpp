@@ -1,6 +1,6 @@
 #include <Scene/ECS.hpp>
 
-void Entity::addComponent(std::unique_ptr<Component> ptr) {
+void Entity::attachComponent(std::unique_ptr<Component> ptr) {
     mComponents[ptr->getType()] = std::move(ptr);
 }
 

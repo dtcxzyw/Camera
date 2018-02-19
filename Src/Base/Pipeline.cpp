@@ -14,7 +14,7 @@ void Stream::sync() {
     checkError(cudaStreamSynchronize(mStream));
 }
 
-cudaStream_t Stream::getID() const {
+cudaStream_t Stream::get() const {
     return mStream;
 }
 
@@ -35,7 +35,6 @@ void Environment::init() {
     for (auto i = 0; i < cnt; ++i) {
         checkError(cudaGetDeviceProperties(&prop, i));
         const auto ver = prop.major * 10000 + prop.minor;
-        if (ver < 50002)continue;
         if (maxwell < ver || (maxwell==ver && prop.totalGlobalMem>size))
             id = i, maxwell = ver,size=prop.totalGlobalMem;
     }
@@ -61,7 +60,7 @@ Environment& getEnvironment() {
 
 Event::Event(Stream& stream) {
     checkError(cudaEventCreateWithFlags(&mEvent, cudaEventDisableTiming));
-    checkError(cudaEventRecord(mEvent, stream.getID()));
+    checkError(cudaEventRecord(mEvent, stream.get()));
 }
 
 void Event::wait() {

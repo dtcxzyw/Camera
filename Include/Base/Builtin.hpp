@@ -48,7 +48,7 @@ public:
         auto res = allocBuffer<T>(mSize.x * mSize.y);
         buffer.pushOperator([=](Stream& stream) {
             checkError(cudaMemcpyFromArrayAsync(res.begin(), mArray, 0, 0, res.size() * sizeof(T)
-                                                , cudaMemcpyDefault, stream.getID()));
+                                                , cudaMemcpyDefault, stream.get()));
         });
         return res;
     }

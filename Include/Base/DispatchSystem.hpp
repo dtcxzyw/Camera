@@ -8,9 +8,10 @@
 #include <functional>
 #include <atomic>
 #include <utility>
+#include <mutex>
 
 class CommandBuffer;
-using ID = uintmax_t;
+using ID = uint64_t;
 
 namespace Impl {
     ID getPID();
@@ -57,7 +58,7 @@ public:
 };
 
 namespace Impl {
-    enum MemoryType {
+    enum class MemoryType {
         Global, Constant
     };
 
@@ -105,7 +106,7 @@ namespace Impl {
 
     class DMRef :public ResourceRef<void*> {
     public:
-        explicit DMRef(const std::shared_ptr<Impl::DeviceMemory>& ref);
+        explicit DMRef(const std::shared_ptr<DeviceMemory>& ref);
         size_t size() const;
     };
 
@@ -152,9 +153,9 @@ public:
 template<typename T>
 class MemoryRef final :public Impl::DMRef {
 public:
-    MemoryRef(const std::shared_ptr<Impl::DeviceMemory>& ref) :DMRef(ref) {}
+    explicit MemoryRef(const std::shared_ptr<Impl::DeviceMemory>& ref) :DMRef(ref) {}
     size_t size() const {
-        return Impl::DMRef::size() / sizeof(T);
+        return DMRef::size() / sizeof(T);
     }
 };
 
@@ -169,7 +170,7 @@ namespace Impl {
     private:
         ID mID;
     public:
-        ResourceID(ID id) :mID(id) {}
+        explicit ResourceID(const ID id) :mID(id) {}
         T get(CommandBuffer& buffer) {
             T res;
             CastTag::get(buffer, mID, &res);
@@ -184,12 +185,12 @@ namespace Impl {
 
     template<typename T>
     auto castID(const ResourceRef<T>& ref)->ResourceID<T> {
-        return ref.getID();
+        return ResourceID<T>{ref.getID()};
     }
 
     template<typename T>
     auto castID(const MemoryRef<T>& ref)->ResourceID<T*> {
-        return ref.getID();
+        return ResourceID<T*>{ref.getID()};
     }
 
     template<typename T, typename = std::enable_if_t<!std::is_base_of<CastTag, T>::value>>
@@ -211,7 +212,7 @@ namespace Impl {
             return T{ cast(std::get<I>(mArgs),buffer)... };
         }
     public:
-        LazyConstructor(Args... args) :mArgs(std::make_tuple(args...)) {}
+        explicit LazyConstructor(Args... args) :mArgs(std::make_tuple(args...)) {}
         auto get(CommandBuffer& buffer) {
             return constructImpl(buffer, std::make_index_sequence<std::tuple_size<decltype(mArgs)>::value>());
         }
@@ -222,13 +223,14 @@ namespace Impl {
     private:
         std::function<T*(CommandBuffer&)> mClosure;
     public:
-        DataPtrHelper(const MemoryRef<T>& ref) {
+        explicit DataPtrHelper(const MemoryRef<T>& ref) {
             auto rval = castID(ref);
             mClosure = [rval](CommandBuffer& buffer) {
                 return cast(rval, buffer);
             };
         }
-        DataPtrHelper(const DataViewer<T>& data) {
+
+        explicit DataPtrHelper(const DataViewer<T>& data) {
             auto ptr = data.begin();
             mClosure = [ptr](CommandBuffer& buffer) {
                 return ptr;
@@ -265,7 +267,7 @@ namespace Impl {
         std::function<T(CommandBuffer&)> mClosure;
     public:
         template<typename U>
-        ValueHelper(const U& val) {
+        explicit ValueHelper(const U& val) {
             auto rval = castID(val);
             mClosure = [rval](CommandBuffer& buffer) {
                 return cast(rval, buffer);
@@ -310,7 +312,7 @@ namespace Impl {
         LaunchSizeHelper mHelper;
         MemoryRef<unsigned int> mRef;
     public:
-        LaunchSize(const MemoryRef<unsigned int>& ptr, unsigned int off = 0)
+        explicit LaunchSize(const MemoryRef<unsigned int>& ptr, const unsigned int off = 0)
             :mHelper(ptr, off), mRef(ptr) {}
         auto get() const {
             return mHelper;
@@ -323,8 +325,8 @@ namespace Impl {
         std::function<void(Stream&)> mClosure;
     public:
         template<typename Func, typename... Args>
-        KernelLaunchDim(CommandBuffer& buffer, Func func, dim3 grid, dim3 block, Args... args)
-            :Operator(buffer) {
+        KernelLaunchDim(CommandBuffer& buffer, Func func, const dim3 grid, const dim3 block,
+            Args... args):Operator(buffer) {
             mClosure = [=, &buffer](Stream& stream) {
                 stream.runDim(func, grid, block, cast(args, buffer)...);
             };
@@ -337,7 +339,7 @@ namespace Impl {
         std::function<void(Stream&)> mClosure;
     public:
         template<typename Func, typename... Args>
-        KernelLaunchLinear(CommandBuffer& buffer, Func func, size_t size, Args... args)
+        KernelLaunchLinear(CommandBuffer& buffer, Func func, const size_t size, Args... args)
             :Operator(buffer) {
             mClosure = [=, &buffer](Stream& stream) {
                 stream.run(func, size, cast(args, buffer)...);
@@ -356,9 +358,13 @@ class Future final {
 private:
     std::shared_ptr<bool> mPromise;
 public:
-    explicit Future(std::shared_ptr<bool>  promise);
+    explicit Future(std::shared_ptr<bool> promise);
     bool finished() const;
 };
+
+namespace Impl {
+    void CUDART_CB updateLast(cudaStream_t, cudaError_t, void *);
+}
 
 class CommandBuffer final :Uncopyable {
 private:
@@ -367,9 +373,10 @@ private:
     friend class Impl::Operator;
     friend class Impl::CastTag;
     friend class DispatchSystem;
+    friend void Impl::updateLast(cudaStream_t, cudaError_t, void *);
     std::map<ID, std::unique_ptr<ResourceInstance>> mResource;
     std::queue<std::unique_ptr<Impl::Operator>> mCommandQueue;
-    ID mLast;
+    ID mLast,mUpdated;
     std::shared_ptr<bool> mPromise;
     cudaStream_t mStream = nullptr;
     void registerResource(ID id, std::unique_ptr<ResourceInstance>&& instance);
@@ -382,13 +389,15 @@ private:
 public:
     CommandBuffer();
     template<typename T>
-    MemoryRef<T> allocBuffer(size_t size = 1) {
-        return std::make_shared<Impl::DeviceMemory>(*this, size * sizeof(T), Impl::MemoryType::Global);
+    MemoryRef<T> allocBuffer(const size_t size = 1) {
+        return MemoryRef<T>{std::make_shared<Impl::DeviceMemory>(*this, size * sizeof(T),
+            Impl::MemoryType::Global)};
     }
 
     template<typename T>
     MemoryRef<T> allocConstant() {
-        return std::make_shared<Impl::DeviceMemory>(*this, sizeof(T), Impl::MemoryType::Constant);
+        return MemoryRef<T>{std::make_shared<Impl::DeviceMemory>(*this, sizeof(T),
+            Impl::MemoryType::Constant)};
     }
 
     void memset(Impl::DMRef& memory, int mark = 0);
@@ -411,7 +420,7 @@ public:
     }
 
     template<typename Func, typename... Args>
-    void runKernelDim(Func func, dim3 grid, dim3 block, Args... args) {
+    void runKernelDim(Func func,const dim3 grid,const dim3 block, Args... args) {
         mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchDim>(*this, func, grid, block
             , Impl::castID(args)...));
     }
@@ -422,7 +431,7 @@ public:
     }
 
     template<typename Func, typename... Args>
-    void runKernelLinear(Func func, size_t size, Args... args) {
+    void runKernelLinear(Func func,const size_t size, Args... args) {
         mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchLinear>(*this, func,
             size, Impl::castID(args)...));
     }

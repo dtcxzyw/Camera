@@ -95,8 +95,7 @@ int main() {
                 SwapChainT::SharedFrame frame;
                 while (true) {
                     system.update(1ms);
-                    if (!swapChain.empty())
-                        tasks.push(addTask(system, swapChain.pop(), size, lum.begin()));
+
                     if (!tasks.empty() && tasks.front().future.finished()) {
                         frame = tasks.front().frame;
                         tasks.pop();

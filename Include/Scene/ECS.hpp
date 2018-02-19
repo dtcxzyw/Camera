@@ -15,7 +15,7 @@ class Entity final : Uncopyable {
 private:
     std::map<size_t, std::unique_ptr<Component>> mComponents;
 public:
-    void addComponent(std::unique_ptr<Component> ptr);
+    void attachComponent(std::unique_ptr<Component> ptr);
 
     template <typename T>
     T& getCompontnt() {
