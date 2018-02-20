@@ -79,16 +79,3 @@ public:
 
 using SharedEvent = std::shared_ptr<Event>;
 
-class Environment final :Singletion {
-private:
-    Environment() = default;
-    friend Environment& getEnvironment();
-    cudaDeviceProp mProp{};
-public:
-    void init();
-    const cudaDeviceProp& getProp() const;
-    ~Environment();
-};
-
-Environment& getEnvironment();
-

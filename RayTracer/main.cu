@@ -2,6 +2,8 @@
 #include <cstdio>
 #include <IO/Image.hpp>
 #include <thread>
+#include "Base/Environment.hpp"
+#include <Interaction/SwapChain.hpp>
 using namespace std::chrono_literals;
 
 Camera camera;
@@ -19,7 +21,7 @@ void setUIStyle() {
     style.FrameRounding = 5.0f;
 }
 
-void renderGUI(IMGUIWindow& window) {
+void renderGUI(D3D11Window& window) {
     window.newFrame();
     ImGui::Begin("Debug");
     ImGui::SetWindowPos({ 0, 0 });
@@ -65,7 +67,13 @@ struct RenderingTask {
 };
 
 int main() {
-    getEnvironment().init();
+    auto&& window = getD3D11Window();
+    setUIStyle();
+    ImGui::GetIO().WantCaptureKeyboard = true;
+
+    auto&& env = getEnvironment();
+    env.init(2);
+
     try {
         camera.near = 1.0f;
         camera.far = 200.0f;
@@ -77,14 +85,9 @@ int main() {
 
         arg.baseColor = vec3{220,223,227}/255.0f;
 
-        IMGUIWindow window;
-        setUIStyle();
-        ImGui::GetIO().WantCaptureKeyboard = true;
-
         SwapChainT swapChain(3);
         std::queue<RenderingTask> tasks;
         {
-            DispatchSystem system(2);
             auto lum = allocBuffer<float>();
             while (window.update()) {
                 const auto size = window.size();
@@ -94,8 +97,6 @@ int main() {
                 }
                 SwapChainT::SharedFrame frame;
                 while (true) {
-                    system.update(1ms);
-
                     if (!tasks.empty() && tasks.front().future.finished()) {
                         frame = tasks.front().frame;
                         tasks.pop();
@@ -108,6 +109,7 @@ int main() {
                 window.swapBuffers();
             }
         }
+        env.uninit();
     }
     catch (const std::runtime_error& e) {
         puts("Catched an error:");

@@ -99,10 +99,6 @@ namespace Impl {
         mClosure(stream);
     }
 
-    static void CUDART_CB streamCallback(cudaStream_t, cudaError_t, void *userData) {
-        *reinterpret_cast<bool*>(userData) = true;
-    }
-
     void CastTag::get(CommandBuffer & buffer, const ID id,void* ptr) {
         buffer.getResource(id).getRes(ptr,buffer.getStream());
     }
@@ -133,9 +129,8 @@ void CommandBuffer::registerResource(ID id, std::unique_ptr<ResourceInstance>&& 
     mResource.emplace(id, std::move(instance));
 }
 
-void CommandBuffer::setPromise(const std::shared_ptr<bool>& promise) {
+void CommandBuffer::setPromise(const std::shared_ptr<Impl::TaskState>& promise) {
     mPromise = promise;
-    addCallback(Impl::streamCallback, promise.get());
     mLast = 0;
 }
 
@@ -167,10 +162,14 @@ void CommandBuffer::pushOperator(std::function<void(Stream&)>&& op) {
 }
 
 namespace Impl {
-    void CUDART_CB updateLast(cudaStream_t, cudaError_t, void *userData) {
+    static void CUDART_CB updateLast(cudaStream_t, cudaError_t, void *userData) {
         const auto info=reinterpret_cast<std::pair<CommandBuffer*, ID>*>(userData);
         info->first->mLast = info->second;
         delete info;
+    }
+
+    static void CUDART_CB streamCallback(cudaStream_t, cudaError_t, void *userData) {
+        reinterpret_cast<TaskState*>(userData)->isDone = true;
     }
 }
 
@@ -179,11 +178,13 @@ void CommandBuffer::update(Stream& stream) {
         mStream = stream.get();
         auto&& command = mCommandQueue.front();
         command->emit(stream);
-        if ((mCommandQueue.size() & 0b1111) ==0) {
+        if ((mCommandQueue.size() & 0b111) ==0) {
             const auto ptr = new std::pair<CommandBuffer*, ID>(this, command->getID());
             checkError(cudaStreamAddCallback(mStream, Impl::updateLast, ptr, 0));
         }
         mCommandQueue.pop();
+        if (mCommandQueue.empty())
+            checkError(cudaStreamAddCallback(mStream, Impl::streamCallback, mPromise.get(), 0));
         if (mLast != mUpdated) {
             std::vector<ID> list;
             for (auto&& x : mResource)
@@ -201,7 +202,7 @@ bool CommandBuffer::finished() const {
 }
 
 bool CommandBuffer::isDone() const {
-    return *mPromise;
+    return mPromise->isDone;
 }
 
 ResourceInstance & CommandBuffer::getResource(const ID id) {
@@ -213,49 +214,34 @@ cudaStream_t CommandBuffer::getStream() const {
 }
 
 CommandBuffer::CommandBuffer(): mLast(0), mUpdated(0) {}
-
-void DispatchSystem::update(const Clock::time_point t) {
-    auto& stream = *std::min_element(mStreams.begin(), mStreams.end());
-    if (stream.free() && !mTasks.empty()) {
-        stream.set(std::move(mTasks.front()));
-        mTasks.pop();
-    }
-    stream.update(t);
+CommandBuffer::~CommandBuffer() {
+    mResource.clear();
+    mPromise->isReleased=true;
 }
 
-DispatchSystem::DispatchSystem(const size_t size):mStreams(size){}
-
-Future DispatchSystem::submit(std::unique_ptr<CommandBuffer>&& buffer) {
-    mTasks.push(std::move(buffer));
-    const auto promise = std::make_shared<bool>(false);
-    mTasks.back()->setPromise(promise);
-    return Future{ promise };
+DispatchSystem::StreamInfo& DispatchSystem::getStream() {
+    return *std::min_element(mStreams.begin(), mStreams.end());
 }
 
-size_t DispatchSystem::size() const {
-    return mTasks.size();
-}
-
-void DispatchSystem::update(const std::chrono::nanoseconds tot) {
-    const auto end = Clock::now()+tot;
-    while (true) {
-        const auto t = Clock::now();
-        if (t > end)return;
-        update(t);
-        if (mTasks.empty() && std::all_of(mStreams.cbegin(), mStreams.cend(), [](const auto& info) {
-            return info.free();
-        })) return;
-    }
-}
+DispatchSystem::DispatchSystem(const size_t size, CommandBufferQueue& queue)
+    :mStreams(size),mQueue(queue) {}
 
 void DispatchSystem::update() {
-    update(Clock::now());
+    using namespace std::chrono_literals;
+
+    auto&& stream = getStream();
+    if(stream.free()) {
+        auto task = mQueue.getTask();
+        if(task)stream.set(std::move(task));
+        else std::this_thread::sleep_for(1us);
+    }
+    stream.update(Clock::now());
 }
 
-Future::Future(std::shared_ptr<bool> promise):mPromise(std::move(promise)) {}
+Future::Future(std::shared_ptr<Impl::TaskState> promise):mPromise(std::move(promise)) {}
 
 bool Future::finished() const {
-    return *mPromise;
+    return mPromise->isReleased;
 }
 
 FunctionOperator::FunctionOperator(CommandBuffer& buffer,
@@ -268,10 +254,10 @@ void FunctionOperator::emit(Stream & stream) {
 DispatchSystem::StreamInfo::StreamInfo():mLast(Clock::now()) {}
 
 bool DispatchSystem::StreamInfo::free() const {
-    return mTask==nullptr && mPool.empty();
+    return mTask==nullptr;
 }
 
-void DispatchSystem::StreamInfo::set(std::unique_ptr<CommandBuffer>&& task) {
+void DispatchSystem::StreamInfo::set(std::unique_ptr<CommandBuffer> task) {
     mTask = std::move(task);
 }
 
@@ -279,11 +265,11 @@ void DispatchSystem::StreamInfo::update(const Clock::time_point point) {
     mPool.erase(std::remove_if(mPool.begin(), mPool.end(),
         [](auto&& task) {return task->isDone(); }), mPool.end());
     if (mTask) {
-        mLast = point;
         mTask->update(mStream);
         if (mTask->finished())
             mPool.emplace_back(std::move(mTask));
     }
+    mLast = point;
 }
 
 bool DispatchSystem::StreamInfo::operator<(const StreamInfo & rhs) const {
@@ -295,3 +281,26 @@ ResourceInstance::ResourceInstance():mEnd(Impl::getPID()) {}
 bool ResourceInstance::shouldRelease(const ID current) const {
     return current>mEnd;
 }
+
+void CommandBufferQueue::submit(std::unique_ptr<CommandBuffer> buffer) {
+    std::lock_guard<std::mutex> guard(mMutex);
+    mQueue.emplace(std::move(buffer));
+}
+
+std::unique_ptr<CommandBuffer> CommandBufferQueue::getTask() {
+    if (mQueue.empty())return nullptr;
+    std::lock_guard<std::mutex> guard(mMutex);
+    auto ptr = std::move(mQueue.front());
+    mQueue.pop();
+    return ptr;
+}
+
+size_t CommandBufferQueue::size() const {
+    return mQueue.size();
+}
+
+void CommandBufferQueue::clear() {
+    decltype(mQueue) empty;
+    mQueue.swap(empty);
+}
+

@@ -1,23 +1,35 @@
 #include <Base/CompileBegin.hpp>
 #include <GL/glew.h>
 #include <Interaction/OpenGL.hpp>
+#include <cuda_gl_interop.h>
 #include <IMGUI/imgui_impl_glfw_gl3.h>
 #include <Base/CompileEnd.hpp>
+
+namespace Impl {
+    static void errorCallBack(const int code, const char* str) {
+        printf("Error:code = %d reason:%s\n",code,str);
+        throw std::runtime_error(str);
+    }
+}
 
 class GLContext final:Singletion {
 private:
     bool mFlag;
     GLContext():mFlag(false) {
-        if (!glfwInit())
+        if (glfwInit()==GLFW_FALSE)
             throw std::runtime_error("Failed to initialize glfw.");
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
+        glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwSetErrorCallback(Impl::errorCallBack);
     }
     friend GLContext& getContext();
 public:
     void makeContext(GLFWwindow* window) {
-        static GLFWwindow* current = nullptr;
+        thread_local static GLFWwindow* current = nullptr;
         if (current != window) {
             glfwMakeContextCurrent(window);
             glDisable(GL_FRAMEBUFFER_SRGB);
@@ -35,14 +47,15 @@ public:
     }
 };
 
-GLContext& getContext() {
+static GLContext& getContext() {
     static GLContext context;
     return context;
 }
 
-GLWindow::GLWindow() {
+GLWindow::GLWindow(GLWindow* share) {
     auto& context=getContext();
-    mWindow = glfwCreateWindow(800, 600, "OpenGL Viewer", nullptr, nullptr);
+    mWindow = glfwCreateWindow(800, 600, "OpenGL Viewer", nullptr,
+        share?share->mWindow:nullptr);
     if (!mWindow)
         throw std::runtime_error("Failed to create a window.");
     context.makeContext(mWindow);
@@ -50,8 +63,16 @@ GLWindow::GLWindow() {
     glGenFramebuffers(1, &mFBO);
 }
 
-void GLWindow::present(Image& image) {
+void GLWindow::makeContext() {
     getContext().makeContext(mWindow);
+}
+
+void GLWindow::unmakeContext() {
+    getContext().makeContext(nullptr);
+}
+
+void GLWindow::present(GLImage& image) {
+    makeContext();
     glBindFramebuffer(GL_READ_FRAMEBUFFER, mFBO);
     glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D
         , image.get(), 0);
@@ -64,7 +85,7 @@ void GLWindow::present(Image& image) {
 }
 
 void GLWindow::setVSync(const bool enable) {
-    getContext().makeContext(mWindow);
+    makeContext();
     glfwSwapInterval(enable);
 }
 
@@ -73,7 +94,7 @@ void GLWindow::swapBuffers() {
 }
 
 bool GLWindow::update() {
-    getContext().makeContext(mWindow);
+    makeContext();
     glfwPollEvents();
     if (glfwWindowShouldClose(mWindow))
         return false;
@@ -90,54 +111,56 @@ uvec2 GLWindow::size() const {
     return { w,h };
 }
 
+GLFWwindow* GLWindow::get() const {
+    return mWindow;
+}
+
 GLWindow::~GLWindow() {
     glDeleteFramebuffers(1, &mFBO);
     glfwDestroyWindow(mWindow);
 }
 
-IMGUIWindow::IMGUIWindow() {
+GLIMGUIWindow::GLIMGUIWindow() {
     if (!ImGui_ImplGlfwGL3_Init(mWindow,true))
         throw std::runtime_error("Failed to setup ImGui binding.");
 }
 
-void IMGUIWindow::newFrame() {
-    getContext().makeContext(mWindow);
+void GLIMGUIWindow::newFrame() {
+    makeContext();
     ImGui_ImplGlfwGL3_NewFrame();
 }
 
-void IMGUIWindow::renderGUI() {
-    getContext().makeContext(mWindow);
-    const auto wsiz = size();
-    glViewport(0, 0, wsiz.x, wsiz.y);
+void GLIMGUIWindow::renderGUI() {
+    makeContext();
     ImGui::Render();
 }
 
-IMGUIWindow::~IMGUIWindow() {
-    getContext().makeContext(mWindow);
+GLIMGUIWindow::~GLIMGUIWindow() {
+    makeContext();
     ImGui_ImplGlfwGL3_Shutdown();
 }
 
-Image::Image():mRes(nullptr) {
+GLImage::GLImage():mRes(nullptr) {
     glGenTextures(1, &mTexture);
 }
 
-Image::~Image() {
+GLImage::~GLImage() {
     if(mRes)checkError(cudaGraphicsUnregisterResource(mRes));
     glDeleteTextures(1, &mTexture);
 }
 
-uvec2 Image::size() const {
+uvec2 GLImage::size() const {
     return mSize;
 }
 
-void Image::resize(const uvec2 size) {
+void GLImage::resize(const uvec2 size) {
     if (mSize != size) {
         if (mRes) {
             checkError(cudaGraphicsUnregisterResource(mRes));
             mRes = nullptr;
         }
         glBindTexture(GL_TEXTURE_2D, mTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, size.x, size.y
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8UI, size.x, size.y
             , 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         checkError(cudaGraphicsGLRegisterImage(&mRes, mTexture, GL_TEXTURE_2D
             , cudaGraphicsRegisterFlagsSurfaceLoadStore));
@@ -145,18 +168,18 @@ void Image::resize(const uvec2 size) {
     }
 }
 
-cudaArray_t Image::bind(const cudaStream_t stream) {
+cudaArray_t GLImage::bind(const cudaStream_t stream) {
     checkError(cudaGraphicsMapResources(1, &mRes, stream));
     cudaArray_t data;
     checkError(cudaGraphicsSubResourceGetMappedArray(&data, mRes, 0, 0));
     return data;
 }
 
-void Image::unbind(const cudaStream_t stream) {
+void GLImage::unbind(const cudaStream_t stream) {
     checkError(cudaGraphicsUnmapResources(1, &mRes, stream));
 }
 
-GLuint Image::get() const {
+GLuint GLImage::get() const {
     return mTexture;
 }
 

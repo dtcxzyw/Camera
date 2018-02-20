@@ -28,6 +28,11 @@ struct Rename<UV> final {
     using Type = float2;
 };
 
+template <>
+struct Rename<RGBA8> final {
+    using Type = uchar4;
+};
+
 template <typename T>
 class BuiltinArray final : Uncopyable {
 private:
@@ -184,16 +189,16 @@ public:
         cudaResourceDesc RD;
         RD.res.array.array = array;
         RD.resType = cudaResourceTypeArray;
-        cudaTextureDesc TD;
-        memset(&TD, 0, sizeof(TD));
-        TD.addressMode[0] = TD.addressMode[1] = am;
-        *reinterpret_cast<vec4*>(TD.borderColor) = borderColor;
-        TD.filterMode = fm;
-        TD.maxAnisotropy = maxAnisotropy;
-        TD.normalizedCoords = 1;
-        TD.readMode = cudaReadModeElementType;
-        TD.sRGB = sRGB;
-        checkError(cudaCreateTextureObject(&mTexture, &RD, &TD, nullptr));
+        cudaTextureDesc desc;
+        memset(&desc, 0, sizeof(desc));
+        desc.addressMode[0] = desc.addressMode[1] = am;
+        *reinterpret_cast<vec4*>(desc.borderColor) = borderColor;
+        desc.filterMode = fm;
+        desc.maxAnisotropy = maxAnisotropy;
+        desc.normalizedCoords = 1;
+        desc.readMode = cudaReadModeElementType;
+        desc.sRGB = sRGB;
+        checkError(cudaCreateTextureObject(&mTexture, &RD, &desc, nullptr));
     }
 
     explicit BuiltinSampler(BuiltinMipmapedArray<T>& array,
@@ -202,7 +207,7 @@ public:
                    const bool sRGB = false) {
         cudaResourceDesc RD;
         RD.res.mipmap.mipmap = array.get();
-        RD.resType = cudaResourceType::cudaResourceTypeMipmappedArray;
+        RD.resType = cudaResourceTypeMipmappedArray;
         cudaTextureDesc TD;
         memset(&TD, 0, sizeof(TD));
         TD.addressMode[0] = TD.addressMode[1] = am;
@@ -265,10 +270,10 @@ private:
     uvec2 mSize;
 public:
     BuiltinRenderTarget(const cudaArray_t array, const uvec2 size) : mArray(array), mSize(size) {
-        cudaResourceDesc RD;
-        RD.res.array.array = mArray;
-        RD.resType = cudaResourceTypeArray;
-        checkError(cudaCreateSurfaceObject(&mTarget, &RD));
+        cudaResourceDesc desc;
+        desc.res.array.array = mArray;
+        desc.resType = cudaResourceTypeArray;
+        checkError(cudaCreateSurfaceObject(&mTarget, &desc));
     }
 
     explicit BuiltinRenderTarget(BuiltinArray<T>& array): BuiltinRenderTarget(array.get(), array.size()) {}
@@ -278,7 +283,8 @@ public:
     }
 
     void clear(CommandBuffer& buffer, T val) {
-        const uint mul = sqrt(getEnvironment().getProp().maxThreadsPerBlock);
+        //TODO:dynamic dim
+        const auto mul = 32U;
         dim3 grid(calcSize(mSize.x, mul), calcSize(mSize.y, mul));
         dim3 block(mul, mul);
         buffer.runKernelDim(Impl::clear<T>, grid, block, toTarget(), val);
@@ -387,7 +393,7 @@ template <typename T>
 void downSample(cudaArray_t src, cudaArray_t dst, uvec2 size, Stream& stream) {
     BuiltinSampler<T> sampler(src);
     BuiltinRenderTarget<T> RT(dst, size);
-    const uint mul = sqrt(getEnvironment().getProp().maxThreadsPerBlock);
+    const uint mul = sqrt(stream.getMaxBlockSize());
     dim3 grid(calcSize(size.x, mul), calcSize(size.y, mul));
     dim3 block(mul, mul);
     stream.runDim(Impl::downSample<T>, grid, block, sampler.toSampler(), RT.toTarget());

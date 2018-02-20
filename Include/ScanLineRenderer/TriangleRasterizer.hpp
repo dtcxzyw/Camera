@@ -69,9 +69,11 @@ struct TriangleProcessingArgs final {
         : cnt(iCnt), info(iInfo), out(iOut), fsiz(iFsiz), hsiz(iHsiz), mode(iMode) {}
 };
 
+constexpr auto offsetT = 1.0f;
+
 CUDAINLINE int calcTileSize(const vec4 rect) {
     const auto tsiz = fmax(rect.y - rect.x, rect.w - rect.z);
-    return ceil(fmin(log2f(fmax(0.5f*(tsiz + 0.5f), 1.0f)), 4.9f));
+    return ceil(fmin(log2f(tsiz)-1.0f, 4.9f));
 }
 
 template <typename Out>
@@ -80,8 +82,8 @@ CUDAINLINE void calcTriangleInfo(TriangleVert<Out> tri, const TriangleProcessing
                b = toRaster(tri.vert[1].pos, args.hsiz),
                c = toRaster(tri.vert[2].pos, args.hsiz);
     const vec4 rect = {
-        fmax(0.0f, min3(a.x, b.x, c.x)), fmin(args.fsiz.x, max3(a.x, b.x, c.x)),
-        fmax(0.0f, min3(a.y, b.y, c.y)), fmin(args.fsiz.y, max3(a.y, b.y, c.y))
+        fmax(0.5f, min3(a.x, b.x, c.x)-offsetT), fmin(args.fsiz.x, max3(a.x, b.x, c.x)+offsetT),
+        fmax(0.5f, min3(a.y, b.y, c.y)-offsetT), fmin(args.fsiz.y, max3(a.y, b.y, c.y)+offsetT)
     };
     const auto area = edgeFunction(a, b, c);
     if (static_cast<bool>((area < 0.0f) ^ args.mode) & rect.x < rect.y & rect.z < rect.w) {
@@ -243,17 +245,13 @@ GLOBAL void drawMicroT(READONLY(Triangle<Out>) info,READONLY(TriangleRef) idx,
     const auto offX = threadIdx.x >> 1U, offY = threadIdx.x & 1U;
     const ivec2 uv{ref.rect.x + (threadIdx.y << 1) + offX, ref.rect.z + (threadIdx.z << 1) + offY};
     const vec2 p{uv.x + 0.5f, uv.y + 0.5f};
-    /*
-    const auto outSide = p.x > ref.rect.y | p.y > ref.rect.w;
-    if(__all_sync(0xffffffff,outSide))return;
-    */
     const auto tri = info[ref.id];
     vec3 w;
     float z;
     const auto flag = calcWeight(tri.w, p, tri.invz, near, invnf, w, z);
     const auto ddx = (shuffleWeight(w, 0b10) - w) * (offX ? -1.0f : 1.0f);
     const auto ddy = (shuffleWeight(w, 0b01) - w) * (offY ? -1.0f : 1.0f);
-    if (flag) {
+    if (p.x <= ref.rect.y & p.y <= ref.rect.w & flag) {
         const auto fout = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
         const auto ddxo = tri.out[0] * ddx.x + tri.out[1] * ddx.y + tri.out[2] * ddx.z;
         const auto ddyo = tri.out[0] * ddy.x + tri.out[1] * ddy.y + tri.out[2] * ddy.z;
@@ -317,7 +315,7 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
     buffer.memset(cnt);
     auto info = buffer.allocBuffer<Triangle<Out>>(psiz);
     auto idx = buffer.allocBuffer<TriangleRef>(psiz);
-    vec2 fsize = size - uvec2{1, 1};
+    const auto fsize = static_cast<vec2>(size) - vec2{ 0.5f };
     auto hfsize = static_cast<vec2>(size) * 0.5f;
     buffer.runKernelLinear(processTriangles<Index, Out, Uniform, cs>, index.size(), vert.get(),
                            index, uniform.get(), near, far,

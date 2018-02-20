@@ -1,5 +1,5 @@
 #pragma once
-#include <Interaction/OpenGL.hpp>
+#include <Interaction/D3D11.hpp>
 #include <Base/DispatchSystem.hpp>
 #include <Base/DataSet.hpp>
 #include <Base/Builtin.hpp>
@@ -32,18 +32,18 @@ struct FrameBufferGPU final {
 
 class ImageResourceInstance final : public ResourceInstance {
 private:
-    Image& mImage;
-    std::shared_ptr<BuiltinRenderTarget<RGBA>> mTarget;
+    D3D11Image& mImage;
+    std::shared_ptr<BuiltinRenderTarget<RGBA8>> mTarget;
     cudaStream_t mStream;
 public:
-    explicit ImageResourceInstance(Image& image): mImage(image), mStream(nullptr) {}
+    explicit ImageResourceInstance(D3D11Image& image): mImage(image), mStream(nullptr) {}
 
     void getRes(void* ptr, const cudaStream_t stream) override {
         if (!mTarget) {
-            mTarget = std::make_shared<BuiltinRenderTarget<RGBA>>(mImage.bind(stream), mImage.size());
+            mTarget = std::make_shared<BuiltinRenderTarget<RGBA8>>(mImage.bind(stream), mImage.size());
             mStream = stream;
         }
-        *reinterpret_cast<BuiltinRenderTargetGPU<RGBA>*>(ptr) = mTarget->toTarget();
+        *reinterpret_cast<BuiltinRenderTargetGPU<RGBA8>*>(ptr) = mTarget->toTarget();
     }
 
     ~ImageResourceInstance() {
@@ -54,11 +54,11 @@ public:
     }
 };
 
-class ImageResource final : public Resource<BuiltinRenderTargetGPU<RGBA>> {
+class ImageResource final : public Resource<BuiltinRenderTargetGPU<RGBA8>> {
 private:
-    Image& mImage;
+    D3D11Image& mImage;
 public:
-    ImageResource(CommandBuffer& buffer, Image& image): Resource(buffer), mImage(image) {}
+    ImageResource(CommandBuffer& buffer, D3D11Image& image): Resource(buffer), mImage(image) {}
 
     ~ImageResource() {
         addInstance(std::make_unique<ImageResourceInstance>(mImage));
@@ -69,11 +69,11 @@ struct FrameBufferCPU final {
     std::unique_ptr<BuiltinArray<RGBA>> colorBuffer;
     std::unique_ptr<DepthBuffer<unsigned int>> depthBuffer;
     std::unique_ptr<BuiltinRenderTarget<RGBA>> colorRT;
-    Image image;
+    D3D11Image image;
     uvec2 size;
     FrameBufferGPU data;
 
-    void resize(uvec2 nsiz) {
+    void resize(const uvec2 nsiz) {
         if (size == nsiz)return;
         size = nsiz;
         colorBuffer = std::make_unique<BuiltinArray<RGBA>>(size,cudaArraySurfaceLoadStore);

@@ -40,8 +40,8 @@ GLOBAL void processLines(const unsigned int size,READONLY(VertexInfo<Out>) in,
     a.pos = toRaster(a.pos, hsiz);
     b.pos = toRaster(b.pos, hsiz);
     const vec4 rect = {
-        fmax(0.0f, fmin(a.pos.x, b.pos.x)), fmin(fsiz.x, fmax(a.pos.x, b.pos.x)),
-        fmax(0.0f, fmin(a.pos.y, b.pos.y)), fmin(fsiz.y, fmax(a.pos.y, b.pos.y))
+        fmax(0.5f, fmin(a.pos.x, b.pos.x)), fmin(fsiz.x, fmax(a.pos.x, b.pos.x)),
+        fmax(0.5f, fmin(a.pos.y, b.pos.y)), fmin(fsiz.y, fmax(a.pos.y, b.pos.y))
     };
     if (rect.x <= rect.y && rect.z <= rect.w) {
         const auto p = atomicInc(cnt + 12, maxv);
@@ -125,7 +125,7 @@ void renderLines(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
     auto lsiz = vert.size() / 2;
     auto info = buffer.allocBuffer<LineInfo<Out>>(lsiz);
     auto ref = buffer.allocBuffer<LineRef>(lsiz);
-    const vec2 fsiz = size - uvec2{1, 1};
+    const auto fsiz = static_cast<vec2>(size) - vec2{ 0.5f };
     const auto hsiz = static_cast<vec2>(size) * 0.5f;
     buffer.runKernelLinear(processLines<Out>, lsiz, vert, info, ref, cnt, fsiz, hsiz, near, far);
     auto sortedLines = sortLines(buffer, cnt, ref);

@@ -2,6 +2,9 @@
 #include <cstdio>
 #include <IO/Image.hpp>
 #include <thread>
+#include <Base/Environment.hpp>
+#include <Interaction/SwapChain.hpp>
+
 using namespace std::chrono_literals;
 
 auto light=65.0f,r=20.0f;
@@ -25,7 +28,7 @@ void setUIStyle() {
     style.FrameRounding = 5.0f;
 }
 
-void renderGUI(IMGUIWindow& window) {
+void renderGUI(D3D11Window& window) {
     window.newFrame();
     ImGui::Begin("Debug");
     ImGui::SetWindowPos({ 0, 0 });
@@ -74,10 +77,10 @@ Uniform getUniform(float, const vec2 mul) {
     M = rotate(M, half_pi<float>(), { 0.0f,1.0f,0.0f });
     constexpr auto step = 50.0f;
     const auto off = ImGui::GetIO().DeltaTime * step;
-    if (ImGui::IsKeyPressed(GLFW_KEY_W))cp.x -= off;
-    if (ImGui::IsKeyPressed(GLFW_KEY_S))cp.x += off;
-    if (ImGui::IsKeyPressed(GLFW_KEY_A))cp.z -= off;
-    if (ImGui::IsKeyPressed(GLFW_KEY_D))cp.z += off;
+    if (ImGui::IsKeyPressed('W'))cp.x -= off;
+    if (ImGui::IsKeyPressed('S'))cp.x += off;
+    if (ImGui::IsKeyPressed('A'))cp.z += off;
+    if (ImGui::IsKeyPressed('D'))cp.z -= off;
     Uniform u;
     u.mul = mul;
     u.Msky = {};
@@ -104,10 +107,14 @@ struct RenderingTask {
 
 constexpr auto enableSAA = true;
 
-auto addTask(DispatchSystem& system,SwapChainT::SharedFrame frame,uvec2 size,
-    float* lum,RC8& cache) {
-    static float last = glfwGetTime();
-    const float now = glfwGetTime();
+float getTime() {
+    const double t=std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    return static_cast<float>(t * 1e-9);
+}
+
+auto addTask(SwapChainT::SharedFrame frame, const uvec2 size,float* lum,RC8& cache) {
+    static auto last = getTime();
+    const auto now = getTime();
     const auto converter = camera.toRasterPos(size);
     auto uniform = getUniform(now-last,converter.mul);
     last = now;
@@ -123,11 +130,18 @@ auto addTask(DispatchSystem& system,SwapChainT::SharedFrame frame,uvec2 size,
     uniform.cache = block.toBlock();
     buffer->memcpy(uni, [uniform](auto call) {call(&uniform); });
     kernel(model,mh,box,sh,uni,*frame,lum,converter,*buffer);
-    return RenderingTask{ system.submit(std::move(buffer)),frame,block};
+    return RenderingTask{ getEnvironment().submit(std::move(buffer)),frame,block};
 }
 
 int main() {
-    getEnvironment().init();
+    auto&& window=getD3D11Window();
+    window.show(true);
+    setUIStyle();
+    ImGui::GetIO().WantCaptureKeyboard = true;
+
+    auto&& env = getEnvironment();
+    env.init(2);
+
     try {
         camera.near = 1.0f;
         camera.far = 200.0f;
@@ -136,8 +150,8 @@ int main() {
         camera.focalLength = 15.0f;
 
         Stream resLoader;
-        //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
-        model.load("Res/dragon.obj",resLoader);
+        model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
+        //model.load("Res/dragon.obj",resLoader);
         RC8 cache(model.index.size(),30);
         mh.reset(model.index.size(),cache.blockSize()*3,enableSAA);
 
@@ -152,14 +166,9 @@ int main() {
         envMapSampler = std::make_shared<BuiltinSampler<RGBA>>(envMap->get());
         arg.baseColor = vec3{220,223,227}/255.0f;
 
-        IMGUIWindow window;
-        setUIStyle();
-        ImGui::GetIO().WantCaptureKeyboard = true;
-
         SwapChainT swapChain(3);
         std::queue<RenderingTask> tasks;
         {
-            DispatchSystem system(2);
             auto lum = allocBuffer<float>();
             while (window.update()) {
                 const auto size = window.size();
@@ -169,9 +178,8 @@ int main() {
                 }
                 SwapChainT::SharedFrame frame;
                 while (true) {
-                    system.update(1ms);
                     if (!swapChain.empty())
-                        tasks.push(addTask(system, swapChain.pop(), size, lum.begin(),cache));
+                        tasks.push(addTask(swapChain.pop(), size, lum.begin(),cache));
                     if (!tasks.empty() && tasks.front().future.finished()) {
                         frame = tasks.front().frame;
                         cache.push(tasks.front().block);
@@ -180,14 +188,15 @@ int main() {
                     }
                 }
                 window.present(frame->image);
-                swapChain.push(std::move(frame));
                 renderGUI(window);
                 window.swapBuffers();
+                swapChain.push(std::move(frame));
             }
         }
         
         envMapSampler.reset();
         envMap.reset();
+        env.uninit();
     }
     catch (const std::runtime_error& e) {
         puts("Catched an error:");

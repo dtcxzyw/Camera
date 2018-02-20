@@ -15,7 +15,7 @@ template< typename Out, typename Uniform, typename FrameBuffer,
     auto p = vert[id];
     auto nz = (p.pos.z - near)*invnf;
     p.pos = toRaster(p.pos, hfsize);
-    if (0.0f <= p.pos.x & p.pos.x <= fsize.x & 0.0f <= p.pos.y & p.pos.y <= fsize.y
+    if (0.5f <= p.pos.x & p.pos.x <= fsize.x & 0.5f <= p.pos.y & p.pos.y <= fsize.y
         & 0.0f <= nz & nz <= 1.0f) {
         fs(id, { p.pos.x,p.pos.y }, nz, p.out, *uniform, *frameBuffer);
     }
@@ -41,7 +41,7 @@ template< typename Out, typename Uniform, typename FrameBuffer,
     FSFP<Out, Uniform, FrameBuffer>... fs>
     void renderPoints(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
         const DataPtr<Uniform>& uniform, FrameBuffer* frameBuffer, const uvec2 size, float near, float far) {
-    vec2 fsize = size - uvec2{ 1, 1 };
+    const auto fsize = static_cast<vec2>(size) - vec2{ 0.5f };
     auto hfsize = static_cast<vec2>(size) * 0.5f;
     auto invnf = 1.0f / (far - near);
     drawPointHelper<Out, Uniform, FrameBuffer, fs...>(buffer, vert, uniform, frameBuffer, fsize,

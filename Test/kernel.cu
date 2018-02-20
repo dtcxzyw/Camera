@@ -78,7 +78,7 @@ CUDAINLINE void drawPoint(unsigned int triID, ivec2 uv, float z, const OI& out, 
     }
 }
 
-CUDAINLINE void post(ivec2 NDC, const PostUniform& uni, BuiltinRenderTargetGPU<RGBA> out) {
+CUDAINLINE void post(ivec2 NDC, const PostUniform& uni, BuiltinRenderTargetGPU<RGBA8> out) {
     RGB c = uni.in.color.get(NDC);
     const auto lum = luminosity(c);
     if (uni.in.depth.get(NDC) < 0xffffff00) {
@@ -88,9 +88,9 @@ CUDAINLINE void post(ivec2 NDC, const PostUniform& uni, BuiltinRenderTargetGPU<R
         }
         c = ACES(c, *uni.lum);
     }
-    c = pow(c, vec3(1.0f / 2.2f));
-    NDC.y = uni.in.fsize.y - 1 - NDC.y;
-    out.set(NDC, {c, 1.0f});
+    c = clamp(pow(c, vec3(1.0f / 2.2f)),0.0f,1.0f);
+    const RGBA8 color = { c*255.0f,255 };
+    out.set(NDC, color);
 }
 
 GLOBAL void updateLum(const PostUniform uniform) {
@@ -126,10 +126,10 @@ void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
         auto data = pd.get(buffer);
         call(&data);
     });
-    const std::shared_ptr<Resource<BuiltinRenderTargetGPU<RGBA>>> res =
+    const std::shared_ptr<Resource<BuiltinRenderTargetGPU<RGBA8>>> res =
         std::make_shared<ImageResource>(buffer, fbo.image);
-    const ResourceRef<BuiltinRenderTargetGPU<RGBA>> image{res};
-    renderFullScreen<PostUniform, BuiltinRenderTargetGPU<RGBA>, post>(buffer, puni, image,
+    const ResourceRef<BuiltinRenderTargetGPU<RGBA8>> image{res};
+    renderFullScreen<PostUniform, BuiltinRenderTargetGPU<RGBA8>, post>(buffer, puni, image,
                                                                       fbo.size);
     buffer.callKernel(updateLum, punidata);
 }

@@ -2,30 +2,35 @@
 #include <vector>
 #include <algorithm>
 
-class MemoryPool final :Singletion {
+class MemoryPool final : Singletion {
 private:
     static constexpr auto timeBlock = 1024U;
     std::vector<void*> mPool[41];
     uintmax_t mLastRequireTimeStamp[41]{};
     uintmax_t mTimeCount;
-    MemoryPool():mTimeCount(0) {
-        std::fill(std::begin(mLastRequireTimeStamp),std::end(mLastRequireTimeStamp),0);
+
+    MemoryPool(): mTimeCount(0) {
+        std::fill(std::begin(mLastRequireTimeStamp), std::end(mLastRequireTimeStamp), 0);
     }
+
     friend MemoryPool& getMemoryPool();
-    void clearLevel(std::vector<void*>& level)  {
+
+    void clearLevel(std::vector<void*>& level) {
         for (auto&& p : level)
             checkError(cudaFree(p));
         level.clear();
     }
+
     void gc() {
-        auto x=-1;
+        auto x = -1;
         for (auto i = 1; i <= 40; ++i)
             if (!mPool[i].empty() && (x == -1 || mLastRequireTimeStamp[i] < mLastRequireTimeStamp[x]))
                 x = i;
         if (mTimeCount - mLastRequireTimeStamp[x] > timeBlock)
             clearLevel(mPool[x]);
     }
-    void* add(size_t level) {
+
+    void* add(const size_t level) {
         const auto size = 1 << level;
         void* ptr;
         cudaError_t err;
@@ -43,17 +48,19 @@ private:
         }
         return ptr;
     }
+
     static size_t count(const size_t x) {
         for (auto i = 40; i >= 0; --i)
-            if (x&(1ULL << i))
+            if (x & (1ULL << i))
                 return i + 1;
         return -1;
     }
+
 public:
     void* memAlloc(const size_t size) {
         const auto level = count(size);
         mLastRequireTimeStamp[level] = ++mTimeCount;
-        if(mTimeCount%timeBlock==0)gc();
+        if (mTimeCount % timeBlock == 0)gc();
         if (!mPool[level].empty()) {
             const auto ptr = mPool[level].back();
             mPool[level].pop_back();
@@ -62,7 +69,7 @@ public:
         return add(level);
     }
 
-    void memFree(void* ptr, size_t size) {
+    void memFree(void* ptr, const size_t size) {
         mPool[count(size)].push_back(ptr);
     }
 
@@ -72,7 +79,7 @@ public:
     }
 };
 
-MemoryPool& getMemoryPool() {
+static MemoryPool& getMemoryPool() {
     thread_local static MemoryPool pool;
     return pool;
 }
@@ -83,7 +90,7 @@ Memory::~Memory() {
     getMemoryPool().memFree(mPtr, mSize);
 }
 
-char * Memory::getPtr() const {
+char* Memory::getPtr() const {
     return reinterpret_cast<char*>(mPtr);
 }
 
@@ -91,9 +98,10 @@ size_t Memory::size() const {
     return mSize;
 }
 
-PinnedMemory::PinnedMemory(size_t size):mPtr(nullptr) {
-    checkError(cudaMallocHost(&mPtr,size, cudaHostAllocPortable|cudaHostAllocWriteCombined));
+PinnedMemory::PinnedMemory(size_t size): mPtr(nullptr) {
+    checkError(cudaMallocHost(&mPtr, size, cudaHostAllocPortable | cudaHostAllocWriteCombined));
 }
+
 PinnedMemory::~PinnedMemory() {
     checkError(cudaFreeHost(mPtr));
 }

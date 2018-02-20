@@ -135,6 +135,18 @@
     <ClInclude Include="..\..\Include\Scene\ECS.hpp">
       <Filter>Scene</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Base\Environment.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Interaction\D3D11.hpp">
+      <Filter>Interaction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Interaction\SwapChain.hpp">
+      <Filter>Interaction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_impl_dx11.h">
+      <Filter>Interaction\IMGUI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">
@@ -164,6 +176,12 @@
     <ClCompile Include="..\..\Src\Scene\ECS.cpp">
       <Filter>Scene</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Src\Base\Environment.cpp">
+      <Filter>Base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_impl_dx11.cpp">
+      <Filter>Interaction\IMGUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\Interaction\OpenGL.cu">
@@ -183,6 +201,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\Src\ScanLineRenderer\LineRasterizer.cu">
       <Filter>ScanLineRenderer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Interaction\D3D11.cu">
+      <Filter>Interaction</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>
