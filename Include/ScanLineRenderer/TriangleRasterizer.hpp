@@ -7,6 +7,65 @@
 #include <sm_30_intrinsics.h>
 #include <Base/CompileEnd.hpp>
 
+///@see <a href="https://www.khronos.org/registry/OpenGL/specs/gl/glspec46.compatibility.pdf">OpenGL 4.6 API Specification, Section 10.1 Primitive Types</a>
+
+class TriangleStrips final {
+private:
+    unsigned int mSize;
+public:
+    explicit TriangleStrips(const unsigned int vertSize) :mSize(vertSize - 2) {}
+    BOTH auto size() const {
+        return mSize;
+    }
+    CUDAINLINE uvec3 operator[](const unsigned int off) const {
+        return { off,off + 1,off + 2 };
+    }
+};
+
+class TriangleFans final {
+private:
+    unsigned int mSize;
+public:
+    explicit TriangleFans(const unsigned int vertSize) :mSize(vertSize - 2) {}
+    BOTH auto size() const {
+        return mSize;
+    }
+    CUDAINLINE uvec3 operator[](const unsigned int off) const {
+        return { 0,off + 1,off + 2 };
+    }
+};
+
+class SeparateTriangles final {
+private:
+    unsigned int mSize;
+public:
+    explicit SeparateTriangles(const unsigned int faceSize) :mSize(faceSize) {}
+    BOTH auto size() const {
+        return mSize;
+    }
+    CUDAINLINE uvec3 operator[](const unsigned int off) const {
+        const auto base = off * 3;
+        return { base,base + 1,base + 2 };
+    }
+};
+
+class SeparateTrianglesWithIndex final {
+private:
+    READONLY(uvec3) mPtr;
+    unsigned int mSize;
+public:
+    SeparateTrianglesWithIndex(READONLY(uvec3) idx, const unsigned int faceSize)
+        :mPtr(idx), mSize(faceSize) {}
+    explicit SeparateTrianglesWithIndex(const DataViewer<uvec3>& ibo)
+        :SeparateTrianglesWithIndex(ibo.begin(),ibo.size()) {}
+    BOTH auto size() const {
+        return mSize;
+    }
+    CUDAINLINE auto operator[](const unsigned int off) const {
+        return mPtr[off];
+    }
+};
+
 inline auto calcBufferSize(const unsigned int history, const unsigned int base, const unsigned int maxv) {
     return base + std::min(history + (history >> 3), maxv);
 }

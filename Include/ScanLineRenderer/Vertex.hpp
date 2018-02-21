@@ -1,37 +1,7 @@
 #pragma once
 #include <Base/Common.hpp>
 #include  <Base/Math.hpp>
-#include <Base/Memory.hpp>
 #include <Base/DispatchSystem.hpp>
-
-class UniqueIndex final {
-private:
-    unsigned int mSize;
-public:
-    explicit UniqueIndex(const unsigned int size) :mSize(size) {}
-    BOTH auto size() const {
-        return mSize;
-    }
-    CUDAINLINE uvec3 operator[](const unsigned int off) const {
-        const auto base = off * 3;
-        return { base,base + 1,base + 2 };
-    }
-};
-
-class SharedIndex final {
-private:
-    READONLY(uvec3) mPtr;
-    unsigned int mSize;
-public:
-    SharedIndex(READONLY(uvec3) idx, const unsigned int size) :mPtr(idx), mSize(size) {}
-    explicit SharedIndex(const DataViewer<uvec3>& ibo) :mPtr(ibo.begin()), mSize(ibo.size()) {}
-    BOTH auto size() const {
-        return mSize;
-    }
-    CUDAINLINE auto operator[](const unsigned int off) const {
-        return mPtr[off];
-    }
-};
 
 template<typename Vert, typename Out, typename Uniform>
 using VSF = void(*)(Vert in, const Uniform& uniform, vec3& pos, Out& out);

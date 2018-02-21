@@ -5,6 +5,49 @@
 #include <Base/CompileEnd.hpp>
 #include <ScanLineRenderer/Vertex.hpp>
 
+///@see <a href="https://www.khronos.org/registry/OpenGL/specs/gl/glspec46.compatibility.pdf">OpenGL 4.6 API Specification, Section 10.1 Primitive Types</a>
+
+class LineStrips final {
+private:
+    unsigned int mSize;
+public:
+    explicit LineStrips(const unsigned int vertSize) :mSize(vertSize - 1) {}
+    BOTH auto size() const {
+        return mSize;
+    }
+    CUDAINLINE uvec2 operator[](const unsigned int off) const {
+        return { off,off + 1 };
+    }
+};
+
+class LineLoops final {
+private:
+    unsigned int mSize;
+public:
+    explicit LineLoops(const unsigned int vertSize) :mSize(vertSize) {}
+    BOTH auto size() const {
+        return mSize;
+    }
+    CUDAINLINE uvec2 operator[](const unsigned int off) const {
+        const auto next = off + 1;
+        return { off,next==mSize?0:next };
+    }
+};
+
+class SeparateLines final {
+private:
+    unsigned int mSize;
+public:
+    explicit SeparateLines(const unsigned int lineSize) :mSize(lineSize) {}
+    BOTH auto size() const {
+        return mSize;
+    }
+    CUDAINLINE uvec2 operator[](const unsigned int off) const {
+        const auto base = off<<1;
+        return { base,base + 1 };
+    }
+};
+
 template <typename Out>
 struct LineInfo final {
     unsigned int id;
@@ -25,13 +68,14 @@ CUDAINLINE auto calcTileSize(const vec2 a, const vec2 b) {
     return static_cast<unsigned int>(fmin(11.0f, ceil(log2f(distance(a, b)))));
 }
 
-template <typename Out>
-GLOBAL void processLines(const unsigned int size,READONLY(VertexInfo<Out>) in,
+template <typename Index, typename Out>
+GLOBAL void processLines(const unsigned int size,READONLY(VertexInfo<Out>) in, Index index,
                          LineInfo<Out>* info, LineRef* ref, unsigned int* cnt, const vec2 fsiz, const vec2 hsiz,
                          const float near, const float far) {
     const auto id = getID();
     if (id >= size)return;
-    auto a = in[id << 1], b = in[id << 1 | 1];
+    auto idx = index[id];
+    auto a = in[idx[0]], b = in[idx[1]];
     if (a.pos.z > b.pos.z)std::swap(a, b);
     const auto pa = a.pos, pb = b.pos;
     if (pa.z >= far | pb.z <= near)return;
@@ -115,19 +159,19 @@ GLOBAL void renderLinesGPU(unsigned int* offset, LineInfo<Out>* tri, LineRef* id
     applyLFS<Out, Uniform, FrameBuffer, fs...>(offset, tri, idx, uniform, frameBuffer, near, invnf);
 }
 
-template <typename Out, typename Uniform, typename FrameBuffer,
+template <typename Index, typename Out, typename Uniform, typename FrameBuffer,
           FSFL<Out, Uniform, FrameBuffer>... fs>
-void renderLines(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
+void renderLines(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert, Index index,
                  const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer, const uvec2 size,
                  const float near, const float far) {
     auto cnt = buffer.allocBuffer<unsigned int>(13);
     buffer.memset(cnt);
-    auto lsiz = vert.size() / 2;
+    const auto lsiz = index.size();
     auto info = buffer.allocBuffer<LineInfo<Out>>(lsiz);
     auto ref = buffer.allocBuffer<LineRef>(lsiz);
-    const auto fsiz = static_cast<vec2>(size) - vec2{ 0.5f };
+    const auto fsiz = static_cast<vec2>(size) - vec2{0.5f};
     const auto hsiz = static_cast<vec2>(size) * 0.5f;
-    buffer.runKernelLinear(processLines<Out>, lsiz, vert, info, ref, cnt, fsiz, hsiz, near, far);
+    buffer.runKernelLinear(processLines<Index, Out>, lsiz, vert, index, info, ref, cnt, fsiz, hsiz, near, far);
     auto sortedLines = sortLines(buffer, cnt, ref);
     cnt.earlyRelease();
     ref.earlyRelease();
