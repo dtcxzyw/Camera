@@ -62,8 +62,9 @@ CUDAINLINE void drawPoint(unsigned int triID, ivec2 uv, float z, const OI& out, 
         uniform.cache.record(triID);
         const vec3 p = out.get<Pos>();
         const vec3 N = normalize(out.get<Normal>());
-        const vec3 X = normalize(out.get<Tangent>());
-        const auto Y = normalize(cross(N, X));
+        const vec3 T = normalize(out.get<Tangent>());
+        const auto X = normalize(T - dot(T, N) * N);
+        const auto Y = normalize(cross(X, N));
         const auto off = uniform.lp - p;
         const auto dis2 = length2(off);
         const auto dis = sqrt(dis2);

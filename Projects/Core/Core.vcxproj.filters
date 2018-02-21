@@ -147,6 +147,12 @@
     <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_impl_dx11.h">
       <Filter>Interaction\IMGUI</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\ScanLineRenderer\SphereRasterizer.hpp">
+      <Filter>ScanLineRenderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\ScanLineRenderer\Shared.hpp">
+      <Filter>ScanLineRenderer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">
@@ -196,14 +202,17 @@
     <CudaCompile Include="..\..\Src\Base\Constant.cu">
       <Filter>Base</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\Src\ScanLineRenderer\TriangleRasterizer.cu">
-      <Filter>ScanLineRenderer</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\Src\ScanLineRenderer\LineRasterizer.cu">
       <Filter>ScanLineRenderer</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\Src\Interaction\D3D11.cu">
       <Filter>Interaction</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\ScanLineRenderer\SphereRasterizer.cu">
+      <Filter>ScanLineRenderer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\ScanLineRenderer\Shared.cu">
+      <Filter>ScanLineRenderer</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

@@ -42,8 +42,3 @@ auto calcVertex(CommandBuffer& buffer, const DataPtr<Vert>& vert, const DataPtr<
         vert.get(), uniform.get(), vertex);
     return vertex;
 }
-
-CUDAINLINE vec3 toRaster(const vec3 p, const vec2 hsiz) {
-    const auto invz = 1.0f / p.z;
-    return { (1.0f + p.x*invz)*hsiz.x,(1.0f - p.y*invz)*hsiz.y,invz };
-}

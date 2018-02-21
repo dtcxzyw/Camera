@@ -4,6 +4,7 @@
 #include <device_atomic_functions.h>
 #include <Base/CompileEnd.hpp>
 #include <ScanLineRenderer/Vertex.hpp>
+#include <ScanLineRenderer/Shared.hpp>
 
 ///@see <a href="https://www.khronos.org/registry/OpenGL/specs/gl/glspec46.compatibility.pdf">OpenGL 4.6 API Specification, Section 10.1 Primitive Types</a>
 

@@ -40,6 +40,8 @@
     <ClInclude Include="..\..\Include\ScanLineRenderer\PointRasterizer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\PostProcess.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\Primitive.hpp" />
+    <ClInclude Include="..\..\Include\ScanLineRenderer\Shared.hpp" />
+    <ClInclude Include="..\..\Include\ScanLineRenderer\SphereRasterizer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\TriangleRasterizer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\RenderingCache.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\Vertex.hpp" />
@@ -69,7 +71,8 @@
     </CudaCompile>
     <CudaCompile Include="..\..\Src\PBR\DataDrivenBRDF.cu" />
     <CudaCompile Include="..\..\Src\ScanLineRenderer\LineRasterizer.cu" />
-    <CudaCompile Include="..\..\Src\ScanLineRenderer\TriangleRasterizer.cu" />
+    <CudaCompile Include="..\..\Src\ScanLineRenderer\SphereRasterizer.cu" />
+    <CudaCompile Include="..\..\Src\ScanLineRenderer\Shared.cu" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\IO\Image.cu" />
