@@ -150,8 +150,8 @@ int main() {
         camera.focalLength = 15.0f;
 
         Stream resLoader;
-        model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
-        //model.load("Res/dragon.obj",resLoader);
+        //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
+        model.load("Res/dragon.obj",resLoader);
         RC8 cache(model.index.size(),30);
         mh.reset(model.index.size(),cache.blockSize()*3,enableSAA);
 

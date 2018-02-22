@@ -233,7 +233,7 @@ void DispatchSystem::update() {
     if(stream.free()) {
         auto task = mQueue.getTask();
         if(task)stream.set(std::move(task));
-        else std::this_thread::sleep_for(1us);
+        else std::this_thread::yield();
     }
     stream.update(Clock::now());
 }

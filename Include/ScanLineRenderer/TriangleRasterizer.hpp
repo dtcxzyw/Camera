@@ -81,14 +81,6 @@ CUDAINLINE float edgeFunction(const vec3 a, const vec3 b, const vec3 c) {
     return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
 
-CUDAINLINE float max3(const float a, const float b, const float c) {
-    return fmax(a, fmax(b, c));
-}
-
-CUDAINLINE float min3(const float a, const float b, const float c) {
-    return fmin(a, fmin(b, c));
-}
-
 CUDAINLINE vec3 calcBase(const vec3 a, const vec3 b) {
     vec3 w;
     w.x = b.y - a.y, w.y = a.x - b.x;

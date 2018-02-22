@@ -12,12 +12,13 @@ class LineStrips final {
 private:
     unsigned int mSize;
 public:
-    explicit LineStrips(const unsigned int vertSize) :mSize(vertSize - 1) {}
+    explicit LineStrips(const unsigned int vertSize) : mSize(vertSize - 1) {}
     BOTH auto size() const {
         return mSize;
     }
+
     CUDAINLINE uvec2 operator[](const unsigned int off) const {
-        return { off,off + 1 };
+        return {off, off + 1};
     }
 };
 
@@ -25,13 +26,14 @@ class LineLoops final {
 private:
     unsigned int mSize;
 public:
-    explicit LineLoops(const unsigned int vertSize) :mSize(vertSize) {}
+    explicit LineLoops(const unsigned int vertSize) : mSize(vertSize) {}
     BOTH auto size() const {
         return mSize;
     }
+
     CUDAINLINE uvec2 operator[](const unsigned int off) const {
         const auto next = off + 1;
-        return { off,next==mSize?0:next };
+        return {off, next == mSize ? 0 : next};
     }
 };
 
@@ -39,13 +41,14 @@ class SeparateLines final {
 private:
     unsigned int mSize;
 public:
-    explicit SeparateLines(const unsigned int lineSize) :mSize(lineSize) {}
+    explicit SeparateLines(const unsigned int lineSize) : mSize(lineSize) {}
     BOTH auto size() const {
         return mSize;
     }
+
     CUDAINLINE uvec2 operator[](const unsigned int off) const {
-        const auto base = off<<1;
-        return { base,base + 1 };
+        const auto base = off << 1;
+        return {base, base + 1};
     }
 };
 
@@ -57,7 +60,7 @@ struct LineInfo final {
 
 struct LineRef final {
     unsigned int id, size;
-    vec4 rect;
+    float len;
     vec2 range; //begin,len
 };
 
@@ -65,30 +68,42 @@ template <typename Out, typename Uniform, typename FrameBuffer>
 using FSFL = void(*)(unsigned int id, ivec2 uv, float z, const Out& in,
                      const Uniform& uniform, FrameBuffer& frameBuffer);
 
-CUDAINLINE auto calcTileSize(const vec2 a, const vec2 b) {
-    return static_cast<unsigned int>(fmin(11.0f, ceil(log2f(distance(a, b)))));
+CUDAINLINE auto calcTileSize(const float len) {
+    return static_cast<unsigned int>(fmin(11.5f, ceil(log2f(len))));
 }
 
-template <typename Index, typename Out>
+CUDAINLINE vec2 calcRange(const float a, const float b, const float x) {
+    if (b == a)return (0.5f <= a & a <= x) ? vec2{0.0f, 1.0f} : vec2{0.0f, 0.0f};
+    const auto invx = 1.0f / (b - a), lax = (0.5f - a) * invx, rax = (x - a) * invx;
+    return {fmin(lax, rax), fmax(lax, rax)};
+}
+
+CUDAINLINE vec2 calcLineRange(const vec2 a, const vec2 b, const vec2 fsiz) {
+    const auto rangeX = calcRange(a.x, b.x, fsiz.x);
+    const auto rangeY = calcRange(a.y, b.y, fsiz.y);
+    const auto begin = max3(0.0f, rangeX.x, rangeY.x);
+    const auto end = min3(1.0f, rangeX.y, rangeY.y);
+    return {begin, end - begin};
+}
+
+template <typename Index, typename Out, typename Uniform, PosConverter<Uniform> toPos>
 GLOBAL void processLines(const unsigned int size,READONLY(VertexInfo<Out>) in, Index index,
                          LineInfo<Out>* info, LineRef* ref, unsigned int* cnt, const vec2 fsiz, const vec2 hsiz,
-                         const float near, const float far) {
+                         const float near, const float far,READONLY(Uniform) uniform) {
     const auto id = getID();
     if (id >= size)return;
     auto idx = index[id];
     auto a = in[idx[0]], b = in[idx[1]];
-    if (a.pos.z > b.pos.z)std::swap(a, b);
-    const auto pa = a.pos, pb = b.pos;
-    if (pa.z >= far | pb.z <= near)return;
-    if (pa.z < near)a = lerpZ(a, b, near);
-    if (pb.z > far)b = lerpZ(a, b, far);
+    a.pos = toPos(a.pos, *uniform);
+    b.pos = toPos(b.pos, *uniform);
+    if (a.pos.z > b.pos.z)cudaSwap(a, b);
+    if (a.pos.z >= far | b.pos.z <= near)return;
+    if (a.pos.z < near)a = lerpZ(a, b, near);
+    if (b.pos.z > far)b = lerpZ(a, b, far);
     a.pos = toRaster(a.pos, hsiz);
     b.pos = toRaster(b.pos, hsiz);
-    const vec4 rect = {
-        fmax(0.5f, fmin(a.pos.x, b.pos.x)), fmin(fsiz.x, fmax(a.pos.x, b.pos.x)),
-        fmax(0.5f, fmin(a.pos.y, b.pos.y)), fmin(fsiz.y, fmax(a.pos.y, b.pos.y))
-    };
-    if (rect.x <= rect.y && rect.z <= rect.w) {
+    const vec2 range = calcLineRange(a.pos, b.pos, fsiz);
+    if (range.y > 0.0f) {
         const auto p = atomicInc(cnt + 12, maxv);
         LineInfo<Out> out;
         out.id = id;
@@ -99,9 +114,9 @@ GLOBAL void processLines(const unsigned int size,READONLY(VertexInfo<Out>) in, I
         info[p] = out;
         LineRef res;
         res.id = p;
-        res.size = calcTileSize(vec2(rect.x, rect.z), vec2(rect.y, rect.w));
-        res.rect = rect;
-        res.range = {0.0f, 1.0f};
+        res.len = distance(vec2(a.pos), vec2(b.pos)) * range.y;
+        res.size = calcTileSize(res.len);
+        res.range = range;
         ref[p] = res;
         atomicInc(cnt + res.size, maxv);
     }
@@ -113,27 +128,27 @@ std::pair<MemoryRef<unsigned int>, MemoryRef<LineRef>> sortLines(CommandBuffer& 
 
 //1...1024
 template <typename Out, typename Uniform, typename FrameBuffer,
-          FSFL<Out, Uniform, FrameBuffer> fs>
+    FSFL<Out, Uniform, FrameBuffer> fs>
 GLOBAL void drawMicroL(READONLY(LineInfo<Out>) info, READONLY(LineRef) idx,
                        READONLY(Uniform) uniform, FrameBuffer* frameBuffer,
-                       const float near, const float invnf) {
+                       const float near, const float invnf, const float fx, const float fy) {
     const auto ref = idx[blockIdx.x];
     const auto line = info[ref.id];
     const auto w = ref.range.x + ref.range.y * threadIdx.x / blockDim.x;
-    vec2 weight = {w, 1.0f - w};
+    vec2 weight = {1.0f - w, w};
     const auto p = line.a.pos * weight.x + line.b.pos * weight.y;
     const auto z = 1.0f / p.z;
     weight *= z;
     const auto fout = line.a.out * weight.x + line.b.out * weight.y;
-    fs(line.id, ivec2{p.x, p.y}, (z - near) * invnf, fout, *uniform, *frameBuffer);
+    if (0.5f <= p.x & p.x <= fx & 0.5f <= p.y & p.y <= fy)
+        fs(line.id, ivec2{p.x, p.y}, (z - near) * invnf, fout, *uniform, *frameBuffer);
 }
 
 template <typename Out, typename Uniform, typename FrameBuffer,
-          FSFL<Out, Uniform, FrameBuffer> first, FSFL<Out, Uniform, FrameBuffer>... then>
-CUDAINLINE void applyLFS(unsigned int* offset, LineInfo<Out>* tri, LineRef* idx,
-                         Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float invnf) {
-
-#pragma unroll
+    FSFL<Out, Uniform, FrameBuffer> first, FSFL<Out, Uniform, FrameBuffer>... then>
+CUDAINLINE void applyLFS(unsigned int* offset, LineInfo<Out>* tri, LineRef* idx, Uniform* uniform,
+                         FrameBuffer* frameBuffer, const float near, const float invnf, const vec2 fsiz) {
+    #pragma unroll
     for (auto i = 0; i < 11; ++i) {
         const auto size = offset[i + 1] - offset[i];
         if (size) {
@@ -141,30 +156,32 @@ CUDAINLINE void applyLFS(unsigned int* offset, LineInfo<Out>* tri, LineRef* idx,
             dim3 grid(size);
             dim3 block(bsiz);
             drawMicroL<Out, Uniform, FrameBuffer, first> << <grid, block >> >(tri, idx + offset[i],
-                                                                              uniform, frameBuffer, near, invnf);
+                                                                              uniform, frameBuffer, near, invnf, fsiz.x,
+                                                                              fsiz.y);
         }
     }
 
     cudaDeviceSynchronize();
-    applyLFS<Out, Uniform, FrameBuffer, then...>(offset, tri, idx, uniform, frameBuffer, near, invnf);
+    applyLFS<Out, Uniform, FrameBuffer, then...>(offset, tri, idx, uniform, frameBuffer, near, invnf, fsiz);
 }
 
 template <typename Out, typename Uniform, typename FrameBuffer>
 CUDAINLINE void applyLFS(unsigned int*, LineInfo<Out>*, LineRef*, Uniform*, FrameBuffer*,
-                         const float, const float) {}
+                         const float, const float, const vec2) {}
 
 template <typename Out, typename Uniform, typename FrameBuffer,
-          FSFL<Out, Uniform, FrameBuffer>... fs>
+    FSFL<Out, Uniform, FrameBuffer>... fs>
 GLOBAL void renderLinesGPU(unsigned int* offset, LineInfo<Out>* tri, LineRef* idx,
-                           Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float invnf) {
-    applyLFS<Out, Uniform, FrameBuffer, fs...>(offset, tri, idx, uniform, frameBuffer, near, invnf);
+                           Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float invnf,
+                           const vec2 fsiz) {
+    applyLFS<Out, Uniform, FrameBuffer, fs...>(offset, tri, idx, uniform, frameBuffer, near, invnf, fsiz);
 }
 
 template <typename Index, typename Out, typename Uniform, typename FrameBuffer,
-          FSFL<Out, Uniform, FrameBuffer>... fs>
+    PosConverter<Uniform> toPos, FSFL<Out, Uniform, FrameBuffer>... fs>
 void renderLines(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert, Index index,
-                 const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer, const uvec2 size,
-                 const float near, const float far) {
+                 const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
+                 const uvec2 size, const float near, const float far) {
     auto cnt = buffer.allocBuffer<unsigned int>(13);
     buffer.memset(cnt);
     const auto lsiz = index.size();
@@ -172,11 +189,12 @@ void renderLines(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert, In
     auto ref = buffer.allocBuffer<LineRef>(lsiz);
     const auto fsiz = static_cast<vec2>(size) - vec2{0.5f};
     const auto hsiz = static_cast<vec2>(size) * 0.5f;
-    buffer.runKernelLinear(processLines<Index, Out>, lsiz, vert, index, info, ref, cnt, fsiz, hsiz, near, far);
+    buffer.runKernelLinear(processLines<Index, Out, Uniform, toPos>, lsiz, vert.get(), index, info, ref,
+                           cnt, fsiz, hsiz, near, far, uniform.get());
     auto sortedLines = sortLines(buffer, cnt, ref);
     cnt.earlyRelease();
     ref.earlyRelease();
     const auto invnf = 1.0f / (far - near);
     buffer.callKernel(renderLinesGPU<Out, Uniform, FrameBuffer, fs...>, sortedLines.first, info,
-                      sortedLines.second, uniform.get(), frameBuffer.get(), near, invnf);
+                      sortedLines.second, uniform.get(), frameBuffer.get(), near, invnf, fsiz);
 }

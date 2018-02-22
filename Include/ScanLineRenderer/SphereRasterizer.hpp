@@ -13,7 +13,9 @@ using FSFS = void(*)(unsigned int id, ivec2 uv, float z, vec3 pos,vec3 dir,float
  *z=sin theta sin phi
  *u=phi/2pi
  *v=theta/pi
+ *You can also use calcHDRUV which is defined in Base/Builtin.hpp.
  */
+
 CUDAINLINE vec2 calcSphereTexCoord(const vec3 normalizedWorldDir) {
     const auto theta = std::acos(normalizedWorldDir.y);
     const auto phi = std::atan2(normalizedWorldDir.z,normalizedWorldDir.x);
@@ -25,7 +27,7 @@ CUDAINLINE vec3 calcSphereNormal(const vec3 normalizedWorldDir,const bool inSphe
 }
 
 CUDAINLINE vec3 calcSphereBiTangent(const vec3 normal) {
-    const auto left = cross({ 0.0f,1.0f,0.0f },normal);
+    const auto left = normalize(cross({ 0.0f,1.0f,0.0f },normal));
     return cross(left,normal);
 }
 
@@ -73,7 +75,7 @@ SphereProcessResult processSphereInfo(
  * solve at^2+bt+c=0
  */
 
-CUDAINLINE vec2 toNDC(const vec2 p,const float ihx,const float ihy) {
+CUDAINLINE vec2 toPos(const vec2 p,const float ihx,const float ihy) {
     return {p.x*ihx-1.0f,1.0f-p.y*ihy};
 }
 
@@ -88,7 +90,7 @@ template <typename Uniform, typename FrameBuffer,
     const ivec2 uv{ ref.rect.x + (threadIdx.y << 1) + offX, ref.rect.z + (threadIdx.z << 1) + offY };
     const vec2 p{ uv.x + 0.5f, uv.y + 0.5f };
     if(p.x>ref.rect.y | p.y>ref.rect.w)return;
-    const auto NDC = toNDC(p, ihx, ihy);
+    const auto NDC = toPos(p, ihx, ihy);
     const vec3 d = { NDC.x*imx,NDC.y*imy,1.0f };
     const auto sphere = info[ref.id];
     const vec3 mid = sphere.info;

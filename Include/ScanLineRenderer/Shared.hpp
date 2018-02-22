@@ -37,3 +37,13 @@ CUDAINLINE vec3 shuffleVec3(const vec3 w, const int laneMask) {
     };
 }
 
+template <typename Uniform>
+using PosConverter = vec3(*)(vec3 cameraPos,const Uniform& uniform);
+
+CUDAINLINE float max3(const float a, const float b, const float c) {
+    return fmax(a, fmax(b, c));
+}
+
+CUDAINLINE float min3(const float a, const float b, const float c) {
+    return fmin(a, fmin(b, c));
+}
