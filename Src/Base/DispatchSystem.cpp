@@ -209,15 +209,7 @@ bool CommandBuffer::isDone() const {
 }
 
 ResourceInstance& CommandBuffer::getResource(const ID id) {
-    const auto it = mResource.find(id);
-    //TODO:fix this case
-    if (it == mResource.cend()) {
-        for (auto&& x : mResource)
-            printf("%d ",static_cast<int>(x.first));
-        printf("id:%d\n", static_cast<int>(id));
-        throw std::runtime_error("Invalid resource id.");
-    }
-    return *it->second;
+    return *mResource.find(id)->second;
 }
 
 cudaStream_t CommandBuffer::getStream() const {
@@ -239,8 +231,6 @@ DispatchSystem::DispatchSystem(const size_t size, CommandBufferQueue& queue)
     : mStreams(size), mQueue(queue) {}
 
 void DispatchSystem::update() {
-    using namespace std::chrono_literals;
-
     auto&& stream = getStream();
     if (stream.free()) {
         auto task = mQueue.getTask();

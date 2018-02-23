@@ -314,7 +314,7 @@ namespace Impl {
         }
     };
 
-    struct LaunchSizeHelper final : public CastTag {
+    class LaunchSizeHelper final : public CastTag {
     private:
         std::function<unsigned int*(CommandBuffer&)> mClosure;
     public:
@@ -330,7 +330,7 @@ namespace Impl {
         }
     };
 
-    struct LaunchSize final {
+    class LaunchSize final {
     private:
         LaunchSizeHelper mHelper;
         MemoryRef<unsigned int> mRef;
@@ -385,7 +385,7 @@ namespace Impl {
     struct TaskState final {
         bool isDone;
         bool isReleased;
-        TaskState() :isDone(false), isReleased(false) {}
+        TaskState() : isDone(false), isReleased(false) {}
     };
 }
 

@@ -119,20 +119,22 @@ auto addTask(SwapChainT::SharedFrame frame, const uvec2 size,float* lum,RC8& cac
     static auto last = getTime();
     const auto now = getTime();
     const auto converter = camera.toRasterPos(size);
-    auto uniform = getUniform(now-last,converter.mul);
     last = now;
     auto buffer=std::make_unique<CommandBuffer>();
     if (frame->size != size) {
-        mh.reset(model.index.size(),cache.blockSize()*3,enableSAA);
+        mh.reset(model.index.size(), cache.blockSize() * 3, enableSAA);
         cache.reset();
         sh.reset(box.index.size());
     }
     frame->resize(size);
-    auto uni = buffer->allocConstant<Uniform>();
     auto block = cache.pop(*buffer);
-    uniform.cache = block.toBlock();
-    buffer->memcpy(uni, [uniform](auto call) {call(&uniform); });
-    kernel(model,mh,box,sh,spheres,uni,*frame,lum,converter,*buffer);
+    {
+        auto uniform = getUniform(now - last, converter.mul);
+        auto uni = buffer->allocConstant<Uniform>();
+        uniform.cache = block.toBlock();
+        buffer->memcpy(uni, [uniform](auto call) {call(&uniform); });
+        kernel(model, mh, box, sh, spheres, uni, *frame, lum, converter, *buffer);
+    }
     return RenderingTask{ getEnvironment().submit(std::move(buffer)),frame,block};
 }
 
