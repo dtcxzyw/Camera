@@ -4,6 +4,7 @@
 #include <PBR/Dist.hpp>
 #include <ScanLineRenderer/LineRasterizer.hpp>
 #include <ScanLineRenderer/PointRasterizer.hpp>
+#include <ScanLineRenderer/SphereRasterizer.hpp>
 
 CUDAINLINE vec3 toPos(const vec3 p, const Uniform& u) {
     return {p.x * u.mul.x, p.y * u.mul.y, -p.z};
@@ -39,8 +40,8 @@ CUDAINLINE void drawSky(unsigned int, ivec2 uv, float, const OI& out, const OI&,
 CUDAINLINE void VSM(VI in, const Uniform& uniform, vec3& cpos, OI& out) {
     const auto wp = uniform.M * vec4(in.pos, 1.0f);
     out.get<Pos>() = wp;
-    out.get<Normal>() = uniform.invM * in.normal;
-    out.get<Tangent>() = uniform.invM * in.tangent;
+    out.get<Normal>() = uniform.normalMat * in.normal;
+    out.get<Tangent>() = uniform.normalMat * in.tangent;
     cpos = uniform.V * wp;
 }
 
@@ -74,7 +75,7 @@ CUDAINLINE void drawModel(unsigned int triID, ivec2 uv, float z, const OI& out, 
         const auto V = normalize(uniform.cp - p);
         const auto F = disneyBRDF(L, V, N, X, Y, uniform.arg);
         const auto ref = reflect(-V, N);
-        const auto lc = uniform.lc * distUE4(dis2, uniform.r * uniform.r) +
+        const auto lc = uniform.lc * distUE4(dis2, uniform.r2) +
             vec3(uniform.sampler.getCubeMap(ref));
         const auto res = lc * F * fabs(dot(N, L));
         fbo.color.set(uv, {res, 1.0f});
@@ -118,8 +119,8 @@ void renderMesh(const StaticMesh& model, const MemoryRef<Uniform>& uniform,
                 const CullFace mode, TriangleRenderingHistory& history, CommandBuffer& buffer) {
     auto vert = calcVertex<VI, OI, Uniform, vs>(buffer, model.vert, uniform);
     renderTriangles<SeparateTrianglesWithIndex, OI, Uniform, FrameBufferGPU, cs, ds, fs>(buffer, 
-        vert,SeparateTrianglesWithIndex{model.index}, uniform,frameBuffer, size,
-        converter.near, converter.far, history, mode);
+                                                                                         vert,SeparateTrianglesWithIndex{model.index}, uniform,frameBuffer, size,
+                                                                                         converter.near, converter.far, history, mode);
     /*
     renderPoints<OI, Uniform, FrameBufferGPU, toPos, setPoint, drawPoint>(buffer,
         vert,uniform, frameBuffer, size, converter.near, converter.far);
@@ -130,17 +131,51 @@ void renderMesh(const StaticMesh& model, const MemoryRef<Uniform>& uniform,
     */
 }
 
+CUDAINLINE vec4 vsSphere(vec4 sp, const Uniform& uniform) {
+    return calcCameraSphere(sp, uniform.V);
+}
+
+CUDAINLINE void setSpherePoint(unsigned int, ivec2 uv, float z, vec3, vec3, float, bool,
+    vec2, const Uniform&, FrameBufferGPU& fbo) {
+    fbo.depth.set(uv, z * maxdu);
+}
+
+CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, vec3 p, vec3 dir, float r, 
+    bool inSphere,vec2, const Uniform& u, FrameBufferGPU& fbo) {
+    if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
+        const auto invR = 1.0f / r;
+        const vec3 pos = u.invV*vec4(p,1.0f);
+        const auto normalizedDir = u.normalInvV*dir*invR;
+        const auto N = calcSphereNormal(normalizedDir,inSphere);
+        const auto Y = calcSphereBiTangent(N);
+        const auto X = calcSphereTangent(N, Y);
+        const auto off = u.lp - pos;
+        const auto dis2 = length2(off);
+        const auto dis = sqrt(dis2);
+        const auto L = off / dis;
+        const auto V = normalize(u.cp - pos);
+        const auto F = disneyBRDF(L, V, N, X, Y, u.arg);
+        const auto ref = reflect(-V, N);
+        const auto lc = u.lc * distUE4(dis2, u.r2) +vec3(u.sampler.getCubeMap(ref));
+        const auto res = lc * F * fabs(dot(N, L));
+        fbo.color.set(uv, { res, 1.0f });
+    }
+}
+
 void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
             const StaticMesh& skybox, TriangleRenderingHistory& sh,
+            const DataViewer<vec4>& spheres,
             const MemoryRef<Uniform>& uniform, FrameBufferCPU& fbo, float* lum,
             const Camera::RasterPosConverter converter, CommandBuffer& buffer) {
     fbo.colorRT->clear(buffer, vec4{0.0f, 0.0f, 0.0f, 1.0f});
     fbo.depthBuffer->clear(buffer);
     auto frameBuffer = fbo.getData(buffer);
-    renderMesh<VSM, CSM, setModel, drawModel>(model, uniform, frameBuffer, fbo.size, converter, CullFace::Back, mh,
-                                              buffer);
-    renderMesh<VS, CS, setSkyPoint, drawSky>(skybox, uniform, frameBuffer, fbo.size, converter, CullFace::Front, sh,
-                                             buffer);
+    renderMesh<VSM, CSM, setModel, drawModel>(model, uniform, frameBuffer, fbo.size, 
+        converter, CullFace::Back, mh,buffer);
+    renderSpheres<Uniform,FrameBufferGPU,vsSphere,setSpherePoint,drawSpherePoint>(buffer,
+        spheres,uniform,frameBuffer,fbo.size,converter.near,converter.far,converter.mul);
+    renderMesh<VS, CS, setSkyPoint, drawSky>(skybox, uniform, frameBuffer, fbo.size, converter, 
+        CullFace::Front, sh,buffer);
     auto puni = buffer.allocConstant<PostUniform>();
     auto sum = buffer.allocBuffer<std::pair<float, unsigned int>>();
     buffer.memset(sum);

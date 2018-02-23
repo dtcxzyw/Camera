@@ -354,7 +354,7 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
     }
 
     //pass 2:sort triangles
-    auto sortedTri = sortTiles(buffer, cnt, idx);
+    auto sortedTri = sortTiles(buffer, cnt, idx,psiz*2);
     cnt.earlyRelease();
     idx.earlyRelease();
 

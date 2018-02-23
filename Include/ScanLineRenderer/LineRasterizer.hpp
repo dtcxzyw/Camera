@@ -52,6 +52,43 @@ public:
     }
 };
 
+class SeparateTrianglesWireframe final {
+private:
+    unsigned int mSize;
+public:
+    explicit SeparateTrianglesWireframe(const unsigned int faceSize) : mSize(faceSize * 3) {}
+    BOTH auto size() const {
+        return mSize;
+    }
+
+    CUDAINLINE uvec2 operator[](const unsigned int off) const {
+        const auto tri = off / 3, id = off % 3, base = tri * 3;
+        return {base + id, base + (id + 1) % 3};
+    }
+};
+
+class SeparateTrianglesWithIndexWireframe final {
+private:
+    READONLY(uvec3) mPtr;
+    unsigned int mSize;
+public:
+    SeparateTrianglesWithIndexWireframe(READONLY(uvec3) idx, const unsigned int faceSize)
+        : mPtr(idx), mSize(faceSize * 3) {}
+
+    explicit SeparateTrianglesWithIndexWireframe(const DataViewer<uvec3>& ibo)
+        : SeparateTrianglesWithIndexWireframe(ibo.begin(), ibo.size()) {}
+
+    BOTH auto size() const {
+        return mSize;
+    }
+
+    CUDAINLINE uvec2 operator[](const unsigned int off) const {
+        const auto tri = off / 3, id = off % 3;
+        const auto idx = mPtr[tri];
+        return {idx[id], idx[(id + 1) % 3]};
+    }
+};
+
 template <typename Out>
 struct LineInfo final {
     unsigned int id;

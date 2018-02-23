@@ -9,7 +9,7 @@ CUDAINLINE vec3 calcHalf(const vec3 in, const vec3 out) {
 }
 
 //F
-CUDAINLINE float fresnelSchlick(float d) {
+CUDAINLINE float fresnelSchlick(const float d) {
     auto x =saturate(1.0f - d);
     auto x2 = x * x;
     return x*x2*x2;
@@ -155,7 +155,8 @@ struct DisneyBRDFArg final {
     vec3 baseColor;//linear color space
 };
 
-CUDAINLINE vec3 disneyBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, const DisneyBRDFArg arg) {
+CUDAINLINE vec3 disneyBRDF(const vec3 L, const vec3 V, const vec3 N, const vec3 X, const vec3 Y,
+    const DisneyBRDFArg& arg) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);
@@ -220,7 +221,8 @@ struct UE4BRDFArg final {
     vec3 baseColor;//linear color space
 };
 //ratio = dis/radius
-CUDAINLINE vec3 UE4BRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, const UE4BRDFArg arg, const float ratio) {
+CUDAINLINE vec3 UE4BRDF(const vec3 L, const vec3 V, const vec3 N, const vec3 X, const vec3 Y,
+    const UE4BRDFArg& arg, const float ratio) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);
@@ -290,12 +292,13 @@ struct FrostbiteBRDFArg final {
     float smoothness;
     float reflectance;
 };
-CUDAINLINE float calcFv(float r) {
-    constexpr auto A = 0.2281399812785982f, B = -0.22673613288218408f
-        , C = 0.20285923208572978f, D = -0.03326308048214361f;
-    return saturate(((A*r +B)*r + C)*r + D);
+CUDAINLINE float calcFv(const float r) {
+    constexpr auto a = 0.2281399812785982f, b = -0.22673613288218408f
+        , c = 0.20285923208572978f, d = -0.03326308048214361f;
+    return saturate(((a*r +b)*r + c)*r + d);
 }
-CUDAINLINE vec3 frostbiteBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, FrostbiteBRDFArg arg) {
+CUDAINLINE vec3 frostbiteBRDF(const vec3 L, const vec3 V, const vec3 N,
+    const FrostbiteBRDFArg& arg) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);
@@ -337,7 +340,8 @@ struct MixedBRDFArg final{
     float roughness;
     float anisotropic;
 };
-CUDAINLINE vec3 mixedBRDF(vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, MixedBRDFArg arg) {
+CUDAINLINE vec3 mixedBRDF(const vec3 L, const vec3 V, const vec3 N, const vec3 X, const vec3 Y,
+    const MixedBRDFArg& arg) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return vec3(0.0f);

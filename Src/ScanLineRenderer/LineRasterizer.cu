@@ -38,7 +38,7 @@ GLOBAL void sortLinesGPU(unsigned int* cnt, unsigned int* offset, unsigned int* 
 std::pair<MemoryRef<unsigned int>, MemoryRef<LineRef>> sortLines(CommandBuffer& buffer,
                                                                  const MemoryRef<unsigned int>& cnt,
                                                                  const MemoryRef<LineRef>& ref) {
-    auto sortedIdx = buffer.allocBuffer<LineRef>(ref.size() * 2);
+    auto sortedIdx = buffer.allocBuffer<LineRef>(ref.size() * 2U+2048U);
     auto tmp = buffer.allocBuffer<unsigned int>(11);
     auto offset = buffer.allocBuffer<unsigned int>(12);
     buffer.callKernel(sortLinesGPU, cnt, offset, tmp, ref, sortedIdx);

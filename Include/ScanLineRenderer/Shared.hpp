@@ -5,7 +5,7 @@
 
 CUDAINLINE vec3 toRaster(const vec3 p, const vec2 hsiz) {
     const auto invz = 1.0f / p.z;
-    return { (1.0f + p.x*invz)*hsiz.x,(1.0f - p.y*invz)*hsiz.y,invz };
+    return { (1.0f + p.x * invz)*hsiz.x,(1.0f - p.y*invz)*hsiz.y,invz };
 }
 
 constexpr auto tileOffset = 1.0f;
@@ -22,7 +22,7 @@ struct TileRef final {
 };
 
 std::pair<MemoryRef<unsigned int>, MemoryRef<TileRef>> sortTiles(CommandBuffer& buffer,
-    const MemoryRef<unsigned int>& cnt, const MemoryRef<TileRef>& ref);
+    const MemoryRef<unsigned int>& cnt, const MemoryRef<TileRef>& ref,size_t refSize);
 
 CUDAINLINE float shuffleFloat(const float w,const int laneMask) {
     constexpr auto mask = 0xffffffff;

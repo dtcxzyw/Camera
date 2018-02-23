@@ -9,6 +9,7 @@ using namespace std::chrono_literals;
 
 auto light=65.0f,r=20.0f;
 StaticMesh box,model;
+DataViewer<vec4> spheres;
 TriangleRenderingHistory mh;
 TriangleRenderingHistory sh;
 std::shared_ptr<BuiltinCubeMap<RGBA>> envMap;
@@ -71,7 +72,7 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
 }
 
 Uniform getUniform(float, const vec2 mul) {
-    static vec3 cp = { 10.0f,0.0f,0.0f }, lp = { 10.0f,4.0f,0.0f }, mid = { -100000.0f,0.0f,0.0f };
+    static vec3 cp = { 10.0f,0.0f,0.0f }, mid = { -100000.0f,0.0f,0.0f };
     const auto V = lookAt(cp,mid, { 0.0f,1.0f,0.0f });
     auto M= scale(mat4{}, vec3(5.0f));
     M = rotate(M, half_pi<float>(), { 0.0f,1.0f,0.0f });
@@ -86,12 +87,14 @@ Uniform getUniform(float, const vec2 mul) {
     u.Msky = {};
     u.M = M;
     u.V = V;
-    u.invM = mat3(transpose(inverse(u.M)));
+    u.invV = inverse(u.V);
+    u.normalInvV = mat3(transpose(u.V));
+    u.normalMat = mat3(transpose(inverse(u.M)));
     u.lc = vec3(light);
     u.arg = arg;
     u.cp = cp;
-    u.lp = lp;
-    u.r = r;
+    u.lp = cp+vec3{0.0f,4.0f,0.0f};
+    u.r2 = r*r;
     u.sampler = envMapSampler->toSampler();
     return u;
 }
@@ -129,8 +132,14 @@ auto addTask(SwapChainT::SharedFrame frame, const uvec2 size,float* lum,RC8& cac
     auto block = cache.pop(*buffer);
     uniform.cache = block.toBlock();
     buffer->memcpy(uni, [uniform](auto call) {call(&uniform); });
-    kernel(model,mh,box,sh,uni,*frame,lum,converter,*buffer);
+    kernel(model,mh,box,sh,spheres,uni,*frame,lum,converter,*buffer);
     return RenderingTask{ getEnvironment().submit(std::move(buffer)),frame,block};
+}
+
+void uploadSpheres() {
+    vec4 sphere[] = {{0.0f,3.0f,10.0f,5.0f},{0.0f,0.0f,13.0f,3.0f}};
+    spheres = allocBuffer<vec4>(std::size(sphere));
+    checkError(cudaMemcpy(spheres.begin(),sphere,sizeof(sphere),cudaMemcpyHostToDevice));
 }
 
 int main() {
@@ -150,8 +159,9 @@ int main() {
         camera.focalLength = 15.0f;
 
         Stream resLoader;
-        //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
-        model.load("Res/dragon.obj",resLoader);
+        uploadSpheres();
+        model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
+        //model.load("Res/dragon.obj",resLoader);
         RC8 cache(model.index.size(),30);
         mh.reset(model.index.size(),cache.blockSize()*3,enableSAA);
 

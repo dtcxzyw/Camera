@@ -99,11 +99,13 @@ struct Uniform final {
     ALIGN mat4 M;
     ALIGN mat4 Msky;
     ALIGN mat4 V;
-    ALIGN mat3 invM;
+    ALIGN mat4 invV;
+    ALIGN mat3 normalInvV;
+    ALIGN mat3 normalMat;
     ALIGN vec3 cp;
     ALIGN vec3 lp;
     ALIGN vec3 lc;
-    ALIGN float r;
+    ALIGN float r2;
     ALIGN DisneyBRDFArg arg;
     ALIGN BuiltinSamplerGPU<RGBA> sampler;
     ALIGN RC8::BlockGPU cache;
@@ -120,5 +122,6 @@ struct PostUniform final {
 
 void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
             const StaticMesh& skybox, TriangleRenderingHistory& sh,
+            const DataViewer<vec4>& spheres,
             const MemoryRef<Uniform>& uniform, FrameBufferCPU& fbo, float* lum,
             Camera::RasterPosConverter converter, CommandBuffer& buffer);

@@ -33,8 +33,8 @@ GLOBAL void sortTilesGPU(unsigned int* cnt, unsigned int* offset,unsigned int* t
 }
 
 std::pair<MemoryRef<unsigned int>, MemoryRef<TileRef>> sortTiles(CommandBuffer& buffer,
-    const MemoryRef<unsigned int>& cnt, const MemoryRef<TileRef>& ref){
-    auto sortedIdx = buffer.allocBuffer<TileRef>(ref.size()*2);
+    const MemoryRef<unsigned int>& cnt, const MemoryRef<TileRef>& ref, const size_t refSize){
+    auto sortedIdx = buffer.allocBuffer<TileRef>(refSize);
     auto tmp = buffer.allocBuffer<unsigned int>(5);
     auto offset = buffer.allocBuffer<unsigned int>(6);
     buffer.callKernel(sortTilesGPU, cnt, offset, tmp, ref, sortedIdx);
