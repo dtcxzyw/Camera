@@ -42,7 +42,7 @@ void renderGUI(D3D11Window& window) {
     ImGui::Text("FOV %.1f ",degrees(camera.toFov()));
     ImGui::SliderFloat("focal length",&camera.focalLength,1.0f,500.0f,"%.1f");
     ImGui::SliderFloat("light", &light, 0.0f, 100.0f);
-    ImGui::SliderFloat("lightRadius", &r, 0.0f, 20.0f);
+    ImGui::SliderFloat("lightRadius", &r, 0.0f, 40.0f);
 
 #define COLOR(name)\
 arg.##name=clamp(arg.##name,vec3(0.01f),vec3(0.999f));\

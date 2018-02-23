@@ -13,5 +13,7 @@ struct StaticMesh final {
     };
     DataViewer<Vertex> vert;
     DataViewer<uvec3> index;
-    void load(const std::string& path,Stream& loader);
+    static void convertToBinary(const std::string& path);
+    void loadBinary(const std::string& path, Stream& loader);
+    void load(const std::string& path, Stream& loader);
 };
