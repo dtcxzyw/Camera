@@ -39,8 +39,7 @@ void Environment::init(size_t streamNum) {
 
 Future Environment::submit(std::unique_ptr<CommandBuffer> buffer) {
     const auto promise = std::make_shared<Impl::TaskState>();
-    buffer->setPromise(promise);
-    mQueue.submit(std::move(buffer));
+    mQueue.submit(promise,std::move(buffer));
     return Future{promise};
 }
 

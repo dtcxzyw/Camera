@@ -58,7 +58,8 @@ class ImageResource final : public Resource<BuiltinRenderTargetGPU<RGBA8>> {
 private:
     D3D11Image& mImage;
 public:
-    ImageResource(CommandBuffer& buffer, D3D11Image& image): Resource(buffer), mImage(image) {}
+    ImageResource(ResourceManager& manager, D3D11Image& image)
+        : Resource(manager), mImage(image) {}
 
     ~ImageResource() {
         addInstance(std::make_unique<ImageResourceInstance>(mImage));

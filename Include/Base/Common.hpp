@@ -15,7 +15,7 @@
 
 struct Uncopyable {
     Uncopyable() = default;
-    virtual ~Uncopyable() = default;
+    ~Uncopyable() = default;
     Uncopyable(const Uncopyable&) = delete;
     Uncopyable(Uncopyable&&) = default;
     Uncopyable& operator=(const Uncopyable&) = delete;
@@ -25,7 +25,7 @@ struct Uncopyable {
 class Singletion {
 protected:
     Singletion() = default;
-    virtual ~Singletion() = default;
+    ~Singletion() = default;
 public:
     Singletion(const Singletion&) = delete;
     Singletion(Singletion&&) = delete;

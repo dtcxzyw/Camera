@@ -333,8 +333,8 @@ template <typename Index, typename Out, typename Uniform, typename FrameBuffer,
           TCSF<Uniform> cs, FSFT<Out, Uniform, FrameBuffer>... fs>
 void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
                      Index index, const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
-                     const uvec2 size, float near, float far, TriangleRenderingHistory& history,
-                     CullFace mode = CullFace::Back) {
+                     const uvec2 size,const float near,const float far, TriangleRenderingHistory& history,
+                     const CullFace mode = CullFace::Back) {
     //pass 1:process triangles
     auto psiz = calcBufferSize(history.triNum, history.baseSize, index.size());
     //5+ext+cnt=7

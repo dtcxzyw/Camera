@@ -180,13 +180,14 @@ void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
     auto sum = buffer.allocBuffer<std::pair<float, unsigned int>>();
     buffer.memset(sum);
     auto punidata = buffer.makeLazyConstructor<PostUniform>(fbo.data, lum, sum);
-    buffer.memcpy(puni, [punidata,&buffer](auto call) {
+    auto&& manager = buffer.getResourceManager();
+    buffer.memcpy(puni, [punidata,&manager](auto call) {
         auto pd = punidata;
-        auto data = pd.get(buffer);
+        auto data = pd.get(manager);
         call(&data);
     });
     const std::shared_ptr<Resource<BuiltinRenderTargetGPU<RGBA8>>> res =
-        std::make_shared<ImageResource>(buffer, fbo.image);
+        std::make_shared<ImageResource>(manager, fbo.image);
     const ResourceRef<BuiltinRenderTargetGPU<RGBA8>> image{res};
     renderFullScreen<PostUniform, BuiltinRenderTargetGPU<RGBA8>, post>(buffer, puni, image,
                                                                        fbo.size);
