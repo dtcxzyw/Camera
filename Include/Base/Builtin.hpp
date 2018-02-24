@@ -283,7 +283,7 @@ public:
     }
 
     void clear(CommandBuffer& buffer, T val) {
-        buffer.pushOperator([this,val](Stream& stream) {
+        buffer.pushOperator([this,val](ID,ResourceManager&,Stream& stream) {
             const unsigned int mul = sqrt(stream.getMaxBlockSize());
             dim3 grid(calcSize(mSize.x, mul), calcSize(mSize.y, mul));
             dim3 block(mul, mul);

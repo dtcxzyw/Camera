@@ -3,6 +3,7 @@
 #include <Base/DispatchSystem.hpp>
 #include <Base/Builtin.hpp>
 #include <PBR/PhotorealisticRendering.hpp>
+#include <PBR/BRDF.hpp>
 
 struct FrameBufferGPU final {
     BuiltinRenderTargetGPU<RGBA> color;

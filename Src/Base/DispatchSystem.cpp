@@ -132,21 +132,18 @@ namespace Impl {
         return dynamic_cast<DeviceMemory&>(*mRef).size();
     }
 
-    static void CUDART_CB downloadCallback(cudaStream_t, cudaError_t, void* userData) {
-        const auto info = reinterpret_cast<std::pair<unsigned int, std::atomic_uint*>*>(userData);
-        *info->second = info->first;
-        delete info;
-    }
-
     void LaunchSize::download(std::atomic_uint& dst, CommandBuffer& buffer) const {
         auto id = mHelper;
         auto tmp = new std::pair<unsigned int, std::atomic_uint*>(0, &dst);
         auto&& manager = buffer.getResourceManager();
-        buffer.pushOperator([id,&manager,tmp](Stream& stream) {
+        buffer.pushOperator([id,&manager,tmp](ID,ResourceManager&,Stream& stream) {
             checkError(cudaMemcpyAsync(&tmp->first, cast(id, manager),
                                        sizeof(unsigned int), cudaMemcpyDeviceToHost, stream.get()));
         });
-        buffer.addCallback(downloadCallback, tmp);
+        buffer.addCallback([tmp]() {
+            *tmp->second = tmp->first;
+            delete tmp;
+        });
     }
 }
 
@@ -166,15 +163,34 @@ void CommandBuffer::memcpy(Impl::DMRef& dst,
                                                          dst.getID(), std::move(src)));
 }
 
-void CommandBuffer::addCallback(cudaStreamCallback_t func, void* data) {
-    pushOperator([=](Stream& stream) {
-        checkError(cudaStreamAddCallback(stream.get(), func, data, 0));
+namespace Impl {
+    struct CallbackInfo final {
+        ID id;
+        ResourceManager& manager;
+        std::function<void()> func;
+        CallbackInfo(const ID time,ResourceManager& resManager, std::function<void()> callable):
+            id(time),manager(resManager),func(std::move(callable)){}
+    };
+
+    static void CUDART_CB streamCallback(cudaStream_t, cudaError_t, void* userData) {
+        auto ptr = reinterpret_cast<CallbackInfo*>(userData);
+        ptr->func();
+        ptr->manager.syncPoint(ptr->id);
+        delete ptr;
+    }
+}
+
+void CommandBuffer::addCallback(const std::function<void()>& func) {
+    pushOperator([func](ID id,ResourceManager& manager,Stream& stream) {
+        const auto data = new Impl::CallbackInfo(id,manager,func);
+        checkError(cudaStreamAddCallback(stream.get(), Impl::streamCallback, data, 0));
     });
 }
 
 void CommandBuffer::sync() {
-    pushOperator([](Stream& stream) {
+    pushOperator([](ID id,ResourceManager& manager,Stream& stream) {
         stream.sync();
+        manager.syncPoint(id);
     });
 }
 
@@ -182,9 +198,8 @@ void CommandBuffer::pushOperator(std::unique_ptr<Impl::Operator>&& op) {
     mCommandQueue.emplace(std::move(op));
 }
 
-void CommandBuffer::pushOperator(std::function<void(Stream&)>&& op) {
-    mCommandQueue.emplace(std::make_unique<FunctionOperator>(*mResourceManager,
-                                                             std::move(op)));
+void CommandBuffer::pushOperator(std::function<void(ID,ResourceManager&, Stream&)>&& op) {
+    mCommandQueue.emplace(std::make_unique<FunctionOperator>(*mResourceManager,std::move(op)));
 }
 
 ResourceManager& CommandBuffer::getResourceManager() {
@@ -213,7 +228,7 @@ cudaStream_t ResourceManager::getStream() const {
 void ResourceManager::gc(const ID time) {
     std::vector<ID> list;
     for (auto&& x : mResources)
-        if (time>= x.second.first && x.second.second->hasRecycler())
+        if (mSyncPoint>=x.second.first || (time>= x.second.first && x.second.second->hasRecycler()))
             list.emplace_back(x.first);
     for (auto&& id : list)
         mResources.erase(id);
@@ -225,6 +240,10 @@ ID ResourceManager::allocResource() {
 
 ID ResourceManager::getOperatorPID() {
     return ++mOperatorCount;
+}
+
+void ResourceManager::syncPoint(const ID time) {
+    mSyncPoint = time;
 }
 
 CommandBuffer::CommandBuffer(): mResourceManager(std::make_unique<ResourceManager>()) {}
@@ -260,11 +279,12 @@ bool Future::finished() const {
     return mPromise->isReleased;
 }
 
-FunctionOperator::FunctionOperator(ResourceManager& manager,std::function<void(Stream&)>&& closure)
+FunctionOperator::FunctionOperator(ResourceManager& manager,
+    std::function<void(ID,ResourceManager&, Stream&)>&& closure)
     : Operator(manager), mClosure(closure) {}
 
 void FunctionOperator::emit(Stream& stream) {
-    mClosure(stream);
+    mClosure(getID(),mManager,stream);
 }
 
 DispatchSystem::StreamInfo::StreamInfo(): mLast(Clock::now()) {}
@@ -335,7 +355,7 @@ Task::~Task() {
 }
 
 namespace Impl {
-    static void CUDART_CB streamCallback(cudaStream_t, cudaError_t, void* userData) {
+    static void CUDART_CB endCallback(cudaStream_t, cudaError_t, void* userData) {
         reinterpret_cast<TaskState*>(userData)->isDone = true;
     }
 }
@@ -347,7 +367,7 @@ void Task::update() {
         mResourceManager->gc(command->getID());
         mCommandQueue.pop();
         if (mCommandQueue.empty())
-            checkError(cudaStreamAddCallback(mStream.get(), Impl::streamCallback, mPromise.get(), 0));
+            checkError(cudaStreamAddCallback(mStream.get(), Impl::endCallback, mPromise.get(), 0));
     }
 }
 

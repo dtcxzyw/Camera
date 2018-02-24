@@ -151,9 +151,10 @@ namespace Impl {
 
 class FunctionOperator final : public Impl::Operator {
 private:
-    std::function<void(Stream&)> mClosure;
+    std::function<void(ID,ResourceManager&,Stream&)> mClosure;
 public:
-    FunctionOperator(ResourceManager& manager, std::function<void(Stream&)>&& closure);
+    FunctionOperator(ResourceManager& manager, 
+        std::function<void(ID,ResourceManager&,Stream&)>&& closure);
     void emit(Stream& stream) override;
 };
 
@@ -408,7 +409,7 @@ class ResourceManager final : Uncopyable {
 private:
     std::map<ID, std::pair<ID, std::unique_ptr<ResourceInstance>>> mResources;
     cudaStream_t mStream = nullptr;
-    ID mResourceCount = 0, mRegisteredResourceCount = 0, mOperatorCount = 0;
+    ID mResourceCount = 0, mRegisteredResourceCount = 0, mOperatorCount = 0, mSyncPoint = 0;
     std::map<size_t, std::unique_ptr<ResourceRecycler>> mRecyclers;
 public:
     void registerResource(ID id, std::unique_ptr<ResourceInstance>&& instance);
@@ -418,6 +419,7 @@ public:
     void gc(ID time);
     ID allocResource();
     ID getOperatorPID();
+    void syncPoint(ID time);
 
     template <typename Recycler>
     Recycler& getRecycler() {
@@ -508,11 +510,11 @@ public:
                                                                          func, size, Impl::castID(args)...));
     }
 
-    void addCallback(cudaStreamCallback_t func, void* data);
+    void addCallback(const std::function<void()>& func);
     void sync();
 
     void pushOperator(std::unique_ptr<Impl::Operator>&& op);
-    void pushOperator(std::function<void(Stream&)>&& op);
+    void pushOperator(std::function<void(ID,ResourceManager&, Stream&)>&& op);
 
     template <typename T, typename... Args>
     auto makeLazyConstructor(Args ... args) {

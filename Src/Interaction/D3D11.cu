@@ -60,7 +60,9 @@ D3D11Window::D3D11Window(): mRenderTargetView(nullptr), mEnableVSync(false) {
     sd.Windowed = true;
     sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
-    constexpr auto flag = D3D11_CREATE_DEVICE_DEBUG;
+    //constexpr auto flag = D3D11_CREATE_DEVICE_DEBUG;
+    constexpr auto flag = 0;
+
     D3D_FEATURE_LEVEL level;
     const D3D_FEATURE_LEVEL featureLevelArray[1] = {D3D_FEATURE_LEVEL_11_1};
     if (D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flag,
