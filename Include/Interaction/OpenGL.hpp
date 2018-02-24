@@ -1,23 +1,16 @@
 #pragma once
 #include <Base/CompileBegin.hpp>
-#include <IMGUI/imgui.h>
 #include <GLFW/glfw3.h>
 #include <Base/CompileEnd.hpp>
-#include <Base/Builtin.hpp>
-#include <Base/Environment.hpp>
+#include <Interaction/BoundImage.hpp>
 
-class GLImage final :Uncopyable {
+class GLImage final :public BoundImage {
 private:
     GLuint mTexture;
-    cudaGraphicsResource_t mRes;
-    uvec2 mSize;
+    void reset() override;
 public:
     GLImage();
     ~GLImage();
-    uvec2 size() const;
-    void resize(uvec2 size);
-    cudaArray_t bind(cudaStream_t stream);
-    void unbind(cudaStream_t stream);
     GLuint get() const;
 };
 

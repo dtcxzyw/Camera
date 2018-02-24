@@ -4,6 +4,9 @@
 #include <thread>
 #include <Base/Environment.hpp>
 #include <Interaction/SwapChain.hpp>
+#include <Base/CompileBegin.hpp>
+#include <IMGUI/imgui.h>
+#include <Base/CompileEnd.hpp>
 
 using namespace std::chrono_literals;
 
@@ -151,7 +154,7 @@ int main() {
     ImGui::GetIO().WantCaptureKeyboard = true;
 
     auto&& env = getEnvironment();
-    env.init(2);
+    env.init(GraphicsInteroperability::D3D11);
 
     try {
         camera.near = 1.0f;
@@ -162,8 +165,8 @@ int main() {
 
         Stream resLoader;
         uploadSpheres();
-        model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
-        //model.load("Res/dragon.obj",resLoader);
+        //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
+        model.load("Res/dragon.obj",resLoader);
         RC8 cache(model.index.size(),30);
         mh.reset(model.index.size(),cache.blockSize()*3,enableSAA);
 
@@ -206,9 +209,9 @@ int main() {
             }
         }
         
+        env.uninit();
         envMapSampler.reset();
         envMap.reset();
-        env.uninit();
     }
     catch (const std::runtime_error& e) {
         puts("Catched an error:");

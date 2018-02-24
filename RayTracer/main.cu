@@ -2,8 +2,12 @@
 #include <cstdio>
 #include <IO/Image.hpp>
 #include <thread>
-#include "Base/Environment.hpp"
+#include <Base/Environment.hpp>
 #include <Interaction/SwapChain.hpp>
+#include <Base/CompileBegin.hpp>
+#include <IMGUI/imgui.h>
+#include <Base/CompileEnd.hpp>
+
 using namespace std::chrono_literals;
 
 Camera camera;
@@ -72,7 +76,7 @@ int main() {
     ImGui::GetIO().WantCaptureKeyboard = true;
 
     auto&& env = getEnvironment();
-    env.init(2);
+    env.init(GraphicsInteroperability::D3D11);
 
     try {
         camera.near = 1.0f;

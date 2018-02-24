@@ -233,8 +233,16 @@ DispatchSystem::StreamInfo& DispatchSystem::getStream() {
     return *std::min_element(mStreams.begin(), mStreams.end());
 }
 
-DispatchSystem::DispatchSystem(const size_t size, CommandBufferQueue& queue)
-    : mStreams(size), mQueue(queue) {}
+static size_t getAsyncEngineCount() {
+    int device;
+    checkError(cudaGetDevice(&device));
+    cudaDeviceProp prop{};
+    checkError(cudaGetDeviceProperties(&prop, device));
+    return std::max(1,prop.asyncEngineCount);
+}
+
+DispatchSystem::DispatchSystem(CommandBufferQueue& queue)
+    : mStreams(getAsyncEngineCount()), mQueue(queue) {}
 
 void DispatchSystem::update() {
     auto&& stream = getStream();

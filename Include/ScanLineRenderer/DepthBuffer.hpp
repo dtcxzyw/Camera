@@ -1,6 +1,5 @@
 #pragma once
 #include  <Base/Math.hpp>
-#include <Base/Pipeline.hpp>
 #include <Base/DispatchSystem.hpp>
 #include <Base/CompileBegin.hpp>
 #include <device_atomic_functions.h>

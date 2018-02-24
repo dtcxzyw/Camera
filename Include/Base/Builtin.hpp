@@ -50,7 +50,7 @@ public:
     }
 
     DataViewer<T> download(CommandBuffer& buffer) const {
-        DataViewer<T> res(mSize.x*mSize.y);
+        DataViewer<T> res(mSize.x * mSize.y);
         buffer.pushOperator([=](Stream& stream) {
             checkError(cudaMemcpyFromArrayAsync(res.begin(), mArray, 0, 0, res.size() * sizeof(T)
                                                 , cudaMemcpyDefault, stream.get()));
@@ -148,8 +148,8 @@ public:
 
     CUDAINLINE T getGrad(vec2 p, vec2 ddx, vec2 ddy) const {
         T res;
-        tex2DGrad<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y, 
-            *reinterpret_cast<float2*>(&ddx),*reinterpret_cast<float2*>(&ddy));
+        tex2DGrad<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y,
+                        *reinterpret_cast<float2*>(&ddx), *reinterpret_cast<float2*>(&ddy));
         return res;
     }
 
@@ -159,10 +159,10 @@ public:
         return res;
     }
 
-    CUDAINLINE T getCubeMapGrad(vec3 p,vec4 ddx,vec4 ddy) const {
+    CUDAINLINE T getCubeMapGrad(vec3 p, vec4 ddx, vec4 ddy) const {
         T res;
         texCubemapGrad<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y, p.z,
-            *reinterpret_cast<float4*>(&ddx),*reinterpret_cast<float4*>(&ddy));
+                             *reinterpret_cast<float4*>(&ddx), *reinterpret_cast<float4*>(&ddy));
         return res;
     }
 
@@ -182,10 +182,10 @@ private:
     cudaTextureObject_t mTexture;
 public:
     explicit BuiltinSampler(const cudaArray_t array,
-                   const cudaTextureAddressMode am = cudaAddressModeWrap,
-                   const vec4 borderColor = {}, const cudaTextureFilterMode fm = cudaFilterModeLinear,
-                   const unsigned int maxAnisotropy = 0,
-                   const bool sRGB = false) {
+                            const cudaTextureAddressMode am = cudaAddressModeWrap,
+                            const vec4 borderColor = {}, const cudaTextureFilterMode fm = cudaFilterModeLinear,
+                            const unsigned int maxAnisotropy = 0,
+                            const bool sRGB = false) {
         cudaResourceDesc RD;
         RD.res.array.array = array;
         RD.resType = cudaResourceTypeArray;
@@ -202,9 +202,9 @@ public:
     }
 
     explicit BuiltinSampler(BuiltinMipmapedArray<T>& array,
-                   const cudaTextureAddressMode am = cudaAddressModeWrap, const vec4 borderColor = {},
-                   const cudaTextureFilterMode fm = cudaFilterModeLinear, const unsigned int maxAnisotropy = 0,
-                   const bool sRGB = false) {
+                            const cudaTextureAddressMode am = cudaAddressModeWrap, const vec4 borderColor = {},
+                            const cudaTextureFilterMode fm = cudaFilterModeLinear, const unsigned int maxAnisotropy = 0,
+                            const bool sRGB = false) {
         cudaResourceDesc RD;
         RD.res.mipmap.mipmap = array.get();
         RD.resType = cudaResourceTypeMipmappedArray;
@@ -225,7 +225,7 @@ public:
     }
 
     auto toSampler() const {
-        return BuiltinSamplerGPU<T>{ mTexture };
+        return BuiltinSamplerGPU<T>{mTexture};
     }
 
     ~BuiltinSampler() {
@@ -279,15 +279,16 @@ public:
     explicit BuiltinRenderTarget(BuiltinArray<T>& array): BuiltinRenderTarget(array.get(), array.size()) {}
 
     auto toTarget() const {
-        return BuiltinRenderTargetGPU<T>{ mTarget };
+        return BuiltinRenderTargetGPU<T>{mTarget};
     }
 
     void clear(CommandBuffer& buffer, T val) {
-        //TODO:dynamic dim
-        const auto mul = 32U;
-        dim3 grid(calcSize(mSize.x, mul), calcSize(mSize.y, mul));
-        dim3 block(mul, mul);
-        buffer.runKernelDim(Impl::clear<T>, grid, block, toTarget(), val);
+        buffer.pushOperator([this,val](Stream& stream) {
+            const unsigned int mul = sqrt(stream.getMaxBlockSize());
+            dim3 grid(calcSize(mSize.x, mul), calcSize(mSize.y, mul));
+            dim3 block(mul, mul);
+            stream.runDim(Impl::clear<T>, grid, block, toTarget(), val);
+        });
     }
 
     uvec2 size() const {
@@ -349,7 +350,7 @@ private:
 public:
     explicit BuiltinMipmapedCubeMap(const size_t size) {
         auto desc = cudaCreateChannelDesc<Type>();
-        const cudaExtent extent{ size, size, 6 };
+        const cudaExtent extent{size, size, 6};
         checkError(cudaMallocMipmappedArray(&mArray, &desc, extent, cudaArrayCubemap));
         cudaResourceDesc RD;
         RD.resType = cudaResourceTypeMipmappedArray;
@@ -379,12 +380,15 @@ public:
 namespace Impl {
     template <typename T>
     GLOBAL void downSample(BuiltinSamplerGPU<T> src, BuiltinRenderTargetGPU<T> rt) {
-        uvec2 p{ blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y };
-        const uvec2 base = { p.x * 2, p.y * 2 };
+        uvec2 p{blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
+        const uvec2 base = {p.x << 1, p.y << 1};
         T val = {};
-        for (auto i = 0; i < 2; ++i)
+        #pragma unroll
+        for (auto i = 0; i < 2; ++i) {
+            #pragma unroll
             for (auto j = 0; j < 2; ++j)
-                val += src.get(base + uvec2{ i, j });
+                val += src.get(base + uvec2{i, j});
+        }
         rt.set(p, val * 0.25f);
     }
 }
@@ -398,4 +402,3 @@ void downSample(cudaArray_t src, cudaArray_t dst, uvec2 size, Stream& stream) {
     dim3 block(mul, mul);
     stream.runDim(Impl::downSample<T>, grid, block, sampler.toSampler(), RT.toTarget());
 }
-

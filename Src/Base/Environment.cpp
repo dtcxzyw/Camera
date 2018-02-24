@@ -1,6 +1,11 @@
 #include <Base/Environment.hpp>
 #include <Base/DispatchSystem.hpp>
 #include <stdexcept>
+#include <Interaction/D3D11.hpp>
+#include <Base/CompileBegin.hpp>
+#include <cuda_gl_interop.h>
+#include <cuda_d3d11_interop.h>
+#include <Base/CompileEnd.hpp>
 
 Environment::Environment() : mRunning(true) {}
 
@@ -14,18 +19,35 @@ static void resetDevice() {
     checkError(cudaDeviceSynchronize());
 }
 
-void Environment::init(size_t streamNum) {
-    int cnt;
-    checkError(cudaGetDeviceCount(&cnt));
-    cudaDeviceProp prop{};
-    for (auto id = 0; id < cnt; ++id) {
+void Environment::init(const GraphicsInteroperability interop) {
+    std::vector<int> devices;
+    if(interop==GraphicsInteroperability::None) {
+        int cnt;
+        checkError(cudaGetDeviceCount(&cnt));
+        for (auto id = 0; id < cnt; ++id)
+            devices.emplace_back(id);
+    }
+    else {
+        unsigned int deviceCount;
+        int device[256];
+        if (interop == GraphicsInteroperability::D3D11)
+            checkError(cudaD3D11GetDevices(&deviceCount, device, 256,
+                getD3D11Window().getDevice(), cudaD3D11DeviceListAll));
+        else checkError(cudaGLGetDevices(&deviceCount, device, 256, cudaGLDeviceListAll));
+        devices.assign(device, device + deviceCount);
+    }
+    int firstDevice = -1;
+    for (auto id : devices) {
+        cudaDeviceProp prop{};
         checkError(cudaGetDeviceProperties(&prop, id));
         const auto ver = prop.major * 100 + prop.minor;
         if (ver < 305)continue;
-        mDevices.emplace_back([this,streamNum,id]() {
+        if (prop.computeMode != cudaComputeModeDefault)continue;
+        firstDevice = id;
+        mDevices.emplace_back([this,id]() {
             setDevice(id);
             {
-                DispatchSystem system(streamNum, mQueue);
+                DispatchSystem system( mQueue);
                 while (mRunning) system.update();
             }
             resetDevice();
@@ -33,8 +55,7 @@ void Environment::init(size_t streamNum) {
     }
     if (mDevices.empty())
         throw std::runtime_error("Failed to initialize the CUDA environment.");
-    //TODO:Choose a device which supports OpenGL/Direct3D.
-    setDevice(0);
+    setDevice(firstDevice);
 }
 
 Future Environment::submit(std::unique_ptr<CommandBuffer> buffer) {

@@ -1,27 +1,22 @@
 #pragma once
 #include <Base/CompileBegin.hpp>
-#include <IMGUI/imgui.h>
 #include <d3d11.h>
 #undef max
 #undef min
 #undef near
 #undef far
 #include <Base/CompileEnd.hpp>
-#include <Base/Builtin.hpp>
-#include <Base/Environment.hpp>
+#include <Interaction/BoundImage.hpp>
 
-class D3D11Image final :Uncopyable {
+class D3D11Image final :public BoundImage{
 private:
-    cudaGraphicsResource_t mRes;
     ID3D11Texture2D* mTexture;
-    uvec2 mSize;
+    void reset() override;
 public:
     D3D11Image();
     ~D3D11Image();
-    uvec2 size() const;
-    void resize(uvec2 size);
-    cudaArray_t bind(cudaStream_t stream);
-    void unbind(cudaStream_t stream);
+    cudaArray_t bind(cudaStream_t stream) override;
+    void unbind(cudaStream_t stream) override;
     ID3D11Texture2D* get() const;
 };
 
@@ -38,11 +33,12 @@ protected:
     D3D11Window();
     void createRTV();
     void cleanRTV();
-    void reset(uvec2 size);
     friend D3D11Window& getD3D11Window();
-    friend LRESULT WINAPI wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-    friend class D3D11Image;
 public:
+    ID3D11Device * getDevice();
+    std::mutex& getMutex();
+    void reset(uvec2 size);
+
     void show(bool isShow);
     void present(D3D11Image& image);
     void setVSync(bool enable);

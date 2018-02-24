@@ -1,6 +1,7 @@
 #include <Base/CompileBegin.hpp>
 #include <Interaction/D3D11.hpp>
 #include <cuda_d3d11_interop.h>
+#include <IMGUI/imgui.h>
 #include <IMGUI/imgui_impl_dx11.h>
 #include <Base/CompileEnd.hpp>
 
@@ -95,6 +96,14 @@ void D3D11Window::cleanRTV() {
     }
 }
 
+ID3D11Device* D3D11Window::getDevice() {
+    return mDevice;
+}
+
+std::mutex& D3D11Window::getMutex() {
+    return mMutex;
+}
+
 void D3D11Window::reset(const uvec2 nsiz) {
     if (size() != nsiz) {
         ImGui_ImplDX11_InvalidateDeviceObjects();
@@ -176,58 +185,44 @@ D3D11Window& getD3D11Window() {
     return window;
 }
 
-D3D11Image::D3D11Image(): mRes(nullptr), mTexture(nullptr) {}
+D3D11Image::D3D11Image(): mTexture(nullptr) {}
 
 D3D11Image::~D3D11Image() {
-    if (mRes)checkError(cudaGraphicsUnregisterResource(mRes));
+    destoryRes();
     if (mTexture)mTexture->Release();
 }
 
-uvec2 D3D11Image::size() const {
-    return mSize;
-}
-
-void D3D11Image::resize(const uvec2 size) {
-    if (mSize != size) {
-        if (mRes) {
-            checkError(cudaGraphicsUnregisterResource(mRes));
-            mRes = nullptr;
-        }
-        if (mTexture) {
-            mTexture->Release();
-            mTexture = nullptr;
-        }
-        auto&& window = getD3D11Window();
-        D3D11_TEXTURE2D_DESC td;
-        td.Width = size.x;
-        td.Height = size.y;
-        td.MipLevels = 1;
-        td.ArraySize = 1;
-        td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        td.SampleDesc.Count = 1;
-        td.SampleDesc.Quality = 0;
-        td.Usage = D3D11_USAGE_DEFAULT;
-        td.BindFlags = D3D11_BIND_RENDER_TARGET;
-        td.CPUAccessFlags = 0;
-        td.MiscFlags = 0;
-        checkResult(window.mDevice->CreateTexture2D(&td, nullptr, &mTexture));
-        checkError(cudaGraphicsD3D11RegisterResource(&mRes, mTexture,
-                                                     cudaGraphicsRegisterFlagsSurfaceLoadStore));
-        mSize = size;
+void D3D11Image::reset() {
+    if (mTexture) {
+        mTexture->Release();
+        mTexture = nullptr;
     }
+    auto&& window = getD3D11Window();
+    D3D11_TEXTURE2D_DESC td;
+    td.Width = mSize.x;
+    td.Height = mSize.y;
+    td.MipLevels = 1;
+    td.ArraySize = 1;
+    td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    td.SampleDesc.Count = 1;
+    td.SampleDesc.Quality = 0;
+    td.Usage = D3D11_USAGE_DEFAULT;
+    td.BindFlags = D3D11_BIND_RENDER_TARGET;
+    td.CPUAccessFlags = 0;
+    td.MiscFlags = 0;
+    checkResult(window.getDevice()->CreateTexture2D(&td, nullptr, &mTexture));
+    checkError(cudaGraphicsD3D11RegisterResource(&mRes, mTexture,
+                                                    cudaGraphicsRegisterFlagsSurfaceLoadStore));
 }
 
 cudaArray_t D3D11Image::bind(const cudaStream_t stream) {
-    std::lock_guard<std::mutex> guard(getD3D11Window().mMutex);
-    checkError(cudaGraphicsMapResources(1, &mRes, stream));
-    cudaArray_t data;
-    checkError(cudaGraphicsSubResourceGetMappedArray(&data, mRes, 0, 0));
-    return data;
+    std::lock_guard<std::mutex> guard(getD3D11Window().getMutex());
+    return BoundImage::bind(stream);
 }
 
 void D3D11Image::unbind(const cudaStream_t stream) {
-    std::lock_guard<std::mutex> guard(getD3D11Window().mMutex);
-    checkError(cudaGraphicsUnmapResources(1, &mRes, stream));
+    std::lock_guard<std::mutex> guard(getD3D11Window().getMutex());
+    BoundImage::unbind(stream);
 }
 
 ID3D11Texture2D* D3D11Image::get() const {

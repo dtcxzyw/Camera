@@ -2,6 +2,7 @@
 #include <GL/glew.h>
 #include <Interaction/OpenGL.hpp>
 #include <cuda_gl_interop.h>
+#include <IMGUI/imgui.h>
 #include <IMGUI/imgui_impl_glfw_gl3.h>
 #include <Base/CompileEnd.hpp>
 
@@ -140,43 +141,21 @@ GLIMGUIWindow::~GLIMGUIWindow() {
     ImGui_ImplGlfwGL3_Shutdown();
 }
 
-GLImage::GLImage():mRes(nullptr) {
+GLImage::GLImage() {
     glGenTextures(1, &mTexture);
 }
 
 GLImage::~GLImage() {
-    if(mRes)checkError(cudaGraphicsUnregisterResource(mRes));
+    destoryRes();
     glDeleteTextures(1, &mTexture);
 }
 
-uvec2 GLImage::size() const {
-    return mSize;
-}
-
-void GLImage::resize(const uvec2 size) {
-    if (mSize != size) {
-        if (mRes) {
-            checkError(cudaGraphicsUnregisterResource(mRes));
-            mRes = nullptr;
-        }
-        glBindTexture(GL_TEXTURE_2D, mTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8UI, size.x, size.y
-            , 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-        checkError(cudaGraphicsGLRegisterImage(&mRes, mTexture, GL_TEXTURE_2D
-            , cudaGraphicsRegisterFlagsSurfaceLoadStore));
-        mSize = size;
-    }
-}
-
-cudaArray_t GLImage::bind(const cudaStream_t stream) {
-    checkError(cudaGraphicsMapResources(1, &mRes, stream));
-    cudaArray_t data;
-    checkError(cudaGraphicsSubResourceGetMappedArray(&data, mRes, 0, 0));
-    return data;
-}
-
-void GLImage::unbind(const cudaStream_t stream) {
-    checkError(cudaGraphicsUnmapResources(1, &mRes, stream));
+void GLImage::reset() {
+    glBindTexture(GL_TEXTURE_2D, mTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8UI, mSize.x, mSize.y
+        , 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    checkError(cudaGraphicsGLRegisterImage(&mRes, mTexture, GL_TEXTURE_2D
+        , cudaGraphicsRegisterFlagsSurfaceLoadStore));
 }
 
 GLuint GLImage::get() const {

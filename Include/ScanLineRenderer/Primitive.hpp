@@ -1,5 +1,4 @@
 #pragma once
-#include <ScanLineRenderer/ScanLine.hpp>
 #include <Base/Queue.hpp>
 
 template<typename Vert, typename Uniform>

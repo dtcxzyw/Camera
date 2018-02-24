@@ -153,6 +153,9 @@
     <ClInclude Include="..\..\Include\ScanLineRenderer\Shared.hpp">
       <Filter>ScanLineRenderer</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Interaction\BoundImage.hpp">
+      <Filter>Interaction</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">
@@ -213,6 +216,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\Src\ScanLineRenderer\Shared.cu">
       <Filter>ScanLineRenderer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Interaction\BoundImage.cu">
+      <Filter>Interaction</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

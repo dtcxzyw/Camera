@@ -27,7 +27,7 @@ class Resource : Uncopyable {
 private:
     const ID mID;
 protected:
-    ResourceManager & mManager;
+    ResourceManager& mManager;
     void addInstance(std::unique_ptr<ResourceInstance> instance) const;
 public:
     explicit Resource(ResourceManager& manager);
@@ -43,7 +43,7 @@ namespace Impl {
 }
 
 template <typename T>
-class ResourceRef :public Impl::ResourceTag {
+class ResourceRef : public Impl::ResourceTag {
 protected:
     std::shared_ptr<Resource<T>> mRef;
 public:
@@ -94,7 +94,7 @@ namespace Impl {
         L1GlobalMemoryPool& mPool;
         bool hasRecycler() const override;
     public:
-        GlobalMemory(ResourceManager& manager,size_t size);
+        GlobalMemory(ResourceManager& manager, size_t size);
         ~GlobalMemory();
         void* get() override;
         void set(const void* src, Stream& stream) override;
@@ -143,8 +143,8 @@ namespace Impl {
         ID mDst;
         std::function<void(std::function<void(const void*)>)> mSrc;
     public:
-        Memcpy(ResourceManager& manager, ID dst
-               , std::function<void(std::function<void(const void*)>)>&& src);
+        Memcpy(ResourceManager& manager, ID dst,
+               std::function<void(std::function<void(const void*)>)>&& src);
         void emit(Stream& stream) override;
     };
 }
@@ -399,16 +399,16 @@ public:
     bool finished() const;
 };
 
-class ResourceRecycler:Uncopyable {
+class ResourceRecycler : Uncopyable {
 public:
     virtual ~ResourceRecycler() = default;
 };
 
 class ResourceManager final : Uncopyable {
 private:
-    std::map<ID,std::pair<ID,std::unique_ptr<ResourceInstance>>> mResources;
+    std::map<ID, std::pair<ID, std::unique_ptr<ResourceInstance>>> mResources;
     cudaStream_t mStream = nullptr;
-    ID mResourceCount = 0, mRegisteredResourceCount =0,mOperatorCount=0;
+    ID mResourceCount = 0, mRegisteredResourceCount = 0, mOperatorCount = 0;
     std::map<size_t, std::unique_ptr<ResourceRecycler>> mRecyclers;
 public:
     void registerResource(ID id, std::unique_ptr<ResourceInstance>&& instance);
@@ -418,13 +418,14 @@ public:
     void gc(ID time);
     ID allocResource();
     ID getOperatorPID();
-    template<typename Recycler>
+
+    template <typename Recycler>
     Recycler& getRecycler() {
         const auto tid = typeid(Recycler).hash_code();
         auto it = mRecyclers.find(tid);
         if (it == mRecyclers.end()) {
             std::unique_ptr<ResourceRecycler> ptr = std::make_unique<Recycler>();
-            it = mRecyclers.emplace(tid,std::move(ptr)).first;
+            it = mRecyclers.emplace(tid, std::move(ptr)).first;
         }
         return dynamic_cast<Recycler&>(*it->second);
     }
@@ -557,7 +558,7 @@ private:
     std::vector<StreamInfo> mStreams;
     CommandBufferQueue& mQueue;
 public:
-    explicit DispatchSystem(size_t size, CommandBufferQueue& queue);
+    explicit DispatchSystem(CommandBufferQueue& queue);
     void update();
 };
 
