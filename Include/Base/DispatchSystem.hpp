@@ -14,31 +14,23 @@ class CommandBuffer;
 class ResourceManager;
 using ID = uint64_t;
 
-namespace Impl {
-    ID getPID();
-
-    struct ResourceTag {};
-}
-
 class ResourceInstance : Uncopyable {
-private:
-    ID mEnd;
 public:
-    ResourceInstance();
+    ResourceInstance() = default;
     virtual ~ResourceInstance() = default;
-    bool shouldRelease(ID current) const;
+    virtual bool hasRecycler() const;
     virtual void getRes(void*, cudaStream_t) = 0;
 };
 
 template <typename T>
 class Resource : Uncopyable {
 private:
-    ID mID;
-    ResourceManager& mManager;
+    const ID mID;
 protected:
-    void addInstance(std::unique_ptr<ResourceInstance>&& instance) const;
+    ResourceManager & mManager;
+    void addInstance(std::unique_ptr<ResourceInstance> instance) const;
 public:
-    explicit Resource(ResourceManager& manager) : mID(Impl::getPID()), mManager(manager) {}
+    explicit Resource(ResourceManager& manager);
     virtual ~Resource() = default;
 
     ID getID() const noexcept {
@@ -46,8 +38,12 @@ public:
     }
 };
 
+namespace Impl {
+    struct ResourceTag {};
+}
+
 template <typename T>
-class ResourceRef : Impl::ResourceTag {
+class ResourceRef :public Impl::ResourceTag {
 protected:
     std::shared_ptr<Resource<T>> mRef;
 public:
@@ -70,7 +66,7 @@ namespace Impl {
 
     class DeviceMemory final : public Resource<void*> {
     private:
-        size_t mSize;
+        const size_t mSize;
         MemoryType mType;
     public:
         DeviceMemory(ResourceManager& manager, size_t size, MemoryType type);
@@ -80,7 +76,7 @@ namespace Impl {
 
     class DeviceMemoryInstance : public ResourceInstance {
     protected:
-        size_t mSize;
+        const size_t mSize;
         void getRes(void*, cudaStream_t) override;
     public:
         explicit DeviceMemoryInstance(size_t size);
@@ -90,11 +86,16 @@ namespace Impl {
         virtual void memset(int mask, Stream& stream);
     };
 
+    class L1GlobalMemoryPool;
+
     class GlobalMemory final : public DeviceMemoryInstance {
     private:
-        SharedMemory mMemory;
+        UniqueMemory mMemory;
+        L1GlobalMemoryPool& mPool;
+        bool hasRecycler() const override;
     public:
-        explicit GlobalMemory(size_t size);
+        GlobalMemory(ResourceManager& manager,size_t size);
+        ~GlobalMemory();
         void* get() override;
         void set(const void* src, Stream& stream) override;
         void memset(int mask, Stream& stream) override;
@@ -169,7 +170,7 @@ public:
 namespace Impl {
     class CastTag {
     protected:
-        static void get(ResourceManager & manager, ID id, void* ptr);
+        static void get(ResourceManager& manager, ID id, void* ptr);
     };
 
     template <typename T>
@@ -207,7 +208,7 @@ namespace Impl {
     }
 
     template <typename T, typename = std::enable_if_t<std::is_base_of<CastTag, T>::value>>
-    auto cast(T ref, ResourceManager & manager) {
+    auto cast(T ref, ResourceManager& manager) {
         return ref.get(manager);
     }
 
@@ -398,33 +399,46 @@ public:
     bool finished() const;
 };
 
-class ResourceManager final :Uncopyable {
+class ResourceRecycler:Uncopyable {
+public:
+    virtual ~ResourceRecycler() = default;
+};
+
+class ResourceManager final : Uncopyable {
 private:
-    std::map<ID, std::unique_ptr<ResourceInstance>> mResources;
+    std::map<ID,std::pair<ID,std::unique_ptr<ResourceInstance>>> mResources;
     cudaStream_t mStream = nullptr;
+    ID mResourceCount = 0, mRegisteredResourceCount =0,mOperatorCount=0;
+    std::map<size_t, std::unique_ptr<ResourceRecycler>> mRecyclers;
 public:
     void registerResource(ID id, std::unique_ptr<ResourceInstance>&& instance);
     ResourceInstance& getResource(ID id);
-    void setStream(cudaStream_t stream);
+    void bindStream(cudaStream_t stream);
     cudaStream_t getStream() const;
     void gc(ID time);
+    ID allocResource();
+    ID getOperatorPID();
+    template<typename Recycler>
+    Recycler& getRecycler() {
+        const auto tid = typeid(Recycler).hash_code();
+        auto it = mRecyclers.find(tid);
+        if (it == mRecyclers.end()) {
+            std::unique_ptr<ResourceRecycler> ptr = std::make_unique<Recycler>();
+            it = mRecyclers.emplace(tid,std::move(ptr)).first;
+        }
+        return dynamic_cast<Recycler&>(*it->second);
+    }
 };
 
-namespace Impl {
-    void CUDART_CB updateLast(cudaStream_t, cudaError_t, void*);
-}
-
-class Task final:Uncopyable {
+class Task final : Uncopyable {
 private:
     std::unique_ptr<ResourceManager> mResourceManager;
     std::queue<std::unique_ptr<Impl::Operator>> mCommandQueue;
-    ID mLast, mUpdated;
     std::shared_ptr<Impl::TaskState> mPromise;
     Stream& mStream;
-    friend void CUDART_CB Impl::updateLast(cudaStream_t, cudaError_t, void* userData);
 public:
     Task(Stream& stream, std::unique_ptr<ResourceManager> manager,
-        std::queue<std::unique_ptr<Impl::Operator>>& commandQueue,
+         std::queue<std::unique_ptr<Impl::Operator>>& commandQueue,
          std::shared_ptr<Impl::TaskState> promise);
     ~Task();
     void update();
@@ -471,7 +485,7 @@ public:
         const auto id = src.getID();
         memcpy(dst, [id, this](auto call) {
             void* res;
-            mResourceManager->getResource(id).getRes(&res,mResourceManager->getStream());
+            mResourceManager->getResource(id).getRes(&res, mResourceManager->getStream());
             call(res);
         });
     }
@@ -479,7 +493,7 @@ public:
     template <typename Func, typename... Args>
     void runKernelDim(Func func, const dim3 grid, const dim3 block, Args ... args) {
         mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchDim>(*mResourceManager,
-            func, grid, block, Impl::castID(args)...));
+                                                                      func, grid, block, Impl::castID(args)...));
     }
 
     template <typename Func, typename... Args>
@@ -490,7 +504,7 @@ public:
     template <typename Func, typename... Args>
     void runKernelLinear(Func func, const size_t size, Args ... args) {
         mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchLinear>(*mResourceManager,
-            func,size,Impl::castID(args)...));
+                                                                         func, size, Impl::castID(args)...));
     }
 
     void addCallback(cudaStreamCallback_t func, void* data);
@@ -515,7 +529,7 @@ private:
     std::queue<UnboundTask> mQueue;
     std::mutex mMutex;
 public:
-    void submit(std::shared_ptr<Impl::TaskState> promise,std::unique_ptr<CommandBuffer> buffer);
+    void submit(std::shared_ptr<Impl::TaskState> promise, std::unique_ptr<CommandBuffer> buffer);
     UnboundTask getTask();
     size_t size() const;
     void clear();
@@ -548,6 +562,10 @@ public:
 };
 
 template <typename T>
-void Resource<T>::addInstance(std::unique_ptr<ResourceInstance>&& instance) const {
+void Resource<T>::addInstance(std::unique_ptr<ResourceInstance> instance) const {
     mManager.registerResource(mID, std::move(instance));
 }
+
+template <typename T>
+Resource<T>::Resource(ResourceManager& manager)
+    : mID(manager.allocResource()), mManager(manager) {}

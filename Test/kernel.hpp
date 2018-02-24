@@ -36,7 +36,8 @@ private:
     std::shared_ptr<BuiltinRenderTarget<RGBA8>> mTarget;
     cudaStream_t mStream;
 public:
-    explicit ImageResourceInstance(D3D11Image& image): mImage(image), mStream(nullptr) {}
+    explicit ImageResourceInstance(D3D11Image& image)
+        :mImage(image), mStream(nullptr) {}
 
     void getRes(void* ptr, const cudaStream_t stream) override {
         if (!mTarget) {

@@ -64,7 +64,7 @@ public:
         mShouldReset = true;
     }
     RenderingCache(const size_t size, const size_t blockNum = 30)
-        :mData(allocBuffer<T>(size)),mBlockSize(std::max(static_cast<size_t>(1), size / blockNum)) {
+        :mData(DataViewer<T>(size)),mBlockSize(std::max(static_cast<size_t>(1), size / blockNum)) {
         auto begin = mData.begin();
         auto end = begin + mBlockSize;
         while (end < mData.end()) {

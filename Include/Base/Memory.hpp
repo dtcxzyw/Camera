@@ -2,52 +2,48 @@
 #include <memory>
 #include <Base/Common.hpp>
 
-class Memory final : Uncopyable {
-public:
-    explicit Memory(size_t size);
-    ~Memory();
-    char* getPtr() const;
-    size_t size() const;
+inline size_t calcSizeLevel(const size_t size) {
+    for (auto i = 40; i >= 0; --i)
+        if (size & (1ULL << i))
+            return i + 1;
+    return -1;
+}
+
+class GlobalMemoryDeleter final {
 private:
-    void* mPtr;
     size_t mSize;
+public:
+    constexpr GlobalMemoryDeleter() noexcept:mSize(0){}
+    explicit GlobalMemoryDeleter(size_t size) noexcept;
+    void operator()(void* ptr) const;
 };
 
-using UniqueMemory = std::unique_ptr<Memory>;
-using SharedMemory = std::shared_ptr<Memory>;
+using UniqueMemory = std::unique_ptr<void,GlobalMemoryDeleter>;
+
+UniqueMemory allocGlobalMemory(size_t size,bool isStatic=false);
 
 template <typename T>
 class DataViewer final {
 private:
-    SharedMemory mMem;
-    T* mPtr;
-    size_t mSize{};
+    std::shared_ptr<void> mMem;
+    size_t mSize;
 public:
-    DataViewer() = default;
-
-    explicit DataViewer(const SharedMemory memory, const size_t offset = 0, const size_t size = 0)
-        : mMem(memory), mPtr(reinterpret_cast<T*>(memory->getPtr() + offset)), mSize(size) {
-        if (size == 0)
-            mSize = (mMem->size() - offset) / sizeof(T);
-    }
+    DataViewer() :mSize(0){}
+    explicit DataViewer(const size_t size)
+        : mMem(allocGlobalMemory(size*sizeof(T),true)),mSize(size) {}
 
     T* begin() const {
-        return mPtr;
+        return reinterpret_cast<T*>(mMem.get());
     }
 
     T* end() const {
-        return mPtr + mSize;
+        return begin() + mSize;
     }
 
     size_t size() const {
         return mSize;
     }
 };
-
-template <typename T>
-auto allocBuffer(size_t size = 1) {
-    return DataViewer<T>(std::make_shared<Memory>(size * sizeof(T)));
-}
 
 class PinnedMemory final : Uncopyable {
 private:

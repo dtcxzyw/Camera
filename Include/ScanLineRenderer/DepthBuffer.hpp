@@ -33,7 +33,7 @@ private:
     DataViewer<T> mData;
 public:
     explicit DepthBuffer(const uvec2 size) :mSize(size),
-        mData(allocBuffer<T>(calcSize(size.x,32U)*calcSize(size.y,32U)*1024U)) {}
+        mData(calcSize(size.x,32U)*calcSize(size.y,32U)*1024U) {}
     void clear(CommandBuffer& buffer) {
         buffer.pushOperator([=](Stream& stream) {stream.memset(mData, 0xff); });
     }

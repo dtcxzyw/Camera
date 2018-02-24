@@ -41,27 +41,8 @@ public:
     }
 
     template<typename T>
-    auto share(const T* data, size_t size) {
-        auto rsize = size * sizeof(T);
-        auto sm = std::make_shared<Memory>(rsize);
-        checkError(cudaMemcpyAsync(sm->getPtr(), data, rsize, cudaMemcpyDefault,mStream));
-        return DataViewer<T>(sm);
-    }
-
-    template<typename C>
-    auto share(const C& c) {
-        using T = std::decay_t<decltype(*std::data(c)) >;
-        return share(std::data(c), std::size(c));
-    }
-
-    template<typename T>
-    void memset(DataViewer<T> data,int val=0) {
+    void memset(DataViewer<T> data, const int val=0) {
         checkError(cudaMemsetAsync(data.begin(),val,data.size()*sizeof(T),mStream));
-    }
-
-    template<typename T>
-    auto copy(DataViewer<T> data) {
-        return share(data.begin(), data.size());
     }
 
     void wait(Event& event);
@@ -71,7 +52,7 @@ class Event final :Uncopyable {
 private:
     cudaEvent_t mEvent{};
 public:
-    Event(Stream& stream);
+    explicit Event(Stream& stream);
     void wait();
     cudaEvent_t get() const;
     ~Event();

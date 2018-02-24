@@ -140,7 +140,7 @@ auto addTask(SwapChainT::SharedFrame frame, const uvec2 size,float* lum,RC8& cac
 
 void uploadSpheres() {
     vec4 sphere[] = {{0.0f,3.0f,10.0f,5.0f},{0.0f,0.0f,13.0f,3.0f}};
-    spheres = allocBuffer<vec4>(std::size(sphere));
+    spheres = DataViewer<vec4>(std::size(sphere));
     checkError(cudaMemcpy(spheres.begin(),sphere,sizeof(sphere),cudaMemcpyHostToDevice));
 }
 
@@ -181,7 +181,7 @@ int main() {
         SwapChainT swapChain(3);
         std::queue<RenderingTask> tasks;
         {
-            auto lum = allocBuffer<float>();
+            auto lum = DataViewer<float>(1);
             while (window.update()) {
                 const auto size = window.size();
                 if (size.x == 0 || size.y == 0) {

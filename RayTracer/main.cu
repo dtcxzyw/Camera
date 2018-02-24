@@ -88,7 +88,7 @@ int main() {
         SwapChainT swapChain(3);
         std::queue<RenderingTask> tasks;
         {
-            auto lum = allocBuffer<float>();
+            auto lum = DataViewer<float>();
             while (window.update()) {
                 const auto size = window.size();
                 if (size.x == 0 || size.y == 0) {
