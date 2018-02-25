@@ -12,6 +12,7 @@ using namespace std::chrono_literals;
 
 auto light=65.0f,r=20.0f;
 StaticMesh box,model;
+std::unique_ptr<RC8> cache;
 DataViewer<vec4> spheres;
 TriangleRenderingHistory mh;
 TriangleRenderingHistory sh;
@@ -118,19 +119,19 @@ float getTime() {
     return static_cast<float>(t * 1e-9);
 }
 
-auto addTask(SwapChainT::SharedFrame frame, const uvec2 size,float* lum,RC8& cache) {
+auto addTask(SwapChainT::SharedFrame frame, const uvec2 size,float* lum) {
     static auto last = getTime();
     const auto now = getTime();
     const auto converter = camera.toRasterPos(size);
     last = now;
     auto buffer=std::make_unique<CommandBuffer>();
     if (frame->size != size) {
-        mh.reset(model.index.size(), cache.blockSize() * 3, enableSAA);
-        cache.reset();
+        mh.reset(model.index.size(), cache->blockSize() * 3, enableSAA);
+        cache->reset();
         sh.reset(box.index.size());
     }
     frame->resize(size);
-    auto block = cache.pop(*buffer);
+    auto block = cache->pop(*buffer);
     {
         auto uniform = getUniform(now - last, converter.mul);
         auto uni = buffer->allocConstant<Uniform>();
@@ -163,22 +164,25 @@ int main() {
         camera.mode = Camera::FitResolutionGate::Overscan;
         camera.focalLength = 15.0f;
 
-        Stream resLoader;
-        uploadSpheres();
-        //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
-        model.load("Res/dragon.obj",resLoader);
-        RC8 cache(model.index.size(),30);
-        mh.reset(model.index.size(),cache.blockSize()*3,enableSAA);
+        {
+            Stream resLoader;
+            uploadSpheres();
+            //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
+            model.load("Res/dragon.obj", resLoader);
+            cache = std::make_unique<RC8>(model.index.size());
+            mh.reset(model.index.size(), cache->blockSize() * 3, enableSAA);
 
-        box.load("Res/cube.obj",resLoader);
-        sh.reset(box.index.size());
-        
-        envMap = loadCubeMap([](size_t id) {
-            const char* table[] = {"right","left","top","bottom","back","front"};
-            return std::string("Res/skybox/")+table[id]+".jpg";
-        }, resLoader);
-        //envMap = loadRGBA("Res/Helipad_Afternoon/LA_Downtown_Afternoon_Fishing_B_8k.jpg",resLoader);
-        envMapSampler = std::make_shared<BuiltinSampler<RGBA>>(envMap->get());
+            box.load("Res/cube.obj", resLoader);
+            sh.reset(box.index.size());
+
+            envMap = loadCubeMap([](size_t id) {
+                const char* table[] = { "right","left","top","bottom","back","front" };
+                return std::string("Res/skybox/") + table[id] + ".jpg";
+            }, resLoader);
+            //envMap = loadRGBA("Res/Helipad_Afternoon/LA_Downtown_Afternoon_Fishing_B_8k.jpg",resLoader);
+            envMapSampler = std::make_shared<BuiltinSampler<RGBA>>(envMap->get());
+        }
+
         arg.baseColor = vec3{220,223,227}/255.0f;
 
         SwapChainT swapChain(3);
@@ -194,10 +198,10 @@ int main() {
                 SwapChainT::SharedFrame frame;
                 while (true) {
                     if (!swapChain.empty())
-                        tasks.push(addTask(swapChain.pop(), size, lum.begin(),cache));
+                        tasks.push(addTask(swapChain.pop(), size, lum.begin()));
                     if (!tasks.empty() && tasks.front().future.finished()) {
                         frame = tasks.front().frame;
-                        cache.push(tasks.front().block);
+                        cache->push(tasks.front().block);
                         tasks.pop();
                         break;
                     }

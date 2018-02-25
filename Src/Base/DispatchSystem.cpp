@@ -132,17 +132,12 @@ namespace Impl {
         return dynamic_cast<DeviceMemory&>(*mRef).size();
     }
 
-    void LaunchSize::download(std::atomic_uint& dst, CommandBuffer& buffer) const {
+    void LaunchSize::download(unsigned int& dst, CommandBuffer& buffer) const {
         auto id = mHelper;
-        auto tmp = new std::pair<unsigned int, std::atomic_uint*>(0, &dst);
         auto&& manager = buffer.getResourceManager();
-        buffer.pushOperator([id,&manager,tmp](ID,ResourceManager&,Stream& stream) {
-            checkError(cudaMemcpyAsync(&tmp->first, cast(id, manager),
+        buffer.pushOperator([id,&manager,&dst](ID,ResourceManager&,Stream& stream) {
+            checkError(cudaMemcpyAsync(&dst, cast(id, manager),
                                        sizeof(unsigned int), cudaMemcpyDeviceToHost, stream.get()));
-        });
-        buffer.addCallback([tmp]() {
-            *tmp->second = tmp->first;
-            delete tmp;
         });
     }
 }
@@ -252,16 +247,18 @@ DispatchSystem::StreamInfo& DispatchSystem::getStream() {
     return *std::min_element(mStreams.begin(), mStreams.end());
 }
 
-static size_t getAsyncEngineCount() {
-    int device;
-    checkError(cudaGetDevice(&device));
-    cudaDeviceProp prop{};
-    checkError(cudaGetDeviceProperties(&prop, device));
-    return std::max(1,prop.asyncEngineCount);
+namespace Impl {
+    static size_t getAsyncEngineCount() {
+        int device;
+        checkError(cudaGetDevice(&device));
+        cudaDeviceProp prop{};
+        checkError(cudaGetDeviceProperties(&prop, device));
+        return std::max(1, prop.asyncEngineCount);
+    }
 }
 
 DispatchSystem::DispatchSystem(CommandBufferQueue& queue)
-    : mStreams(getAsyncEngineCount()), mQueue(queue) {}
+    : mStreams(Impl::getAsyncEngineCount()), mQueue(queue) {}
 
 void DispatchSystem::update() {
     auto&& stream = getStream();

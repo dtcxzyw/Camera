@@ -6,8 +6,6 @@
 #include <chrono>
 #include <tuple>
 #include <functional>
-#include <atomic>
-#include <utility>
 #include <mutex>
 
 class CommandBuffer;
@@ -345,7 +343,7 @@ namespace Impl {
             return mHelper;
         }
 
-        void download(std::atomic_uint& dst, CommandBuffer& buffer) const;
+        void download(unsigned int& dst, CommandBuffer& buffer) const;
     };
 
     class KernelLaunchDim final : public Operator {
