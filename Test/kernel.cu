@@ -115,12 +115,13 @@ GLOBAL void updateLum(const PostUniform uniform) {
 template <VSF<VI, OI, Uniform> vs, TCSF<Uniform> cs, FSFT<OI, Uniform, FrameBufferGPU> ds,
     FSFT<OI, Uniform, FrameBufferGPU> fs>
 void renderMesh(const StaticMesh& model, const MemoryRef<Uniform>& uniform,
-                const MemoryRef<FrameBufferGPU>& frameBuffer, uvec2 size, const Camera::RasterPosConverter converter,
-                const CullFace mode, TriangleRenderingHistory& history, CommandBuffer& buffer) {
+    const MemoryRef<FrameBufferGPU>& frameBuffer, uvec2 size, const Camera::RasterPosConverter converter,
+    const CullFace mode, TriangleRenderingHistory& history, const vec4 scissor,
+    CommandBuffer& buffer) {
     auto vert = calcVertex<VI, OI, Uniform, vs>(buffer, model.vert, uniform);
     renderTriangles<SeparateTrianglesWithIndex, OI, Uniform, FrameBufferGPU, cs, ds, fs>(buffer, 
-                                                                                         vert,SeparateTrianglesWithIndex{model.index}, uniform,frameBuffer, size,
-                                                                                         converter.near, converter.far, history, mode);
+        vert, SeparateTrianglesWithIndex{ model.index }, uniform, frameBuffer, size,
+        converter.near, converter.far, history, scissor, mode);
     /*
     renderPoints<OI, Uniform, FrameBufferGPU, toPos, setPoint, drawPoint>(buffer,
         vert,uniform, frameBuffer, size, converter.near, converter.far);
@@ -170,12 +171,13 @@ void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
     fbo.colorRT->clear(buffer, vec4{0.0f, 0.0f, 0.0f, 1.0f});
     fbo.depthBuffer->clear(buffer);
     auto frameBuffer = fbo.getData(buffer);
+    const vec4 scissor = { 0.0f,fbo.size.x,0.0f,fbo.size.y };
     renderMesh<VSM, CSM, setModel, drawModel>(model, uniform, frameBuffer, fbo.size, 
-        converter, CullFace::Back, mh,buffer);
+        converter, CullFace::Back, mh,scissor,buffer);
     renderSpheres<Uniform,FrameBufferGPU,vsSphere,setSpherePoint,drawSpherePoint>(buffer,
-        spheres,uniform,frameBuffer,fbo.size,converter.near,converter.far,converter.mul);
+        spheres,uniform,frameBuffer,fbo.size,converter.near,converter.far,converter.mul,scissor);
     renderMesh<VS, CS, setSkyPoint, drawSky>(skybox, uniform, frameBuffer, fbo.size, converter, 
-        CullFace::Front, sh,buffer);
+        CullFace::Front, sh,scissor,buffer);
     auto puni = buffer.allocConstant<PostUniform>();
     auto sum = buffer.allocBuffer<std::pair<float, unsigned int>>();
     buffer.memset(sum);

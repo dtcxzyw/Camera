@@ -35,18 +35,18 @@ CUDAINLINE vec4 calcSphereRange(const vec4 sphere, const float near, const float
 }
 
 GLOBAL void processSphereInfoGPU(const unsigned int size,READONLY(vec4) in, SphereInfo* info,
-                                 TileRef* ref, unsigned int* cnt, const vec2 fsiz, const vec2 hsiz,
-                                 const float near, const float far, const vec2 mul) {
+    TileRef* ref, unsigned int* cnt, const vec4 scissor, const vec2 hsiz,
+    const float near, const float far, const vec2 mul) {
     const auto id = getID();
     if (id >= size)return;
     const auto sphere = in[id];
     if (- sphere.w > far + sphere.z | sphere.w < near + sphere.z)return;
     const auto range = calcSphereRange(sphere, near, far);
     const vec4 rect = {
-        fmax(0.5f, (1.0f + range.x * mul.x) * hsiz.x - tileOffset),
-        fmin(fsiz.x, (1.0f + range.y * mul.x) * hsiz.x + tileOffset),
-        fmax(0.5f, (1.0f - range.w * mul.y) * hsiz.y - tileOffset),
-        fmin(fsiz.y, (1.0f - range.z * mul.y) * hsiz.y + tileOffset)
+        fmax(scissor.x, (1.0f + range.x * mul.x) * hsiz.x - tileOffset),
+        fmin(scissor.y, (1.0f + range.y * mul.x) * hsiz.x + tileOffset),
+        fmax(scissor.z, (1.0f - range.w * mul.y) * hsiz.y - tileOffset),
+        fmin(scissor.w, (1.0f - range.z * mul.y) * hsiz.y + tileOffset)
     };
     if (rect.x < rect.y & rect.z < rect.w) {
         const auto tsiz = calcTileSize(rect);
@@ -62,14 +62,14 @@ GLOBAL void processSphereInfoGPU(const unsigned int size,READONLY(vec4) in, Sphe
 }
 
 SphereProcessResult processSphereInfo(CommandBuffer& buffer, const MemoryRef<vec4>& spheres,
-                                      const vec2 fsiz, const vec2 hsiz, const float near, const float far,
+                                      const vec4 scissor, const vec2 hsiz, const float near, const float far,
                                       const vec2 mul) {
     auto cnt = buffer.allocBuffer<unsigned int>(7);
     buffer.memset(cnt);
     auto info = buffer.allocBuffer<SphereInfo>(spheres.size());
     auto ref = buffer.allocBuffer<TileRef>(spheres.size());
     buffer.runKernelLinear(processSphereInfoGPU, spheres.size(), spheres, info, ref, cnt,
-                           fsiz, hsiz, near, far, mul);
+        scissor, hsiz, near, far, mul);
     auto sortedSphere = sortTiles(buffer, cnt, ref, spheres.size() * 2U + 2048U);
     cnt.earlyRelease();
     ref.earlyRelease();

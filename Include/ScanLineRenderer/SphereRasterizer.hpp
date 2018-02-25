@@ -70,7 +70,7 @@ struct SphereProcessResult final {
 };
 
 SphereProcessResult processSphereInfo(
-    CommandBuffer& buffer, const MemoryRef<vec4>& spheres, vec2 fsiz, vec2 hsiz,
+    CommandBuffer& buffer, const MemoryRef<vec4>& spheres, vec4 scissor, vec2 hsiz,
     float near, float far, vec2 mul);
 
 /*
@@ -170,13 +170,14 @@ template <typename Uniform, typename FrameBuffer,
     VSFS<Uniform> vs, FSFS<Uniform, FrameBuffer>... fs>
 void renderSpheres(CommandBuffer& buffer, const DataPtr<vec4>& spheres,
                    const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
-                   const uvec2 size, const float near, const float far, const vec2 mul) {
+    const uvec2 size, const float near, const float far, const vec2 mul, vec4 scissor) {
     auto cameraSpheres = buffer.allocBuffer<vec4>(spheres.size());
     buffer.runKernelLinear(calcCameraSpheres<Uniform, vs>, spheres.size(), spheres.get(),
                            cameraSpheres, uniform.get());
-    const auto fsize = static_cast<vec2>(size) - vec2{0.5f};
+    scissor = { fmax(0.5f,scissor.x),fmin(size.x - 0.5f,scissor.y),
+        fmax(0.5f,scissor.z),fmin(size.y - 0.5f,scissor.w) };
     const auto hfsize = static_cast<vec2>(size) * 0.5f;
-    auto processRes = processSphereInfo(buffer, cameraSpheres, fsize, hfsize, near, far, mul);
+    auto processRes = processSphereInfo(buffer, cameraSpheres, scissor, hfsize, near, far, mul);
     const auto invnf = 1.0f / (far - near);
     buffer.callKernel(renderSpheresGPU<Uniform, FrameBuffer, fs...>, processRes.offset,
                       processRes.info, processRes.ref, uniform.get(), frameBuffer.get(), near, far, invnf,

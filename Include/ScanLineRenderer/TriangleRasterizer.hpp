@@ -109,13 +109,13 @@ struct TriangleProcessingArgs final {
     unsigned int* cnt;
     Triangle<Out>* info;
     TileRef* out;
-    vec2 fsiz;
+    vec4 scissor;
     vec2 hsiz;
     int mode;
 
     TriangleProcessingArgs(unsigned int* iCnt, Triangle<Out>* iInfo, TileRef* iOut,
-                           const vec2 iFsiz, const vec2 iHsiz, const int iMode)
-        : cnt(iCnt), info(iInfo), out(iOut), fsiz(iFsiz), hsiz(iHsiz), mode(iMode) {}
+                           const vec4 iScissor, const vec2 iHsiz, const int iMode)
+        : cnt(iCnt), info(iInfo), out(iOut), scissor(iScissor), hsiz(iHsiz), mode(iMode) {}
 };
 
 template <typename Out>
@@ -124,10 +124,10 @@ CUDAINLINE void calcTriangleInfo(TriangleVert<Out> tri, const TriangleProcessing
                b = toRaster(tri.vert[1].pos, args.hsiz),
                c = toRaster(tri.vert[2].pos, args.hsiz);
     const vec4 rect = {
-        fmax(0.5f, min3(a.x, b.x, c.x) - tileOffset),
-        fmin(args.fsiz.x, max3(a.x, b.x, c.x) + tileOffset),
-        fmax(0.5f, min3(a.y, b.y, c.y) - tileOffset),
-        fmin(args.fsiz.y, max3(a.y, b.y, c.y) + tileOffset)
+        fmax(args.scissor.x, min3(a.x, b.x, c.x) - tileOffset),
+        fmin(args.scissor.y, max3(a.x, b.x, c.x) + tileOffset),
+        fmax(args.scissor.z, min3(a.y, b.y, c.y) - tileOffset),
+        fmin(args.scissor.w, max3(a.y, b.y, c.y) + tileOffset)
     };
     const auto area = edgeFunction(a, b, c);
     if (static_cast<bool>((area < 0.0f) ^ args.mode) & rect.x < rect.y & rect.z < rect.w) {
@@ -344,7 +344,7 @@ template <typename Index, typename Out, typename Uniform, typename FrameBuffer,
 void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
                      Index index, const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
                      const uvec2 size, const float near, const float far, TriangleRenderingHistory& history,
-                     const CullFace mode = CullFace::Back) {
+                     vec4 scissor,const CullFace mode = CullFace::Back) {
     //pass 1:process triangles
     auto psiz = history.calcBufferSize(index.size());
     //5+ext+cnt=7
@@ -352,11 +352,12 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
     buffer.memset(cnt);
     auto info = buffer.allocBuffer<Triangle<Out>>(psiz);
     auto idx = buffer.allocBuffer<TileRef>(psiz);
-    const auto fsize = static_cast<vec2>(size) - vec2{0.5f};
-    auto hfsize = static_cast<vec2>(size) * 0.5f;
+    scissor = { fmax(0.5f,scissor.x),fmin(size.x - 0.5f,scissor.y),
+        fmax(0.5f,scissor.z),fmin(size.y - 0.5f,scissor.w) };
+    const auto hfsize = static_cast<vec2>(size) * 0.5f;
     buffer.runKernelLinear(processTriangles<Index, Out, Uniform, cs>, index.size(), vert.get(),
                            index, uniform.get(), near, far,
-                           buffer.makeLazyConstructor<TriangleProcessingArgs<Out>>(cnt, info, idx, fsize, hfsize,
+                           buffer.makeLazyConstructor<TriangleProcessingArgs<Out>>(cnt, info, idx, scissor, hfsize,
                                                                                    static_cast<int>(mode)));
     if (history.enableSelfAdaptiveAllocation) {
         LaunchSize triNumData(cnt, 6);
