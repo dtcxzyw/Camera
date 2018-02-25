@@ -25,7 +25,9 @@ namespace Impl {
 
     DeviceMemoryInstance::DeviceMemoryInstance(const size_t size):mSize(size) {}
 
-    void DeviceMemoryInstance::memset(int, Stream&) {}
+    void DeviceMemoryInstance::memset(int, Stream&) {
+        throw std::logic_error("This memory doesn't support memset.");
+    }
 
     class L1GlobalMemoryPool final:public ResourceRecycler {
     private:

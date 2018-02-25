@@ -191,11 +191,11 @@
     <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_impl_dx11.cpp">
       <Filter>Interaction\IMGUI</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Src\Interaction\OpenGL.cpp">
+      <Filter>Interaction</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\Src\Interaction\OpenGL.cu">
-      <Filter>Interaction</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\Src\IO\Image.cu">
       <Filter>IO</Filter>
     </CudaCompile>
@@ -217,7 +217,7 @@
     <CudaCompile Include="..\..\Src\ScanLineRenderer\Shared.cu">
       <Filter>ScanLineRenderer</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\Src\Interaction\BoundImage.cu">
+    <CudaCompile Include="..\..\Src\Interaction\BoundImage.cpp">
       <Filter>Interaction</Filter>
     </CudaCompile>
   </ItemGroup>

@@ -92,6 +92,8 @@ int main() {
         SwapChainT swapChain(3);
         std::queue<RenderingTask> tasks;
         {
+            Stream copyStream;
+            window.bindBackBuffer(copyStream.get());
             auto lum = DataViewer<float>();
             while (window.update()) {
                 const auto size = window.size();
@@ -107,15 +109,18 @@ int main() {
                         break;
                     }
                 }
-                window.present(frame->image);
+                if (frame->size == size) {
+                    window.present(frame->postRT->get());
+                    renderGUI(window);
+                    window.swapBuffers();
+                }
                 swapChain.push(std::move(frame));
-                renderGUI(window);
-                window.swapBuffers();
             }
+            window.unbindBackBuffer();
         }
         env.uninit();
     }
-    catch (const std::runtime_error& e) {
+    catch (const std::exception& e) {
         puts("Catched an error:");
         puts(e.what());
         system("pause");

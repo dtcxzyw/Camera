@@ -14,8 +14,8 @@ auto light=65.0f,r=20.0f;
 StaticMesh box,model;
 std::unique_ptr<RC8> cache;
 DataViewer<vec4> spheres;
-TriangleRenderingHistory mh;
-TriangleRenderingHistory sh;
+std::unique_ptr<TriangleRenderingHistory> mh;
+std::unique_ptr<TriangleRenderingHistory> sh;
 std::shared_ptr<BuiltinCubeMap<RGBA>> envMap;
 std::shared_ptr<BuiltinSampler<RGBA>> envMapSampler;
 DisneyBRDFArg arg;
@@ -41,7 +41,7 @@ void renderGUI(D3D11Window& window) {
     ImGui::SetWindowFontScale(1.5f);
     ImGui::Text("vertices: %d, triangles: %d\n", static_cast<int>(model.vert.size()),
         static_cast<int>(model.index.size()));
-    ImGui::Text("triNum: %d\n", static_cast<int>(mh.triNum));
+    ImGui::Text("triNum: %u\n", *mh->triNum);
     ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
     ImGui::Text("FOV %.1f ",degrees(camera.toFov()));
     ImGui::SliderFloat("focal length",&camera.focalLength,1.0f,500.0f,"%.1f");
@@ -126,9 +126,9 @@ auto addTask(SwapChainT::SharedFrame frame, const uvec2 size,float* lum) {
     last = now;
     auto buffer=std::make_unique<CommandBuffer>();
     if (frame->size != size) {
-        mh.reset(model.index.size(), cache->blockSize() * 3, enableSAA);
+        mh->reset(model.index.size(), cache->blockSize() * 3, enableSAA);
         cache->reset();
-        sh.reset(box.index.size());
+        sh->reset(box.index.size());
     }
     frame->resize(size);
     auto block = cache->pop(*buffer);
@@ -137,7 +137,7 @@ auto addTask(SwapChainT::SharedFrame frame, const uvec2 size,float* lum) {
         auto uni = buffer->allocConstant<Uniform>();
         uniform.cache = block.toBlock();
         buffer->memcpy(uni, [uniform](auto call) {call(&uniform); });
-        kernel(model, mh, box, sh, spheres, uni, *frame, lum, converter, *buffer);
+        kernel(model, *mh, box, *sh, spheres, uni, *frame, lum, converter, *buffer);
     }
     return RenderingTask{ getEnvironment().submit(std::move(buffer)),frame,block};
 }
@@ -170,10 +170,12 @@ int main() {
             //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
             model.load("Res/dragon.obj", resLoader);
             cache = std::make_unique<RC8>(model.index.size());
-            mh.reset(model.index.size(), cache->blockSize() * 3, enableSAA);
+            mh = std::make_unique<TriangleRenderingHistory>();
+            mh->reset(model.index.size(), cache->blockSize() * 3, enableSAA);
 
             box.load("Res/cube.obj", resLoader);
-            sh.reset(box.index.size());
+            sh = std::make_unique<TriangleRenderingHistory>();
+            sh->reset(box.index.size());
 
             envMap = loadCubeMap([](size_t id) {
                 const char* table[] = { "right","left","top","bottom","back","front" };
@@ -188,6 +190,8 @@ int main() {
         SwapChainT swapChain(3);
         std::queue<RenderingTask> tasks;
         {
+            Stream copyStream;
+            window.bindBackBuffer(copyStream.get());
             auto lum = DataViewer<float>(1);
             while (window.update()) {
                 const auto size = window.size();
@@ -206,18 +210,21 @@ int main() {
                         break;
                     }
                 }
-                window.present(frame->image);
-                renderGUI(window);
-                window.swapBuffers();
+                if (frame->size == size) {
+                    window.present(frame->postRT->get());
+                    renderGUI(window);
+                    window.swapBuffers();
+                }
                 swapChain.push(std::move(frame));
             }
+            window.unbindBackBuffer();
         }
         
         env.uninit();
         envMapSampler.reset();
         envMap.reset();
     }
-    catch (const std::runtime_error& e) {
+    catch (const std::exception& e) {
         puts("Catched an error:");
         puts(e.what());
         system("pause");

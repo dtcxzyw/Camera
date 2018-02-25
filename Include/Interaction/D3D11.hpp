@@ -6,41 +6,38 @@
 #undef near
 #undef far
 #include <Base/CompileEnd.hpp>
-#include <Interaction/BoundImage.hpp>
+#include <Base/Common.hpp>
+#include <Base/Math.hpp>
 
-class D3D11Image final :public BoundImage{
+class D3D11Window final:Singletion {
 private:
-    ID3D11Texture2D* mTexture;
-    void reset() override;
-public:
-    D3D11Image();
-    ~D3D11Image();
-    cudaArray_t bind(cudaStream_t stream) override;
-    void unbind(cudaStream_t stream) override;
-    ID3D11Texture2D* get() const;
-};
-
-class D3D11Window :Singletion {
-protected:
     HWND mHwnd;
     IDXGISwapChain* mSwapChain;
     ID3D11Device* mDevice;
     ID3D11DeviceContext* mDeviceContext;
     ID3D11RenderTargetView* mRenderTargetView;
+
+    cudaStream_t mStream;
+    ID3D11Resource* mFrameBuffer;
+    cudaGraphicsResource_t mRes;
+    cudaArray_t mArray;
+
     bool mEnableVSync;
     WNDCLASSEX mWc;
-    std::mutex mMutex;
     D3D11Window();
     void createRTV();
     void cleanRTV();
+    cudaArray_t getBackBuffer();
     friend D3D11Window& getD3D11Window();
 public:
-    ID3D11Device * getDevice();
-    std::mutex& getMutex();
     void reset(uvec2 size);
+    ID3D11Device* getDevice();
+
+    void bindBackBuffer(cudaStream_t stream);
+    void unbindBackBuffer();
+    void present(cudaArray_t image);
 
     void show(bool isShow);
-    void present(D3D11Image& image);
     void setVSync(bool enable);
     void swapBuffers();
     bool update();

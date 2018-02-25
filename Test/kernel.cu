@@ -186,10 +186,7 @@ void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
         auto data = pd.get(manager);
         call(&data);
     });
-    const std::shared_ptr<Resource<BuiltinRenderTargetGPU<RGBA8>>> res =
-        std::make_shared<ImageResource>(manager, fbo.image);
-    const ResourceRef<BuiltinRenderTargetGPU<RGBA8>> image{res};
-    renderFullScreen<PostUniform, BuiltinRenderTargetGPU<RGBA8>, post>(buffer, puni, image,
-                                                                       fbo.size);
+    renderFullScreen<PostUniform, BuiltinRenderTargetGPU<RGBA8>, post>(buffer, puni,
+        fbo.postRT->toTarget(),fbo.size);
     buffer.callKernel(updateLum, punidata);
 }

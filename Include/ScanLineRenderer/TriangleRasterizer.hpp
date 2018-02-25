@@ -322,15 +322,18 @@ GLOBAL void renderTrianglesGPU(unsigned int* offset, Triangle<Out>* tri, TileRef
 }
 
 struct TriangleRenderingHistory final : Uncopyable {
-    unsigned int triNum, baseSize;
+    unsigned int baseSize;
+    PinnedBuffer<unsigned int> triNum;
     bool enableSelfAdaptiveAllocation;
 
+    TriangleRenderingHistory() : baseSize(0), triNum(1), enableSelfAdaptiveAllocation(false) {}
+
     unsigned int calcBufferSize(const unsigned int maxv) const {
-        return baseSize + std::min(triNum + (triNum >> 3), maxv);
+        return baseSize + std::min(*triNum + (*triNum >> 3), maxv);
     }
 
     void reset(const unsigned int size, const unsigned int base = 2048U, const bool SAA = false) {
-        triNum = size;
+        *triNum = size;
         baseSize = base;
         enableSelfAdaptiveAllocation = SAA;
     }
@@ -357,7 +360,7 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
                                                                                    static_cast<int>(mode)));
     if (history.enableSelfAdaptiveAllocation) {
         LaunchSize triNumData(cnt, 6);
-        triNumData.download(history.triNum, buffer);
+        triNumData.download(*history.triNum, buffer);
     }
 
     //pass 2:sort triangles

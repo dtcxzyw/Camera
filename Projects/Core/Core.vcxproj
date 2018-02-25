@@ -66,11 +66,13 @@
     <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_impl_dx11.cpp" />
     <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_impl_glfw_gl3.cpp" />
     <CudaCompile Include="..\..\Src\Base\Constant.cu" />
-    <CudaCompile Include="..\..\Src\Interaction\D3D11.cu" />
-    <CudaCompile Include="..\..\Src\Interaction\BoundImage.cu" />
-    <CudaCompile Include="..\..\Src\Interaction\OpenGL.cu">
+    <ClCompile Include="..\..\Src\Interaction\D3D11.cpp">
       <FileType>Document</FileType>
-    </CudaCompile>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Interaction\BoundImage.cpp" />
+    <ClCompile Include="..\..\Src\Interaction\OpenGL.cpp">
+      <FileType>Document</FileType>
+    </ClCompile>
     <CudaCompile Include="..\..\Src\PBR\DataDrivenBRDF.cu" />
     <CudaCompile Include="..\..\Src\ScanLineRenderer\LineRasterizer.cu" />
     <CudaCompile Include="..\..\Src\ScanLineRenderer\SphereRasterizer.cu" />
@@ -131,6 +133,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <SDLCheck>false</SDLCheck>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <StructMemberAlignment>Default</StructMemberAlignment>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -186,6 +189,7 @@
       <CompileAs>CompileAsCpp</CompileAs>
       <PreprocessToFile>false</PreprocessToFile>
       <DisableSpecificWarnings>4819</DisableSpecificWarnings>
+      <StructMemberAlignment>Default</StructMemberAlignment>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

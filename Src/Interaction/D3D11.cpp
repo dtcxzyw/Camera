@@ -4,6 +4,7 @@
 #include <IMGUI/imgui.h>
 #include <IMGUI/imgui_impl_dx11.h>
 #include <Base/CompileEnd.hpp>
+#include <stdexcept>
 
 extern IMGUI_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -33,7 +34,9 @@ static void checkResult(const HRESULT res) {
     if (res != S_OK)__debugbreak();
 }
 
-D3D11Window::D3D11Window(): mRenderTargetView(nullptr), mEnableVSync(false) {
+D3D11Window::D3D11Window() : mHwnd(nullptr), mSwapChain(nullptr),mDevice(nullptr), 
+    mDeviceContext(nullptr), mRenderTargetView(nullptr), mStream(nullptr), mFrameBuffer(nullptr), 
+    mRes(nullptr), mArray(nullptr), mEnableVSync(false), mWc({}) {
     constexpr auto title = L"D3D11 Viewer";
     mWc = {
         sizeof(WNDCLASSEX), CS_CLASSDC, wndProc, 0L, 0L,
@@ -60,8 +63,8 @@ D3D11Window::D3D11Window(): mRenderTargetView(nullptr), mEnableVSync(false) {
     sd.Windowed = true;
     sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
-    //constexpr auto flag = D3D11_CREATE_DEVICE_DEBUG;
-    constexpr auto flag = 0;
+    constexpr auto flag = D3D11_CREATE_DEVICE_DEBUG;
+    //constexpr auto flag = 0;
 
     D3D_FEATURE_LEVEL level;
     const D3D_FEATURE_LEVEL featureLevelArray[1] = {D3D_FEATURE_LEVEL_11_1};
@@ -69,6 +72,8 @@ D3D11Window::D3D11Window(): mRenderTargetView(nullptr), mEnableVSync(false) {
                                       featureLevelArray, 1, D3D11_SDK_VERSION, &sd, &mSwapChain, &mDevice,
                                       &level, &mDeviceContext) != S_OK)
         throw std::runtime_error("Failed to create D3D11 device.");
+    
+    mDevice->SetExceptionMode(D3D11_RAISE_FLAG_DRIVER_INTERNAL_ERROR);
 
     createRTV();
 
@@ -89,21 +94,25 @@ void D3D11Window::createRTV() {
     RTVD.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
     checkResult(mDevice->CreateRenderTargetView(texture, &RTVD, &mRenderTargetView));
     texture->Release();
+
+    mRenderTargetView->GetResource(&mFrameBuffer);
 }
 
 void D3D11Window::cleanRTV() {
     if (mRenderTargetView) {
+        if (mFrameBuffer) {
+            if (mRes) {
+                mArray = nullptr;
+                if(mStream)checkError(cudaGraphicsUnmapResources(1, &mRes, mStream));
+                checkError(cudaGraphicsUnregisterResource(mRes));
+                mRes = nullptr;
+            }
+            mFrameBuffer->Release();
+            mFrameBuffer = nullptr;
+        }
         mRenderTargetView->Release();
         mRenderTargetView = nullptr;
     }
-}
-
-ID3D11Device* D3D11Window::getDevice() {
-    return mDevice;
-}
-
-std::mutex& D3D11Window::getMutex() {
-    return mMutex;
 }
 
 void D3D11Window::reset(const uvec2 nsiz) {
@@ -116,19 +125,51 @@ void D3D11Window::reset(const uvec2 nsiz) {
     }
 }
 
+ID3D11Device* D3D11Window::getDevice() {
+    return mDevice;
+}
+
 void D3D11Window::show(const bool isShow) {
     ShowWindow(mHwnd, isShow ? SW_SHOWDEFAULT : SW_HIDE);
     UpdateWindow(mHwnd);
 }
 
-void D3D11Window::present(D3D11Image& image) {
-    if (image.size() == size()) {
-        std::lock_guard<std::mutex> guard(mMutex);
-        ID3D11Resource* res;
-        mRenderTargetView->GetResource(&res);
-        mDeviceContext->CopyResource(res, image.get());
-        res->Release();
+void D3D11Window::bindBackBuffer(cudaStream_t stream) {
+    if (mStream)throw std::logic_error("Can not bind buffers to two streams.");
+    mStream = stream;
+}
+
+void D3D11Window::unbindBackBuffer() {
+    if (mRes) {
+        mArray = nullptr;
+        checkError(cudaGraphicsUnmapResources(1, &mRes, mStream));
+        checkError(cudaGraphicsUnregisterResource(mRes));
+        mRes = nullptr;
     }
+    mStream = nullptr;
+}
+
+void D3D11Window::present(cudaArray_t image) {
+    cudaMemcpy3DParms parms = { 0 };
+    parms.srcArray = image;
+    parms.dstArray = getBackBuffer();
+    parms.kind = cudaMemcpyDeviceToDevice;
+    const auto fsiz = size();
+    parms.extent = make_cudaExtent(fsiz.x, fsiz.y, 1);
+    parms.srcPos = parms.dstPos = make_cudaPos(0, 0, 0);
+    checkError(cudaMemcpy3DAsync(&parms, mStream));
+    checkError(cudaStreamSynchronize(mStream));
+}
+
+cudaArray_t D3D11Window::getBackBuffer() {
+    if(mRes==nullptr) {
+            checkError(cudaGraphicsD3D11RegisterResource(&mRes,
+                mFrameBuffer, cudaGraphicsRegisterFlagsNone));
+        checkError(cudaGraphicsMapResources(1, &mRes, mStream));
+    }
+    if (mArray == nullptr) 
+        checkError(cudaGraphicsSubResourceGetMappedArray(&mArray,mRes, 0, 0));
+    return mArray;
 }
 
 void D3D11Window::setVSync(const bool enable) {
@@ -168,7 +209,6 @@ void D3D11Window::newFrame() {
 }
 
 void D3D11Window::renderGUI() {
-    std::lock_guard<std::mutex> guard(mMutex);
     mDeviceContext->OMSetRenderTargets(1, &mRenderTargetView, nullptr);
     ImGui::Render();
 }
@@ -185,48 +225,4 @@ D3D11Window::~D3D11Window() {
 D3D11Window& getD3D11Window() {
     static D3D11Window window;
     return window;
-}
-
-D3D11Image::D3D11Image(): mTexture(nullptr) {}
-
-D3D11Image::~D3D11Image() {
-    destoryRes();
-    if (mTexture)mTexture->Release();
-}
-
-void D3D11Image::reset() {
-    if (mTexture) {
-        mTexture->Release();
-        mTexture = nullptr;
-    }
-    auto&& window = getD3D11Window();
-    D3D11_TEXTURE2D_DESC td;
-    td.Width = mSize.x;
-    td.Height = mSize.y;
-    td.MipLevels = 1;
-    td.ArraySize = 1;
-    td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    td.SampleDesc.Count = 1;
-    td.SampleDesc.Quality = 0;
-    td.Usage = D3D11_USAGE_DEFAULT;
-    td.BindFlags = D3D11_BIND_RENDER_TARGET;
-    td.CPUAccessFlags = 0;
-    td.MiscFlags = 0;
-    checkResult(window.getDevice()->CreateTexture2D(&td, nullptr, &mTexture));
-    checkError(cudaGraphicsD3D11RegisterResource(&mRes, mTexture,
-                                                    cudaGraphicsRegisterFlagsSurfaceLoadStore));
-}
-
-cudaArray_t D3D11Image::bind(const cudaStream_t stream) {
-    std::lock_guard<std::mutex> guard(getD3D11Window().getMutex());
-    return BoundImage::bind(stream);
-}
-
-void D3D11Image::unbind(const cudaStream_t stream) {
-    std::lock_guard<std::mutex> guard(getD3D11Window().getMutex());
-    BoundImage::unbind(stream);
-}
-
-ID3D11Texture2D* D3D11Image::get() const {
-    return mTexture;
 }

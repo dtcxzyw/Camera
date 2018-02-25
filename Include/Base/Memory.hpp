@@ -68,4 +68,12 @@ public:
     T& operator[](const size_t idx) {
         return get()[idx];
     }
+
+    T& operator*() {
+        return *get();
+    }
+
+    T operator*() const{
+        return *get();
+    }
 };

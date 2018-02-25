@@ -32,9 +32,10 @@ struct FrameBufferGPU final {
 
 struct FrameBufferCPU final {
     std::unique_ptr<BuiltinArray<RGBA>> colorBuffer;
+    std::unique_ptr<BuiltinArray<RGBA8>> postBuffer;
     std::unique_ptr<DepthBuffer<unsigned int>> depthBuffer;
     std::unique_ptr<BuiltinRenderTarget<RGBA>> colorRT;
-    D3D11Image image;
+    std::unique_ptr<BuiltinRenderTarget<RGBA8>> postRT;
     uvec2 size;
     FrameBufferGPU data;
 
@@ -43,8 +44,9 @@ struct FrameBufferCPU final {
         size = nsiz;
         colorBuffer = std::make_unique<BuiltinArray<RGBA>>(size,cudaArraySurfaceLoadStore);
         colorRT = std::make_unique<BuiltinRenderTarget<RGBA>>(*colorBuffer);
+        postBuffer = std::make_unique<BuiltinArray<RGBA8>>(size, cudaArraySurfaceLoadStore);
+        postRT = std::make_unique<BuiltinRenderTarget<RGBA8>>(*postBuffer);
         depthBuffer = std::make_unique<DepthBuffer<unsigned int>>(size);
-        image.resize(size);
         data.color = colorRT->toTarget();
         data.depth = depthBuffer->toBuffer();
         data.fsize = size;

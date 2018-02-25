@@ -23,33 +23,15 @@ private:
     std::shared_ptr<BuiltinRenderTarget<RGBA8>> mTarget;
     cudaStream_t mStream;
 public:
-    explicit ImageResourceInstance(BoundImage& image)
-        : mImage(image), mStream(nullptr) {}
-
-    void getRes(void* ptr, cudaStream_t stream) override {
-        if (!mTarget) {
-            mTarget = std::make_shared<BuiltinRenderTarget<RGBA8>>(mImage.bind(stream), mImage.size());
-            mStream = stream;
-        }
-        *reinterpret_cast<BuiltinRenderTargetGPU<RGBA8>*>(ptr) = mTarget->toTarget();
-    }
-
-    ~ImageResourceInstance() {
-        if (mTarget) {
-            mTarget.reset();
-            mImage.unbind(mStream);
-        }
-    }
+    explicit ImageResourceInstance(BoundImage& image);
+    void getRes(void* ptr, cudaStream_t stream) override;
+    ~ImageResourceInstance();
 };
 
 class ImageResource final : public Resource<BuiltinRenderTargetGPU<RGBA8>> {
 private:
     BoundImage& mImage;
 public:
-    ImageResource(ResourceManager& manager, BoundImage& image)
-        : Resource(manager), mImage(image) {}
-
-    ~ImageResource() {
-        addInstance(std::make_unique<ImageResourceInstance>(mImage));
-    }
+    ImageResource(ResourceManager& manager, BoundImage& image);
+    ~ImageResource();
 };
