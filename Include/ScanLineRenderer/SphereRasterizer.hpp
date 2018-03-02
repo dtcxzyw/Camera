@@ -91,7 +91,7 @@ CUDAINLINE vec2 raster2NDC(const vec2 p, const float ihx, const float ihy) {
 
 //in camera pos
 template <typename Uniform, typename FrameBuffer>
-using FSFS = void(*)(unsigned int id, ivec2 uv, float z, vec3 pos, vec3 dir, float r, bool inSphere,
+using FSFS = void(*)(unsigned int id, ivec2 uv, float z, vec3 pos, vec3 dir, float invr, bool inSphere,
                      vec2 pdd, const Uniform& uniform, FrameBuffer& frameBuffer);
 
 //2,4,8,16,32

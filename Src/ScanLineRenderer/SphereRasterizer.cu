@@ -56,7 +56,7 @@ GLOBAL void processSphereInfoGPU(const unsigned int size,READONLY(vec4) in, Sphe
         ref[wpos].size = tsiz;
         ref[wpos].rect = rect;
         info[wpos].id = id;
-        info[wpos].info = sphere;
+        info[wpos].info = { vec3{sphere},1.0f / sphere.w };
         info[wpos].c = length2(vec3{sphere}) - sphere.w * sphere.w;
     }
 }

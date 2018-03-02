@@ -112,14 +112,15 @@ struct TriangleProcessingArgs final {
     vec4 scissor;
     vec2 hsiz;
     int mode;
+    unsigned int maxSize;
 
     TriangleProcessingArgs(unsigned int* iCnt, Triangle<Out>* iInfo, TileRef* iOut,
-                           const vec4 iScissor, const vec2 iHsiz, const int iMode)
-        : cnt(iCnt), info(iInfo), out(iOut), scissor(iScissor), hsiz(iHsiz), mode(iMode) {}
+                           const vec4 iScissor, const vec2 iHsiz, const int iMode,const unsigned int iMaxSize)
+        : cnt(iCnt), info(iInfo), out(iOut), scissor(iScissor), hsiz(iHsiz), mode(iMode),maxSize(iMaxSize) {}
 };
 
 template <typename Out>
-CUDAINLINE void calcTriangleInfo(TriangleVert<Out> tri, const TriangleProcessingArgs<Out>& args) {
+CUDAINLINE void calcTriangleInfo(const TriangleVert<Out>& tri, const TriangleProcessingArgs<Out>& args) {
     const auto a = toRaster(tri.vert[0].pos, args.hsiz),
                b = toRaster(tri.vert[1].pos, args.hsiz),
                c = toRaster(tri.vert[2].pos, args.hsiz);
@@ -145,6 +146,7 @@ CUDAINLINE void calcTriangleInfo(TriangleVert<Out> tri, const TriangleProcessing
         ref.size = calcTileSize(rect);
         atomicInc(args.cnt + ref.size, maxv);
         ref.id = atomicInc(args.cnt + 6, maxv);
+        if(ref.id>=args.maxSize)return;
         ref.rect = rect;
         args.out[ref.id] = ref;
         args.info[ref.id] = res;
@@ -161,7 +163,7 @@ CUDAINLINE bool compareZFar(const float z, const float base) {
 }
 
 template <typename Out, CompareZ Func>
-CUDAINLINE int calcTriangleType(TriangleVert<Out> tri, const float z) {
+CUDAINLINE int calcTriangleType(const TriangleVert<Out>& tri, const float z) {
     auto type = 0;
     for (auto i = 0; i < 3; ++i)
         type += Func(tri.vert[i].pos.z, z);
@@ -177,10 +179,10 @@ CUDAINLINE uvec3 sortIndex(TriangleVert<Out> tri, uvec3 idx) {
 }
 
 template <typename Out, CompareZ Func, typename Callable>
-CUDAINLINE void clipVertT1(TriangleVert<Out> tri, const float z, Callable emit) {
-    uvec3 idx = sortIndex<Out, Func>(tri, uvec3{0, 1, 2});
-    auto a = tri.vert[idx[0]], b = tri.vert[idx[1]], c = tri.vert[idx[2]];
-    auto d = lerpZ(b, a, z), e = lerpZ(c, a, z);
+CUDAINLINE void clipVertT1(const TriangleVert<Out>& tri, const float z,const Callable& emit) {
+    const auto idx = sortIndex<Out, Func>(tri, uvec3{0, 1, 2});
+    const auto a = tri.vert[idx[0]], b = tri.vert[idx[1]], c = tri.vert[idx[2]];
+    const auto d = lerpZ(b, a, z), e = lerpZ(c, a, z);
     TriangleVert<Out> out;
     out.id = tri.id;
     if ((idx[1] + 1) % 3 == idx[2])
@@ -199,10 +201,10 @@ CUDAINLINE void clipVertT1(TriangleVert<Out> tri, const float z, Callable emit) 
 }
 
 template <typename Out, CompareZ Func, typename Callable>
-CUDAINLINE void clipVertT2(TriangleVert<Out> tri, const float z, Callable emit) {
-    uvec3 idx = sortIndex<Out, Func>(tri, uvec3{0, 1, 2});
-    auto a = tri.vert[idx[0]], b = tri.vert[idx[1]], c = tri.vert[idx[2]];
-    auto d = lerpZ(a, c, z), e = lerpZ(b, c, z);
+CUDAINLINE void clipVertT2(const TriangleVert<Out>& tri, const float z,const Callable& emit) {
+    const auto idx = sortIndex<Out, Func>(tri, uvec3{0, 1, 2});
+    const auto a = tri.vert[idx[0]], b = tri.vert[idx[1]], c = tri.vert[idx[2]];
+    const auto d = lerpZ(a, c, z), e = lerpZ(b, c, z);
     TriangleVert<Out> out;
     out.id = tri.id;
     if ((idx[2] + 1) % 3 == idx[0])
@@ -214,7 +216,7 @@ CUDAINLINE void clipVertT2(TriangleVert<Out> tri, const float z, Callable emit) 
 }
 
 template <typename Out, CompareZ Func, typename Callable>
-CUDAINLINE void clipTriangle(TriangleVert<Out> tri, const float z, Callable emit) {
+CUDAINLINE void clipTriangle(const TriangleVert<Out>& tri, const float z,const Callable& emit) {
     const auto type = calcTriangleType<Out, Func>(tri, z);
     switch (type) {
         case 0: emit(tri);
@@ -240,10 +242,10 @@ GLOBAL void processTriangles(const unsigned int size,READONLY(VertexInfo<Out>) v
     TriangleVert<Out> tri;
     tri.id = id, tri.vert[0] = vert[idx[0]], tri.vert[1] = vert[idx[1]], tri.vert[2] = vert[idx[2]];
     if (cs(id, tri.vert[0].pos, tri.vert[1].pos, tri.vert[2].pos, *uniform)) {
-        const auto emitF = [&args](TriangleVert<Out> t) {
+        const auto emitF = [&args](const TriangleVert<Out>& t) {
             calcTriangleInfo<Out>(t, args);
         };
-        const auto emitN = [far,emitF](TriangleVert<Out> t) {
+        const auto emitN = [far,emitF](const TriangleVert<Out>& t) {
             clipTriangle<Out, compareZFar, decltype(emitF)>(t, far, emitF);
         };
         clipTriangle<Out, compareZNear, decltype(emitN)>(tri, near, emitN);
@@ -339,14 +341,14 @@ struct TriangleRenderingHistory final : Uncopyable {
     }
 };
 
-template <typename Index, typename Out, typename Uniform, typename FrameBuffer,
+template <typename IndexDesc, typename Out, typename Uniform, typename FrameBuffer,
     TCSF<Uniform> cs, FSFT<Out, Uniform, FrameBuffer>... fs>
 void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
-                     Index index, const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
+                     const IndexDesc& index, const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
                      const uvec2 size, const float near, const float far, TriangleRenderingHistory& history,
                      vec4 scissor,const CullFace mode = CullFace::Back) {
     //pass 1:process triangles
-    auto psiz = history.calcBufferSize(index.size());
+    const auto psiz = history.calcBufferSize(index.size());
     //5+ext+cnt=7
     auto cnt = buffer.allocBuffer<unsigned int>(7);
     buffer.memset(cnt);
@@ -355,10 +357,11 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
     scissor = { fmax(0.5f,scissor.x),fmin(size.x - 0.5f,scissor.y),
         fmax(0.5f,scissor.z),fmin(size.y - 0.5f,scissor.w) };
     const auto hfsize = static_cast<vec2>(size) * 0.5f;
-    buffer.runKernelLinear(processTriangles<Index, Out, Uniform, cs>, index.size(), vert.get(),
-                           index, uniform.get(), near, far,
-                           buffer.makeLazyConstructor<TriangleProcessingArgs<Out>>(cnt, info, idx, scissor, hfsize,
-                                                                                   static_cast<int>(mode)));
+    const unsigned int maxSize = std::min(info.maxSize(), idx.maxSize());
+    buffer.runKernelLinear(processTriangles<IndexDesc::IndexType, Out, Uniform, cs>, index.size(),
+        vert.get(), index.get(), uniform.get(), near, far,
+        buffer.makeLazyConstructor<TriangleProcessingArgs<Out>>(cnt, info, idx, scissor, hfsize,
+            static_cast<int>(mode),maxSize));
     if (history.enableSelfAdaptiveAllocation) {
         LaunchSize triNumData(cnt, 6);
         triNumData.download(*history.triNum, buffer);

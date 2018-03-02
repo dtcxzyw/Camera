@@ -9,8 +9,6 @@
 #include <cuda_surface_types.h>
 #include <surface_indirect_functions.h>
 #include <Base/CompileEnd.hpp>
-
-#include <Base/Pipeline.hpp>
 #include <Base/DispatchSystem.hpp>
 
 template <typename T>

@@ -2,6 +2,7 @@
 #include <Base/Common.hpp>
 #include <Base/Memory.hpp>
 #include <Base/Math.hpp>
+#include <Base/Config.hpp>
 
 template<typename Func, typename... Args>
 CUDAINLINE void run(Func func,unsigned int block, unsigned int size, Args... args) {
@@ -27,6 +28,9 @@ public:
         if (size) {
             func <<<calcSize(size, mMaxThread),min(mMaxThread,size), 0, mStream >>> (size, args...);
             checkError();
+#ifdef CAMERA_LAUNCH_SYNC
+            sync();
+#endif
         }
     }
 

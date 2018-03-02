@@ -214,9 +214,9 @@ GLOBAL void renderLinesGPU(unsigned int* offset, LineInfo<Out>* tri, LineRef* id
     applyLFS<Out, Uniform, FrameBuffer, fs...>(offset, tri, idx, uniform, frameBuffer, near, invnf, scissor);
 }
 
-template <typename Index, typename Out, typename Uniform, typename FrameBuffer,
+template <typename IndexDesc, typename Out, typename Uniform, typename FrameBuffer,
     PosConverter<Uniform> toPos, FSFL<Out, Uniform, FrameBuffer>... fs>
-void renderLines(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert, Index index,
+void renderLines(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,const IndexDesc& index,
                  const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
                  const uvec2 size, const float near, const float far,vec4 scissor) {
     auto cnt = buffer.allocBuffer<unsigned int>(13);
@@ -227,8 +227,8 @@ void renderLines(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert, In
     scissor = { fmax(0.5f,scissor.x),fmin(size.x - 0.5f,scissor.y),
         fmax(0.5f,scissor.z),fmin(size.y - 0.5f,scissor.w) };
     const auto hsiz = static_cast<vec2>(size) * 0.5f;
-    buffer.runKernelLinear(processLines<Index, Out, Uniform, toPos>, lsiz, vert.get(), index, info, ref,
-                           cnt, scissor, hsiz, near, far, uniform.get());
+    buffer.runKernelLinear(processLines<IndexDesc::IndexType, Out, Uniform, toPos>, lsiz, vert.get(),
+        index.get(), info, ref, cnt, scissor, hsiz, near, far, uniform.get());
     auto sortedLines = sortLines(buffer, cnt, ref);
     cnt.earlyRelease();
     ref.earlyRelease();

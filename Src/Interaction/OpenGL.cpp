@@ -1,21 +1,58 @@
 #include <Base/CompileBegin.hpp>
 #include <GL/glew.h>
+#include <Base/CompileEnd.hpp>
 #include <Interaction/OpenGL.hpp>
+#include <Base/CompileBegin.hpp>
 #include <cuda_gl_interop.h>
 #include <IMGUI/imgui.h>
-#include <IMGUI/imgui_impl_glfw_gl3.h>
 #include <Base/CompileEnd.hpp>
+#include <stdexcept>
 
-namespace Impl {
-    static void errorCallBack(const int code, const char* str) {
-        printf("Error:code = %d reason:%s\n",code,str);
-        throw std::runtime_error(str);
-    }
+static void errorCallBack(const int code, const char* str) {
+    printf("Error:code = %d reason:%s\n",code,str);
+    throw std::runtime_error(str);
 }
 
-class GLContext final:Singletion {
+static const char* getClipboardText(void* userData) {
+    return glfwGetClipboardString(static_cast<GLFWwindow*>(userData));
+}
+
+static void setClipboardText(void* userData, const char* text) {
+    glfwSetClipboardString(static_cast<GLFWwindow*>(userData), text);
+}
+
+static void mouseButtonCallback(GLFWwindow*, const int button, const int action, int) {
+    if (action == GLFW_PRESS && button >= 0 && button < 3)
+        GLWindow::get().mPressed[button] = true;
+}
+
+static void scrollCallback(GLFWwindow*, double, const double y) {
+    GLWindow::get().mWheel += static_cast<float>(y); // Use fractional mouse wheel.
+}
+
+static void keyCallback(GLFWwindow*, const int key, int, const int action, int) {
+    auto&& io = ImGui::GetIO();
+    if (action == GLFW_PRESS)
+        io.KeysDown[key] = true;
+    if (action == GLFW_RELEASE)
+        io.KeysDown[key] = false;
+
+    io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
+    io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
+    io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
+    io.KeySuper = io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
+}
+
+void charCallback(GLFWwindow*, const unsigned int c) {
+    auto&& io = ImGui::GetIO();
+    if (c > 0 && c < 0x10000)
+        io.AddInputCharacter(static_cast<unsigned short>(c));
+}
+
+class GLContext final:public Singletion<GLContext> {
 private:
     bool mFlag;
+    friend class Singletion<GLContext>;
     GLContext():mFlag(false) {
         if (glfwInit()==GLFW_FALSE)
             throw std::runtime_error("Failed to initialize glfw.");
@@ -25,9 +62,8 @@ private:
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        glfwSetErrorCallback(Impl::errorCallBack);
+        glfwSetErrorCallback(errorCallBack);
     }
-    friend GLContext& getContext();
 public:
     void makeContext(GLFWwindow* window) {
         thread_local static GLFWwindow* current = nullptr;
@@ -48,30 +84,53 @@ public:
     }
 };
 
-static GLContext& getContext() {
-    static GLContext context;
-    return context;
-}
-
-GLWindow::GLWindow(GLWindow* share) {
-    auto& context=getContext();
-    mWindow = glfwCreateWindow(800, 600, "OpenGL Viewer", nullptr,
-        share?share->mWindow:nullptr);
+GLWindow::GLWindow() : mFBO(0), mWheel(0) {
+    auto& context = GLContext::get();
+    mWindow = glfwCreateWindow(800, 600, "OpenGL Viewer", nullptr, nullptr);
     if (!mWindow)
         throw std::runtime_error("Failed to create a window.");
     context.makeContext(mWindow);
     glfwSwapInterval(0);
     glGenFramebuffers(1, &mFBO);
+
+    auto&& io = ImGui::GetIO();
+
+    io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;
+    io.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
+    io.KeyMap[ImGuiKey_RightArrow] = GLFW_KEY_RIGHT;
+    io.KeyMap[ImGuiKey_UpArrow] = GLFW_KEY_UP;
+    io.KeyMap[ImGuiKey_DownArrow] = GLFW_KEY_DOWN;
+    io.KeyMap[ImGuiKey_PageUp] = GLFW_KEY_PAGE_UP;
+    io.KeyMap[ImGuiKey_PageDown] = GLFW_KEY_PAGE_DOWN;
+    io.KeyMap[ImGuiKey_Home] = GLFW_KEY_HOME;
+    io.KeyMap[ImGuiKey_End] = GLFW_KEY_END;
+    io.KeyMap[ImGuiKey_Delete] = GLFW_KEY_DELETE;
+    io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
+    io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
+    io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
+    io.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
+    io.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
+    io.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
+    io.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
+    io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
+    io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
+
+    io.ClipboardUserData = mWindow;
+
+    io.SetClipboardTextFn = setClipboardText;
+    io.GetClipboardTextFn = getClipboardText;
+
+    glfwSetMouseButtonCallback(mWindow, mouseButtonCallback);
+    glfwSetScrollCallback(mWindow, scrollCallback);
+    glfwSetKeyCallback(mWindow, keyCallback);
+    glfwSetCharCallback(mWindow, charCallback);
 }
 
 void GLWindow::makeContext() {
-    getContext().makeContext(mWindow);
+    GLContext::get().makeContext(mWindow);
 }
 
-void GLWindow::unmakeContext() {
-    getContext().makeContext(nullptr);
-}
-
+/*
 void GLWindow::present(GLImage& image) {
     makeContext();
     glBindFramebuffer(GL_READ_FRAMEBUFFER, mFBO);
@@ -84,6 +143,7 @@ void GLWindow::present(GLImage& image) {
         , GL_COLOR_BUFFER_BIT, GL_NEAREST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 }
+*/
 
 void GLWindow::setVSync(const bool enable) {
     makeContext();
@@ -97,9 +157,7 @@ void GLWindow::swapBuffers() {
 bool GLWindow::update() {
     makeContext();
     glfwPollEvents();
-    if (glfwWindowShouldClose(mWindow))
-        return false;
-    return true;
+    return !glfwWindowShouldClose(mWindow);
 }
 
 void GLWindow::resize(const uvec2 size) {
@@ -112,53 +170,51 @@ uvec2 GLWindow::size() const {
     return { w,h };
 }
 
-GLFWwindow* GLWindow::get() const {
-    return mWindow;
-}
-
 GLWindow::~GLWindow() {
+    makeContext();
+    ImGui::Shutdown();
+
     glDeleteFramebuffers(1, &mFBO);
     glfwDestroyWindow(mWindow);
 }
 
-GLIMGUIWindow::GLIMGUIWindow() {
-    if (!ImGui_ImplGlfwGL3_Init(mWindow,true))
-        throw std::runtime_error("Failed to setup ImGui binding.");
-}
-
-void GLIMGUIWindow::newFrame() {
+void GLWindow::newFrame() {
     makeContext();
-    ImGui_ImplGlfwGL3_NewFrame();
-}
+    auto&& io = ImGui::GetIO();
 
-void GLIMGUIWindow::renderGUI() {
-    makeContext();
-    ImGui::Render();
-}
+    int w, h,fw, fh;
+    glfwGetWindowSize(mWindow, &w, &h);
+    glfwGetFramebufferSize(mWindow, &fw, &fh);
+    io.DisplaySize = { static_cast<float>(w),static_cast<float>(h) };
+    io.DisplayFramebufferScale = { w > 0 ? (static_cast<float>(fw) / w) : 0,
+            h > 0 ? (static_cast<float>(fh) / h) : 0 };
 
-GLIMGUIWindow::~GLIMGUIWindow() {
-    makeContext();
-    ImGui_ImplGlfwGL3_Shutdown();
-}
+    io.DeltaTime = mCounter.record();
 
-GLImage::GLImage() {
-    glGenTextures(1, &mTexture);
-}
+    if (glfwGetWindowAttrib(mWindow, GLFW_FOCUSED)) {
+        if (io.WantMoveMouse) {
+            glfwSetCursorPos(mWindow, io.MousePos.x, io.MousePos.y);
+        }
+        else {
+            double mouseX, mouseY;
+            glfwGetCursorPos(mWindow, &mouseX, &mouseY);
+            io.MousePos = ImVec2(static_cast<float>(mouseX), static_cast<float>(mouseY));
+        }
+    }
 
-GLImage::~GLImage() {
-    destoryRes();
-    glDeleteTextures(1, &mTexture);
-}
+    for (auto i = 0; i < 3; i++) {
+        io.MouseDown[i] = mPressed[i] || glfwGetMouseButton(mWindow, i);
+        mPressed[i] = false;
+    }
 
-void GLImage::reset() {
-    glBindTexture(GL_TEXTURE_2D, mTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8UI, mSize.x, mSize.y
-        , 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    checkError(cudaGraphicsGLRegisterImage(&mRes, mTexture, GL_TEXTURE_2D
-        , cudaGraphicsRegisterFlagsSurfaceLoadStore));
-}
+    io.MouseWheel = mWheel;
+    mWheel = 0.0f;
 
-GLuint GLImage::get() const {
-    return mTexture;
+    // Hide OS mouse cursor if ImGui is drawing it
+    glfwSetInputMode(mWindow, GLFW_CURSOR,
+        io.MouseDrawCursor ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_NORMAL);
+
+    // Start the frame. This call will update the io.WantCaptureMouse, io.WantCaptureKeyboard flag that you can use to dispatch inputs (or not) to your application.
+    ImGui::NewFrame();
 }
 

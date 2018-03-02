@@ -8,14 +8,16 @@
 #include <Base/CompileEnd.hpp>
 #include <Base/Common.hpp>
 #include <Base/Math.hpp>
+#include <Interaction/Counter.hpp>
 
-class D3D11Window final:Singletion {
+class D3D11Window final:public Singletion<D3D11Window> {
 private:
     HWND mHwnd;
     IDXGISwapChain* mSwapChain;
     ID3D11Device* mDevice;
     ID3D11DeviceContext* mDeviceContext;
     ID3D11RenderTargetView* mRenderTargetView;
+    WNDCLASSEX mWc;
 
     cudaStream_t mStream;
     ID3D11Resource* mFrameBuffer;
@@ -23,14 +25,17 @@ private:
     cudaArray_t mArray;
 
     bool mEnableVSync;
-    WNDCLASSEX mWc;
+
+    Counter mCounter;
+
+    friend class Singletion<D3D11Window>;
+
     D3D11Window();
     void createRTV();
     void cleanRTV();
     cudaArray_t getBackBuffer();
-    friend D3D11Window& getD3D11Window();
 public:
-    void reset(uvec2 size);
+    void reset(uvec2 fsiz);
     ID3D11Device* getDevice();
 
     void bindBackBuffer(cudaStream_t stream);
@@ -44,8 +49,5 @@ public:
     void resize(uvec2 size);
     uvec2 size() const;
     void newFrame();
-    void renderGUI();
     ~D3D11Window();
 };
-
-D3D11Window& getD3D11Window();

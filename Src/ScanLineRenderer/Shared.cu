@@ -3,11 +3,17 @@
 #include <device_atomic_functions.h>
 #include <Base/CompileEnd.hpp>
 
-CUDAINLINE void cutTile(TileRef ref,unsigned int* cnt, TileRef* out) {
-    const auto by = ref.rect.z;
-    for (; ref.rect.x <= ref.rect.y; ref.rect.x += 32.0f) {
-        for (ref.rect.z = by; ref.rect.z <= ref.rect.w; ref.rect.z += 32.0f) {
-            out[atomicInc(cnt, maxv)] = ref;
+CUDAINLINE void cutTile(TileRef ref, unsigned int* cnt, TileRef* out) {
+    const auto bx=ref.rect.x,by = ref.rect.z;
+    constexpr auto step = 32.0f,invstep=1.0f/step;
+    const auto xcnt = ceil((ref.rect.y - ref.rect.x) *invstep);
+    const auto ycnt = ceil((ref.rect.w - ref.rect.z)*invstep);
+    auto base = atomicAdd(cnt, xcnt*ycnt);
+    for (auto x = 0; x < xcnt; ++x) {
+        for (auto y = 0; y < ycnt; ++y) {
+            ref.rect.x = bx + step * x;
+            ref.rect.z = by + step * y;
+            out[base++] = ref;
         }
     }
 }

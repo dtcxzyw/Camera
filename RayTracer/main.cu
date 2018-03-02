@@ -59,7 +59,6 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
     ARG(clearcoatGloss);
 #undef ARG
     ImGui::End();
-    window.renderGUI();
 }
 
 using SwapChainT = SwapChain<FrameBufferCPU>;
@@ -71,11 +70,11 @@ struct RenderingTask {
 };
 
 int main() {
-    auto&& window = getD3D11Window();
+    auto&& window = D3D11Window::get();
     setUIStyle();
     ImGui::GetIO().WantCaptureKeyboard = true;
 
-    auto&& env = getEnvironment();
+    auto&& env = Environment::get();
     env.init(GraphicsInteroperability::D3D11);
 
     try {

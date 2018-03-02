@@ -1,21 +1,81 @@
-#include <Base/CompileBegin.hpp>
 #include <Interaction/D3D11.hpp>
+#include <Base/Config.hpp>
+#include <Base/CompileBegin.hpp>
 #include <cuda_d3d11_interop.h>
 #include <IMGUI/imgui.h>
-#include <IMGUI/imgui_impl_dx11.h>
 #include <Base/CompileEnd.hpp>
 #include <stdexcept>
 
-extern IMGUI_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static LRESULT setEvent(HWND hwnd, const UINT msg, const WPARAM wParam, 
+    const LPARAM lParam) {
+    auto&& io = ImGui::GetIO();
 
-LRESULT WINAPI wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
-        return true;
+    const auto isAnyMouseButtonDown=[&io]{
+        for (auto&& x : io.MouseDown)
+            if (x)return true;
+        return false;
+    };
+
+    switch (msg) {
+    case WM_LBUTTONDOWN:
+    case WM_RBUTTONDOWN:
+    case WM_MBUTTONDOWN:
+    {
+        auto button = 0;
+        if (msg == WM_LBUTTONDOWN) button = 0;
+        if (msg == WM_RBUTTONDOWN) button = 1;
+        if (msg == WM_MBUTTONDOWN) button = 2;
+        if (!isAnyMouseButtonDown() && GetCapture() == nullptr)SetCapture(hwnd);
+        io.MouseDown[button] = true;
+        return 0;
+    }
+    case WM_LBUTTONUP:
+    case WM_RBUTTONUP:
+    case WM_MBUTTONUP:
+    {
+        auto button = 0;
+        if (msg == WM_LBUTTONUP) button = 0;
+        if (msg == WM_RBUTTONUP) button = 1;
+        if (msg == WM_MBUTTONUP) button = 2;
+        io.MouseDown[button] = false;
+        if (!isAnyMouseButtonDown() && GetCapture() == hwnd)
+            ReleaseCapture();
+        break;
+    }
+    case WM_MOUSEWHEEL:
+        io.MouseWheel += GET_WHEEL_DELTA_WPARAM(wParam) > 0 ? +1.0f : -1.0f;
+        break;
+    case WM_MOUSEMOVE:
+        io.MousePos.x = static_cast<signed short>(lParam);
+        io.MousePos.y = static_cast<signed short>(lParam >> 16);
+        break;
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+        if (wParam < 256)
+            io.KeysDown[wParam] = true;
+        break;
+    case WM_KEYUP:
+    case WM_SYSKEYUP:
+        if (wParam < 256)
+            io.KeysDown[wParam] = false;
+        break;
+    case WM_CHAR:
+        if (wParam > 0 && wParam < 0x10000)
+            io.AddInputCharacter(static_cast<unsigned short>(wParam));
+        break;
+        default: break;
+    }
+    return 0;
+}
+
+static LRESULT WINAPI wndProc(HWND hWnd, const UINT msg, const WPARAM wParam, 
+    const LPARAM lParam) {
+    if (setEvent(hWnd, msg, wParam, lParam))return true;
 
     switch (msg) {
     case WM_SIZE:
         if (wParam != SIZE_MINIMIZED) {
-            getD3D11Window().reset({LOWORD(lParam),HIWORD(lParam)});
+            D3D11Window::get().reset({LOWORD(lParam),HIWORD(lParam)});
         }
         return 0;
     case WM_SYSCOMMAND:
@@ -35,8 +95,8 @@ static void checkResult(const HRESULT res) {
 }
 
 D3D11Window::D3D11Window() : mHwnd(nullptr), mSwapChain(nullptr),mDevice(nullptr), 
-    mDeviceContext(nullptr), mRenderTargetView(nullptr), mStream(nullptr), mFrameBuffer(nullptr), 
-    mRes(nullptr), mArray(nullptr), mEnableVSync(false), mWc({}) {
+    mDeviceContext(nullptr), mRenderTargetView(nullptr), mWc({}), mStream(nullptr), 
+    mFrameBuffer(nullptr), mRes(nullptr), mArray(nullptr), mEnableVSync(false) {
     constexpr auto title = L"D3D11 Viewer";
     mWc = {
         sizeof(WNDCLASSEX), CS_CLASSDC, wndProc, 0L, 0L,
@@ -63,8 +123,11 @@ D3D11Window::D3D11Window() : mHwnd(nullptr), mSwapChain(nullptr),mDevice(nullptr
     sd.Windowed = true;
     sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
+#ifdef CAMERA_D3D11_ENABLE_DEBUG_LAYER
     constexpr auto flag = D3D11_CREATE_DEVICE_DEBUG;
-    //constexpr auto flag = 0;
+#else
+    constexpr auto flag = 0;
+#endif
 
     D3D_FEATURE_LEVEL level;
     const D3D_FEATURE_LEVEL featureLevelArray[1] = {D3D_FEATURE_LEVEL_11_1};
@@ -77,8 +140,28 @@ D3D11Window::D3D11Window() : mHwnd(nullptr), mSwapChain(nullptr),mDevice(nullptr
 
     createRTV();
 
-    if (!ImGui_ImplDX11_Init(mHwnd, mDevice, mDeviceContext))
-        throw std::runtime_error("Failed to setup ImGui binding.");
+    //keyboard mapping
+    auto&& io = ImGui::GetIO();
+    io.KeyMap[ImGuiKey_Tab] = VK_TAB;
+    io.KeyMap[ImGuiKey_LeftArrow] = VK_LEFT;
+    io.KeyMap[ImGuiKey_RightArrow] = VK_RIGHT;
+    io.KeyMap[ImGuiKey_UpArrow] = VK_UP;
+    io.KeyMap[ImGuiKey_DownArrow] = VK_DOWN;
+    io.KeyMap[ImGuiKey_PageUp] = VK_PRIOR;
+    io.KeyMap[ImGuiKey_PageDown] = VK_NEXT;
+    io.KeyMap[ImGuiKey_Home] = VK_HOME;
+    io.KeyMap[ImGuiKey_End] = VK_END;
+    io.KeyMap[ImGuiKey_Delete] = VK_DELETE;
+    io.KeyMap[ImGuiKey_Backspace] = VK_BACK;
+    io.KeyMap[ImGuiKey_Enter] = VK_RETURN;
+    io.KeyMap[ImGuiKey_Escape] = VK_ESCAPE;
+    io.KeyMap[ImGuiKey_A] = 'A';
+    io.KeyMap[ImGuiKey_C] = 'C';
+    io.KeyMap[ImGuiKey_V] = 'V';
+    io.KeyMap[ImGuiKey_X] = 'X';
+    io.KeyMap[ImGuiKey_Y] = 'Y';
+    io.KeyMap[ImGuiKey_Z] = 'Z';
+
 }
 
 void D3D11Window::createRTV() {
@@ -115,13 +198,11 @@ void D3D11Window::cleanRTV() {
     }
 }
 
-void D3D11Window::reset(const uvec2 nsiz) {
-    if (size() != nsiz) {
-        ImGui_ImplDX11_InvalidateDeviceObjects();
+void D3D11Window::reset(const uvec2 fsiz) {
+    if (size() != fsiz) {
         cleanRTV();
-        checkResult(mSwapChain->ResizeBuffers(0, nsiz.x, nsiz.y, DXGI_FORMAT_UNKNOWN, 0));
+        checkResult(mSwapChain->ResizeBuffers(0, fsiz.x, fsiz.y, DXGI_FORMAT_UNKNOWN, 0));
         createRTV();
-        ImGui_ImplDX11_CreateDeviceObjects();
     }
 }
 
@@ -205,24 +286,35 @@ uvec2 D3D11Window::size() const {
 }
 
 void D3D11Window::newFrame() {
-    ImGui_ImplDX11_NewFrame();
-}
+    auto&& io = ImGui::GetIO();
 
-void D3D11Window::renderGUI() {
-    mDeviceContext->OMSetRenderTargets(1, &mRenderTargetView, nullptr);
-    ImGui::Render();
+    const auto fsiz = size();
+    io.DisplaySize = {static_cast<float>(fsiz.x), static_cast<float>(fsiz.y)};
+
+    io.DeltaTime = mCounter.record();
+
+    // Read keyboard modifiers inputs
+    io.KeyCtrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+    io.KeyShift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+    io.KeyAlt = (GetKeyState(VK_MENU) & 0x8000) != 0;
+    io.KeySuper = false;
+
+    if (io.WantMoveMouse) {
+        POINT pos = {static_cast<LONG>(io.MousePos.x),static_cast<LONG>(io.MousePos.y) };
+        ClientToScreen(mHwnd, &pos);
+        SetCursorPos(pos.x, pos.y);
+    }
+
+    if (io.MouseDrawCursor)SetCursor(nullptr);
+
+    ImGui::NewFrame();
 }
 
 D3D11Window::~D3D11Window() {
-    ImGui_ImplDX11_Shutdown();
+    ImGui::Shutdown();
     cleanRTV();
     mSwapChain->Release();
     mDeviceContext->Release();
     mDevice->Release();
     UnregisterClass(L"D3D11 Viewer", mWc.hInstance);
-}
-
-D3D11Window& getD3D11Window() {
-    static D3D11Window window;
-    return window;
 }

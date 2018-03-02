@@ -15,6 +15,7 @@
     <ClInclude Include="..\..\Include\Base\Common.hpp" />
     <ClInclude Include="..\..\Include\Base\CompileBegin.hpp" />
     <ClInclude Include="..\..\Include\Base\CompileEnd.hpp" />
+    <ClInclude Include="..\..\Include\Base\Config.hpp" />
     <ClInclude Include="..\..\Include\Base\Constant.hpp" />
     <ClInclude Include="..\..\Include\Base\DataSet.hpp" />
     <ClInclude Include="..\..\Include\Base\DispatchSystem.hpp" />
@@ -23,8 +24,8 @@
     <ClInclude Include="..\..\Include\Base\Pipeline.hpp" />
     <ClInclude Include="..\..\Include\Base\Math.hpp" />
     <ClInclude Include="..\..\Include\Base\Queue.hpp" />
-    <ClInclude Include="..\..\Include\Interaction\D3D11.hpp" />
-    <ClInclude Include="..\..\Include\Interaction\BoundImage.hpp" />
+    <ClInclude Include="..\..\Include\Interaction\Counter.hpp" />
+    <ClInclude Include="..\..\Include\Interaction\SoftwareRenderer.hpp" />
     <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp" />
     <ClInclude Include="..\..\Include\Interaction\SwapChain.hpp" />
     <ClInclude Include="..\..\Include\IO\Image.hpp" />
@@ -37,6 +38,7 @@
     <ClInclude Include="..\..\Include\PostProcess\ToneMapping.hpp" />
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\DepthBuffer.hpp" />
+    <ClInclude Include="..\..\Include\ScanLineRenderer\IndexDescriptor.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\LineRasterizer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\PointRasterizer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\PostProcess.hpp" />
@@ -49,8 +51,6 @@
     <ClInclude Include="..\..\Include\Scene\ECS.hpp" />
     <ClInclude Include="..\..\ThirdParty\IMGUI\imconfig.h" />
     <ClInclude Include="..\..\ThirdParty\IMGUI\imgui.h" />
-    <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_impl_dx11.h" />
-    <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_impl_glfw_gl3.h" />
     <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_internal.h" />
   </ItemGroup>
   <ItemGroup>
@@ -59,20 +59,19 @@
     <ClCompile Include="..\..\Src\Base\Environment.cpp" />
     <ClCompile Include="..\..\Src\Base\Memory.cpp" />
     <ClCompile Include="..\..\Src\Base\Pipeline.cpp" />
+    <ClCompile Include="..\..\Src\Interaction\Counter.cpp" />
     <ClCompile Include="..\..\Src\IO\Model.cpp" />
     <ClCompile Include="..\..\Src\Scene\ECS.cpp" />
     <ClCompile Include="..\..\ThirdParty\IMGUI\imgui.cpp" />
     <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_draw.cpp" />
-    <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_impl_dx11.cpp" />
-    <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_impl_glfw_gl3.cpp" />
     <CudaCompile Include="..\..\Src\Base\Constant.cu" />
     <ClCompile Include="..\..\Src\Interaction\D3D11.cpp">
       <FileType>Document</FileType>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Interaction\BoundImage.cpp" />
     <ClCompile Include="..\..\Src\Interaction\OpenGL.cpp">
       <FileType>Document</FileType>
     </ClCompile>
+    <CudaCompile Include="..\..\Src\Interaction\SoftwareRenderer.cu" />
     <CudaCompile Include="..\..\Src\PBR\DataDrivenBRDF.cu" />
     <CudaCompile Include="..\..\Src\ScanLineRenderer\LineRasterizer.cu" />
     <CudaCompile Include="..\..\Src\ScanLineRenderer\SphereRasterizer.cu" />

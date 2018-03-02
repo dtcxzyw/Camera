@@ -5,6 +5,7 @@
 #include <ScanLineRenderer/LineRasterizer.hpp>
 #include <ScanLineRenderer/PointRasterizer.hpp>
 #include <ScanLineRenderer/SphereRasterizer.hpp>
+#include <ScanLineRenderer/IndexDescriptor.hpp>
 
 CUDAINLINE vec3 toPos(const vec3 p, const Uniform& u) {
     return {p.x * u.mul.x, p.y * u.mul.y, -p.z};
@@ -23,14 +24,9 @@ CUDAINLINE void VS(VI in, const Uniform& uniform, vec3& cpos, OI& out) {
     cpos = mat4(mat3(uniform.V)) * wp;
 }
 
-CUDAINLINE void setSkyPoint(unsigned int, ivec2 uv, float, const OI&, const OI&, const OI&,
-                            const Uniform&, FrameBufferGPU& fbo) {
-    fbo.depth.set(uv, 0xffffff00);
-}
-
 CUDAINLINE void drawSky(unsigned int, ivec2 uv, float, const OI& out, const OI&, const OI&,
                         const Uniform& uniform, FrameBufferGPU& fbo) {
-    if (fbo.depth.get(uv) == 0xffffff00) {
+    if (fbo.depth.get(uv) == 0xffffffff) {
         const vec3 p = out.get<Pos>();
         fbo.color.set(uv, uniform.sampler.getCubeMap(p));
         //fbo.color.set(uv, uniform.sampler.get(calcHDRUV(p)));
@@ -96,7 +92,7 @@ CUDAINLINE void drawPoint(unsigned int, ivec2 uv, float z, const OI&,
 CUDAINLINE void post(ivec2 NDC, const PostUniform& uni, BuiltinRenderTargetGPU<RGBA8> out) {
     RGB c = uni.in.color.get(NDC);
     const auto lum = luminosity(c);
-    if (uni.in.depth.get(NDC) < 0xffffff00) {
+    if (uni.in.depth.get(NDC) < 0xffffffff) {
         if (lum > 0.0f) {
             atomicAdd(&uni.sum->first, log(lum));
             atomicInc(&uni.sum->second, maxv);
@@ -112,23 +108,24 @@ GLOBAL void updateLum(const PostUniform uniform) {
     *uniform.lum = calcLum(uniform.sum->first / (uniform.sum->second + 1));
 }
 
-template <VSF<VI, OI, Uniform> vs, TCSF<Uniform> cs, FSFT<OI, Uniform, FrameBufferGPU> ds,
-    FSFT<OI, Uniform, FrameBufferGPU> fs>
+template <VSF<VI, OI, Uniform> vs, TCSF<Uniform> cs,FSFT<OI, Uniform, FrameBufferGPU>... fs>
 void renderMesh(const StaticMesh& model, const MemoryRef<Uniform>& uniform,
-    const MemoryRef<FrameBufferGPU>& frameBuffer, uvec2 size, const Camera::RasterPosConverter converter,
-    const CullFace mode, TriangleRenderingHistory& history, const vec4 scissor,
-    CommandBuffer& buffer) {
+                const MemoryRef<FrameBufferGPU>& frameBuffer, uvec2 size, const Camera::RasterPosConverter converter,
+                const CullFace mode, TriangleRenderingHistory& history, const vec4 scissor,
+                CommandBuffer& buffer) {
     auto vert = calcVertex<VI, OI, Uniform, vs>(buffer, model.vert, uniform);
-    renderTriangles<SeparateTrianglesWithIndex, OI, Uniform, FrameBufferGPU, cs, ds, fs>(buffer, 
-        vert, SeparateTrianglesWithIndex{ model.index }, uniform, frameBuffer, size,
+    const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(model.index.size(), model.index);
+    renderTriangles<decltype(index), OI, Uniform, FrameBufferGPU, cs, fs...>(buffer, 
+        vert, index, uniform, frameBuffer, size,
         converter.near, converter.far, history, scissor, mode);
     /*
     renderPoints<OI, Uniform, FrameBufferGPU, toPos, setPoint, drawPoint>(buffer,
         vert,uniform, frameBuffer, size, converter.near, converter.far);
     */
     /*
-    renderLines<LineLoops,OI, Uniform, FrameBufferGPU, toPos, setPoint, drawPoint>(buffer,
-        vert, LineLoops(vert.size()) ,uniform,frameBuffer, size, converter.near,converter.far);
+    const auto index = makeIndexDescriptor<LineLoops>(model.index.size(), model.index);
+    renderLines<decltype(index),OI, Uniform, FrameBufferGPU, toPos, setPoint, drawPoint>(buffer,
+        vert,index ,uniform,frameBuffer, size, converter.near,converter.far);
     */
 }
 
@@ -137,16 +134,15 @@ CUDAINLINE vec4 vsSphere(vec4 sp, const Uniform& uniform) {
 }
 
 CUDAINLINE void setSpherePoint(unsigned int, ivec2 uv, float z, vec3, vec3, float, bool,
-    vec2, const Uniform&, FrameBufferGPU& fbo) {
+                               vec2, const Uniform&, FrameBufferGPU& fbo) {
     fbo.depth.set(uv, z * maxdu);
 }
 
-CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, vec3 p, vec3 dir, float r, 
-    bool inSphere,vec2, const Uniform& u, FrameBufferGPU& fbo) {
+CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, vec3 p, vec3 dir, float invr, 
+                                bool inSphere,vec2, const Uniform& u, FrameBufferGPU& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
-        const auto invR = 1.0f / r;
         const vec3 pos = u.invV*vec4(p,1.0f);
-        const auto normalizedDir = u.normalInvV*dir*invR;
+        const auto normalizedDir = u.normalInvV*dir*invr;
         const auto N = calcSphereNormal(normalizedDir,inSphere);
         const auto Y = calcSphereBiTangent(N);
         const auto X = calcSphereTangent(N, Y);
@@ -173,11 +169,11 @@ void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
     auto frameBuffer = fbo.getData(buffer);
     const vec4 scissor = { 0.0f,fbo.size.x,0.0f,fbo.size.y };
     renderMesh<VSM, CSM, setModel, drawModel>(model, uniform, frameBuffer, fbo.size, 
-        converter, CullFace::Back, mh,scissor,buffer);
+                                              converter, CullFace::Back, mh,scissor,buffer);
     renderSpheres<Uniform,FrameBufferGPU,vsSphere,setSpherePoint,drawSpherePoint>(buffer,
-        spheres,uniform,frameBuffer,fbo.size,converter.near,converter.far,converter.mul,scissor);
-    renderMesh<VS, CS, setSkyPoint, drawSky>(skybox, uniform, frameBuffer, fbo.size, converter, 
-        CullFace::Front, sh,scissor,buffer);
+                                                                                  spheres,uniform,frameBuffer,fbo.size,converter.near,converter.far,converter.mul,scissor);
+    renderMesh<VS, CS, drawSky>(skybox, uniform, frameBuffer, fbo.size, converter, 
+                                CullFace::Front, sh,scissor,buffer);
     auto puni = buffer.allocConstant<PostUniform>();
     auto sum = buffer.allocBuffer<std::pair<float, unsigned int>>();
     buffer.memset(sum);
@@ -189,6 +185,6 @@ void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
         call(&data);
     });
     renderFullScreen<PostUniform, BuiltinRenderTargetGPU<RGBA8>, post>(buffer, puni,
-        fbo.postRT->toTarget(),fbo.size);
+                                                                       fbo.postRT->toTarget(),fbo.size);
     buffer.callKernel(updateLum, punidata);
 }

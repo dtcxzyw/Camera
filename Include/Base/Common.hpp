@@ -22,15 +22,20 @@ struct Uncopyable {
     Uncopyable& operator=(Uncopyable&&) = default;
 };
 
+template<typename T>
 class Singletion {
 protected:
     Singletion() = default;
-    ~Singletion() = default;
 public:
     Singletion(const Singletion&) = delete;
     Singletion(Singletion&&) = delete;
     Singletion& operator=(const Singletion&) = delete;
     Singletion& operator=(Singletion&&) = delete;
+    ~Singletion() = default;
+    static T& get() {
+        static T singletion;
+        return singletion;
+    }
 };
 
 void checkError(cudaError_t error);

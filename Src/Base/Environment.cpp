@@ -1,11 +1,15 @@
 #include <Base/Environment.hpp>
 #include <Base/DispatchSystem.hpp>
 #include <stdexcept>
+#ifdef CAMERA_D3D11_SUPPORT
 #include <Interaction/D3D11.hpp>
+#endif
+#ifdef CAMERA_OPENGL_SUPPORT
 #include <Base/CompileBegin.hpp>
 #include <cuda_gl_interop.h>
 #include <cuda_d3d11_interop.h>
 #include <Base/CompileEnd.hpp>
+#endif
 
 Environment::Environment() : mRunning(true) {}
 
@@ -30,10 +34,15 @@ void Environment::init(const GraphicsInteroperability interop) {
     else {
         unsigned int deviceCount;
         int device[256];
+#ifdef CAMERA_D3D11_SUPPORT
         if (interop == GraphicsInteroperability::D3D11)
             checkError(cudaD3D11GetDevices(&deviceCount, device, 256,
-                getD3D11Window().getDevice(), cudaD3D11DeviceListAll));
-        else checkError(cudaGLGetDevices(&deviceCount, device, 256, cudaGLDeviceListAll));
+                D3D11Window::get().getDevice(), cudaD3D11DeviceListAll));
+#endif
+#ifdef CAMERA_OPENGL_SUPPORT
+        if(interop==GraphicsInteroperability::OpenGL)
+            checkError(cudaGLGetDevices(&deviceCount, device, 256, cudaGLDeviceListAll));
+#endif
         devices.assign(device, device + deviceCount);
     }
     int firstDevice = -1;
@@ -78,9 +87,4 @@ void Environment::uninit() {
 
 Environment::~Environment() {
     resetDevice();
-}
-
-Environment& getEnvironment() {
-    static Environment env;
-    return env;
 }

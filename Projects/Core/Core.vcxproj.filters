@@ -84,9 +84,6 @@
     <ClInclude Include="..\..\ThirdParty\IMGUI\imgui.h">
       <Filter>Interaction\IMGUI</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_impl_glfw_gl3.h">
-      <Filter>Interaction\IMGUI</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_internal.h">
       <Filter>Interaction\IMGUI</Filter>
     </ClInclude>
@@ -138,14 +135,8 @@
     <ClInclude Include="..\..\Include\Base\Environment.hpp">
       <Filter>Base</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Interaction\D3D11.hpp">
-      <Filter>Interaction</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Interaction\SwapChain.hpp">
       <Filter>Interaction</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_impl_dx11.h">
-      <Filter>Interaction\IMGUI</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\ScanLineRenderer\SphereRasterizer.hpp">
       <Filter>ScanLineRenderer</Filter>
@@ -153,8 +144,17 @@
     <ClInclude Include="..\..\Include\ScanLineRenderer\Shared.hpp">
       <Filter>ScanLineRenderer</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Interaction\BoundImage.hpp">
+    <ClInclude Include="..\..\Include\Base\Config.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Interaction\Counter.hpp">
       <Filter>Interaction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Interaction\SoftwareRenderer.hpp">
+      <Filter>Interaction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\ScanLineRenderer\IndexDescriptor.hpp">
+      <Filter>ScanLineRenderer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -165,9 +165,6 @@
       <Filter>IO</Filter>
     </ClCompile>
     <ClCompile Include="..\..\ThirdParty\IMGUI\imgui.cpp">
-      <Filter>Interaction\IMGUI</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_impl_glfw_gl3.cpp">
       <Filter>Interaction\IMGUI</Filter>
     </ClCompile>
     <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_draw.cpp">
@@ -188,10 +185,13 @@
     <ClCompile Include="..\..\Src\Base\Environment.cpp">
       <Filter>Base</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_impl_dx11.cpp">
-      <Filter>Interaction\IMGUI</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Interaction\OpenGL.cpp">
+      <Filter>Interaction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Interaction\D3D11.cpp">
+      <Filter>Interaction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Interaction\Counter.cpp">
       <Filter>Interaction</Filter>
     </ClCompile>
   </ItemGroup>
@@ -208,16 +208,13 @@
     <CudaCompile Include="..\..\Src\ScanLineRenderer\LineRasterizer.cu">
       <Filter>ScanLineRenderer</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\Src\Interaction\D3D11.cu">
-      <Filter>Interaction</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\Src\ScanLineRenderer\SphereRasterizer.cu">
       <Filter>ScanLineRenderer</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\Src\ScanLineRenderer\Shared.cu">
       <Filter>ScanLineRenderer</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\Src\Interaction\BoundImage.cpp">
+    <CudaCompile Include="..\..\Src\Interaction\SoftwareRenderer.cu">
       <Filter>Interaction</Filter>
     </CudaCompile>
   </ItemGroup>

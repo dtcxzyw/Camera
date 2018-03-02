@@ -7,6 +7,7 @@
 #include <Base/CompileBegin.hpp>
 #include <IMGUI/imgui.h>
 #include <Base/CompileEnd.hpp>
+#include <Interaction/SoftwareRenderer.hpp>
 
 using namespace std::chrono_literals;
 
@@ -72,7 +73,6 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
     ARG(clearcoatGloss);
 #undef ARG
     ImGui::End();
-    window.renderGUI();
 }
 
 Uniform getUniform(float, const vec2 mul) {
@@ -139,7 +139,9 @@ auto addTask(SwapChainT::SharedFrame frame, const uvec2 size,float* lum) {
         buffer->memcpy(uni, [uniform](auto call) {call(&uniform); });
         kernel(model, *mh, box, *sh, spheres, uni, *frame, lum, converter, *buffer);
     }
-    return RenderingTask{ getEnvironment().submit(std::move(buffer)),frame,block};
+    renderGUI(D3D11Window::get());
+    SoftwareRenderer::get().render(*buffer, *frame->postRT);
+    return RenderingTask{ Environment::get().submit(std::move(buffer)),frame,block};
 }
 
 void uploadSpheres() {
@@ -149,86 +151,82 @@ void uploadSpheres() {
 }
 
 int main() {
-    auto&& window=getD3D11Window();
+    auto&& window=D3D11Window::get();
     window.show(true);
     setUIStyle();
     ImGui::GetIO().WantCaptureKeyboard = true;
 
-    auto&& env = getEnvironment();
+    auto&& env = Environment::get();
     env.init(GraphicsInteroperability::D3D11);
 
-    try {
-        camera.near = 1.0f;
-        camera.far = 200.0f;
-        camera.filmAperture = { 0.980f,0.735f };
-        camera.mode = Camera::FitResolutionGate::Overscan;
-        camera.focalLength = 15.0f;
+    camera.near = 1.0f;
+    camera.far = 200.0f;
+    camera.filmAperture = { 0.980f,0.735f };
+    camera.mode = Camera::FitResolutionGate::Overscan;
+    camera.focalLength = 15.0f;
 
-        {
-            Stream resLoader;
-            uploadSpheres();
-            //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
-            model.load("Res/dragon.obj", resLoader);
-            cache = std::make_unique<RC8>(model.index.size());
-            mh = std::make_unique<TriangleRenderingHistory>();
-            mh->reset(model.index.size(), cache->blockSize() * 3, enableSAA);
+    {
+        Stream resLoader;
 
-            box.load("Res/cube.obj", resLoader);
-            sh = std::make_unique<TriangleRenderingHistory>();
-            sh->reset(box.index.size());
+        SoftwareRenderer::get().init(resLoader);
 
-            envMap = loadCubeMap([](size_t id) {
-                const char* table[] = { "right","left","top","bottom","back","front" };
-                return std::string("Res/skybox/") + table[id] + ".jpg";
-            }, resLoader);
-            //envMap = loadRGBA("Res/Helipad_Afternoon/LA_Downtown_Afternoon_Fishing_B_8k.jpg",resLoader);
-            envMapSampler = std::make_shared<BuiltinSampler<RGBA>>(envMap->get());
-        }
+        uploadSpheres();
+        //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
+        model.load("Res/dragon.obj", resLoader);
+        cache = std::make_unique<RC8>(model.index.size());
+        mh = std::make_unique<TriangleRenderingHistory>();
+        mh->reset(model.index.size(), cache->blockSize() * 3, enableSAA);
 
-        arg.baseColor = vec3{220,223,227}/255.0f;
+        box.load("Res/cube.obj", resLoader);
+        sh = std::make_unique<TriangleRenderingHistory>();
+        sh->reset(box.index.size());
 
-        SwapChainT swapChain(3);
-        std::queue<RenderingTask> tasks;
-        {
-            Stream copyStream;
-            window.bindBackBuffer(copyStream.get());
-            auto lum = DataViewer<float>(1);
-            while (window.update()) {
-                const auto size = window.size();
-                if (size.x == 0 || size.y == 0) {
-                    std::this_thread::sleep_for(1ms);
-                    continue;
-                }
-                SwapChainT::SharedFrame frame;
-                while (true) {
-                    if (!swapChain.empty())
-                        tasks.push(addTask(swapChain.pop(), size, lum.begin()));
-                    if (!tasks.empty() && tasks.front().future.finished()) {
-                        frame = tasks.front().frame;
-                        cache->push(tasks.front().block);
-                        tasks.pop();
-                        break;
-                    }
-                }
-                if (frame->size == size) {
-                    window.present(frame->postRT->get());
-                    renderGUI(window);
-                    window.swapBuffers();
-                }
-                swapChain.push(std::move(frame));
+        envMap = loadCubeMap([](size_t id) {
+            const char* table[] = { "right","left","top","bottom","back","front" };
+            return std::string("Res/skybox/") + table[id] + ".jpg";
+        }, resLoader);
+        //envMap = loadRGBA("Res/Helipad_Afternoon/LA_Downtown_Afternoon_Fishing_B_8k.jpg",resLoader);
+        envMapSampler = std::make_shared<BuiltinSampler<RGBA>>(envMap->get());
+    }
+
+    arg.baseColor = vec3{220,223,227}/255.0f;
+
+    SwapChainT swapChain(3);
+    std::queue<RenderingTask> tasks;
+    {
+        Stream copyStream;
+        window.bindBackBuffer(copyStream.get());
+        auto lum = DataViewer<float>(1);
+        while (window.update()) {
+            const auto size = window.size();
+            if (size.x == 0 || size.y == 0) {
+                std::this_thread::sleep_for(1ms);
+                continue;
             }
-            window.unbindBackBuffer();
+            SwapChainT::SharedFrame frame;
+            while (true) {
+                if (!swapChain.empty())
+                    tasks.push(addTask(swapChain.pop(), size, lum.begin()));
+                if (!tasks.empty() && tasks.front().future.finished()) {
+                    frame = tasks.front().frame;
+                    cache->push(tasks.front().block);
+                    tasks.pop();
+                    break;
+                }
+            }
+            if (frame->size == size) {
+                window.present(frame->postRT->get());
+                window.swapBuffers();
+            }
+            swapChain.push(std::move(frame));
         }
+        window.unbindBackBuffer();
+    }
         
-        env.uninit();
-        envMapSampler.reset();
-        envMap.reset();
-    }
-    catch (const std::exception& e) {
-        puts("Catched an error:");
-        puts(e.what());
-        system("pause");
-    }
+    env.uninit();
+    SoftwareRenderer::get().uninit();
+    envMapSampler.reset();
+    envMap.reset();
     return 0;
 }
 

@@ -9,6 +9,12 @@ inline size_t calcSizeLevel(const size_t size) {
     return -1;
 }
 
+template<typename T>
+size_t calcMaxBufferSize(const size_t size) {
+    auto level = calcSizeLevel(size*sizeof(T));
+    return (1 << level) / sizeof(T);
+}
+
 class GlobalMemoryDeleter final {
 private:
     size_t mSize;

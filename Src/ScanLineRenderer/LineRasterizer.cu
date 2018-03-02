@@ -1,15 +1,18 @@
 #include <ScanLineRenderer/LineRasterizer.hpp>
 
 CUDAINLINE void cutLine(LineRef ref, unsigned int* cnt, LineRef* out) {
-    const auto dis = ref.len;
     const auto offset = ref.range.x;
-    const auto mul = ref.range.y / dis;
-    constexpr auto step = 1024.0f;
-    for(auto x=0.0f;x<=dis;x+=step) {
-        const auto y = fmin(dis,x+step);
-        ref.range.x =x*mul+offset;
-        ref.range.y =(y-x) *mul;
-        out[atomicInc(cnt,maxv)]=ref;
+    const auto invdis = 1.0f / ref.len;
+    const auto mul = ref.range.y *invdis;
+    constexpr auto step = 1024.0f, invstep = 1.0f / step;
+    const auto refCnt = ceil(ref.len *invstep);
+    auto base = atomicAdd(cnt, refCnt);
+    for (auto i = 0; i < refCnt; ++i) {
+        const auto x = step * i;
+        const auto y = fmin(ref.len, x + step);
+        ref.range.x = x * mul + offset;
+        ref.range.y = (y - x) *mul;
+        out[base++] = ref;
     }
 }
 

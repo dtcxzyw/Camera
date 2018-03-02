@@ -2,7 +2,7 @@
 #include <vector>
 #include <algorithm>
 
-class MemoryPool final : Singletion {
+class MemoryPool final : Uncopyable {
 private:
     static constexpr auto timeBlock = 1024U;
     std::vector<void*> mPool[41];

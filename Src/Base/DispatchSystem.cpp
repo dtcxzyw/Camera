@@ -146,6 +146,9 @@ namespace Impl {
 
 void ResourceManager::registerResource(ID id, std::unique_ptr<ResourceInstance>&& instance) {
     ++mRegisteredResourceCount;
+#ifdef CAMERA_RESOURCE_CHECK
+    mUnknownResource.erase(id);
+#endif
     mResources.emplace(id,std::make_pair(mOperatorCount,std::move(instance)));
 }
 
@@ -232,7 +235,11 @@ void ResourceManager::gc(const ID time) {
 }
 
 ID ResourceManager::allocResource() {
-    return ++mResourceCount;
+    ++mResourceCount;
+#ifdef CAMERA_RESOURCE_CHECK
+    mUnknownResource.emplace(mResourceCount);
+#endif
+    return mResourceCount;
 }
 
 ID ResourceManager::getOperatorPID() {

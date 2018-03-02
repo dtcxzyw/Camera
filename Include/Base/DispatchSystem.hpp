@@ -1,4 +1,5 @@
 #pragma once
+#include <Base/Config.hpp>
 #include <Base/Pipeline.hpp>
 #include <map>
 #include <queue>
@@ -7,6 +8,9 @@
 #include <tuple>
 #include <functional>
 #include <mutex>
+#ifdef CAMERA_RESOURCE_CHECK
+#include <set>
+#endif 
 
 class CommandBuffer;
 class ResourceManager;
@@ -164,6 +168,10 @@ public:
     size_t size() const {
         return DMRef::size() / sizeof(T);
     }
+
+    size_t maxSize() const {
+        return calcMaxBufferSize<T>(size());
+    }
 };
 
 namespace Impl {
@@ -234,19 +242,20 @@ namespace Impl {
     private:
         std::function<T*(ResourceManager&)> mClosure;
     public:
-        explicit DataPtrHelper(const MemoryRef<T>& ref) {
-            auto rval = castID(ref);
-            mClosure = [rval](ResourceManager& manager) {
+        explicit DataPtrHelper(const MemoryRef<T>& ref):mClosure(
+            [rval = castID(ref)](ResourceManager& manager) {
                 return cast(rval, manager);
-            };
-        }
+            }){}
 
-        explicit DataPtrHelper(const DataViewer<T>& data) {
-            auto ptr = data.begin();
-            mClosure = [ptr](ResourceManager&) {
+        explicit DataPtrHelper(T* ptr) :mClosure(
+            [ptr](ResourceManager&) {
                 return ptr;
-            };
-        }
+            }) {}
+
+        explicit DataPtrHelper(const DataPtrHelper& rhs, const size_t offset):mClosure(
+            [closure=rhs.mClosure,offset](ResourceManager& manager) {
+                return closure(manager) + offset;
+            }){}
 
         T* get(ResourceManager& manager) {
             return mClosure(manager);
@@ -256,23 +265,31 @@ namespace Impl {
     template <typename T>
     class DataPtr final {
     private:
-        std::function<DataPtrHelper<T>()> mClosure;
-        const size_t mSize;
+        std::function<DataPtrHelper<T>()> mHolder;
+        size_t mSize;
     public:
-        DataPtr(const MemoryRef<T>& ref): mSize(ref.size()) {
-            mClosure = [ref] {
-                return DataPtrHelper<T>(ref);
-            };
-        }
+        DataPtr(const MemoryRef<T>& ref) : mHolder([ref] {
+            return DataPtrHelper<T>(ref);}), mSize(ref.size()){}
 
-        DataPtr(const DataViewer<T>& data): mSize(data.size()) {
-            mClosure = [data] {
-                return DataPtrHelper<T>(data);
+        DataPtr(T* ptr, const size_t size) : mHolder ( [ptr] {
+                return DataPtrHelper<T>(ptr);
+        }), mSize(size) {}
+
+        DataPtr(const DataViewer<T>& data) :DataPtr(data.begin(), data.size()) {}
+
+        DataPtr(std::nullptr_t):DataPtr(nullptr,0){}
+
+        DataPtr operator+(const size_t offset) const {
+            DataPtr res = nullptr;
+            res.mHolder = [=] {
+                return DataPtrHelper<T>(mHolder(), offset);
             };
+            res.mSize = mSize - offset;
+            return res;
         }
 
         auto get() const {
-            return mClosure();
+            return mHolder();
         }
 
         auto size() const {
@@ -286,12 +303,10 @@ namespace Impl {
         std::function<T(ResourceManager&)> mClosure;
     public:
         template <typename U>
-        explicit ValueHelper(const U& val) {
-            auto rval = castID(val);
-            mClosure = [rval](ResourceManager& manager) {
+        explicit ValueHelper(const U& val) :mClosure( 
+            [rval = castID(val)](ResourceManager& manager) {
                 return cast(rval, manager);
-            };
-        }
+            }){}
 
         T get(ResourceManager& manager) {
             return mClosure(manager);
@@ -301,17 +316,15 @@ namespace Impl {
     template <typename T>
     class Value final {
     private:
-        std::function<ValueHelper<T>()> mClosure;
+        std::function<ValueHelper<T>()> mHolder;
     public:
         template <typename U>
-        Value(U val) {
-            mClosure = [val] {
-                return ValueHelper<T>(val);
-            };
-        }
+        Value(U val):mHolder([val] {
+            return ValueHelper<T>(val);
+        }) {}
 
         auto get() const {
-            return mClosure();
+            return mHolder();
         }
     };
 
@@ -409,6 +422,9 @@ private:
     cudaStream_t mStream = nullptr;
     ID mResourceCount = 0, mRegisteredResourceCount = 0, mOperatorCount = 0, mSyncPoint = 0;
     std::map<size_t, std::unique_ptr<ResourceRecycler>> mRecyclers;
+#ifdef CAMERA_RESOURCE_CHECK
+    std::set<ID> mUnknownResource;
+#endif
 public:
     void registerResource(ID id, std::unique_ptr<ResourceInstance>&& instance);
     ResourceInstance& getResource(ID id);

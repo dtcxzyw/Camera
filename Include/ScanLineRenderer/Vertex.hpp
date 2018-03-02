@@ -8,12 +8,7 @@ using VSF = void(*)(Vert in, const Uniform& uniform, vec3& pos, Out& out);
 
 template<typename Out>
 struct VertexInfo {
-    vec3 pos;
-    /*
-    NDC.x=pos.x/pos.z
-    NDC.y=pos.y/pos.z
-    z=pos.z
-    */
+    vec3 pos;//in camera space
     Out out;
 };
 

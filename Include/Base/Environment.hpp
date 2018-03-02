@@ -1,17 +1,24 @@
 #pragma once
+#include <Base/Config.hpp>
 #include <Base/Common.hpp>
 #include <Base/DispatchSystem.hpp>
 #include <vector>
 #include <thread>
 
 enum class GraphicsInteroperability {
-    None, D3D11, OpenGL
+    None
+#ifdef CAMERA_D3D11_SUPPORT
+    , D3D11
+#endif
+#ifdef CAMERA_OPENGL_SUPPORT
+    , OpenGL
+#endif
 };
 
-class Environment final :Singletion {
+class Environment final :public Singletion<Environment> {
 private:
+    friend class Singletion<Environment>;
     Environment();
-    friend Environment& getEnvironment();
     std::vector<std::thread> mDevices;
     CommandBufferQueue mQueue;
     bool mRunning;
@@ -22,5 +29,3 @@ public:
     void uninit();
     ~Environment();
 };
-
-Environment& getEnvironment();
