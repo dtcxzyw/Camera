@@ -14,15 +14,21 @@ using VertOut = Args<VAR(VertOutAttr::TexCoord, vec2), VAR(VertOutAttr::Color, R
 
 constexpr auto int2Float = 1.0f / 255.0f;
 
-CUDAINLINE vec4 toRGBA(const unsigned int col) {
-    return vec4{ col >> 24,(col >> 16) & 0xff,(col >> 8) & 0xff,col & 0xff }*int2Float;
+vec4 toRGBA(const unsigned int col) {
+    return vec4{ col & 0xff,(col >> 8) & 0xff,(col >> 16) & 0xff,col >> 24 }*int2Float;
 }
 
-CUDAINLINE void vertShader(ImDrawVert in, const Empty&, vec3& cpos, 
+struct VertInfo final{
+    ALIGN vec2 pos;
+    ALIGN vec2 uv;
+    ALIGN vec4 col;
+};
+
+CUDAINLINE void vertShader(VertInfo in, const Empty&, vec3& cpos, 
     VertOut& out) {
     cpos = { in.pos.x,in.pos.y,1.0f };
     out.get<VertOutAttr::TexCoord>() = { in.uv.x,in.uv.y };
-    out.get<VertOutAttr::Color>() = toRGBA(in.col);
+    out.get<VertOutAttr::Color>() = in.col;
 }
 
 CUDAINLINE bool clipShader(unsigned int, vec3&, vec3&, vec3&, const BuiltinSamplerGPU<A8>&) {
@@ -36,6 +42,7 @@ CUDAINLINE void fragShader(unsigned int, ivec2 uv, float, const VertOut& in, con
     const auto alpha = src.a, invAlpha = 1.0f - alpha;
     const auto col = vec3(src)*alpha + vec3(dst) * invAlpha;
     const auto res = clamp(vec4{ col,alpha*invAlpha }, 0.0f, 1.0f);
+    //const auto res = clamp(vec4{ vec3{src},1.0f }, 0.0f, 1.0f);
     fbo.set(uv, RGBA8{res*255.0f});
 }
 
@@ -62,20 +69,24 @@ void SoftwareRenderer::renderDrawLists(ImDrawData* drawData,CommandBuffer& buffe
         const auto cmdList = drawData->CmdLists[i];
         auto idxBufferOffset = 0;
 
-        auto vbo = buffer.allocBuffer<ImDrawVert>(cmdList->VtxBuffer.size());
+        auto vbo = buffer.allocBuffer<VertInfo>(cmdList->VtxBuffer.size());
         {
             const auto mul = 2.0f / static_cast<vec2>(renderTarget.size());
-            std::vector<ImDrawVert> tmp(cmdList->VtxBuffer.begin(), cmdList->VtxBuffer.end());
-            for (auto& vert : tmp) {
-                vert.pos.x *= mul.x, vert.pos.y *= -mul.y;
-                vert.pos.x -= 1.0f, vert.pos.y += 1.0f;
+            std::vector<VertInfo> tmp(cmdList->VtxBuffer.size());
+            auto idx = 0U;
+            for (const auto& vert : cmdList->VtxBuffer) {
+                auto&& res= tmp[idx++];
+                res.pos.x = vert.pos.x*mul.x, res.pos.y = -vert.pos.y*mul.y;
+                res.pos.x -= 1.0f, res.pos.y += 1.0f;
+                res.uv.x = vert.uv.x, res.uv.y = vert.uv.y;
+                res.col = toRGBA(vert.col);
             }
             buffer.memcpy(vbo, [buf = std::move(tmp)](auto&& call) {
                 call(buf.data());
             });
         }
 
-        auto vert = calcVertex<ImDrawVert, VertOut, Empty, vertShader>(buffer, vbo, nullptr);
+        auto vert = calcVertex<VertInfo, VertOut, Empty, vertShader>(buffer, vbo, nullptr);
 
         auto&& idxBuf = cmdList->IdxBuffer;
         auto ibo = buffer.allocBuffer<uvec3>(idxBuf.size() / 3);

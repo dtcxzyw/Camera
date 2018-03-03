@@ -185,7 +185,6 @@ int main() {
             const char* table[] = { "right","left","top","bottom","back","front" };
             return std::string("Res/skybox/") + table[id] + ".jpg";
         }, resLoader);
-        //envMap = loadRGBA("Res/Helipad_Afternoon/LA_Downtown_Afternoon_Fishing_B_8k.jpg",resLoader);
         envMapSampler = std::make_shared<BuiltinSampler<RGBA>>(envMap->get());
     }
 

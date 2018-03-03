@@ -49,9 +49,6 @@
     <ClInclude Include="..\..\Include\ScanLineRenderer\RenderingCache.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\Vertex.hpp" />
     <ClInclude Include="..\..\Include\Scene\ECS.hpp" />
-    <ClInclude Include="..\..\ThirdParty\IMGUI\imconfig.h" />
-    <ClInclude Include="..\..\ThirdParty\IMGUI\imgui.h" />
-    <ClInclude Include="..\..\ThirdParty\IMGUI\imgui_internal.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp" />
@@ -62,8 +59,6 @@
     <ClCompile Include="..\..\Src\Interaction\Counter.cpp" />
     <ClCompile Include="..\..\Src\IO\Model.cpp" />
     <ClCompile Include="..\..\Src\Scene\ECS.cpp" />
-    <ClCompile Include="..\..\ThirdParty\IMGUI\imgui.cpp" />
-    <ClCompile Include="..\..\ThirdParty\IMGUI\imgui_draw.cpp" />
     <CudaCompile Include="..\..\Src\Base\Constant.cu" />
     <ClCompile Include="..\..\Src\Interaction\D3D11.cpp">
       <FileType>Document</FileType>
@@ -165,8 +160,8 @@
       <AdditionalDependencies>cudart.lib;cudadevrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </CudaLink>
     <Lib>
-      <AdditionalLibraryDirectories>$(SolutionDir)Bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp.lib;glfw3.lib;opengl32.lib;glew32.lib;cudart.lib;cudadevrt.lib;d3d11.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)Bin;$(CUDA_PATH)\lib\x64;$(SolutionDir)ThirdParty\Libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>assimp.lib;glfw3.lib;opengl32.lib;glew32.lib;cudart.lib;cudadevrt.lib;d3d11.lib;d3dcompiler.lib;imgui.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -227,10 +222,10 @@
       <AdditionalDependencies>cudart.lib;cudadevrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </CudaLink>
     <Lib>
-      <AdditionalDependencies>assimp.lib;glfw3.lib;opengl32.lib;glew32.lib;cudart.lib;cudadevrt.lib;d3d11.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>assimp.lib;glfw3.lib;opengl32.lib;glew32.lib;cudart.lib;cudadevrt.lib;d3d11.lib;d3dcompiler.lib;imgui.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <Lib>
-      <AdditionalLibraryDirectories>$(SolutionDir)Bin;$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Bin;$(CUDA_PATH)\lib\x64;$(SolutionDir)ThirdParty\Libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
