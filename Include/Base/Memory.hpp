@@ -1,19 +1,20 @@
 #pragma once
 #include <memory>
 #include <Base/Common.hpp>
+#include <Base/Math.hpp>
 
 inline size_t calcSizeLevel(const size_t size) {
-    for (auto i = 40; i >= 0; --i)
-        if (size & (1ULL << i))
-            return i + 1;
-    return -1;
+    const auto msb=findMSB(size);
+    return msb + (size != (1ULL << msb));
 }
 
 template<typename T>
 size_t calcMaxBufferSize(const size_t size) {
-    auto level = calcSizeLevel(size*sizeof(T));
+    const auto level = calcSizeLevel(size*sizeof(T));
     return (1 << level) / sizeof(T);
 }
+
+void clearMemoryPool();
 
 class GlobalMemoryDeleter final {
 private:

@@ -70,7 +70,7 @@ SphereProcessResult processSphereInfo(CommandBuffer& buffer, const MemoryRef<vec
     auto ref = buffer.allocBuffer<TileRef>(spheres.size());
     buffer.runKernelLinear(processSphereInfoGPU, spheres.size(), spheres, info, ref, cnt,
         scissor, hsiz, near, far, mul);
-    auto sortedSphere = sortTiles(buffer, cnt, ref, spheres.size() * 2U + 2048U);
+    auto sortedSphere = sortTiles(buffer, cnt, ref, spheres.size() * 2U + 2048U,spheres.size());
     cnt.earlyRelease();
     ref.earlyRelease();
     return SphereProcessResult(sortedSphere.first, info, sortedSphere.second);

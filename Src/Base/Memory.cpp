@@ -68,15 +68,23 @@ public:
         else checkError(cudaFree(ptr));
     }
 
-    ~MemoryPool() {
+    void clear() {
         for (size_t i = 0; i <= 40; ++i)
             clearLevel(i);
+    }
+
+    ~MemoryPool() {
+        clear();
     }
 };
 
 static MemoryPool& getMemoryPool() {
     thread_local static MemoryPool pool;
     return pool;
+}
+
+void clearMemoryPool() {
+    getMemoryPool().clear();
 }
 
 GlobalMemoryDeleter::GlobalMemoryDeleter(const size_t size) noexcept:mSize(size) {}

@@ -258,11 +258,15 @@ DispatchSystem::StreamInfo& DispatchSystem::getStream() {
 
 namespace Impl {
     static size_t getAsyncEngineCount() {
+        #ifdef CAMERA_SINGLE_STREAM
+        return 1;
+        #else
         int device;
         checkError(cudaGetDevice(&device));
         cudaDeviceProp prop{};
         checkError(cudaGetDeviceProperties(&prop, device));
         return std::max(1, prop.asyncEngineCount);
+        #endif
     }
 }
 

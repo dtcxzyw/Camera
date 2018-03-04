@@ -166,7 +166,7 @@ void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
             const Camera::RasterPosConverter converter, CommandBuffer& buffer) {
     fbo.colorRT->clear(buffer, vec4{0.0f, 0.0f, 0.0f, 1.0f});
     fbo.depthBuffer->clear(buffer);
-    auto frameBuffer = fbo.getData(buffer);
+    const auto frameBuffer = fbo.getData(buffer);
     const vec4 scissor = { 0.0f,fbo.size.x,0.0f,fbo.size.y };
     renderMesh<VSM, CSM, setModel, drawModel>(model, uniform, frameBuffer, fbo.size, 
                                               converter, CullFace::Back, mh,scissor,buffer);

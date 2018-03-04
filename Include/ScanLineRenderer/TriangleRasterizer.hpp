@@ -245,7 +245,7 @@ GLOBAL void processTriangles(const unsigned int size,READONLY(VertexInfo<Out>) v
         const auto emitF = [&args](const TriangleVert<Out>& t) {
             calcTriangleInfo<Out>(t, args);
         };
-        const auto emitN = [far,emitF](const TriangleVert<Out>& t) {
+        const auto emitN = [far,&emitF](const TriangleVert<Out>& t) {
             clipTriangle<Out, compareZFar, decltype(emitF)>(t, far, emitF);
         };
         clipTriangle<Out, compareZNear, decltype(emitN)>(tri, near, emitN);
@@ -362,13 +362,13 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
         vert.get(), index.get(), uniform.get(), near, far,
         buffer.makeLazyConstructor<TriangleProcessingArgs<Out>>(cnt, info, idx, scissor, hfsize,
             static_cast<int>(mode),maxSize));
+
+    //pass 2:sort triangles
+    auto sortedTri = sortTiles(buffer, cnt, idx, psiz * 2, maxSize);
     if (history.enableSelfAdaptiveAllocation) {
         LaunchSize triNumData(cnt, 6);
         triNumData.download(*history.triNum, buffer);
     }
-
-    //pass 2:sort triangles
-    auto sortedTri = sortTiles(buffer, cnt, idx, psiz * 2);
     cnt.earlyRelease();
     idx.earlyRelease();
 

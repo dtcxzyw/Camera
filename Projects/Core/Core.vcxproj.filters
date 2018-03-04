@@ -144,6 +144,9 @@
     <ClInclude Include="..\..\Include\ScanLineRenderer\IndexDescriptor.hpp">
       <Filter>ScanLineRenderer</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Interaction\D3D11.hpp">
+      <Filter>Interaction</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">

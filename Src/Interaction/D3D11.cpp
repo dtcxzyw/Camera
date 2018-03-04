@@ -244,8 +244,9 @@ void D3D11Window::present(cudaArray_t image) {
 
 cudaArray_t D3D11Window::getBackBuffer() {
     if(mRes==nullptr) {
-            checkError(cudaGraphicsD3D11RegisterResource(&mRes,
+        checkError(cudaGraphicsD3D11RegisterResource(&mRes,
                 mFrameBuffer, cudaGraphicsRegisterFlagsNone));
+        checkError(cudaGraphicsResourceSetMapFlags(mRes,cudaGraphicsMapFlagsWriteDiscard));
         checkError(cudaGraphicsMapResources(1, &mRes, mStream));
     }
     if (mArray == nullptr) 
@@ -288,8 +289,9 @@ uvec2 D3D11Window::size() const {
 void D3D11Window::newFrame() {
     auto&& io = ImGui::GetIO();
 
-    const auto fsiz = size();
-    io.DisplaySize = {static_cast<float>(fsiz.x), static_cast<float>(fsiz.y)};
+    RECT rect;
+    GetClientRect(mHwnd, &rect);
+    io.DisplaySize = ImVec2(static_cast<float>(rect.right - rect.left), static_cast<float>(rect.bottom - rect.top));
 
     io.DeltaTime = mCounter.record();
 

@@ -6,8 +6,8 @@ class ImDrawData;
 class SoftwareRenderer final :public Singletion<SoftwareRenderer> {
     friend class Singletion<SoftwareRenderer>;
     SoftwareRenderer() = default;
-    std::unique_ptr<BuiltinArray<A8>> mTexture;
-    std::unique_ptr<BuiltinSampler<A8>> mSampler;
+    std::unique_ptr<BuiltinArray<float>> mTexture;
+    std::unique_ptr<BuiltinSampler<float>> mSampler;
     void renderDrawLists(ImDrawData* drawData, CommandBuffer& buffer, 
         BuiltinRenderTarget<RGBA8>& renderTarget);
 public:

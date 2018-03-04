@@ -11,21 +11,21 @@
 #include <Base/CompileEnd.hpp>
 #endif
 
-Environment::Environment() : mRunning(true) {}
-
 static void setDevice(const int id) {
-    checkError(cudaSetDeviceFlags(cudaDeviceScheduleSpin));
-    checkError(cudaSetDeviceFlags(cudaDeviceLmemResizeToMax));
+    checkError(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
     checkError(cudaSetDevice(id));
 }
 
 static void resetDevice() {
-    checkError(cudaDeviceSynchronize());
+    clearMemoryPool();
+    checkError(cudaDeviceReset());
 }
+
+Environment::Environment():mRunning(true) {}
 
 void Environment::init(const GraphicsInteroperability interop) {
     std::vector<int> devices;
-    if(interop==GraphicsInteroperability::None) {
+    if (interop == GraphicsInteroperability::None) {
         int cnt;
         checkError(cudaGetDeviceCount(&cnt));
         for (auto id = 0; id < cnt; ++id)
@@ -34,42 +34,57 @@ void Environment::init(const GraphicsInteroperability interop) {
     else {
         unsigned int deviceCount;
         int device[256];
-#ifdef CAMERA_D3D11_SUPPORT
+        #ifdef CAMERA_D3D11_SUPPORT
         if (interop == GraphicsInteroperability::D3D11)
             checkError(cudaD3D11GetDevices(&deviceCount, device, 256,
-                D3D11Window::get().getDevice(), cudaD3D11DeviceListAll));
-#endif
-#ifdef CAMERA_OPENGL_SUPPORT
-        if(interop==GraphicsInteroperability::OpenGL)
+                                           D3D11Window::get().getDevice(), cudaD3D11DeviceListAll));
+        #endif
+        #ifdef CAMERA_OPENGL_SUPPORT
+        if (interop == GraphicsInteroperability::OpenGL)
             checkError(cudaGLGetDevices(&deviceCount, device, 256, cudaGLDeviceListAll));
-#endif
+        #endif
         devices.assign(device, device + deviceCount);
     }
-    int firstDevice = -1;
+
+    std::vector<int> choosed;
     for (auto id : devices) {
         cudaDeviceProp prop{};
         checkError(cudaGetDeviceProperties(&prop, id));
         const auto ver = prop.major * 100 + prop.minor;
         if (ver < 305)continue;
         if (prop.computeMode != cudaComputeModeDefault)continue;
-        firstDevice = id;
-        mDevices.emplace_back([this,id]() {
+        choosed.emplace_back(id);
+        #ifdef CAMERA_SINGLE_STREAM
+        break;
+        #endif
+    }
+
+    for (auto id : choosed) {
+        mDevices.emplace_back([this,id,choosed]() {
             setDevice(id);
+
+            const auto isMainDevice = choosed.front() == id;
+            for (auto&& dev : choosed)
+                if (dev != id)
+                    checkError(cudaDeviceEnablePeerAccess(dev, 0));
+
             {
-                DispatchSystem system( mQueue);
+                DispatchSystem system(mQueue);
                 while (mRunning) system.update();
+                checkError(cudaDeviceSynchronize());
             }
-            resetDevice();
+
+            if (!isMainDevice)resetDevice();
         });
     }
     if (mDevices.empty())
         throw std::runtime_error("Failed to initialize the CUDA environment.");
-    setDevice(firstDevice);
+    setDevice(choosed.front());
 }
 
 Future Environment::submit(std::unique_ptr<CommandBuffer> buffer) {
     const auto promise = std::make_shared<Impl::TaskState>();
-    mQueue.submit(promise,std::move(buffer));
+    mQueue.submit(promise, std::move(buffer));
     return Future{promise};
 }
 

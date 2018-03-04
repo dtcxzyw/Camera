@@ -94,7 +94,8 @@
       <Optimization>O2</Optimization>
       <RuntimeChecks>Default</RuntimeChecks>
       <TypeInfo>false</TypeInfo>
-      <Warning>W4</Warning>
+      <Warning>W0</Warning>
+      <GenerateLineInfo>false</GenerateLineInfo>
     </CudaCompile>
     <CudaLink>
       <AdditionalDependencies>

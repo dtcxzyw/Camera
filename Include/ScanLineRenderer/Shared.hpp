@@ -11,7 +11,7 @@ CUDAINLINE vec3 toRaster(const vec3 p, const vec2 hsiz) {
 constexpr auto tileOffset = 1.0f;
 
 CUDAINLINE int calcTileSize(const vec4 rect) {
-    const auto tsiz = fmax(rect.y - rect.x, rect.w - rect.z);
+    const auto tsiz = fmax(1.5f,fmax(rect.y - rect.x, rect.w - rect.z));
     return ceil(fmin(log2f(tsiz) - 1.0f, 4.9f));
 }
 
@@ -22,7 +22,8 @@ struct TileRef final {
 };
 
 std::pair<MemoryRef<unsigned int>, MemoryRef<TileRef>> sortTiles(CommandBuffer& buffer,
-    const MemoryRef<unsigned int>& cnt, const MemoryRef<TileRef>& ref,size_t refSize);
+    const MemoryRef<unsigned int>& cnt, const MemoryRef<TileRef>& ref,size_t refSize,
+    unsigned int maxSize);
 
 CUDAINLINE float shuffleFloat(const float w,const int laneMask) {
     constexpr auto mask = 0xffffffff;
