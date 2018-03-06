@@ -100,14 +100,14 @@ namespace Impl {
     }
 
     void* constantAlloc(const unsigned int size) {
-        const auto req = calcSize(size, blockSize);
+        const auto req = calcBlockSize(size, blockSize);
         const auto off = getPool().allocSpace(req);
         if (off == 0)return nullptr;
         return getAddress() + (off - 1) * blockSize;
     }
 
     void constantFree(void* address, const unsigned int size) {
-        const auto req = calcSize(size, blockSize);
+        const auto req = calcBlockSize(size, blockSize);
         const auto off = (static_cast<unsigned char*>(address) - getAddress()) / blockSize + 1;
         getPool().returnSpace(off, req);
     }

@@ -6,7 +6,7 @@
 
 template<typename Func, typename... Args>
 CUDAINLINE void run(Func func,unsigned int block, unsigned int size, Args... args) {
-    if (size)func << <calcSize(size, block), min(block, size)>> > (size, args...);
+    if (size)func << <calcBlockSize(size, block), min(block, size)>> > (size, args...);
 }
 
 class Event;
@@ -26,7 +26,7 @@ public:
     template<typename Func, typename... Args>
     void run(Func func, unsigned int size, Args... args) {
         if (size) {
-            func <<<calcSize(size, mMaxThread),min(mMaxThread,size), 0, mStream >>> (size, args...);
+            func <<<calcBlockSize(size, mMaxThread),min(mMaxThread,size), 0, mStream >>> (size, args...);
             checkError();
 #ifdef CAMERA_LAUNCH_SYNC
             sync();
@@ -38,6 +38,9 @@ public:
     void runDim(Func func, dim3 grid, dim3 block, Args... args) {
         func <<<grid, block,0, mStream >>> (args...);
         checkError();
+#ifdef CAMERA_LAUNCH_SYNC
+        sync();
+#endif
     }
 
     unsigned int getMaxBlockSize() const {

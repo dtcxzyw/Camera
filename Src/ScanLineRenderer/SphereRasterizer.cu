@@ -42,7 +42,7 @@ GLOBAL void processSphereInfoGPU(const unsigned int size,READONLY(vec4) in, Sphe
     const auto sphere = in[id];
     if (- sphere.w > far + sphere.z | sphere.w < near + sphere.z)return;
     const auto range = calcSphereRange(sphere, near, far);
-    const vec4 rect = {
+    const uvec4 rect = {
         fmax(scissor.x, (1.0f + range.x * mul.x) * hsiz.x - tileOffset),
         fmin(scissor.y, (1.0f + range.y * mul.x) * hsiz.x + tileOffset),
         fmax(scissor.z, (1.0f - range.w * mul.y) * hsiz.y - tileOffset),

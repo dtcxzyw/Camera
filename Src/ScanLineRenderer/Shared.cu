@@ -4,24 +4,22 @@
 #include <Base/CompileEnd.hpp>
 
 CUDAINLINE void cutTile(TileRef ref, unsigned int* cnt, TileRef* out, const unsigned int maxSize) {
-    const auto bx=ref.rect.x,by = ref.rect.z;
-    constexpr auto step = 32.0f,invstep=1.0f/step;
-    const auto xcnt = ceil((ref.rect.y - ref.rect.x) *invstep);
-    const auto ycnt = ceil((ref.rect.w - ref.rect.z)*invstep);
+    const auto by = ref.rect.z;
+    constexpr auto step = 32U;
+    const int xcnt = calcBlockSize(ref.rect.y - ref.rect.x, step);
+    const int ycnt = calcBlockSize(ref.rect.w - ref.rect.z,step);
     const auto size= xcnt * ycnt;
     auto base = atomicAdd(cnt, size);
     if (base + size > maxSize)return;
-    for (auto x = 0; x < xcnt; ++x) {
-        for (auto y = 0; y < ycnt; ++y) {
-            ref.rect.x = bx + step * x;
-            ref.rect.z = by + step * y;
+    for (; ref.rect.x <= ref.rect.y; ref.rect.x += step) {
+        for (ref.rect.z = by; ref.rect.z <= ref.rect.w; ref.rect.z += step) {
             out[base++] = ref;
         }
     }
 }
 
-GLOBAL void emitTile(const unsigned int size,unsigned int* cnt,
-    READONLY(unsigned int) offset,READONLY(TileRef) in,TileRef* out,const unsigned int maxSize) {
+GLOBAL void emitTile(const unsigned int size,unsigned int* cnt,READONLY(unsigned int) offset,
+    READONLY(TileRef) in, TileRef* out, const unsigned int maxSize) {
     const auto id = getID();
     if(id>=size)return;
     const auto ref = in[id];
@@ -31,16 +29,14 @@ GLOBAL void emitTile(const unsigned int size,unsigned int* cnt,
 
 GLOBAL void sortTilesGPU(unsigned int* cnt, unsigned int* offset,unsigned int* tmp,
     TileRef* ref, TileRef* out, const unsigned int maxSize,const unsigned int maxOutSize){
-    if(cnt[6]>maxSize) {
-        cnt[6]*=2;
-        return;
-    }
+    auto launchSize = cnt[6];
+    if (cnt[6] > maxSize)launchSize = maxSize;
 
     offset[0] = 0;
     for (auto i = 1; i < 6; ++i)offset[i] = offset[i - 1] + cnt[i - 1];
     for (auto i = 0; i < 6; ++i)tmp[i] = 0;
     constexpr auto block = 1024U;
-    run(emitTile, block, cnt[6], tmp, offset, ref, out, maxOutSize);
+    run(emitTile, block, launchSize, tmp, offset, ref, out, maxOutSize);
     cudaDeviceSynchronize();
     offset[5] += tmp[5];
 }

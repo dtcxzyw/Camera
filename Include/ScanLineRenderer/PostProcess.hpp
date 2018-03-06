@@ -18,7 +18,7 @@ template<typename Uniform, typename FrameBuffer, FSFSF<Uniform, FrameBuffer> fs>
 void renderFullScreen(CommandBuffer& buffer, const DataPtr<Uniform>& uniform,
     const Value<FrameBuffer>& frameBuffer, uvec2 size) {
     constexpr auto tileSize = 32U;
-    dim3 grid(calcSize(size.x, tileSize), calcSize(size.y, tileSize));
+    dim3 grid(calcBlockSize(size.x, tileSize), calcBlockSize(size.y, tileSize));
     dim3 block(tileSize, tileSize);
     buffer.runKernelDim(runFSFS<Uniform, FrameBuffer, fs>, grid, block, uniform.get(),
         frameBuffer.get(), size);

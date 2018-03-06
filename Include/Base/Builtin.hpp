@@ -283,7 +283,7 @@ public:
     void clear(CommandBuffer& buffer, T val) {
         buffer.pushOperator([this,val](ID,ResourceManager&,Stream& stream) {
             const unsigned int mul = sqrt(stream.getMaxBlockSize());
-            dim3 grid(calcSize(mSize.x, mul), calcSize(mSize.y, mul));
+            dim3 grid(calcBlockSize(mSize.x, mul), calcBlockSize(mSize.y, mul));
             dim3 block(mul, mul);
             stream.runDim(Impl::clear<T>, grid, block, toTarget(), val);
         });
@@ -396,7 +396,7 @@ void downSample(cudaArray_t src, cudaArray_t dst, uvec2 size, Stream& stream) {
     BuiltinSampler<T> sampler(src);
     BuiltinRenderTarget<T> RT(dst, size);
     const uint mul = sqrt(stream.getMaxBlockSize());
-    dim3 grid(calcSize(size.x, mul), calcSize(size.y, mul));
+    dim3 grid(calcBlockSize(size.x, mul), calcBlockSize(size.y, mul));
     dim3 block(mul, mul);
     stream.runDim(Impl::downSample<T>, grid, block, sampler.toSampler(), RT.toTarget());
 }

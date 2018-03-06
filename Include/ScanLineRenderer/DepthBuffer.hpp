@@ -32,7 +32,7 @@ private:
     DataViewer<T> mData;
 public:
     explicit DepthBuffer(const uvec2 size) :mSize(size),
-        mData(calcSize(size.x,32U)*calcSize(size.y,32U)*1024U) {}
+        mData(calcBlockSize(size.x,32U)*calcBlockSize(size.y,32U)*1024U) {}
     void clear(CommandBuffer& buffer) {
         buffer.pushOperator([=](ID,ResourceManager&,Stream& stream) {stream.memset(mData, 0xff); });
     }
@@ -40,6 +40,6 @@ public:
         return mSize;
     }
     DepthBufferGPU<T> toBuffer() {
-        return { mData.begin(),static_cast<int>(calcSize(mSize.y,32U)) };
+        return { mData.begin(),static_cast<int>(calcBlockSize(mSize.y,32U)) };
     }
 };

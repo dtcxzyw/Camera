@@ -42,7 +42,7 @@ void checkError(cudaError_t error);
 void checkError();
 
 template <typename T>
-BOTH auto calcSize(const T a,const T b) {
+BOTH auto calcBlockSize(const T a,const T b) {
     return (a + b - 1) / b;
 }
 

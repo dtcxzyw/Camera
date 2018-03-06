@@ -33,7 +33,6 @@ GLOBAL void runVS(const unsigned int size, READONLY(Vert) in,
 template<typename Vert, typename Out, typename Uniform, VSF<Vert, Out, Uniform> vs>
 auto calcVertex(CommandBuffer& buffer, const DataPtr<Vert>& vert, const DataPtr<Uniform>& uniform) {
     auto vertex = buffer.allocBuffer<VertexInfo<Out>>(vert.size());
-    buffer.runKernelLinear(runVS<Vert, Out, Uniform, vs>, vert.size(),
-        vert.get(), uniform.get(), vertex);
+    buffer.runKernelLinear(runVS<Vert, Out, Uniform, vs>, vert.size(),vert.get(), uniform.get(), vertex);
     return vertex;
 }
