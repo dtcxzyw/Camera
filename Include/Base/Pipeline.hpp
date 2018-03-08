@@ -28,9 +28,6 @@ public:
         if (size) {
             func <<<calcBlockSize(size, mMaxThread),min(mMaxThread,size), 0, mStream >>> (size, args...);
             checkError();
-#ifdef CAMERA_LAUNCH_SYNC
-            sync();
-#endif
         }
     }
 
@@ -38,9 +35,6 @@ public:
     void runDim(Func func, dim3 grid, dim3 block, Args... args) {
         func <<<grid, block,0, mStream >>> (args...);
         checkError();
-#ifdef CAMERA_LAUNCH_SYNC
-        sync();
-#endif
     }
 
     unsigned int getMaxBlockSize() const {

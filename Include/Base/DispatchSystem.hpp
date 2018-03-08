@@ -458,8 +458,7 @@ public:
          std::queue<std::unique_ptr<Impl::Operator>>& commandQueue,
          std::shared_ptr<Impl::TaskState> promise);
     ~Task();
-    void update();
-    bool finished() const;
+    bool update();
     bool isDone() const;
 };
 
@@ -573,8 +572,9 @@ private:
     StreamInfo& getStream();
     std::vector<StreamInfo> mStreams;
     CommandBufferQueue& mQueue;
+    bool mYield;
 public:
-    explicit DispatchSystem(CommandBufferQueue& queue);
+    explicit DispatchSystem(CommandBufferQueue& queue,bool yield);
     void update();
 };
 

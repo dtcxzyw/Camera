@@ -4,13 +4,13 @@
 #include <Base/CompileEnd.hpp>
 
 CUDAINLINE void cutTile(TileRef ref, unsigned int* cnt, TileRef* out, const unsigned int maxSize) {
-    const auto by = ref.rect.z;
     constexpr auto step = 32U;
-    const int xcnt = calcBlockSize(ref.rect.y - ref.rect.x, step);
-    const int ycnt = calcBlockSize(ref.rect.w - ref.rect.z,step);
+    const int xcnt = calcBlockSize(ref.rect.y - ref.rect.x + 1, step);
+    const int ycnt = calcBlockSize(ref.rect.w - ref.rect.z + 1, step);
     const auto size= xcnt * ycnt;
     auto base = atomicAdd(cnt, size);
     if (base + size > maxSize)return;
+    const auto by = ref.rect.z;
     for (; ref.rect.x <= ref.rect.y; ref.rect.x += step) {
         for (ref.rect.z = by; ref.rect.z <= ref.rect.w; ref.rect.z += step) {
             out[base++] = ref;

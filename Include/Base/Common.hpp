@@ -38,6 +38,7 @@ public:
     }
 };
 
+void debugBreak();
 void checkError(cudaError_t error);
 void checkError();
 

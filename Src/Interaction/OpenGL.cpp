@@ -1,3 +1,5 @@
+#include <Base/Config.hpp>
+#ifdef CAMERA_OPENGL_SUPPORT
 #include <Base/CompileBegin.hpp>
 #include <GL/glew.h>
 #include <Base/CompileEnd.hpp>
@@ -217,4 +219,4 @@ void GLWindow::newFrame() {
     // Start the frame. This call will update the io.WantCaptureMouse, io.WantCaptureKeyboard flag that you can use to dispatch inputs (or not) to your application.
     ImGui::NewFrame();
 }
-
+#endif

@@ -11,9 +11,9 @@ CUDAINLINE vec3 toRaster(const vec3 p, const vec2 hsiz) {
 constexpr auto tileOffset = 1.0f;
 
 CUDAINLINE int calcTileSize(const uvec4 rect) {
-    const float dx = rect.y - rect.x, dy = rect.w - rect.z;
-    const auto tsiz = fmax(1.5f, fmax(dx, dy));
-    return ceil(fmin(log2f(tsiz) - 1.0f, 4.9f));
+    const auto delta = max(2U, max(rect.y - rect.x, rect.w - rect.z));
+    const auto bit = findMSB(delta);
+    return min(bit + ((1U << bit) != delta) - 1, 5);
 }
 
 struct TileRef final {

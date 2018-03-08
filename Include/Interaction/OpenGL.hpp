@@ -1,4 +1,6 @@
 #pragma once
+#include <Base/Config.hpp>
+#ifdef CAMERA_OPENGL_SUPPORT
 #include <Base/CompileBegin.hpp>
 #include <GLFW/glfw3.h>
 #include <Base/CompileEnd.hpp>
@@ -28,3 +30,4 @@ public:
     uvec2 size() const;
     ~GLWindow();
 };
+#endif

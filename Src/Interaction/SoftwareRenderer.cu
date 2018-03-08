@@ -45,17 +45,17 @@ CUDAINLINE void fragShader(unsigned int, ivec2 uv, float, const VertOut& in, con
     const auto col = vec3(src)*alpha + vec3(dst) * invAlpha;
     fbo.set(uv, RGBA8{ clamp(col, 0.0f, 1.0f)*255.0f,255 });
     /*
-    const auto mod=3;
+    const auto mod=30;
     ++id;
-    const auto r=id%mod;id/=3;
-    const auto g=id%mod;id/=3;
+    const auto r=id%mod;id/=mod;
+    const auto g=id%mod;id/=mod;
     const auto b=id%mod;
     fbo.set(uv, RGBA8{ 255 * r / mod,255 * g / mod,255 * b / mod,255 });
     */
 }
 
-void SoftwareRenderer::renderDrawLists(ImDrawData* drawData,CommandBuffer& buffer,
-    BuiltinRenderTarget<RGBA8>& renderTarget) {
+void SoftwareRenderer::render(CommandBuffer& buffer,BuiltinRenderTarget<RGBA8>& renderTarget) {
+    const auto drawData = ImGui::GetDrawData();
 #ifdef CAMERA_DEBUG
     if(!drawData->Valid)throw std::logic_error("This draw data is invalid.");
 #endif
@@ -163,9 +163,4 @@ void SoftwareRenderer::init(Stream& resLoader) {
 void SoftwareRenderer::uninit() {
     mSampler.reset();
     mTexture.reset();
-}
-
-void SoftwareRenderer::render(CommandBuffer& buffer,BuiltinRenderTarget<RGBA8>& renderTarget) {
-    ImGui::Render();
-    renderDrawLists(ImGui::GetDrawData(), buffer, renderTarget);
 }

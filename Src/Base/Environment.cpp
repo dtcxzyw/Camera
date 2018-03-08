@@ -11,19 +11,22 @@
 #include <Base/CompileEnd.hpp>
 #endif
 
-static void setDevice(const int id) {
-    checkError(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
+static void setDevice(const int id, const AppType app) {
+    const auto schedule=(app==AppType::Online? cudaDeviceScheduleSpin: 
+        cudaDeviceScheduleBlockingSync);
+    checkError(cudaSetDeviceFlags(schedule));
     checkError(cudaSetDevice(id));
 }
 
 static void resetDevice() {
+    checkError(cudaDeviceSynchronize());
     clearMemoryPool();
     checkError(cudaDeviceReset());
 }
 
 Environment::Environment():mRunning(true) {}
 
-void Environment::init(const GraphicsInteroperability interop) {
+void Environment::init(const AppType app,const GraphicsInteroperability interop) {
     std::vector<int> devices;
     if (interop == GraphicsInteroperability::None) {
         int cnt;
@@ -32,7 +35,7 @@ void Environment::init(const GraphicsInteroperability interop) {
             devices.emplace_back(id);
     }
     else {
-        unsigned int deviceCount;
+        auto deviceCount = 0U;
         int device[256];
         #ifdef CAMERA_D3D11_SUPPORT
         if (interop == GraphicsInteroperability::D3D11)
@@ -60,8 +63,8 @@ void Environment::init(const GraphicsInteroperability interop) {
     }
 
     for (auto id : choosed) {
-        mDevices.emplace_back([this,id,choosed]() {
-            setDevice(id);
+        mDevices.emplace_back([this,id,choosed,app]() {
+            setDevice(id, app);
 
             const auto isMainDevice = choosed.front() == id;
             for (auto&& dev : choosed)
@@ -69,7 +72,7 @@ void Environment::init(const GraphicsInteroperability interop) {
                     checkError(cudaDeviceEnablePeerAccess(dev, 0));
 
             {
-                DispatchSystem system(mQueue);
+                DispatchSystem system(mQueue, app == AppType::Offline);
                 while (mRunning) system.update();
                 checkError(cudaDeviceSynchronize());
             }
@@ -79,7 +82,7 @@ void Environment::init(const GraphicsInteroperability interop) {
     }
     if (mDevices.empty())
         throw std::runtime_error("Failed to initialize the CUDA environment.");
-    setDevice(choosed.front());
+    setDevice(choosed.front(),app);
 }
 
 Future Environment::submit(std::unique_ptr<CommandBuffer> buffer) {

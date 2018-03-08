@@ -1,5 +1,6 @@
-#include <Interaction/D3D11.hpp>
 #include <Base/Config.hpp>
+#ifdef CAMERA_D3D11_SUPPORT
+#include <Interaction/D3D11.hpp>
 #include <Base/CompileBegin.hpp>
 #include <cuda_d3d11_interop.h>
 #include <IMGUI/imgui.h>
@@ -91,7 +92,10 @@ static LRESULT WINAPI wndProc(HWND hWnd, const UINT msg, const WPARAM wParam,
 }
 
 static void checkResult(const HRESULT res) {
-    if (res != S_OK)__debugbreak();
+    if (res != S_OK){
+        debugBreak();
+        throw std::runtime_error("D3D11 error");
+    }
 }
 
 D3D11Window::D3D11Window() : mHwnd(nullptr), mSwapChain(nullptr),mDevice(nullptr), 
@@ -320,3 +324,4 @@ D3D11Window::~D3D11Window() {
     mDevice->Release();
     UnregisterClass(L"D3D11 Viewer", mWc.hInstance);
 }
+#endif

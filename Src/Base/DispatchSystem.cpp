@@ -173,10 +173,9 @@ namespace Impl {
     };
 
     static void CUDART_CB streamCallback(cudaStream_t, cudaError_t, void* userData) {
-        auto ptr = reinterpret_cast<CallbackInfo*>(userData);
+        std::unique_ptr<CallbackInfo> ptr(reinterpret_cast<CallbackInfo*>(userData));
         ptr->func();
         ptr->manager.syncPoint(ptr->id);
-        delete ptr;
     }
 }
 
@@ -270,15 +269,16 @@ namespace Impl {
     }
 }
 
-DispatchSystem::DispatchSystem(CommandBufferQueue& queue)
-    : mStreams(Impl::getAsyncEngineCount()), mQueue(queue) {}
+DispatchSystem::DispatchSystem(CommandBufferQueue& queue,const bool yield)
+    : mStreams(Impl::getAsyncEngineCount()), mQueue(queue), mYield(yield) {}
 
 void DispatchSystem::update() {
     auto&& stream = getStream();
     if (stream.free()) {
+        using namespace std::chrono_literals;
         auto task = mQueue.getTask();
         if (task.first)stream.set(std::move(task));
-        else std::this_thread::yield();
+        else if(mYield)std::this_thread::sleep_for(1ms);
     }
     stream.update(Clock::now());
 }
@@ -312,11 +312,8 @@ void DispatchSystem::StreamInfo::update(const Clock::time_point point) {
                                [](auto&& task) {
                                    return task->isDone();
                                }), mPool.end());
-    if (mTask) {
-        mTask->update();
-        if (mTask->finished())
-            mPool.emplace_back(std::move(mTask));
-    }
+    if (mTask && mTask->update())
+        mPool.emplace_back(std::move(mTask));
     mLast = point;
 }
 
@@ -370,19 +367,22 @@ namespace Impl {
     }
 }
 
-void Task::update() {
+bool Task::update() {
     if (!mCommandQueue.empty()) {
         auto&& command = mCommandQueue.front();
         command->emit(mStream);
+        #ifdef CAMERA_SYNC
+        mStream.sync();
+        #endif
         mResourceManager->gc(command->getID());
         mCommandQueue.pop();
-        if (mCommandQueue.empty())
+        if (mCommandQueue.empty()){
             checkError(cudaStreamAddCallback(mStream.get(), Impl::endCallback, mPromise.get(), 0));
+            return true;
+        }
+        return false;
     }
-}
-
-bool Task::finished() const {
-    return mCommandQueue.empty();
+    return true;
 }
 
 bool Task::isDone() const {

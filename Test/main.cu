@@ -71,6 +71,7 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);
         ARG(clearcoatGloss);
         #undef ARG
         ImGui::End();
+        ImGui::Render();
     }
 
     Uniform getUniform(float, const vec2 mul) {
@@ -159,7 +160,7 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);
         ImGui::GetIO().WantCaptureKeyboard = true;
 
         auto&& env = Environment::get();
-        env.init(GraphicsInteroperability::D3D11);
+        env.init(AppType::Online,GraphicsInteroperability::D3D11);
 
         camera.near = 1.0f;
         camera.far = 200.0f;

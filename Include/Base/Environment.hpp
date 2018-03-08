@@ -15,6 +15,10 @@ enum class GraphicsInteroperability {
 #endif
 };
 
+enum class AppType {
+    Online, Offline
+};
+
 class Environment final :public Singletion<Environment> {
 private:
     friend class Singletion<Environment>;
@@ -23,7 +27,8 @@ private:
     CommandBufferQueue mQueue;
     bool mRunning;
 public:
-    void init(GraphicsInteroperability interop=GraphicsInteroperability::None);
+    void init(AppType app = AppType::Offline,
+        GraphicsInteroperability interop = GraphicsInteroperability::None);
     Future submit(std::unique_ptr<CommandBuffer> buffer);
     size_t queueSize() const;
     void uninit();

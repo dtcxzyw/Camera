@@ -1,4 +1,6 @@
 #pragma once
+#include <Base/Config.hpp>
+#ifdef CAMERA_D3D11_SUPPORT
 #include <Base/CompileBegin.hpp>
 #include <d3d11.h>
 #undef max
@@ -51,3 +53,4 @@ public:
     void newFrame();
     ~D3D11Window();
 };
+#endif

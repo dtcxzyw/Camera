@@ -1,13 +1,15 @@
 #pragma once
 #define CAMERA_OPENGL_SUPPORT
+#ifdef _WIN32
 #define CAMERA_D3D11_SUPPORT
+#endif
 
 //#define CAMERA_DEBUG
 #ifdef CAMERA_DEBUG
 #ifdef CAMERA_D3D11_SUPPORT
 #define CAMERA_D3D11_ENABLE_DEBUG_LAYER
 #endif
-#define CAMERA_LAUNCH_SYNC
+#define CAMERA_SYNC
 #define CAMERA_RESOURCE_CHECK
 #define CAMERA_SINGLE_STREAM
 #endif

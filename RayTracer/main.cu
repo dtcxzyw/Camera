@@ -75,7 +75,7 @@ int main() {
     ImGui::GetIO().WantCaptureKeyboard = true;
 
     auto&& env = Environment::get();
-    env.init(GraphicsInteroperability::D3D11);
+    env.init(AppType::Offline,GraphicsInteroperability::D3D11);
 
     try {
         camera.near = 1.0f;
