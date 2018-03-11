@@ -10,7 +10,8 @@
 
 using namespace std::chrono_literals;
 
-struct App final : Uncopyable {
+class App final : Uncopyable {
+private:
     float light = 65.0f, r = 20.0f;
     StaticMesh box, model;
     std::unique_ptr<RC8> cache;
@@ -28,10 +29,6 @@ struct App final : Uncopyable {
         style.Alpha = 0.8f;
         style.AntiAliasedFill = true;
         style.AntiAliasedLines = true;
-        style.WindowBorderSize = 1.0f;
-        style.FrameBorderSize = 1.0f;
-        style.ChildBorderSize = 1.0f;
-        style.FrameRounding = 5.0f;
     }
 
     void renderGUI(D3D11Window& window) {
@@ -48,7 +45,6 @@ struct App final : Uncopyable {
         ImGui::SliderFloat("focal length", &camera.focalLength, 1.0f, 500.0f, "%.1f");
         ImGui::SliderFloat("light", &light, 0.0f, 100.0f);
         ImGui::SliderFloat("lightRadius", &r, 0.0f, 40.0f);
-
         #define COLOR(name)\
 arg.##name=clamp(arg.##name,vec3(0.01f),vec3(0.999f));\
 ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);
@@ -153,6 +149,7 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);
         checkError(cudaMemcpy(spheres.begin(), sphere, sizeof(sphere), cudaMemcpyHostToDevice));
     }
 
+public:
     void run() {
         auto&& window = D3D11Window::get();
         window.show(true);

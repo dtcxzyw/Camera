@@ -37,6 +37,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -83,6 +84,8 @@
       <AdditionalDependencies>Core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -93,7 +96,7 @@
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <CodeGeneration>compute_35,sm_35</CodeGeneration>
       <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda </AdditionalOptions>
-      <FastMath>false</FastMath>
+      <FastMath>true</FastMath>
       <MaxRegCount>64</MaxRegCount>
       <Optimization>O2</Optimization>
       <RuntimeChecks>Default</RuntimeChecks>
@@ -101,6 +104,9 @@
       <Warning>W0</Warning>
       <GenerateLineInfo>false</GenerateLineInfo>
       <Emulation>false</Emulation>
+      <GPUDebugInfo>false</GPUDebugInfo>
+      <Defines>CAMERA_DEBUG</Defines>
+      <HostDebugInfo>false</HostDebugInfo>
     </CudaCompile>
     <CudaLink>
       <AdditionalDependencies>
@@ -129,7 +135,7 @@
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>

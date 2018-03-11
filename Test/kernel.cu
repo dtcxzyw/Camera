@@ -114,7 +114,8 @@ void renderMesh(const StaticMesh& model, const MemoryRef<Uniform>& uniform,
                 const CullFace mode, TriangleRenderingHistory& history, const vec4 scissor,
                 CommandBuffer& buffer) {
     auto vert = calcVertex<VI, OI, Uniform, vs>(buffer, model.vert, uniform);
-    const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(model.index.size(), model.index);
+    const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(model.index.size(),
+        model.index.begin());
     renderTriangles<decltype(index), OI, Uniform, FrameBufferGPU, cs, fs...>(buffer, 
         vert, index, uniform, frameBuffer, size,
         converter.near, converter.far, history, scissor, mode);
@@ -123,7 +124,8 @@ void renderMesh(const StaticMesh& model, const MemoryRef<Uniform>& uniform,
         vert,uniform, frameBuffer, size, converter.near, converter.far);
     */
     /*
-    const auto index = makeIndexDescriptor<LineLoops>(model.index.size(), model.index);
+    const auto index = makeIndexDescriptor<SeparateTrianglesWireframeWithIndex>
+        (model.index.size(), model.index.begin());
     renderLines<decltype(index),OI, Uniform, FrameBufferGPU, toPos, setPoint, drawPoint>(buffer,
         vert,index ,uniform,frameBuffer, size, converter.near,converter.far);
     */

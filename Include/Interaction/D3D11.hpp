@@ -38,7 +38,7 @@ private:
     cudaArray_t getBackBuffer();
 public:
     void reset(uvec2 fsiz);
-    ID3D11Device* getDevice();
+    void D3D11Window::enumDevices(int* buf,unsigned int* count);
 
     void bindBackBuffer(cudaStream_t stream);
     void unbindBackBuffer();

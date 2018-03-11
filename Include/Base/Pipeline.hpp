@@ -2,7 +2,6 @@
 #include <Base/Common.hpp>
 #include <Base/Memory.hpp>
 #include <Base/Math.hpp>
-#include <Base/Config.hpp>
 
 template<typename Func, typename... Args>
 CUDAINLINE void run(Func func,unsigned int block, unsigned int size, Args... args) {

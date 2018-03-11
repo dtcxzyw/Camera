@@ -9,7 +9,7 @@ private:
 public:
     using IndexType = Index;
     explicit IndexDescriptor(const size_t size, Args... args)
-        :mLazyConstructor(args...),mSize(size) {}
+        :mLazyConstructor(args...), mSize(Index::size(size)) {}
     auto size() const{
         return mSize;
     }

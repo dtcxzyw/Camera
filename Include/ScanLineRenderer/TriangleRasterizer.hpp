@@ -11,12 +11,9 @@
 ///@see <a href="https://www.khronos.org/registry/OpenGL/specs/gl/glspec46.compatibility.pdf">OpenGL 4.6 API Specification, Section 10.1 Primitive Types</a>
 
 class TriangleStrips final {
-private:
-    unsigned int mSize;
 public:
-    explicit TriangleStrips(const unsigned int vertSize) : mSize(vertSize - 2) {}
-    BOTH auto size() const {
-        return mSize;
+    static auto size(const unsigned int vertSize) {
+        return vertSize - 2;
     }
 
     CUDAINLINE uvec3 operator[](const unsigned int off) const {
@@ -25,12 +22,9 @@ public:
 };
 
 class TriangleFans final {
-private:
-    unsigned int mSize;
 public:
-    explicit TriangleFans(const unsigned int vertSize) : mSize(vertSize - 2) {}
-    BOTH auto size() const {
-        return mSize;
+    static auto size(const unsigned int vertSize) {
+        return vertSize - 2;
     }
 
     CUDAINLINE uvec3 operator[](const unsigned int off) const {
@@ -39,12 +33,9 @@ public:
 };
 
 class SeparateTriangles final {
-private:
-    unsigned int mSize;
 public:
-    explicit SeparateTriangles(const unsigned int faceSize) : mSize(faceSize) {}
-    BOTH auto size() const {
-        return mSize;
+    static auto size(const unsigned int faceSize) {
+        return faceSize;
     }
 
     CUDAINLINE uvec3 operator[](const unsigned int off) const {
@@ -56,16 +47,11 @@ public:
 class SeparateTrianglesWithIndex final {
 private:
     READONLY(uvec3) mPtr;
-    unsigned int mSize;
 public:
-    SeparateTrianglesWithIndex(READONLY(uvec3) idx, const unsigned int faceSize)
-        : mPtr(idx), mSize(faceSize) {}
+    explicit SeparateTrianglesWithIndex(READONLY(uvec3) idx): mPtr(idx){}
 
-    explicit SeparateTrianglesWithIndex(const DataViewer<uvec3>& ibo)
-        : SeparateTrianglesWithIndex(ibo.begin(), ibo.size()) {}
-
-    BOTH auto size() const {
-        return mSize;
+    static auto size(const unsigned int faceSize) {
+        return faceSize;
     }
 
     CUDAINLINE auto operator[](const unsigned int off) const {

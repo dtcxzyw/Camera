@@ -69,9 +69,9 @@ static LRESULT setEvent(HWND hwnd, const UINT msg, const WPARAM wParam,
     return 0;
 }
 
-static LRESULT WINAPI wndProc(HWND hWnd, const UINT msg, const WPARAM wParam, 
+static LRESULT WINAPI wndProc(HWND hwnd, const UINT msg, const WPARAM wParam, 
     const LPARAM lParam) {
-    if (setEvent(hWnd, msg, wParam, lParam))return true;
+    if (setEvent(hwnd, msg, wParam, lParam))return true;
 
     switch (msg) {
     case WM_SIZE:
@@ -88,13 +88,19 @@ static LRESULT WINAPI wndProc(HWND hWnd, const UINT msg, const WPARAM wParam,
         return 0;
     default: ;
     }
-    return DefWindowProc(hWnd, msg, wParam, lParam);
+    return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
 static void checkResult(const HRESULT res) {
     if (res != S_OK){
+        char buf[1024];
+        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM,
+            nullptr,
+            res,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            buf, 0, nullptr);
         debugBreak();
-        throw std::runtime_error("D3D11 error");
+        throw std::runtime_error(buf);
     }
 }
 
@@ -109,7 +115,7 @@ D3D11Window::D3D11Window() : mHwnd(nullptr), mSwapChain(nullptr),mDevice(nullptr
     };
     RegisterClassEx(&mWc);
     mHwnd = CreateWindow(title,title, WS_OVERLAPPEDWINDOW, 100, 100, 800, 600,
-        NULL, NULL, mWc.hInstance, NULL);
+        nullptr, nullptr, mWc.hInstance, nullptr);
 
     DXGI_SWAP_CHAIN_DESC sd;
     ZeroMemory(&sd, sizeof(sd));
@@ -134,11 +140,11 @@ D3D11Window::D3D11Window() : mHwnd(nullptr), mSwapChain(nullptr),mDevice(nullptr
 #endif
 
     D3D_FEATURE_LEVEL level;
-    const D3D_FEATURE_LEVEL featureLevelArray[1] = {D3D_FEATURE_LEVEL_11_1};
-    if (D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flag,
-                                      featureLevelArray, 1, D3D11_SDK_VERSION, &sd, &mSwapChain, &mDevice,
-                                      &level, &mDeviceContext) != S_OK)
-        throw std::runtime_error("Failed to create D3D11 device.");
+    const D3D_FEATURE_LEVEL featureLevelArray[] = {D3D_FEATURE_LEVEL_11_1};
+    checkResult(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flag,
+                                      featureLevelArray,std::extent_v<decltype(featureLevelArray)>, 
+                                      D3D11_SDK_VERSION, &sd, &mSwapChain, &mDevice,
+                                      &level, &mDeviceContext));
     
     mDevice->SetExceptionMode(D3D11_RAISE_FLAG_DRIVER_INTERNAL_ERROR);
 
@@ -210,8 +216,9 @@ void D3D11Window::reset(const uvec2 fsiz) {
     }
 }
 
-ID3D11Device* D3D11Window::getDevice() {
-    return mDevice;
+void D3D11Window::enumDevices(int* buf,unsigned int* count) {
+    checkError(cudaD3D11GetDevices(count, buf, 256,
+        mDevice, cudaD3D11DeviceListAll));
 }
 
 void D3D11Window::show(const bool isShow) {

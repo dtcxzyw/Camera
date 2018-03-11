@@ -39,8 +39,7 @@ void Environment::init(const AppType app,const GraphicsInteroperability interop)
         int device[256];
         #ifdef CAMERA_D3D11_SUPPORT
         if (interop == GraphicsInteroperability::D3D11)
-            checkError(cudaD3D11GetDevices(&deviceCount, device, 256,
-                                           D3D11Window::get().getDevice(), cudaD3D11DeviceListAll));
+            D3D11Window::get().enumDevices(device, &deviceCount);
         #endif
         #ifdef CAMERA_OPENGL_SUPPORT
         if (interop == GraphicsInteroperability::OpenGL)

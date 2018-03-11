@@ -10,7 +10,7 @@
 #include <mutex>
 #ifdef CAMERA_RESOURCE_CHECK
 #include <set>
-#endif 
+#endif
 
 class CommandBuffer;
 class ResourceManager;
@@ -153,10 +153,10 @@ namespace Impl {
 
 class FunctionOperator final : public Impl::Operator {
 private:
-    std::function<void(ID,ResourceManager&,Stream&)> mClosure;
+    std::function<void(ID, ResourceManager&, Stream&)> mClosure;
 public:
-    FunctionOperator(ResourceManager& manager, 
-        std::function<void(ID,ResourceManager&,Stream&)>&& closure);
+    FunctionOperator(ResourceManager& manager,
+                     std::function<void(ID, ResourceManager&, Stream&)>&& closure);
     void emit(Stream& stream) override;
 };
 
@@ -242,20 +242,20 @@ namespace Impl {
     private:
         std::function<T*(ResourceManager&)> mClosure;
     public:
-        explicit DataPtrHelper(const MemoryRef<T>& ref):mClosure(
+        explicit DataPtrHelper(const MemoryRef<T>& ref): mClosure(
             [rval = castID(ref)](ResourceManager& manager) {
                 return cast(rval, manager);
-            }){}
+            }) {}
 
-        explicit DataPtrHelper(T* ptr) :mClosure(
+        explicit DataPtrHelper(T* ptr) : mClosure(
             [ptr](ResourceManager&) {
                 return ptr;
             }) {}
 
-        explicit DataPtrHelper(const DataPtrHelper& rhs, const size_t offset):mClosure(
+        explicit DataPtrHelper(const DataPtrHelper& rhs, const size_t offset): mClosure(
             [closure=rhs.mClosure,offset](ResourceManager& manager) {
                 return closure(manager) + offset;
-            }){}
+            }) {}
 
         T* get(ResourceManager& manager) {
             return mClosure(manager);
@@ -269,21 +269,25 @@ namespace Impl {
         size_t mSize;
     public:
         DataPtr(const MemoryRef<T>& ref) : mHolder([ref] {
-            return DataPtrHelper<T>(ref);}), mSize(ref.size()){}
+            return DataPtrHelper<T>(ref);
+        }), mSize(ref.size()) {}
 
-        DataPtr(T* ptr, const size_t size) : mHolder ( [ptr] {
-                return DataPtrHelper<T>(ptr);
+        DataPtr(T* ptr, const size_t size) : mHolder([ptr] {
+            return DataPtrHelper<T>(ptr);
         }), mSize(size) {}
 
-        DataPtr(const DataViewer<T>& data) :DataPtr(data.begin(), data.size()) {}
+        DataPtr(const DataViewer<T>& data) : DataPtr(data.begin(), data.size()) {}
 
-        DataPtr(std::nullptr_t):DataPtr(nullptr,0){}
+        DataPtr(std::nullptr_t): DataPtr(nullptr, 0) {}
 
         DataPtr operator+(const size_t offset) const {
             DataPtr res = nullptr;
             res.mHolder = [=] {
                 return DataPtrHelper<T>(mHolder(), offset);
             };
+            #ifdef CAMERA_DEBUG
+            if (mSize <= offset)throw std::logic_error("Out of memory.");
+            #endif
             res.mSize = mSize - offset;
             return res;
         }
@@ -303,10 +307,10 @@ namespace Impl {
         std::function<T(ResourceManager&)> mClosure;
     public:
         template <typename U>
-        explicit ValueHelper(const U& val) :mClosure( 
+        explicit ValueHelper(const U& val) : mClosure(
             [rval = castID(val)](ResourceManager& manager) {
                 return cast(rval, manager);
-            }){}
+            }) {}
 
         T get(ResourceManager& manager) {
             return mClosure(manager);
@@ -319,7 +323,7 @@ namespace Impl {
         std::function<ValueHelper<T>()> mHolder;
     public:
         template <typename U>
-        Value(U val):mHolder([val] {
+        Value(U val): mHolder([val] {
             return ValueHelper<T>(val);
         }) {}
 
@@ -422,9 +426,9 @@ private:
     cudaStream_t mStream = nullptr;
     ID mResourceCount = 0, mRegisteredResourceCount = 0, mOperatorCount = 0, mSyncPoint = 0;
     std::map<size_t, std::unique_ptr<ResourceRecycler>> mRecyclers;
-#ifdef CAMERA_RESOURCE_CHECK
+    #ifdef CAMERA_RESOURCE_CHECK
     std::set<ID> mUnknownResource;
-#endif
+    #endif
 public:
     void registerResource(ID id, std::unique_ptr<ResourceInstance>&& instance);
     ResourceInstance& getResource(ID id);
@@ -527,7 +531,7 @@ public:
     void sync();
 
     void pushOperator(std::unique_ptr<Impl::Operator>&& op);
-    void pushOperator(std::function<void(ID,ResourceManager&, Stream&)>&& op);
+    void pushOperator(std::function<void(ID, ResourceManager&, Stream&)>&& op);
 
     template <typename T, typename... Args>
     auto makeLazyConstructor(Args ... args) {
@@ -574,7 +578,7 @@ private:
     CommandBufferQueue& mQueue;
     bool mYield;
 public:
-    explicit DispatchSystem(CommandBufferQueue& queue,bool yield);
+    explicit DispatchSystem(CommandBufferQueue& queue, bool yield);
     void update();
 };
 

@@ -12,23 +12,23 @@ enum class VertOutAttr {
 
 using VertOut = Args<VAR(VertOutAttr::TexCoord, vec2), VAR(VertOutAttr::Color, RGBA)>;
 
-constexpr auto int2Float = 1.0f / 255.0f;
-
-vec4 toRGBA(const unsigned int col) {
-    return vec4{ col & 0xff,(col >> 8) & 0xff,(col >> 16) & 0xff,col >> 24 }*int2Float;
-}
-
 struct VertInfo final{
     ALIGN vec2 pos;
     ALIGN vec2 uv;
-    ALIGN vec4 col;
+    ALIGN unsigned int col;
 };
+
+constexpr auto int2Float = 1.0f / 256.0f;
+
+CUDAINLINE vec4 toRGBA(const unsigned int col) {
+    return vec4{ col & 0xff,(col >> 8) & 0xff,(col >> 16) & 0xff,col >> 24 }*int2Float;
+}
 
 CUDAINLINE void vertShader(VertInfo in, const Empty&, vec3& cpos, 
     VertOut& out) {
     cpos = { in.pos.x,in.pos.y,1.0f };
     out.get<VertOutAttr::TexCoord>() = { in.uv.x,in.uv.y };
-    out.get<VertOutAttr::Color>() = in.col;
+    out.get<VertOutAttr::Color>() = toRGBA(in.col);
 }
 
 CUDAINLINE bool clipShader(unsigned int, vec3&, vec3&, vec3&, const BuiltinSamplerGPU<float>&) {
@@ -87,7 +87,7 @@ void SoftwareRenderer::render(CommandBuffer& buffer,BuiltinRenderTarget<RGBA8>& 
                 res.pos.x = vert.pos.x*mul.x, res.pos.y = -vert.pos.y*mul.y;
                 res.pos.x -= 1.0f, res.pos.y += 1.0f;
                 res.uv.x = vert.uv.x, res.uv.y = vert.uv.y;
-                res.col = toRGBA(vert.col);
+                res.col = vert.col;
             }
         }
         buffer.memcpy(vbo, [buf = std::move(tmp)](auto&& call) {
@@ -128,8 +128,7 @@ void SoftwareRenderer::render(CommandBuffer& buffer,BuiltinRenderTarget<RGBA8>& 
             const vec4 scissor = { cmd.ClipRect.x,cmd.ClipRect.z, cmd.ClipRect.y, cmd.ClipRect.w };
             const auto faceCount = cmd.ElemCount / 3;
             const auto idxPtr= iboBase + idxBufferOffset;
-            const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(faceCount,
-                idxPtr.get(), faceCount);
+            const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(faceCount,idxPtr.get());
             TriangleRenderingHistory history;
             history.reset(faceCount, 65536U);
             renderTriangles<decltype(index), VertOut, BuiltinSamplerGPU<float>,

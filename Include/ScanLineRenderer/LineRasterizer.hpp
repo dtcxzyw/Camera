@@ -9,12 +9,9 @@
 ///@see <a href="https://www.khronos.org/registry/OpenGL/specs/gl/glspec46.compatibility.pdf">OpenGL 4.6 API Specification, Section 10.1 Primitive Types</a>
 
 class LineStrips final {
-private:
-    unsigned int mSize;
 public:
-    explicit LineStrips(const unsigned int vertSize) : mSize(vertSize - 1) {}
-    BOTH auto size() const {
-        return mSize;
+    static auto size(const unsigned int vertSize) {
+        return vertSize - 1;
     }
 
     CUDAINLINE uvec2 operator[](const unsigned int off) const {
@@ -27,8 +24,9 @@ private:
     unsigned int mSize;
 public:
     explicit LineLoops(const unsigned int vertSize) : mSize(vertSize) {}
-    BOTH auto size() const {
-        return mSize;
+
+    static auto size(const unsigned int vertSize) {
+        return vertSize;
     }
 
     CUDAINLINE uvec2 operator[](const unsigned int off) const {
@@ -38,12 +36,9 @@ public:
 };
 
 class SeparateLines final {
-private:
-    unsigned int mSize;
 public:
-    explicit SeparateLines(const unsigned int lineSize) : mSize(lineSize) {}
-    BOTH auto size() const {
-        return mSize;
+    static auto size(const unsigned int vertSize) {
+        return vertSize / 2;
     }
 
     CUDAINLINE uvec2 operator[](const unsigned int off) const {
@@ -53,12 +48,9 @@ public:
 };
 
 class SeparateTrianglesWireframe final {
-private:
-    unsigned int mSize;
 public:
-    explicit SeparateTrianglesWireframe(const unsigned int faceSize) : mSize(faceSize * 3) {}
-    BOTH auto size() const {
-        return mSize;
+    static auto size(const unsigned int faceSize) {
+        return faceSize * 3;
     }
 
     CUDAINLINE uvec2 operator[](const unsigned int off) const {
@@ -67,19 +59,14 @@ public:
     }
 };
 
-class SeparateTrianglesWithIndexWireframe final {
+class SeparateTrianglesWireframeWithIndex final {
 private:
     READONLY(uvec3) mPtr;
-    unsigned int mSize;
 public:
-    SeparateTrianglesWithIndexWireframe(READONLY(uvec3) idx, const unsigned int faceSize)
-        : mPtr(idx), mSize(faceSize * 3) {}
+    explicit SeparateTrianglesWireframeWithIndex(READONLY(uvec3) idx): mPtr(idx) {}
 
-    explicit SeparateTrianglesWithIndexWireframe(const DataViewer<uvec3>& ibo)
-        : SeparateTrianglesWithIndexWireframe(ibo.begin(), ibo.size()) {}
-
-    BOTH auto size() const {
-        return mSize;
+    static auto size(const unsigned int faceSize) {
+        return faceSize * 3;
     }
 
     CUDAINLINE uvec2 operator[](const unsigned int off) const {
