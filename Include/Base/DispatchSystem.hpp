@@ -14,7 +14,7 @@
 
 class CommandBuffer;
 class ResourceManager;
-using ID = uint64_t;
+using Id = uint64_t;
 
 class ResourceInstance : Uncopyable {
 public:
@@ -27,7 +27,7 @@ public:
 template <typename T>
 class Resource : Uncopyable {
 private:
-    const ID mID;
+    const Id mId;
 protected:
     ResourceManager& mManager;
     void addInstance(std::unique_ptr<ResourceInstance> instance) const;
@@ -35,8 +35,8 @@ public:
     explicit Resource(ResourceManager& manager);
     virtual ~Resource() = default;
 
-    ID getID() const noexcept {
-        return mID;
+    Id getId() const noexcept {
+        return mId;
     }
 };
 
@@ -55,8 +55,8 @@ public:
         mRef.reset();
     }
 
-    ID getID() const {
-        return mRef->getID();
+    Id getId() const {
+        return mRef->getId();
     }
 };
 
@@ -122,30 +122,30 @@ namespace Impl {
     class Operator : Uncopyable {
     protected:
         ResourceManager& mManager;
-        ID mID;
-        DeviceMemoryInstance& getMemory(ID id) const;
+        Id mId;
+        DeviceMemoryInstance& getMemory(Id id) const;
     public:
         explicit Operator(ResourceManager& manager);
         virtual ~Operator() = default;
-        ID getID() const;
+        Id getId() const;
         virtual void emit(Stream& stream) = 0;
     };
 
     class Memset final : public Operator {
     private:
-        ID mMemoryID;
+        Id mMemoryId;
         int mMask;
     public:
-        Memset(ResourceManager& manager, ID memoryID, int mask);
+        Memset(ResourceManager& manager, Id memoryID, int mask);
         void emit(Stream& stream) override;
     };
 
     class Memcpy final : public Operator {
     private:
-        ID mDst;
+        Id mDst;
         std::function<void(std::function<void(const void*)>)> mSrc;
     public:
-        Memcpy(ResourceManager& manager, ID dst,
+        Memcpy(ResourceManager& manager, Id dst,
                std::function<void(std::function<void(const void*)>)>&& src);
         void emit(Stream& stream) override;
     };
@@ -153,10 +153,10 @@ namespace Impl {
 
 class FunctionOperator final : public Impl::Operator {
 private:
-    std::function<void(ID, ResourceManager&, Stream&)> mClosure;
+    std::function<void(Id, ResourceManager&, Stream&)> mClosure;
 public:
     FunctionOperator(ResourceManager& manager,
-                     std::function<void(ID, ResourceManager&, Stream&)>&& closure);
+                     std::function<void(Id, ResourceManager&, Stream&)>&& closure);
     void emit(Stream& stream) override;
 };
 
@@ -177,36 +177,36 @@ public:
 namespace Impl {
     class CastTag {
     protected:
-        static void get(ResourceManager& manager, ID id, void* ptr);
+        static void get(ResourceManager& manager, Id id, void* ptr);
     };
 
     template <typename T>
-    class ResourceID final : public CastTag {
+    class ResourceId final : public CastTag {
     private:
-        ID mID;
+        Id mId;
     public:
-        explicit ResourceID(const ID id) : mID(id) {}
+        explicit ResourceId(const Id id) : mId(id) {}
 
         T get(ResourceManager& manager) {
             T res;
-            CastTag::get(manager, mID, &res);
+            CastTag::get(manager, mId, &res);
             return res;
         }
     };
 
     template <typename T, typename = std::enable_if_t<!std::is_base_of<ResourceTag, T>::value>>
-    T castID(T arg) {
+    T castId(T arg) {
         return arg;
     }
 
     template <typename T>
-    auto castID(const ResourceRef<T>& ref) -> ResourceID<T> {
-        return ResourceID<T>{ref.getID()};
+    auto castId(const ResourceRef<T>& ref) -> ResourceId<T> {
+        return ResourceId<T>{ref.getId()};
     }
 
     template <typename T>
-    auto castID(const MemoryRef<T>& ref) -> ResourceID<T*> {
-        return ResourceID<T*>{ref.getID()};
+    auto castId(const MemoryRef<T>& ref) -> ResourceId<T*> {
+        return ResourceId<T*>{ref.getId()};
     }
 
     template <typename T, typename = std::enable_if_t<!std::is_base_of<CastTag, T>::value>>
@@ -243,7 +243,7 @@ namespace Impl {
         std::function<T*(ResourceManager&)> mClosure;
     public:
         explicit DataPtrHelper(const MemoryRef<T>& ref): mClosure(
-            [rval = castID(ref)](ResourceManager& manager) {
+            [rval = castId(ref)](ResourceManager& manager) {
                 return cast(rval, manager);
             }) {}
 
@@ -308,7 +308,7 @@ namespace Impl {
     public:
         template <typename U>
         explicit ValueHelper(const U& val) : mClosure(
-            [rval = castID(val)](ResourceManager& manager) {
+            [rval = castId(val)](ResourceManager& manager) {
                 return cast(rval, manager);
             }) {}
 
@@ -337,7 +337,7 @@ namespace Impl {
         std::function<unsigned int*(ResourceManager&)> mClosure;
     public:
         LaunchSizeHelper(const MemoryRef<unsigned int>& ptr, unsigned int off) {
-            auto rval = castID(ptr);
+            auto rval = castId(ptr);
             mClosure = [rval,off](ResourceManager& manager) {
                 return cast(rval, manager) + off;
             };
@@ -401,9 +401,9 @@ using Impl::LaunchSize;
 
 namespace Impl {
     struct TaskState final {
-        bool isDone;
-        bool isReleased;
-        TaskState() : isDone(false), isReleased(false) {}
+        bool isLaunched;
+        Event event;
+        TaskState() :isLaunched(false) {}
     };
 }
 
@@ -412,6 +412,7 @@ private:
     std::shared_ptr<Impl::TaskState> mPromise;
 public:
     explicit Future(std::shared_ptr<Impl::TaskState> promise);
+    void wait();
     bool finished() const;
 };
 
@@ -422,22 +423,22 @@ public:
 
 class ResourceManager final : Uncopyable {
 private:
-    std::map<ID, std::pair<ID, std::unique_ptr<ResourceInstance>>> mResources;
+    std::map<Id, std::pair<Id, std::unique_ptr<ResourceInstance>>> mResources;
     cudaStream_t mStream = nullptr;
-    ID mResourceCount = 0, mRegisteredResourceCount = 0, mOperatorCount = 0, mSyncPoint = 0;
+    Id mResourceCount = 0, mRegisteredResourceCount = 0, mOperatorCount = 0, mSyncPoint = 0;
     std::map<size_t, std::unique_ptr<ResourceRecycler>> mRecyclers;
     #ifdef CAMERA_RESOURCE_CHECK
     std::set<ID> mUnknownResource;
     #endif
 public:
-    void registerResource(ID id, std::unique_ptr<ResourceInstance>&& instance);
-    ResourceInstance& getResource(ID id);
+    void registerResource(Id id, std::unique_ptr<ResourceInstance>&& instance);
+    ResourceInstance& getResource(Id id);
     void bindStream(cudaStream_t stream);
     cudaStream_t getStream() const;
-    void gc(ID time);
-    ID allocResource();
-    ID getOperatorPID();
-    void syncPoint(ID time);
+    void gc(Id time);
+    Id allocResource();
+    Id getOperatorPid();
+    void syncPoint(Id time);
 
     template <typename Recycler>
     Recycler& getRecycler() {
@@ -460,8 +461,7 @@ private:
 public:
     Task(Stream& stream, std::unique_ptr<ResourceManager> manager,
          std::queue<std::unique_ptr<Impl::Operator>>& commandQueue,
-         std::shared_ptr<Impl::TaskState> promise);
-    ~Task();
+        std::shared_ptr<Impl::TaskState> promise);
     bool update();
     bool isDone() const;
 };
@@ -513,7 +513,7 @@ public:
     template <typename Func, typename... Args>
     void runKernelDim(Func func, const dim3 grid, const dim3 block, Args ... args) {
         mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchDim>(*mResourceManager,
-                                                                      func, grid, block, Impl::castID(args)...));
+                                                                      func, grid, block, Impl::castId(args)...));
     }
 
     template <typename Func, typename... Args>
@@ -524,18 +524,18 @@ public:
     template <typename Func, typename... Args>
     void runKernelLinear(Func func, const size_t size, Args ... args) {
         mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchLinear>(*mResourceManager,
-                                                                         func, size, Impl::castID(args)...));
+                                                                         func, size, Impl::castId(args)...));
     }
 
     void addCallback(const std::function<void()>& func);
     void sync();
 
     void pushOperator(std::unique_ptr<Impl::Operator>&& op);
-    void pushOperator(std::function<void(ID, ResourceManager&, Stream&)>&& op);
+    void pushOperator(std::function<void(Id, ResourceManager&, Stream&)>&& op);
 
     template <typename T, typename... Args>
     auto makeLazyConstructor(Args ... args) {
-        return Impl::LazyConstructor<T, decltype(Impl::castID(args))...>(Impl::castID(args)...);
+        return Impl::LazyConstructor<T, decltype(Impl::castId(args))...>(Impl::castId(args)...);
     }
 
     ResourceManager& getResourceManager();
@@ -584,9 +584,9 @@ public:
 
 template <typename T>
 void Resource<T>::addInstance(std::unique_ptr<ResourceInstance> instance) const {
-    mManager.registerResource(mID, std::move(instance));
+    mManager.registerResource(mId, std::move(instance));
 }
 
 template <typename T>
 Resource<T>::Resource(ResourceManager& manager)
-    : mID(manager.allocResource()), mManager(manager) {}
+    : mId(manager.allocResource()), mManager(manager) {}

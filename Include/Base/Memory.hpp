@@ -55,6 +55,7 @@ public:
 class PinnedMemory final : Uncopyable {
 private:
     void* mPtr;
+    size_t mSize;
 public:
     explicit PinnedMemory(size_t size);
     ~PinnedMemory();

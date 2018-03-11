@@ -47,7 +47,7 @@ BOTH auto calcBlockSize(const T a,const T b) {
     return (a + b - 1) / b;
 }
 
-CUDAINLINE unsigned int getID() {
+CUDAINLINE unsigned int getId() {
     return blockIdx.x * blockDim.x + threadIdx.x;
 }
 

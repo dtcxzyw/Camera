@@ -24,7 +24,7 @@ CUDAINLINE VertexInfo<Out> lerpZ(VertexInfo<Out> a, VertexInfo<Out> b, float z) 
 template<typename Vert, typename Out, typename Uniform, VSF<Vert, Out, Uniform> vs>
 GLOBAL void runVS(const unsigned int size, READONLY(Vert) in,
     READONLY(Uniform) u, VertexInfo<Out>* res) {
-    const auto id = getID();
+    const auto id = getId();
     if (id >= size)return;
     auto& vert = res[id];
     vs(in[id], *u, vert.pos, vert.out);

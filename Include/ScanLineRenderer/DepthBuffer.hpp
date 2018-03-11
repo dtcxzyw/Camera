@@ -34,7 +34,7 @@ public:
     explicit DepthBuffer(const uvec2 size) :mSize(size),
         mData(calcBlockSize(size.x,32U)*calcBlockSize(size.y,32U)*1024U) {}
     void clear(CommandBuffer& buffer) {
-        buffer.pushOperator([=](ID,ResourceManager&,Stream& stream) {stream.memset(mData, 0xff); });
+        buffer.pushOperator([=](Id,ResourceManager&,Stream& stream) {stream.memset(mData, 0xff); });
     }
     auto size() const {
         return mSize;

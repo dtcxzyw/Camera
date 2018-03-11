@@ -11,7 +11,7 @@ CUDAINLINE vec4 calcCameraSphere(const vec4 sp, const mat4& mat) {
 template <typename Uniform, VSFS<Uniform> vs>
 GLOBAL void calcCameraSpheres(const unsigned int size, READONLY(vec4) in, vec4* out,
                               READONLY(Uniform) uniform) {
-    const auto id = getID();
+    const auto id = getId();
     if (id >= size)return;
     out[id] = vs(in[id], *uniform);
 }

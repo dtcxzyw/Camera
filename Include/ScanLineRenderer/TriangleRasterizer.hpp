@@ -226,7 +226,7 @@ template <typename Index, typename Out, typename Uniform, TCSF<Uniform> cs>
 GLOBAL void processTriangles(const unsigned int size,READONLY(VertexInfo<Out>) vert,
                              Index index,READONLY(Uniform) uniform, const float near, const float far,
                              TriangleProcessingArgs<Out> args) {
-    const auto id = getID();
+    const auto id = getId();
     if (id >= size)return;
     const auto idx = index[id];
     TriangleVert<Out> tri;
@@ -321,11 +321,11 @@ GLOBAL void renderTrianglesGPU(unsigned int* offset, Triangle<Out>* tri, TileRef
 }
 
 struct TriangleRenderingHistory final : Uncopyable {
-    unsigned int baseSize;
+    unsigned int baseSize, renderCount;
     PinnedBuffer<unsigned int> triNum;
     bool enableSelfAdaptiveAllocation;
 
-    TriangleRenderingHistory() : baseSize(0), triNum(1), enableSelfAdaptiveAllocation(false) {}
+    TriangleRenderingHistory() : baseSize(0), renderCount(0), triNum(1), enableSelfAdaptiveAllocation(false) {}
 
     unsigned int calcBufferSize(const unsigned int maxv) const {
         return baseSize + std::min(*triNum + (*triNum >> 3), maxv);
@@ -335,6 +335,7 @@ struct TriangleRenderingHistory final : Uncopyable {
         *triNum = size;
         baseSize = base;
         enableSelfAdaptiveAllocation = SAA;
+        renderCount = 0;
     }
 };
 
@@ -362,7 +363,7 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
 
     //pass 2:sort triangles
     auto sortedTri = sortTiles(buffer, cnt, idx, psiz * 2, maxSize);
-    if (history.enableSelfAdaptiveAllocation) {
+    if ((++history.renderCount & 31) == 0 && history.enableSelfAdaptiveAllocation) {
         LaunchSize triNumData(cnt, 6);
         triNumData.download(*history.triNum, buffer);
     }

@@ -2,22 +2,40 @@
 #include <vector>
 #include <algorithm>
 
+struct PinnedMemoryApi final {
+    using PtrType = void*;
+    static bool alloc(PtrType& ptr,const size_t size) {
+        return cudaMallocHost(&ptr, size, cudaHostAllocPortable | cudaHostAllocWriteCombined)
+            == cudaSuccess;
+    }
+    static void free(void* ptr) {
+        checkError(cudaFreeHost(ptr));
+    }
+};
+
+struct GlobalMemoryApi final {
+    using PtrType=void*;
+    static bool alloc(PtrType& res, const size_t size) {
+        return cudaMalloc(&res, size) == cudaSuccess;
+    }
+    static void free(void* ptr) {
+        checkError(cudaFree(ptr));
+    }
+};
+
+template<typename Api>
 class MemoryPool final : Uncopyable {
+public:
+    using PtrType = typename Api::PtrType;
 private:
     static constexpr auto timeBlock = 1024U;
-    std::vector<void*> mPool[41];
+    std::vector<typename Api::PtrType> mPool[41];
     uintmax_t mLastRequireTimeStamp[41]{};
     uintmax_t mTimeCount;
 
-    MemoryPool(): mTimeCount(0) {
-        std::fill(std::begin(mLastRequireTimeStamp), std::end(mLastRequireTimeStamp), 0);
-    }
-
-    friend MemoryPool& getMemoryPool();
-
     void clearLevel(const size_t level) {
         for (auto&& p : mPool[level])
-            checkError(cudaFree(p));
+            Api::free(p);
         mPool[level].clear();
     }
 
@@ -30,27 +48,30 @@ private:
             clearLevel(x);
     }
 
-    void* tryAlloc(const size_t size) {
-        void* ptr;
-        cudaError_t err;
-        while ((err = cudaMalloc(&ptr, size)) != cudaSuccess) {
+    PtrType tryAlloc(const size_t size) {
+        PtrType ptr;
+        while (!Api::alloc(ptr, size)) {
             auto flag = true;
             for (auto&& p : mPool) {
                 if (!p.empty()) {
                     flag = false;
-                    checkError(cudaFree(p.back()));
+                    Api::free(p.back());
                     p.pop_back();
                     break;
                 }
             }
-            if (flag) checkError(err);
+            if (flag) throw std::bad_alloc{};
         }
         return ptr;
     }
 
 public:
-    void* memAlloc(const size_t size, const bool isStatic) {
-        if (size == 0)return nullptr;
+    MemoryPool() : mTimeCount(0) {
+        std::fill(std::begin(mLastRequireTimeStamp), std::end(mLastRequireTimeStamp), 0);
+    }
+
+    PtrType memAlloc(const size_t size, const bool isStatic) {
+        if (size == 0)return {};
         if (isStatic)return tryAlloc(size);
         const auto level = calcSizeLevel(size);
         mLastRequireTimeStamp[level] = ++mTimeCount;
@@ -63,7 +84,7 @@ public:
         return tryAlloc(1ULL<<level);
     }
 
-    void memFree(void* ptr, const size_t size) {
+    void memFree(PtrType ptr, const size_t size) {
         if (size)mPool[calcSizeLevel(size)].push_back(ptr);
         else checkError(cudaFree(ptr));
     }
@@ -78,31 +99,33 @@ public:
     }
 };
 
-static MemoryPool& getMemoryPool() {
-    thread_local static MemoryPool pool;
+template<typename Api>
+static MemoryPool<Api>& getMemoryPool() {
+    thread_local static MemoryPool<Api> pool;
     return pool;
 }
 
 void clearMemoryPool() {
-    getMemoryPool().clear();
+    getMemoryPool<GlobalMemoryApi>().clear();
+    getMemoryPool<PinnedMemoryApi>().clear();
 }
 
 GlobalMemoryDeleter::GlobalMemoryDeleter(const size_t size) noexcept:mSize(size) {}
 
 void GlobalMemoryDeleter::operator()(void * ptr) const{
-    getMemoryPool().memFree(ptr,mSize);
+    getMemoryPool<GlobalMemoryApi>().memFree(ptr,mSize);
 }
 
 UniqueMemory allocGlobalMemory(const size_t size, const bool isStatic) {
-    return UniqueMemory{ getMemoryPool().memAlloc(size,isStatic),GlobalMemoryDeleter(isStatic?0:size)};
+    return UniqueMemory{ getMemoryPool<GlobalMemoryApi>().memAlloc(size,isStatic),
+        GlobalMemoryDeleter(isStatic ? 0 : size) };
 }
 
-PinnedMemory::PinnedMemory(const size_t size): mPtr(nullptr) {
-    checkError(cudaMallocHost(&mPtr, size, cudaHostAllocPortable | cudaHostAllocWriteCombined));
-}
+PinnedMemory::PinnedMemory(const size_t size)
+    : mPtr(getMemoryPool<PinnedMemoryApi>().memAlloc(size, false)),mSize(size) {}
 
 PinnedMemory::~PinnedMemory() {
-    checkError(cudaFreeHost(mPtr));
+    getMemoryPool<PinnedMemoryApi>().memFree(mPtr,mSize);
 }
 
 void* PinnedMemory::get() const noexcept {

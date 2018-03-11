@@ -11,7 +11,7 @@ template <typename Out, typename Uniform, typename FrameBuffer,
 GLOBAL void drawPointHelperGPU(const unsigned int size, READONLY(VertexInfo<Out>) vert,
                                READONLY(Uniform) uniform, FrameBuffer* frameBuffer, const vec4 scissor,
                                const float near, const float invnf, const vec2 hfsize) {
-    const auto id = getID();
+    const auto id = getId();
     if (id >= size)return;
     auto p = vert[id];
     p.pos = toPos(p.pos, *uniform);

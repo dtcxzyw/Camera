@@ -18,7 +18,7 @@ CUDAINLINE void cutLine(LineRef ref, unsigned int* cnt, LineRef* out) {
 
 GLOBAL void emitLine(const unsigned int size, unsigned int* cnt,
                          READONLY(unsigned int) offset, const LineRef* in, LineRef* out) {
-    const auto id = getID();
+    const auto id = getId();
     if (id >= size)return;
     const auto ref = in[id];
     if (ref.size == 11)cutLine(ref, cnt + 10, out + offset[10]);

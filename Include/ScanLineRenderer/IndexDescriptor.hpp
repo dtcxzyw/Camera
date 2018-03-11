@@ -20,5 +20,5 @@ public:
 
 template<typename Index,typename... Args>
 auto makeIndexDescriptor(const size_t size,Args... args) {
-    return IndexDescriptor<Index, decltype(Impl::castID(args))...>(size, Impl::castID(args)...);
+    return IndexDescriptor<Index, decltype(Impl::castId(args))...>(size, Impl::castId(args)...);
 }

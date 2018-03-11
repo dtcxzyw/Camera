@@ -8,7 +8,7 @@ template<unsigned int inv,typename Index, typename Vert, typename Uniform,
     GSF<Vert, Uniform> gs>
 GLOBAL void GTHelper(const unsigned int size,READONLY(Vert) vert, Index idx,
     READONLY(Uniform) uniform,QueueGPU<Vert> queue) {
-    const auto id = getID();
+    const auto id = getId();
     if (id >= size)return;
     Vert in[inv];
     for (auto i = 0; i < inv; ++i)in[i] = vert[idx[id][i]];

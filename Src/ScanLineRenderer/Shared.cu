@@ -20,7 +20,7 @@ CUDAINLINE void cutTile(TileRef ref, unsigned int* cnt, TileRef* out, const unsi
 
 GLOBAL void emitTile(const unsigned int size,unsigned int* cnt,READONLY(unsigned int) offset,
     READONLY(TileRef) in, TileRef* out, const unsigned int maxSize) {
-    const auto id = getID();
+    const auto id = getId();
     if(id>=size)return;
     const auto ref = in[id];
     if (ref.size== 5)cutTile(ref,cnt+5,out+offset[5],maxSize);

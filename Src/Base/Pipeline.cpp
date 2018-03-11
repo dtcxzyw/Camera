@@ -1,12 +1,9 @@
 #include <Base/Pipeline.hpp>
+#include <Base/Environment.hpp>
 
 Stream::Stream() {
     checkError(cudaStreamCreateWithFlags(&mStream,cudaStreamNonBlocking));
-    int cur;
-    checkError(cudaGetDevice(&cur));
-    cudaDeviceProp prop{};
-    checkError(cudaGetDeviceProperties(&prop,cur));
-    mMaxThread = prop.maxThreadsPerBlock;
+    mMaxThread = getDeviceMonitor().getProp().maxThreadsPerBlock;
 }
 
 Stream::~Stream() {
@@ -29,13 +26,20 @@ void Stream::wait(Event & event) {
     checkError(cudaStreamWaitEvent(mStream,event.get(),0));
 }
 
-Event::Event(Stream& stream) {
+Event::Event() {
     checkError(cudaEventCreateWithFlags(&mEvent, cudaEventDisableTiming));
+}
+
+void Event::bind(Stream& stream) {
     checkError(cudaEventRecord(mEvent, stream.get()));
 }
 
 void Event::wait() {
     checkError(cudaEventSynchronize(mEvent));
+}
+
+cudaError_t Event::query() const {
+    return cudaEventQuery(mEvent);
 }
 
 cudaEvent_t Event::get() const {

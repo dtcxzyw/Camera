@@ -114,7 +114,7 @@ template <typename Index, typename Out, typename Uniform, PosConverter<Uniform> 
 GLOBAL void processLines(const unsigned int size,READONLY(VertexInfo<Out>) in, Index index,
                          LineInfo<Out>* info, LineRef* ref, unsigned int* cnt, const vec4 scissor, const vec2 hsiz,
                          const float near, const float far,READONLY(Uniform) uniform) {
-    const auto id = getID();
+    const auto id = getId();
     if (id >= size)return;
     auto idx = index[id];
     auto a = in[idx[0]], b = in[idx[1]];

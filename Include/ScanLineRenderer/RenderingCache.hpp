@@ -4,7 +4,7 @@
 namespace Impl {
     template<typename T>
     GLOBAL void updateCache(const unsigned int size, T* address) {
-        const auto id = getID();
+        const auto id = getId();
         if (id >= size)return;
         address[id] <<= 1;
     }

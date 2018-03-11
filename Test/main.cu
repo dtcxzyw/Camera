@@ -12,16 +12,16 @@ using namespace std::chrono_literals;
 
 class App final : Uncopyable {
 private:
-    float light = 65.0f, r = 20.0f;
-    StaticMesh box, model;
-    std::unique_ptr<RC8> cache;
-    DataViewer<vec4> spheres;
-    std::unique_ptr<TriangleRenderingHistory> mh;
-    std::unique_ptr<TriangleRenderingHistory> sh;
-    std::shared_ptr<BuiltinCubeMap<RGBA>> envMap;
-    std::shared_ptr<BuiltinSampler<RGBA>> envMapSampler;
-    DisneyBRDFArg arg;
-    Camera camera;
+    float mLight = 65.0f, mR = 20.0f;
+    StaticMesh mBox, mModel;
+    std::unique_ptr<RC8> mCache;
+    DataViewer<vec4> mSpheres;
+    std::unique_ptr<TriangleRenderingHistory> mMh;
+    std::unique_ptr<TriangleRenderingHistory> mSh;
+    std::shared_ptr<BuiltinCubeMap<RGBA>> mEnvMap;
+    std::shared_ptr<BuiltinSampler<RGBA>> mEnvMapSampler;
+    DisneyBRDFArg mArg;
+    Camera mCamera;
 
     void setUIStyle() {
         ImGui::StyleColorsDark();
@@ -37,24 +37,24 @@ private:
         ImGui::SetWindowPos({0, 0});
         ImGui::SetWindowSize({500, 550});
         ImGui::SetWindowFontScale(1.5f);
-        ImGui::Text("vertices: %d, triangles: %d\n", static_cast<int>(model.vert.size()),
-                    static_cast<int>(model.index.size()));
-        ImGui::Text("triNum: %u\n", *mh->triNum);
+        ImGui::Text("vertices: %d, triangles: %d\n", static_cast<int>(mModel.vert.size()),
+                    static_cast<int>(mModel.index.size()));
+        ImGui::Text("triNum: %u\n", *mMh->triNum);
         ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
-        ImGui::Text("FOV %.1f ", degrees(camera.toFov()));
-        ImGui::SliderFloat("focal length", &camera.focalLength, 1.0f, 500.0f, "%.1f");
-        ImGui::SliderFloat("light", &light, 0.0f, 100.0f);
-        ImGui::SliderFloat("lightRadius", &r, 0.0f, 40.0f);
+        ImGui::Text("FOV %.1f ", degrees(mCamera.toFov()));
+        ImGui::SliderFloat("focal length", &mCamera.focalLength, 1.0f, 500.0f, "%.1f");
+        ImGui::SliderFloat("light", &mLight, 0.0f, 100.0f);
+        ImGui::SliderFloat("lightRadius", &mR, 0.0f, 40.0f);
         #define COLOR(name)\
-arg.##name=clamp(arg.##name,vec3(0.01f),vec3(0.999f));\
-ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);
+mArg.##name=clamp(mArg.##name,vec3(0.01f),vec3(0.999f));\
+ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
         COLOR(baseColor);
         //Color(edgeTint);
         #undef COLOR
 
         #define ARG(name)\
- arg.##name=clamp(arg.##name,0.01f,0.999f);\
- ImGui::SliderFloat(#name, &arg.##name, 0.01f, 0.999f);
+ mArg.##name=clamp(mArg.##name,0.01f,0.999f);\
+ ImGui::SliderFloat(#name, &mArg.##name, 0.01f, 0.999f);
         ARG(metallic);
         ARG(subsurface);
         ARG(specular);
@@ -89,23 +89,23 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);
         u.invV = inverse(u.V);
         u.normalInvV = mat3(transpose(u.V));
         u.normalMat = mat3(transpose(inverse(u.M)));
-        u.lc = vec3(light);
-        u.arg = arg;
+        u.lc = vec3(mLight);
+        u.arg = mArg;
         u.cp = cp;
         u.lp = cp + vec3{0.0f, 4.0f, 0.0f};
-        u.r2 = r * r;
-        u.sampler = envMapSampler->toSampler();
+        u.r2 = mR * mR;
+        u.sampler = mEnvMapSampler->toSampler();
         return u;
     }
 
-    using SwapChainT = SwapChain<FrameBufferCPU>;
+    using SharedFrame= std::shared_ptr<FrameBufferCPU>;
 
     struct RenderingTask {
         Future future;
-        SwapChainT::SharedFrame frame;
+        SharedFrame frame;
         RC8::Block block;
 
-        RenderingTask(const Future& fut, const SwapChainT::SharedFrame& fbo, const RC8::Block blockInfo)
+        RenderingTask(const Future& fut, const SharedFrame& fbo, const RC8::Block blockInfo)
             : future(fut), frame(fbo), block(blockInfo) {}
     };
 
@@ -116,19 +116,19 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);
         return static_cast<float>(t * 1e-9);
     }
 
-    auto addTask(SwapChainT::SharedFrame frame, const uvec2 size, float* lum) {
+    auto addTask(SharedFrame frame, const uvec2 size, float* lum) {
         static auto last = getTime();
         const auto now = getTime();
-        const auto converter = camera.toRasterPos(size);
+        const auto converter = mCamera.toRasterPos(size);
         last = now;
         auto buffer = std::make_unique<CommandBuffer>();
         if (frame->size != size) {
-            mh->reset(model.index.size(), cache->blockSize() * 3, enableSAA);
-            cache->reset();
-            sh->reset(box.index.size());
+            mMh->reset(mModel.index.size(), mCache->blockSize() * 3, enableSAA);
+            mCache->reset();
+            mSh->reset(mBox.index.size());
         }
         frame->resize(size);
-        auto block = cache->pop(*buffer);
+        auto block = mCache->pop(*buffer);
         {
             auto uniform = getUniform(now - last, converter.mul);
             auto uni = buffer->allocConstant<Uniform>();
@@ -136,7 +136,7 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);
             buffer->memcpy(uni, [uniform](auto call) {
                 call(&uniform);
             });
-            kernel(model, *mh, box, *sh, spheres, uni, *frame, lum, converter, *buffer);
+            kernel(mModel, *mMh, mBox, *mSh, mSpheres, uni, *frame, lum, converter, *buffer);
         }
         renderGUI(D3D11Window::get());
         SoftwareRenderer::get().render(*buffer, *frame->postRT);
@@ -145,8 +145,8 @@ ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);
 
     void uploadSpheres() {
         vec4 sphere[] = {{0.0f, 3.0f, 10.0f, 5.0f}, {0.0f, 0.0f, 13.0f, 3.0f}};
-        spheres = DataViewer<vec4>(std::size(sphere));
-        checkError(cudaMemcpy(spheres.begin(), sphere, sizeof(sphere), cudaMemcpyHostToDevice));
+        mSpheres = DataViewer<vec4>(std::size(sphere));
+        checkError(cudaMemcpy(mSpheres.begin(), sphere, sizeof(sphere), cudaMemcpyHostToDevice));
     }
 
 public:
@@ -159,11 +159,11 @@ public:
         auto&& env = Environment::get();
         env.init(AppType::Online,GraphicsInteroperability::D3D11);
 
-        camera.near = 1.0f;
-        camera.far = 200.0f;
-        camera.filmAperture = {0.980f, 0.735f};
-        camera.mode = Camera::FitResolutionGate::Overscan;
-        camera.focalLength = 15.0f;
+        mCamera.near = 1.0f;
+        mCamera.far = 200.0f;
+        mCamera.filmAperture = {0.980f, 0.735f};
+        mCamera.mode = Camera::FitResolutionGate::Overscan;
+        mCamera.focalLength = 15.0f;
 
         {
             Stream resLoader;
@@ -171,53 +171,59 @@ public:
             SoftwareRenderer::get().init(resLoader);
 
             uploadSpheres();
-            //model.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
-            model.load("Res/dragon.obj", resLoader);
-            cache = std::make_unique<RC8>(model.index.size());
-            mh = std::make_unique<TriangleRenderingHistory>();
-            mh->reset(model.index.size(), cache->blockSize() * 3, enableSAA);
+            //mModel.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
+            mModel.load("Res/dragon.obj", resLoader);
+            mCache = std::make_unique<RC8>(mModel.index.size());
+            mMh = std::make_unique<TriangleRenderingHistory>();
+            mMh->reset(mModel.index.size(), mCache->blockSize() * 3, enableSAA);
 
-            box.load("Res/cube.obj", resLoader);
-            sh = std::make_unique<TriangleRenderingHistory>();
-            sh->reset(box.index.size());
+            mBox.load("Res/cube.obj", resLoader);
+            mSh = std::make_unique<TriangleRenderingHistory>();
+            mSh->reset(mBox.index.size());
 
-            envMap = loadCubeMap([](size_t id) {
+            mEnvMap = loadCubeMap([](size_t id) {
                 const char* table[] = {"right", "left", "top", "bottom", "back", "front"};
                 return std::string("Res/skybox/") + table[id] + ".jpg";
             }, resLoader);
-            envMapSampler = std::make_shared<BuiltinSampler<RGBA>>(envMap->get());
+            mEnvMapSampler = std::make_shared<BuiltinSampler<RGBA>>(mEnvMap->get());
         }
 
-        arg.baseColor = vec3{220, 223, 227} / 255.0f;
+        mArg.baseColor = vec3{220, 223, 227} / 255.0f;
 
-        SwapChainT swapChain(3);
         std::queue<RenderingTask> tasks;
+
         {
             Stream copyStream;
             window.bindBackBuffer(copyStream.get());
             auto lum = DataViewer<float>(1);
+
+            constexpr auto queueSize = 3;
+
+            {
+                const auto size = window.size();
+                for (auto i = 0; i < queueSize; ++i) {
+                    tasks.push(addTask(std::make_shared<FrameBufferCPU>(), size, lum.begin()));
+                }
+            }
+
             while (window.update()) {
                 const auto size = window.size();
                 if (size.x == 0 || size.y == 0) {
                     std::this_thread::sleep_for(1ms);
                     continue;
                 }
-                SwapChainT::SharedFrame frame;
-                while (true) {
-                    if (!swapChain.empty())
-                        tasks.push(addTask(swapChain.pop(), size, lum.begin()));
-                    if (!tasks.empty() && tasks.front().future.finished()) {
-                        frame = tasks.front().frame;
-                        cache->push(tasks.front().block);
-                        tasks.pop();
-                        break;
-                    }
-                }
+
+                tasks.front().future.wait();
+                auto frame = std::move(tasks.front().frame);
+                mCache->push(tasks.front().block);
+                tasks.pop();
+
                 if (frame->size == size) {
                     window.present(frame->postRT->get());
                     window.swapBuffers();
                 }
-                swapChain.push(std::move(frame));
+
+                tasks.push(addTask(std::move(frame), size, lum.begin()));
             }
             window.unbindBackBuffer();
         }

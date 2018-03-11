@@ -37,7 +37,7 @@ CUDAINLINE vec4 calcSphereRange(const vec4 sphere, const float near, const float
 GLOBAL void processSphereInfoGPU(const unsigned int size,READONLY(vec4) in, SphereInfo* info,
     TileRef* ref, unsigned int* cnt, const vec4 scissor, const vec2 hsiz,
     const float near, const float far, const vec2 mul) {
-    const auto id = getID();
+    const auto id = getId();
     if (id >= size)return;
     const auto sphere = in[id];
     if (- sphere.w > far + sphere.z | sphere.w < near + sphere.z)return;

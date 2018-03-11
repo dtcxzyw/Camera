@@ -52,8 +52,10 @@ class Event final :Uncopyable {
 private:
     cudaEvent_t mEvent{};
 public:
-    explicit Event(Stream& stream);
+    Event();
+    void bind(Stream& stream);
     void wait();
+    cudaError_t query() const;
     cudaEvent_t get() const;
     ~Event();
 };

@@ -110,7 +110,7 @@ GLOBAL void updateLum(const PostUniform uniform) {
 
 template <VSF<VI, OI, Uniform> vs, TCSF<Uniform> cs,FSFT<OI, Uniform, FrameBufferGPU>... fs>
 void renderMesh(const StaticMesh& model, const MemoryRef<Uniform>& uniform,
-                const MemoryRef<FrameBufferGPU>& frameBuffer, uvec2 size, const Camera::RasterPosConverter converter,
+                const MemoryRef<FrameBufferGPU>& frameBuffer, const uvec2 size, const Camera::RasterPosConverter converter,
                 const CullFace mode, TriangleRenderingHistory& history, const vec4 scissor,
                 CommandBuffer& buffer) {
     auto vert = calcVertex<VI, OI, Uniform, vs>(buffer, model.vert, uniform);
