@@ -2,9 +2,8 @@
 #include <Base/Config.hpp>
 #ifdef CAMERA_D3D11_SUPPORT
 #include <Base/CompileBegin.hpp>
+#define NOMINMAX
 #include <d3d11.h>
-#undef max
-#undef min
 #undef near
 #undef far
 #include <Base/CompileEnd.hpp>
@@ -38,7 +37,7 @@ private:
     cudaArray_t getBackBuffer();
 public:
     void reset(uvec2 fsiz);
-    void D3D11Window::enumDevices(int* buf,unsigned int* count);
+    void enumDevices(int* buf,unsigned int* count) const;
 
     void bindBackBuffer(cudaStream_t stream);
     void unbindBackBuffer();

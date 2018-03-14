@@ -216,7 +216,7 @@ void D3D11Window::reset(const uvec2 fsiz) {
     }
 }
 
-void D3D11Window::enumDevices(int* buf,unsigned int* count) {
+void D3D11Window::enumDevices(int* buf,unsigned int* count) const {
     checkError(cudaD3D11GetDevices(count, buf, 256,
         mDevice, cudaD3D11DeviceListAll));
 }
@@ -242,7 +242,7 @@ void D3D11Window::unbindBackBuffer() {
 }
 
 void D3D11Window::present(cudaArray_t image) {
-    cudaMemcpy3DParms parms = { 0 };
+    cudaMemcpy3DParms parms{};
     parms.srcArray = image;
     parms.dstArray = getBackBuffer();
     parms.kind = cudaMemcpyDeviceToDevice;
@@ -264,7 +264,7 @@ cudaArray_t D3D11Window::getBackBuffer() {
         checkError(cudaGraphicsSubResourceGetMappedArray(&mArray,mRes, 0, 0));
     return mArray;
 }
-
+ 
 void D3D11Window::setVSync(const bool enable) {
     mEnableVSync = enable;
 }

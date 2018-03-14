@@ -9,6 +9,7 @@
 #include <IMGUI/imgui.h>
 #include <Base/CompileEnd.hpp>
 #include <stdexcept>
+#include <iostream>
 
 static void errorCallBack(const int code, const char* str) {
     printf("Error:code = %d reason:%s\n",code,str);
@@ -45,10 +46,57 @@ static void keyCallback(GLFWwindow*, const int key, int, const int action, int) 
     io.KeySuper = io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
 }
 
-void charCallback(GLFWwindow*, const unsigned int c) {
+static void charCallback(GLFWwindow*, const unsigned int c) {
     auto&& io = ImGui::GetIO();
     if (c > 0 && c < 0x10000)
         io.AddInputCharacter(static_cast<unsigned short>(c));
+}
+
+void APIENTRY glDebugOutput(const GLenum source, const GLenum type, const GLuint id,
+    const GLenum severity, GLsizei, const GLchar *message, const void *) {
+    using namespace std;
+
+    if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
+
+    cerr << "---------------\n";
+    cerr << "Debug message (" << id << "): " << message << '\n';
+
+    switch (source) {
+    case GL_DEBUG_SOURCE_API:             cerr << "Source: API"; break;
+    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   cerr << "Source: Window System"; break;
+    case GL_DEBUG_SOURCE_SHADER_COMPILER: cerr << "Source: Shader Compiler"; break;
+    case GL_DEBUG_SOURCE_THIRD_PARTY:     cerr << "Source: Third Party"; break;
+    case GL_DEBUG_SOURCE_APPLICATION:     cerr << "Source: Application"; break;
+    case GL_DEBUG_SOURCE_OTHER:           cerr << "Source: Other"; break;
+        default: ;
+    } cerr << '\n';
+
+    switch (type) {
+    case GL_DEBUG_TYPE_ERROR:               cerr << "Type: Error"; break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: cerr << "Type: Deprecated Behaviour"; break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  cerr << "Type: Undefined Behaviour"; break;
+    case GL_DEBUG_TYPE_PORTABILITY:         cerr << "Type: Portability"; break;
+    case GL_DEBUG_TYPE_PERFORMANCE:         cerr << "Type: Performance"; break;
+    case GL_DEBUG_TYPE_MARKER:              cerr << "Type: Marker"; break;
+    case GL_DEBUG_TYPE_PUSH_GROUP:          cerr << "Type: Push Group"; break;
+    case GL_DEBUG_TYPE_POP_GROUP:           cerr << "Type: Pop Group"; break;
+    case GL_DEBUG_TYPE_OTHER:               cerr << "Type: Other"; break;
+        default: ;
+    } cerr << '\n';
+
+    switch (severity) {
+    case GL_DEBUG_SEVERITY_HIGH:         cerr << "Severity: high"; break;
+    case GL_DEBUG_SEVERITY_MEDIUM:       cerr << "Severity: medium"; break;
+    case GL_DEBUG_SEVERITY_LOW:          cerr << "Severity: low"; break;
+    case GL_DEBUG_SEVERITY_NOTIFICATION: cerr << "Severity: notification"; break;
+        default: ;
+    } cerr << "\n\n" << flush;
+
+    if ((type <= GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR || severity <= GL_DEBUG_SEVERITY_MEDIUM)
+        && severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
+        debugBreak();
+        throw std::runtime_error("OpenGL error.");
+    }
 }
 
 class GLContext final:public Singletion<GLContext> {
@@ -77,6 +125,14 @@ public:
                 glewExperimental = true;
                 if (glewInit() != GLEW_NO_ERROR)
                     throw std::runtime_error("Failed to initialize glew.");
+#ifdef CAMERA_OPENGL_ENABLE_DEBUG_OUTPUT
+                glEnable(GL_DEBUG_OUTPUT);
+                glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+                glDebugMessageCallback(glDebugOutput, nullptr);
+#else
+                glDisable(GL_DEBUG_OUTPUT);
+                glDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+#endif
                 mFlag = true;
             }
         }
