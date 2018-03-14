@@ -6,8 +6,42 @@
 
 namespace Impl {
 
+    class L1GlobalMemoryPool final :public ResourceRecycler {
+    private:
+        std::vector<UniqueMemory> mPool[41];
+        size_t mMaxUse[41]{}, mCurrent[41]{};
+    public:
+        void registerAlloc(const size_t size) {
+            if (size) {
+                const auto level = calcSizeLevel(size);
+                ++mCurrent[level];
+                mMaxUse[level] = std::max(mMaxUse[level], mCurrent[level]);
+            }
+        }
+        void registerFree(const size_t size) {
+            if (size)--mCurrent[calcSizeLevel(size)];
+        }
+        UniqueMemory alloc(const size_t size) {
+            if (size == 0)return nullptr;
+            const auto level = calcSizeLevel(size);
+            if (mPool[level].empty())return allocGlobalMemory(size);
+            auto ptr = std::move(mPool[level].back());
+            mPool[level].pop_back();
+            return ptr;
+        }
+        void free(UniqueMemory ptr, const size_t size) {
+            if (size == 0)return;
+            const auto level = calcSizeLevel(size);
+            if (mPool[level].size() < mMaxUse[level])
+                mPool[level].emplace_back(std::move(ptr));
+        }
+    };
+
     DeviceMemory::DeviceMemory(ResourceManager& manager, const size_t size, const MemoryType type)
-        : Resource(manager), mSize(size), mType(type) {}
+        : Resource(manager), mSize(size), mType(type) {
+        if (mType == MemoryType::Global)
+            manager.getRecycler<L1GlobalMemoryPool>().registerAlloc(mSize);
+    }
 
     DeviceMemory::~DeviceMemory() {
         if (mType == MemoryType::Global)
@@ -30,31 +64,14 @@ namespace Impl {
         throw std::logic_error("This memory doesn't support memset.");
     }
 
-    class L1GlobalMemoryPool final:public ResourceRecycler {
-    private:
-        std::vector<UniqueMemory> mPool[41];
-    public:
-        UniqueMemory alloc(const size_t size) {
-            if (size == 0)return nullptr;
-            const auto level = calcSizeLevel(size);
-            if(mPool[level].empty())return allocGlobalMemory(size);
-            auto ptr = std::move(mPool[level].back());
-            mPool[level].pop_back();
-            return ptr;
-        }
-        void free(UniqueMemory ptr,const size_t size) {
-            if(size==0)return;
-            const auto level = calcSizeLevel(size);
-            mPool[level].emplace_back(std::move(ptr));
-        }
-    };
-
     bool GlobalMemory::hasRecycler() const {
         return true;
     }
 
     GlobalMemory::GlobalMemory(ResourceManager& manager,const size_t size)
-        : DeviceMemoryInstance(size),mPool(manager.getRecycler<L1GlobalMemoryPool>()) {}
+        : DeviceMemoryInstance(size),mPool(manager.getRecycler<L1GlobalMemoryPool>()) {
+        mPool.registerFree(mSize);
+    }
 
     GlobalMemory::~GlobalMemory() {
         mPool.free(std::move(mMemory),mSize);
