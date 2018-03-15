@@ -1,24 +1,29 @@
 #pragma once
 #include <Base/Config.hpp>
 #ifdef CAMERA_D3D11_SUPPORT
-#include <Base/CompileBegin.hpp>
-#define NOMINMAX
-#include <d3d11.h>
-#undef near
-#undef far
-#include <Base/CompileEnd.hpp>
 #include <Base/Common.hpp>
 #include <Base/Math.hpp>
 #include <Interaction/Counter.hpp>
 
+class HWND__;
+using HWND = HWND__ * ;
+class HINSTANCE__;
+using HINSTANCE = HINSTANCE__ * ;
+
+class IDXGISwapChain;
+class ID3D11Device;
+class ID3D11DeviceContext;
+class ID3D11RenderTargetView;
+class ID3D11Resource;
+
 class D3D11Window final:public Singletion<D3D11Window> {
 private:
     HWND mHwnd;
+    HINSTANCE mInstance;
     IDXGISwapChain* mSwapChain;
     ID3D11Device* mDevice;
     ID3D11DeviceContext* mDeviceContext;
     ID3D11RenderTargetView* mRenderTargetView;
-    WNDCLASSEX mWc;
 
     cudaStream_t mStream;
     ID3D11Resource* mFrameBuffer;

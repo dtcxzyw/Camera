@@ -1,22 +1,20 @@
 #include <Base/Environment.hpp>
 #include <Base/DispatchSystem.hpp>
 #include <stdexcept>
-#include "Scene/ECS.hpp"
 #ifdef CAMERA_D3D11_SUPPORT
 #include <Interaction/D3D11.hpp>
 #endif
 #ifdef CAMERA_OPENGL_SUPPORT
-#include <Base/CompileBegin.hpp>
-#include <cuda_gl_interop.h>
-#include <cuda_d3d11_interop.h>
-#include <Base/CompileEnd.hpp>
+#include <Interaction/OpenGL.hpp>
 #endif
 
-static void setDevice(const int id, const AppType app) {
-    const auto schedule=(app==AppType::Online? cudaDeviceScheduleSpin: 
-        cudaDeviceScheduleBlockingSync);
+static void setDevice(const int id, const AppType app, const std::vector<int>& devices) {
+    const auto schedule = (app == AppType::Online ? cudaDeviceScheduleSpin : cudaDeviceScheduleBlockingSync);
     checkError(cudaSetDeviceFlags(schedule));
     checkError(cudaSetDevice(id));
+    for (auto&& dev : devices)
+        if (dev != id)
+            checkError(cudaDeviceEnablePeerAccess(id, 0));
 }
 
 static void resetDevice() {
@@ -25,9 +23,12 @@ static void resetDevice() {
     checkError(cudaDeviceReset());
 }
 
-Environment::Environment() :mRunning(false) {}
+Environment::Environment() : mRunning(false), mAppType() {}
 
-void Environment::init(const AppType app,const GraphicsInteroperability interop) {
+void Environment::init(const AppType app, const GraphicsInteroperability interop) {
+    mAppType = app;
+    mMainThread = std::this_thread::get_id();
+
     std::vector<int> devices;
     if (interop == GraphicsInteroperability::None) {
         int cnt;
@@ -44,7 +45,7 @@ void Environment::init(const AppType app,const GraphicsInteroperability interop)
         #endif
         #ifdef CAMERA_OPENGL_SUPPORT
         if (interop == GraphicsInteroperability::OpenGL)
-            checkError(cudaGLGetDevices(&deviceCount, device, 256, cudaGLDeviceListAll));
+            GLWindow::get().enumDevices(device, &deviceCount);
         #endif
         devices.assign(device, device + deviceCount);
     }
@@ -62,42 +63,50 @@ void Environment::init(const AppType app,const GraphicsInteroperability interop)
         #endif
     }
 
+    if (choosed.empty())
+        throw std::runtime_error("Failed to initialize the CUDA environment.");
+
+    mMemInfo.resize(choosed.size());
+
     size_t initCount = 0;
-    auto idx = 0;
+    size_t idx = 0;
+    auto yield = app == AppType::Offline;
     for (auto id : choosed) {
-        mDevices.emplace_back([this, id,idx, choosed, app, &initCount]() {
-            setDevice(id, app);
-
-            const auto isMainDevice = choosed.front() == id;
-            for (auto&& dev : choosed)
-                if (dev != id)
-                    checkError(cudaDeviceEnablePeerAccess(dev, 0));
-
+        if (id == choosed.front()) {
+            setDevice(choosed.front(), app, choosed);
             ++initCount;
-            while (!mRunning)std::this_thread::yield();
+            mMainDispatchSystem = std::make_unique<DispatchSystem>(mQueue, idx, yield);
+        }
+        else {
+            mDevices.emplace_back([this, id, idx, choosed, app, yield, &initCount]() {
+                setDevice(id, app, choosed);
 
-            {
-                auto&& monitor = getDeviceMonitor();
-                DispatchSystem system(mQueue, app == AppType::Offline);
-                while (mRunning){ 
-                    system.update();
-                    monitor.tick();
-                    mMemInfo[idx] = { monitor.getMemoryFreeSize(),monitor.getMemoryTotalSize() };
+                ++initCount;
+                while (!mRunning)std::this_thread::yield();
+
+                {
+                    auto&& monitor = getDeviceMonitor();
+                    DispatchSystem system(mQueue, idx, yield);
+                    while (mRunning) {
+                        system.update();
+                        monitor.tick();
+                        mMemInfo[idx] = {monitor.getMemoryFreeSize(), monitor.getMemoryTotalSize()};
+                    }
+                    checkError(cudaDeviceSynchronize());
                 }
-                checkError(cudaDeviceSynchronize());
-            }
 
-            if (!isMainDevice)resetDevice();
-        });
-
+                resetDevice();
+            });
+        }
         ++idx;
     }
-    if (mDevices.empty())
-        throw std::runtime_error("Failed to initialize the CUDA environment.");
-    setDevice(choosed.front(),app);
+
     while (initCount != choosed.size()) std::this_thread::yield();
-    mMemInfo.resize(mDevices.size());
     mRunning = true;
+}
+
+AppType Environment::getAppType() const {
+    return mAppType;
 }
 
 Future Environment::submit(std::unique_ptr<CommandBuffer> buffer) {
@@ -111,10 +120,25 @@ size_t Environment::queueSize() const {
 }
 
 std::pair<size_t, size_t> Environment::getMemInfo() const {
-    size_t free=0,total=0;
+    size_t free = 0, total = 0;
     for (auto&& info : mMemInfo)
         free += info.first, total += info.second;
-    return { free,total };
+    return {free, total};
+}
+
+void Environment::yield() {
+    if (isMainThread()) {
+        mMainDispatchSystem->update();
+        auto&& monitor = getDeviceMonitor();
+        monitor.tick();
+        mMemInfo[mMainDispatchSystem->getId()] =
+            {monitor.getMemoryFreeSize(), monitor.getMemoryTotalSize()};
+    }
+    else std::this_thread::yield();
+}
+
+bool Environment::isMainThread() const {
+    return std::this_thread::get_id() == mMainThread;
 }
 
 void Environment::uninit() {
@@ -122,6 +146,8 @@ void Environment::uninit() {
     for (auto&& device : mDevices)
         device.join();
     mDevices.clear();
+    checkError(cudaDeviceSynchronize());
+    mMainDispatchSystem.reset();
     mQueue.clear();
 }
 
@@ -135,7 +161,7 @@ DeviceMonitor::DeviceMonitor(): mId(0), mFree(0), mTotal(1), mTick(0) {
 }
 
 void DeviceMonitor::update() {
-    checkError(cudaMemGetInfo(&mFree,&mTotal));
+    checkError(cudaMemGetInfo(&mFree, &mTotal));
 }
 
 uintmax_t DeviceMonitor::tick() {

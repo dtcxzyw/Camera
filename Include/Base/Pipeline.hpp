@@ -52,11 +52,12 @@ class Event final :Uncopyable {
 private:
     cudaEvent_t mEvent{};
 public:
-    Event();
+    explicit Event(bool recordTime = false);
     void bind(Stream& stream);
-    void wait();
+    void sync();
     cudaError_t query() const;
     cudaEvent_t get() const;
+    float operator-(Event& rhs) const;
     ~Event();
 };
 

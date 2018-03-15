@@ -6,7 +6,7 @@
 
 namespace Impl {
 
-    class L1GlobalMemoryPool final :public ResourceRecycler {
+    class L1GlobalMemoryPool final : public ResourceRecycler {
     private:
         std::vector<UniqueMemory> mPool[41];
         size_t mMaxUse[41]{}, mCurrent[41]{};
@@ -18,9 +18,11 @@ namespace Impl {
                 mMaxUse[level] = std::max(mMaxUse[level], mCurrent[level]);
             }
         }
+
         void registerFree(const size_t size) {
             if (size)--mCurrent[calcSizeLevel(size)];
         }
+
         UniqueMemory alloc(const size_t size) {
             if (size == 0)return nullptr;
             const auto level = calcSizeLevel(size);
@@ -29,6 +31,7 @@ namespace Impl {
             mPool[level].pop_back();
             return ptr;
         }
+
         void free(UniqueMemory ptr, const size_t size) {
             if (size == 0)return;
             const auto level = calcSizeLevel(size);
@@ -45,7 +48,7 @@ namespace Impl {
 
     DeviceMemory::~DeviceMemory() {
         if (mType == MemoryType::Global)
-            addInstance(std::make_unique<GlobalMemory>(mManager,mSize));
+            addInstance(std::make_unique<GlobalMemory>(mManager, mSize));
         else
             addInstance(std::make_unique<ConstantMemory>(mSize));
     }
@@ -58,7 +61,7 @@ namespace Impl {
         *reinterpret_cast<void**>(res) = get();
     }
 
-    DeviceMemoryInstance::DeviceMemoryInstance(const size_t size):mSize(size) {}
+    DeviceMemoryInstance::DeviceMemoryInstance(const size_t size): mSize(size) {}
 
     void DeviceMemoryInstance::memset(int, Stream&) {
         throw std::logic_error("This memory doesn't support memset.");
@@ -68,13 +71,13 @@ namespace Impl {
         return true;
     }
 
-    GlobalMemory::GlobalMemory(ResourceManager& manager,const size_t size)
-        : DeviceMemoryInstance(size),mPool(manager.getRecycler<L1GlobalMemoryPool>()) {
+    GlobalMemory::GlobalMemory(ResourceManager& manager, const size_t size)
+        : DeviceMemoryInstance(size), mPool(manager.getRecycler<L1GlobalMemoryPool>()) {
         mPool.registerFree(mSize);
     }
 
     GlobalMemory::~GlobalMemory() {
-        mPool.free(std::move(mMemory),mSize);
+        mPool.free(std::move(mMemory), mSize);
     }
 
     void* GlobalMemory::get() {
@@ -164,10 +167,10 @@ namespace Impl {
 
 void ResourceManager::registerResource(Id id, std::unique_ptr<ResourceInstance>&& instance) {
     ++mRegisteredResourceCount;
-#ifdef CAMERA_RESOURCE_CHECK
+    #ifdef CAMERA_RESOURCE_CHECK
     mUnknownResource.erase(id);
-#endif
-    mResources.emplace(id,std::make_pair(mOperatorCount,std::move(instance)));
+    #endif
+    mResources.emplace(id, std::make_pair(mOperatorCount, std::move(instance)));
 }
 
 void CommandBuffer::memset(Impl::DMRef& memory, int mark) {
@@ -186,8 +189,9 @@ namespace Impl {
         Id id;
         ResourceManager& manager;
         std::function<void()> func;
-        CallbackInfo(const Id time,ResourceManager& resManager, std::function<void()> callable):
-            id(time),manager(resManager),func(std::move(callable)){}
+
+        CallbackInfo(const Id time, ResourceManager& resManager, std::function<void()> callable):
+            id(time), manager(resManager), func(std::move(callable)) {}
     };
 
     static void CUDART_CB streamCallback(cudaStream_t, cudaError_t, void* userData) {
@@ -199,7 +203,7 @@ namespace Impl {
 
 void CommandBuffer::addCallback(const std::function<void()>& func) {
     pushOperator([func](Id id,ResourceManager& manager,Stream& stream) {
-        const auto data = new Impl::CallbackInfo(id,manager,func);
+        const auto data = new Impl::CallbackInfo(id, manager, func);
         checkError(cudaStreamAddCallback(stream.get(), Impl::streamCallback, data, 0));
     });
 }
@@ -215,16 +219,16 @@ void CommandBuffer::pushOperator(std::unique_ptr<Impl::Operator>&& op) {
     mCommandQueue.emplace(std::move(op));
 }
 
-void CommandBuffer::pushOperator(std::function<void(Id,ResourceManager&, Stream&)>&& op) {
-    mCommandQueue.emplace(std::make_unique<FunctionOperator>(*mResourceManager,std::move(op)));
+void CommandBuffer::pushOperator(std::function<void(Id, ResourceManager&, Stream&)>&& op) {
+    mCommandQueue.emplace(std::make_unique<FunctionOperator>(*mResourceManager, std::move(op)));
 }
 
 ResourceManager& CommandBuffer::getResourceManager() {
     return *mResourceManager;
 }
 
-std::unique_ptr<Task> CommandBuffer::bindStream(Stream& stream, 
-    std::shared_ptr<Impl::TaskState> promise) {
+std::unique_ptr<Task> CommandBuffer::bindStream(Stream& stream,
+                                                std::shared_ptr<Impl::TaskState> promise) {
     return std::make_unique<Task>(stream, std::move(mResourceManager),
                                   mCommandQueue, std::move(promise));
 }
@@ -246,7 +250,7 @@ cudaStream_t ResourceManager::getStream() const {
 void ResourceManager::gc(const Id time) {
     std::vector<Id> list;
     for (auto&& x : mResources)
-        if (mSyncPoint>=x.second.first || (time>= x.second.first && x.second.second->hasRecycler()))
+        if (mSyncPoint >= x.second.first || (time >= x.second.first && x.second.second->hasRecycler()))
             list.emplace_back(x.first);
     for (auto&& id : list)
         mResources.erase(id);
@@ -254,9 +258,9 @@ void ResourceManager::gc(const Id time) {
 
 Id ResourceManager::allocResource() {
     ++mResourceCount;
-#ifdef CAMERA_RESOURCE_CHECK
+    #ifdef CAMERA_RESOURCE_CHECK
     mUnknownResource.emplace(mResourceCount);
-#endif
+    #endif
     return mResourceCount;
 }
 
@@ -284,8 +288,12 @@ namespace Impl {
     }
 }
 
-DispatchSystem::DispatchSystem(CommandBufferQueue& queue,const bool yield)
-    : mStreams(Impl::getAsyncEngineCount()), mQueue(queue), mYield(yield) {}
+DispatchSystem::DispatchSystem(CommandBufferQueue& queue, const size_t index, const bool yield)
+    : mStreams(Impl::getAsyncEngineCount()), mQueue(queue), mYield(yield), mIndex(index) {}
+
+size_t DispatchSystem::getId() const {
+    return mIndex;
+}
 
 void DispatchSystem::update() {
     auto&& stream = getStream();
@@ -293,16 +301,25 @@ void DispatchSystem::update() {
         using namespace std::chrono_literals;
         auto task = mQueue.getTask();
         if (task.first)stream.set(std::move(task));
-        else if(mYield)std::this_thread::sleep_for(1ms);
+        else {
+            #ifdef CAMERA_HUNGRY_REPORT
+            printf("DispatchSystem %u is hungry!\n", static_cast<unsigned int>(mIndex));
+            #endif
+            if (mYield)std::this_thread::sleep_for(1ms);
+        }
     }
     stream.update(Clock::now());
 }
 
 Future::Future(std::shared_ptr<Impl::TaskState> promise): mPromise(std::move(promise)) {}
 
-void Future::wait() {
-    while (!mPromise->isLaunched)std::this_thread::yield();
-    mPromise->event.wait();
+void Future::sync() {
+    auto&& env=Environment::get();
+    while (!mPromise->isLaunched)env.yield();
+    if (env.isMainThread()) {
+        while (!finished())env.yield();
+    }
+    else mPromise->event.sync();
 }
 
 bool Future::finished() const {
@@ -310,11 +327,11 @@ bool Future::finished() const {
 }
 
 FunctionOperator::FunctionOperator(ResourceManager& manager,
-    std::function<void(Id,ResourceManager&, Stream&)>&& closure)
+                                   std::function<void(Id, ResourceManager&, Stream&)>&& closure)
     : Operator(manager), mClosure(closure) {}
 
 void FunctionOperator::emit(Stream& stream) {
-    mClosure(getId(),mManager,stream);
+    mClosure(getId(), mManager, stream);
 }
 
 DispatchSystem::StreamInfo::StreamInfo(): mLast(Clock::now()) {}
@@ -369,24 +386,31 @@ void CommandBufferQueue::clear() {
 }
 
 Task::Task(Stream& stream, std::unique_ptr<ResourceManager> manager,
-    std::queue<std::unique_ptr<Impl::Operator>>& commandQueue,
-    std::shared_ptr<Impl::TaskState> promise): mResourceManager(std::move(manager)),
+           std::queue<std::unique_ptr<Impl::Operator>>& commandQueue,
+           std::shared_ptr<Impl::TaskState> promise): mResourceManager(std::move(manager)),
     mPromise(std::move(promise)), mStream(stream) {
     mCommandQueue.swap(commandQueue);
     mResourceManager->bindStream(mStream.get());
 }
 
 bool Task::update() {
-    if(!mCommandQueue.empty()){
+    if (!mCommandQueue.empty()) {
         auto&& command = mCommandQueue.front();
+        #ifdef CAMERA_SYNC
+        Event begin(true);
+        begin.bind(mStream);
+        #endif
         command->emit(mStream);
         #ifdef CAMERA_SYNC
-        mStream.sync();
+        Event end(true);
+        end.bind(mStream);
+        end.sync();
+        printf("operator %u:%.2f ms\n", command->getId(), end - begin);
         #endif
         mResourceManager->gc(command->getId());
         mCommandQueue.pop();
     }
-    if (mCommandQueue.empty()){
+    if (mCommandQueue.empty()) {
         mPromise->event.bind(mStream);
         mPromise->isLaunched = true;
         return true;

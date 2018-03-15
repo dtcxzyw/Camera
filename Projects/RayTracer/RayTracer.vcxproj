@@ -54,7 +54,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)Bin\</OutDir>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
@@ -159,6 +159,7 @@
       <GenerateLineInfo>false</GenerateLineInfo>
       <Keep>false</Keep>
       <PtxAsOptionV>false</PtxAsOptionV>
+      <Runtime>MDd</Runtime>
     </CudaCompile>
     <CudaLink>
       <GPUDebugInfo>false</GPUDebugInfo>

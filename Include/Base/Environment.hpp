@@ -26,13 +26,19 @@ private:
     std::vector<std::thread> mDevices;
     std::vector<std::pair<size_t, size_t>> mMemInfo;
     CommandBufferQueue mQueue;
+    std::unique_ptr<DispatchSystem> mMainDispatchSystem;
+    std::thread::id mMainThread;
     bool mRunning;
+    AppType mAppType;
 public:
     void init(AppType app = AppType::Offline,
         GraphicsInteroperability interop = GraphicsInteroperability::None);
+    AppType getAppType() const;
     Future submit(std::unique_ptr<CommandBuffer> buffer);
     size_t queueSize() const;
     std::pair<size_t,size_t> getMemInfo() const;
+    void yield();
+    bool isMainThread() const;
     void uninit();
     ~Environment();
 };

@@ -2,6 +2,8 @@
 #ifdef CAMERA_D3D11_SUPPORT
 #include <Interaction/D3D11.hpp>
 #include <Base/CompileBegin.hpp>
+#define NOMINMAX
+#include <d3d11.h>
 #include <cuda_d3d11_interop.h>
 #include <IMGUI/imgui.h>
 #include <Base/CompileEnd.hpp>
@@ -104,18 +106,19 @@ static void checkResult(const HRESULT res) {
     }
 }
 
-D3D11Window::D3D11Window() : mHwnd(nullptr), mSwapChain(nullptr),mDevice(nullptr), 
-    mDeviceContext(nullptr), mRenderTargetView(nullptr), mWc({}), mStream(nullptr), 
+D3D11Window::D3D11Window() : mHwnd(nullptr), mInstance(nullptr), mSwapChain(nullptr),
+    mDevice(nullptr), mDeviceContext(nullptr), mRenderTargetView(nullptr), mStream(nullptr),
     mFrameBuffer(nullptr), mRes(nullptr), mArray(nullptr), mEnableVSync(false) {
     constexpr auto title = L"D3D11 Viewer";
-    mWc = {
+    WNDCLASSEX wc = {
         sizeof(WNDCLASSEX), CS_CLASSDC, wndProc, 0L, 0L,
         GetModuleHandle(nullptr), nullptr, LoadCursor(nullptr, IDC_ARROW), nullptr, nullptr,
         title, nullptr
     };
-    RegisterClassEx(&mWc);
+    RegisterClassEx(&wc);
     mHwnd = CreateWindow(title,title, WS_OVERLAPPEDWINDOW, 100, 100, 800, 600,
-        nullptr, nullptr, mWc.hInstance, nullptr);
+        nullptr, nullptr, wc.hInstance, nullptr);
+    mInstance = wc.hInstance;
 
     DXGI_SWAP_CHAIN_DESC sd;
     ZeroMemory(&sd, sizeof(sd));
@@ -329,6 +332,6 @@ D3D11Window::~D3D11Window() {
     mSwapChain->Release();
     mDeviceContext->Release();
     mDevice->Release();
-    UnregisterClass(L"D3D11 Viewer", mWc.hInstance);
+    UnregisterClass(L"D3D11 Viewer", mInstance);
 }
 #endif

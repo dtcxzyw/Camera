@@ -5,6 +5,7 @@
 #include <Base/CompileEnd.hpp>
 #include <Interaction/OpenGL.hpp>
 #include <Base/CompileBegin.hpp>
+#include <GLFW/glfw3.h>
 #include <cuda_gl_interop.h>
 #include <IMGUI/imgui.h>
 #include <Base/CompileEnd.hpp>
@@ -184,8 +185,13 @@ GLWindow::GLWindow() : mFBO(0), mWheel(0) {
     glfwSetCharCallback(mWindow, charCallback);
 }
 
-void GLWindow::makeContext() {
+void GLWindow::makeContext() const {
     GLContext::get().makeContext(mWindow);
+}
+
+void GLWindow::enumDevices(int* buf, unsigned* count) const {
+    makeContext();
+    checkError(cudaGLGetDevices(count, buf, 256, cudaGLDeviceListAll));
 }
 
 /*
@@ -268,11 +274,9 @@ void GLWindow::newFrame() {
     io.MouseWheel = mWheel;
     mWheel = 0.0f;
 
-    // Hide OS mouse cursor if ImGui is drawing it
     glfwSetInputMode(mWindow, GLFW_CURSOR,
         io.MouseDrawCursor ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_NORMAL);
 
-    // Start the frame. This call will update the io.WantCaptureMouse, io.WantCaptureKeyboard flag that you can use to dispatch inputs (or not) to your application.
     ImGui::NewFrame();
 }
 #endif

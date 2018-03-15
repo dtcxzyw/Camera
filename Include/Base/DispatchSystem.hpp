@@ -14,7 +14,7 @@
 
 class CommandBuffer;
 class ResourceManager;
-using Id = uint64_t;
+using Id = uint32_t;
 
 class ResourceInstance : Uncopyable {
 public:
@@ -412,7 +412,7 @@ private:
     std::shared_ptr<Impl::TaskState> mPromise;
 public:
     explicit Future(std::shared_ptr<Impl::TaskState> promise);
-    void wait();
+    void sync();
     bool finished() const;
 };
 
@@ -428,7 +428,7 @@ private:
     Id mResourceCount = 0, mRegisteredResourceCount = 0, mOperatorCount = 0, mSyncPoint = 0;
     std::map<size_t, std::unique_ptr<ResourceRecycler>> mRecyclers;
     #ifdef CAMERA_RESOURCE_CHECK
-    std::set<ID> mUnknownResource;
+    std::set<Id> mUnknownResource;
     #endif
 public:
     void registerResource(Id id, std::unique_ptr<ResourceInstance>&& instance);
@@ -577,8 +577,10 @@ private:
     std::vector<StreamInfo> mStreams;
     CommandBufferQueue& mQueue;
     bool mYield;
+    size_t mIndex;
 public:
-    explicit DispatchSystem(CommandBufferQueue& queue, bool yield);
+    DispatchSystem(CommandBufferQueue& queue,size_t index, bool yield);
+    size_t getId() const;
     void update();
 };
 

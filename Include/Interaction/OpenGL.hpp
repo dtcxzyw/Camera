@@ -1,25 +1,26 @@
 #pragma once
 #include <Base/Config.hpp>
 #ifdef CAMERA_OPENGL_SUPPORT
-#include <Base/CompileBegin.hpp>
-#include <GLFW/glfw3.h>
-#include <Base/CompileEnd.hpp>
 #include <Base/Common.hpp>
 #include <Base/Math.hpp>
 #include <Interaction/Counter.hpp>
 
+class GLFWwindow;
+
 class GLWindow final:public Singletion<GLWindow> {
 private:
     GLFWwindow* mWindow;
-    GLuint mFBO;
+    unsigned int mFBO;
     float mWheel;
     bool mPressed[3]{};
     Counter mCounter;
 
     friend void mouseButtonCallback(GLFWwindow*, int button, int action, int);
     friend void scrollCallback(GLFWwindow*, double, double y);
-    void makeContext();
+    void makeContext() const;
 public:
+    void enumDevices(int* buf, unsigned int* count) const;
+
     GLWindow();
     //void present(GLImage& image);
     void newFrame();

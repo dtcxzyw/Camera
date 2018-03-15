@@ -213,7 +213,7 @@ public:
                     continue;
                 }
 
-                tasks.front().future.wait();
+                tasks.front().future.sync();
                 auto frame = std::move(tasks.front().frame);
                 mCache->push(tasks.front().block);
                 tasks.pop();
@@ -223,7 +223,11 @@ public:
                     window.swapBuffers();
                 }
 
+                const auto tb = Clock::now();
                 tasks.push(addTask(std::move(frame), size, lum.begin()));
+                const auto te = Clock::now();
+                const auto delta = (te - tb).count() * 1e-6f;
+                printf("build time:%.3f ms\n",delta);
             }
             window.unbindBackBuffer();
         }
