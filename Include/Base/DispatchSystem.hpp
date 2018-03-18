@@ -412,7 +412,7 @@ private:
     std::shared_ptr<Impl::TaskState> mPromise;
 public:
     explicit Future(std::shared_ptr<Impl::TaskState> promise);
-    void sync();
+    void sync() const;
     bool finished() const;
 };
 
@@ -431,6 +431,7 @@ private:
     std::set<Id> mUnknownResource;
     #endif
 public:
+    ~ResourceManager();
     void registerResource(Id id, std::unique_ptr<ResourceInstance>&& instance);
     ResourceInstance& getResource(Id id);
     void bindStream(cudaStream_t stream);

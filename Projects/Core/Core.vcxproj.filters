@@ -147,6 +147,9 @@
     <ClInclude Include="..\..\Include\Interaction\D3D11.hpp">
       <Filter>Interaction</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Base\ComputePass.hpp">
+      <Filter>Base</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp">
@@ -178,6 +181,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Interaction\Counter.cpp">
       <Filter>Interaction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Base\ComputePass.cpp">
+      <Filter>Base</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

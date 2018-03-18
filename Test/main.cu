@@ -120,7 +120,6 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
         static auto last = getTime();
         const auto now = getTime();
         const auto converter = mCamera.toRasterPos(size);
-        last = now;
         auto buffer = std::make_unique<CommandBuffer>();
         if (frame->size != size) {
             mMh->reset(mModel.index.size(), mCache->blockSize() * 3, enableSAA);
@@ -138,6 +137,7 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
             });
             kernel(mModel, *mMh, mBox, *mSh, mSpheres, uni, *frame, lum, converter, *buffer);
         }
+        last = now;
         renderGUI(D3D11Window::get());
         SoftwareRenderer::get().render(*buffer, *frame->postRT);
         return RenderingTask{Environment::get().submit(std::move(buffer)), frame, block};

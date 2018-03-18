@@ -165,6 +165,11 @@ namespace Impl {
     }
 }
 
+ResourceManager::~ResourceManager() {
+    mResources.clear();
+    mRecyclers.clear();
+}
+
 void ResourceManager::registerResource(Id id, std::unique_ptr<ResourceInstance>&& instance) {
     ++mRegisteredResourceCount;
     #ifdef CAMERA_RESOURCE_CHECK
@@ -313,7 +318,7 @@ void DispatchSystem::update() {
 
 Future::Future(std::shared_ptr<Impl::TaskState> promise): mPromise(std::move(promise)) {}
 
-void Future::sync() {
+void Future::sync() const {
     auto&& env=Environment::get();
     while (!mPromise->isLaunched)env.yield();
     if (env.isMainThread()) {
@@ -405,7 +410,7 @@ bool Task::update() {
         Event end(true);
         end.bind(mStream);
         end.sync();
-        printf("operator %u:%.2f ms\n", command->getId(), end - begin);
+        printf("operator %u:%.4f ms\n", command->getId(), end - begin);
         #endif
         mResourceManager->gc(command->getId());
         mCommandQueue.pop();

@@ -16,15 +16,15 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\RayTracer\kernel.cu" />
-    <CudaCompile Include="..\..\RayTracer\main.cu" />
+    <CudaCompile Include="..\..\Examples\Planets\kernel.cu" />
+    <CudaCompile Include="..\..\Examples\Planets\main.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\RayTracer\kernel.hpp" />
+    <ClInclude Include="..\..\Examples\Planets\kernel.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{eb6534a3-f165-437c-97bc-7f79e53f7bcc}</ProjectGuid>
-    <RootNamespace>RayTracer</RootNamespace>
+    <ProjectGuid>{8542d21f-ff8d-4fe1-b2f3-4fa2541e71c7}</ProjectGuid>
+    <RootNamespace>Planets</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -82,7 +82,6 @@
       <AdditionalLibraryDirectories>$(SolutionDir)Bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -100,9 +99,10 @@
       <TypeInfo>false</TypeInfo>
       <Warning>W0</Warning>
       <GenerateLineInfo>false</GenerateLineInfo>
+      <Emulation>false</Emulation>
       <GPUDebugInfo>false</GPUDebugInfo>
-      <HostDebugInfo>false</HostDebugInfo>
       <Defines>CAMERA_DEBUG</Defines>
+      <HostDebugInfo>false</HostDebugInfo>
       <Runtime>MDd</Runtime>
     </CudaCompile>
     <CudaLink>

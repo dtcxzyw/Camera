@@ -15,6 +15,7 @@
     <ClInclude Include="..\..\Include\Base\Common.hpp" />
     <ClInclude Include="..\..\Include\Base\CompileBegin.hpp" />
     <ClInclude Include="..\..\Include\Base\CompileEnd.hpp" />
+    <ClInclude Include="..\..\Include\Base\ComputePass.hpp" />
     <ClInclude Include="..\..\Include\Base\Config.hpp" />
     <ClInclude Include="..\..\Include\Base\Constant.hpp" />
     <ClInclude Include="..\..\Include\Base\DataSet.hpp" />
@@ -53,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp" />
+    <ClCompile Include="..\..\Src\Base\ComputePass.cpp" />
     <ClCompile Include="..\..\Src\Base\DispatchSystem.cpp" />
     <ClCompile Include="..\..\Src\Base\Environment.cpp" />
     <ClCompile Include="..\..\Src\Base\Memory.cpp" />
@@ -171,6 +173,7 @@
       <GenerateLineInfo>false</GenerateLineInfo>
       <Emulation>false</Emulation>
       <HostDebugInfo>false</HostDebugInfo>
+      <Runtime>MDd</Runtime>
     </CudaCompile>
     <CudaLink>
       <PerformDeviceLink>false</PerformDeviceLink>
@@ -232,6 +235,7 @@
       <GenerateLineInfo>false</GenerateLineInfo>
       <Keep>false</Keep>
       <MaxRegCount>64</MaxRegCount>
+      <Runtime>MD</Runtime>
     </CudaCompile>
     <CudaLink>
       <GPUDebugInfo>false</GPUDebugInfo>
