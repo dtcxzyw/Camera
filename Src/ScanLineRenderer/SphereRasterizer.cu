@@ -23,10 +23,10 @@ CUDAINLINE float calcValue(const Func& func, const Cmp& cmp, float l, float r) {
     return func(l);
 }
 
-CUDAINLINE vec4 calcSphereRange(const vec4 sphere, const float near, const float far) {
+CUDAINLINE bool calcSphereRange(const vec4 sphere, const float near, const float far,vec4& res) {
     const auto r2 = sphere.w * sphere.w;
     const auto begin = fmax(-far, sphere.z - sphere.w), end = fmin(-near, sphere.z + sphere.w);
-    vec4 res;
+    if (begin >= end)return false;
     res.x = calcValue([=](const float z) {
         const auto dz = z - sphere.z;
         return (sphere.x - sqrt(r2 - dz * dz)) / -z;
@@ -43,7 +43,7 @@ CUDAINLINE vec4 calcSphereRange(const vec4 sphere, const float near, const float
         const auto dz = z - sphere.z;
         return (sphere.y + sqrt(r2 - dz * dz)) / -z;
     }, cmpMax, begin, end);
-    return res;
+    return true;
 }
 
 GLOBAL void processSphereInfoGPU(const unsigned int size,READONLY(vec4) in, SphereInfo* info,
@@ -52,8 +52,8 @@ GLOBAL void processSphereInfoGPU(const unsigned int size,READONLY(vec4) in, Sphe
     const auto id = getId();
     if (id >= size)return;
     const auto sphere = in[id];
-    if (-sphere.z - sphere.w > far | -sphere.z + sphere.w < near)return;
-    const auto range = calcSphereRange(sphere, near, far);
+    vec4 range;
+    if (!calcSphereRange(sphere, near, far, range))return;
     const uvec4 rect = {
         fmax(scissor.x, (1.0f + range.x * mul.x) * hsiz.x - tileOffset),
         fmin(scissor.y, (1.0f + range.y * mul.x) * hsiz.x + tileOffset),

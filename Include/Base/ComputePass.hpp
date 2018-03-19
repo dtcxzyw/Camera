@@ -11,7 +11,7 @@ public:
     bool operator==(const CachedValue& val) const;
 };
 
-template<typename T>
+template<typename Type,typename Key>
 class CachedValueHandle:Uncopyable {
 private:
     

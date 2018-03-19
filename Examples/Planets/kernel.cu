@@ -8,9 +8,9 @@ CUDAINLINE vec4 vsSphere(vec4 sp, const Uniform& uniform) {
     return calcCameraSphere(sp, uniform.V);
 }
 
-CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float, vec3, vec3, float, 
+CUDAINLINE void drawSpherePoint(unsigned int id, ivec2 uv, float, vec3, vec3, float, 
                                 bool,vec2, const Uniform&, FrameBufferGPU& fbo) {
-    fbo.color.set(uv, { 1.0f,1.0f,1.0f,1.0f });
+    fbo.color.set(uv, { (id+1)/10.0f,1.0f,1.0f,1.0f });
 }
 
 CUDAINLINE void post(ivec2 NDC, const FrameBufferGPU& uni, BuiltinRenderTargetGPU<RGBA8> out) {
@@ -22,7 +22,7 @@ CUDAINLINE void post(ivec2 NDC, const FrameBufferGPU& uni, BuiltinRenderTargetGP
 void kernel(const MemoryRef<vec4>& spheres,
             const MemoryRef<Uniform>& uniform, FrameBufferCPU& fbo,
             const Camera::RasterPosConverter converter, CommandBuffer& buffer) {
-    fbo.colorRT->clear(buffer, {});
+    //fbo.colorRT->clear(buffer, {});
     fbo.depthBuffer->clear(buffer);
     const auto frameBuffer = fbo.getData(buffer);
     const vec4 scissor = { 0.0f,fbo.size.x,0.0f,fbo.size.y };
