@@ -158,7 +158,7 @@ CUDAINLINE void applySFS(unsigned int*, SphereInfo*, TileRef*, Uniform*, FrameBu
 
 template <typename Uniform, typename FrameBuffer,
     FSFS<Uniform, FrameBuffer>... fs>
-GLOBAL void renderSpheresGPU(unsigned int* offset, SphereInfo* tri, TileRef* idx,
+GLOBAL void renderSpheresKernel(unsigned int* offset, SphereInfo* tri, TileRef* idx,
                              Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float far,
                              const float invnf,
                              const vec2 invmul, const vec2 invHsiz) {
@@ -179,7 +179,7 @@ void renderSpheres(CommandBuffer& buffer, const DataPtr<vec4>& spheres,
     const auto hfsize = static_cast<vec2>(size) * 0.5f;
     auto processRes = processSphereInfo(buffer, cameraSpheres, scissor, hfsize, near, far, mul);
     const auto invnf = 1.0f / (far - near);
-    buffer.callKernel(renderSpheresGPU<Uniform, FrameBuffer, fs...>, processRes.offset,
+    buffer.callKernel(renderSpheresKernel<Uniform, FrameBuffer, fs...>, processRes.offset,
                       processRes.info, processRes.ref, uniform.get(), frameBuffer.get(), near, far, invnf,
                       1.0f / mul, 1.0f / hfsize);
 }

@@ -8,7 +8,7 @@ using FSFP = void(*)(unsigned int id, ivec2 uv, float z, const Out& in,
 
 template <typename Out, typename Uniform, typename FrameBuffer, 
     PosConverter<Uniform> toPos, FSFP<Out, Uniform, FrameBuffer> fs>
-GLOBAL void drawPointHelperGPU(const unsigned int size, READONLY(VertexInfo<Out>) vert,
+GLOBAL void drawPointHelperKernel(const unsigned int size, READONLY(VertexInfo<Out>) vert,
                                READONLY(Uniform) uniform, FrameBuffer* frameBuffer, const vec4 scissor,
                                const float near, const float invnf, const vec2 hfsize) {
     const auto id = getId();
@@ -33,7 +33,7 @@ template <typename Out, typename Uniform, typename FrameBuffer, PosConverter<Uni
 void drawPointHelper(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
                      const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,const vec4 scissor,
                      const float near, const float invnf, const vec2 hfsize) {
-    buffer.runKernelLinear(drawPointHelperGPU<Out, Uniform, FrameBuffer,toPos, first>, vert.size(), vert.get(),
+    buffer.runKernelLinear(drawPointHelperKernel<Out, Uniform, FrameBuffer,toPos, first>, vert.size(), vert.get(),
         uniform.get(), frameBuffer.get(), scissor, near, invnf, hfsize);
     drawPointHelper<Out, Uniform, FrameBuffer,toPos, then...>(buffer, vert, uniform, frameBuffer, scissor,
         near, invnf, hfsize);

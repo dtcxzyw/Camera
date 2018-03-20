@@ -25,7 +25,7 @@ GLOBAL void emitLine(const unsigned int size, unsigned int* cnt,
     else out[offset[ref.size] + atomicInc(cnt + ref.size, maxv)] = ref;
 }
 
-GLOBAL void sortLinesGPU(unsigned int* cnt, unsigned int* offset, unsigned int* tmp,
+GLOBAL void sortLinesKernel(unsigned int* cnt, unsigned int* offset, unsigned int* tmp,
                              LineRef* ref, LineRef* out) {
     offset[0] = 0;
 #pragma unroll
@@ -44,6 +44,6 @@ std::pair<MemoryRef<unsigned int>, MemoryRef<LineRef>> sortLines(CommandBuffer& 
     auto sortedIdx = buffer.allocBuffer<LineRef>(ref.size() * 2U+2048U);
     auto tmp = buffer.allocBuffer<unsigned int>(11);
     auto offset = buffer.allocBuffer<unsigned int>(12);
-    buffer.callKernel(sortLinesGPU, cnt, offset, tmp, ref, sortedIdx);
+    buffer.callKernel(sortLinesKernel, cnt, offset, tmp, ref, sortedIdx);
     return {offset, sortedIdx};
 }

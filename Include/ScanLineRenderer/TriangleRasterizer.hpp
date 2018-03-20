@@ -1,4 +1,4 @@
-#pragma once
+ #pragma once
 #include <ScanLineRenderer/Vertex.hpp>
 #include <ScanLineRenderer/Shared.hpp>
 #include <Base/CompileBegin.hpp>
@@ -289,9 +289,8 @@ template <typename Out, typename Uniform, typename FrameBuffer,
     FSFT<Out, Uniform, FrameBuffer> first, FSFT<Out, Uniform, FrameBuffer>... then>
 CUDAINLINE void applyTFS(unsigned int* offset, Triangle<Out>* tri, TileRef* idx, Uniform* uniform,
                          FrameBuffer* frameBuffer, const float near, const float invnf,const vec2 samplePoint) {
-    //for GUI
     #pragma unroll
-    for (auto i = 4; i >= 0; --i) {
+    for (auto i = 0; i < 5; ++i) {
         const auto size = offset[i + 1] - offset[i];
         if (size) {
             const dim3 grid(size);
@@ -313,7 +312,7 @@ CUDAINLINE void applyTFS(unsigned int*, Triangle<Out>*, TileRef*, Uniform*, Fram
 
 template <typename Out, typename Uniform, typename FrameBuffer,
     FSFT<Out, Uniform, FrameBuffer>... fs>
-GLOBAL void renderTrianglesGPU(unsigned int* offset, Triangle<Out>* tri, TileRef* idx,
+GLOBAL void renderTrianglesKernel(unsigned int* offset, Triangle<Out>* tri, TileRef* idx,
     Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float invnf,
     const vec2 samplePoint) {
     applyTFS<Out, Uniform, FrameBuffer, fs...>(offset, tri, idx, uniform, frameBuffer, near, invnf,
@@ -372,6 +371,6 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
 
     //pass 3:render triangles
     const auto invnf = 1.0f / (far - near);
-    buffer.callKernel(renderTrianglesGPU<Out, Uniform, FrameBuffer, fs...>, sortedTri.first, info,
+    buffer.callKernel(renderTrianglesKernel<Out, Uniform, FrameBuffer, fs...>, sortedTri.first, info,
         sortedTri.second, uniform.get(), frameBuffer.get(), near, invnf, samplePoint);
 }

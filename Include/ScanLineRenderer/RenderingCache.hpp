@@ -11,15 +11,15 @@ namespace Impl {
 }
 
 template<typename T>
-class RenderingCacheBlockGPU final {
+class RenderingCacheBlockRef final {
 private:
     T * mAddress;
     T* mBegin;
     T* mEnd;
 public:
-    RenderingCacheBlockGPU(T* address, T* begin, T* end)
+    RenderingCacheBlockRef(T* address, T* begin, T* end)
         :mAddress(address), mBegin(begin), mEnd(end) {}
-    CUDAINLINE RenderingCacheBlockGPU(){}
+    CUDAINLINE RenderingCacheBlockRef(){}
     CUDAINLINE bool query(const unsigned int id) const {
         auto ptr = mAddress + id;
         return (mBegin <= ptr & ptr < mEnd) | (*ptr);
@@ -43,7 +43,7 @@ public:
         buffer.runKernelLinear(Impl::updateCache<T>,mEnd-mBegin,mBegin);
     }
     auto toBlock() const {
-        return RenderingCacheBlockGPU<T>{mAddress,mBegin,mEnd};
+        return RenderingCacheBlockRef<T>{mAddress,mBegin,mEnd};
     }
     auto isBlock() const {
         return mIsBlock;
@@ -59,7 +59,7 @@ private:
     bool mShouldReset;
 public:
     using Block = RenderingCacheBlock<T>;
-    using BlockGPU = RenderingCacheBlockGPU<T>;
+    using BlockRef = RenderingCacheBlockRef<T>;
     void reset() {
         mShouldReset = true;
     }

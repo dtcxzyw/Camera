@@ -46,7 +46,7 @@ CUDAINLINE bool calcSphereRange(const vec4 sphere, const float near, const float
     return true;
 }
 
-GLOBAL void processSphereInfoGPU(const unsigned int size,READONLY(vec4) in, SphereInfo* info,
+GLOBAL void processSphereInfoKernel(const unsigned int size,READONLY(vec4) in, SphereInfo* info,
                                  TileRef* ref, unsigned int* cnt, const vec4 scissor, const vec2 hsiz,
                                  const float near, const float far, const vec2 mul) {
     const auto id = getId();
@@ -78,11 +78,11 @@ SphereProcessResult processSphereInfo(CommandBuffer& buffer, const MemoryRef<vec
                                       const vec2 mul) {
     auto cnt = buffer.allocBuffer<unsigned int>(7);
     buffer.memset(cnt);
-    auto info = buffer.allocBuffer<SphereInfo>(spheres.size());
+    const auto info = buffer.allocBuffer<SphereInfo>(spheres.size());
     auto ref = buffer.allocBuffer<TileRef>(spheres.size());
-    buffer.runKernelLinear(processSphereInfoGPU, spheres.size(), spheres, info, ref, cnt,
+    buffer.runKernelLinear(processSphereInfoKernel, spheres.size(), spheres, info, ref, cnt,
                            scissor, hsiz, near, far, mul);
-    auto sortedSphere = sortTiles(buffer, cnt, ref, spheres.size() * 2U + 2048U, spheres.size());
+    const auto sortedSphere = sortTiles(buffer, cnt, ref, spheres.size() * 2U + 2048U, spheres.size());
     cnt.earlyRelease();
     ref.earlyRelease();
     return SphereProcessResult(sortedSphere.first, info, sortedSphere.second);

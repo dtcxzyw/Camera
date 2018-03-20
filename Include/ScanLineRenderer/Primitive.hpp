@@ -2,12 +2,12 @@
 #include <Base/Queue.hpp>
 
 template<typename Vert, typename Uniform>
-using GSF = void(*)(Vert* in,const Uniform& uniform,QueueGPU<Vert> queue);
+using GSF = void(*)(Vert* in,const Uniform& uniform,QueueRef<Vert> queue);
 
 template<unsigned int inv,typename Index, typename Vert, typename Uniform,
     GSF<Vert, Uniform> gs>
 GLOBAL void GTHelper(const unsigned int size,READONLY(Vert) vert, Index idx,
-    READONLY(Uniform) uniform,QueueGPU<Vert> queue) {
+    READONLY(Uniform) uniform,QueueRef<Vert> queue) {
     const auto id = getId();
     if (id >= size)return;
     Vert in[inv];

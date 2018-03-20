@@ -27,7 +27,7 @@ GLOBAL void emitTile(const unsigned int size,unsigned int* cnt,READONLY(unsigned
     else out[offset[ref.size] + atomicInc(cnt+ref.size,maxv)]=ref;
 }
 
-GLOBAL void sortTilesGPU(unsigned int* cnt, unsigned int* offset,unsigned int* tmp,
+GLOBAL void sortTilesKernel(unsigned int* cnt, unsigned int* offset,unsigned int* tmp,
     TileRef* ref, TileRef* out, const unsigned int maxSize,const unsigned int maxOutSize){
     auto launchSize = cnt[6];
     if (cnt[6] > maxSize)launchSize = maxSize;
@@ -48,6 +48,6 @@ std::pair<MemoryRef<unsigned int>, MemoryRef<TileRef>> sortTiles(CommandBuffer& 
     auto tmp = buffer.allocBuffer<unsigned int>(6);
     auto offset = buffer.allocBuffer<unsigned int>(6);
     const unsigned int maxOutSize=sortedIdx.maxSize();
-    buffer.callKernel(sortTilesGPU, cnt, offset, tmp, ref, sortedIdx, maxSize, maxOutSize);
+    buffer.callKernel(sortTilesKernel, cnt, offset, tmp, ref, sortedIdx, maxSize, maxOutSize);
     return { offset,sortedIdx };
 }

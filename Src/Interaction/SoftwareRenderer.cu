@@ -32,12 +32,12 @@ CUDAINLINE void vertShader(VertInfo in, const Empty&, vec3& cpos,
     out.get<VertOutAttr::Color>() = toRGBA(in.col);
 }
 
-CUDAINLINE bool clipShader(unsigned int, vec3&, vec3&, vec3&, const BuiltinSamplerGPU<float>&) {
+CUDAINLINE bool clipShader(unsigned int, vec3&, vec3&, vec3&, const BuiltinSamplerRef<float>&) {
     return true;
 }
 
 CUDAINLINE void fragShader(unsigned int, ivec2 uv, float, const VertOut& in, const VertOut&, const VertOut&,
-                           const BuiltinSamplerGPU<float>& texture, BuiltinRenderTargetGPU<RGBA8>& fbo) {
+                           const BuiltinSamplerRef<float>& texture, BuiltinRenderTargetRef<RGBA8>& fbo) {
     const auto texAlpha = texture.get(in.get<VertOutAttr::TexCoord>());
     auto src = in.get<VertOutAttr::Color>();
     src.a *= texAlpha;
@@ -66,13 +66,13 @@ void SoftwareRenderer::render(CommandBuffer& buffer, BuiltinRenderTarget<RGBA8>&
     if (fbw == 0 || fbh == 0)return;
     drawData->ScaleClipRects(io.DisplayFramebufferScale);
 
-    auto uni = buffer.allocConstant<BuiltinSamplerGPU<float>>();
+    auto uni = buffer.allocConstant<BuiltinSamplerRef<float>>();
     buffer.memcpy(uni, [this](auto&& call) {
         const auto data = mSampler->toSampler();
         call(&data);
     });
 
-    auto frameBuffer = buffer.allocConstant<BuiltinRenderTargetGPU<RGBA8>>();
+    auto frameBuffer = buffer.allocConstant<BuiltinRenderTargetRef<RGBA8>>();
     buffer.memcpy(frameBuffer, [rt=renderTarget.toTarget()](auto&& call) {
         call(&rt);
     });
@@ -132,8 +132,8 @@ void SoftwareRenderer::render(CommandBuffer& buffer, BuiltinRenderTarget<RGBA8>&
             const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(faceCount, idxPtr.get());
             TriangleRenderingHistory history;
             history.reset(faceCount, 65536U);
-            renderTriangles<decltype(index), VertOut, BuiltinSamplerGPU<float>,
-                BuiltinRenderTargetGPU<RGBA8>, clipShader, fragShader>(buffer,
+            renderTriangles<decltype(index), VertOut, BuiltinSamplerRef<float>,
+                BuiltinRenderTargetRef<RGBA8>, clipShader, fragShader>(buffer,
                                                                        vertBase + vertBufferOffset, index, uni,
                                                                        frameBuffer, renderTarget.size(), 0.5f, 1.5f,
                                                                        history, scissor, CullFace::None);

@@ -39,7 +39,7 @@
     <ClInclude Include="..\..\Include\PBR\PhotorealisticRendering.hpp" />
     <ClInclude Include="..\..\Include\PostProcess\ToneMapping.hpp" />
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\DepthBuffer.hpp" />
+    <ClInclude Include="..\..\Include\ScanLineRenderer\Buffer2D.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\IndexDescriptor.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\LineRasterizer.hpp" />
     <ClInclude Include="..\..\Include\ScanLineRenderer\PointRasterizer.hpp" />

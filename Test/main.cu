@@ -98,7 +98,7 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
         return u;
     }
 
-    using SharedFrame= std::shared_ptr<FrameBufferCPU>;
+    using SharedFrame= std::shared_ptr<FrameBuffer>;
 
     struct RenderingTask {
         Future future;
@@ -202,7 +202,7 @@ public:
             {
                 const auto size = window.size();
                 for (auto i = 0; i < queueSize; ++i) {
-                    tasks.push(addTask(std::make_shared<FrameBufferCPU>(), size, lum.begin()));
+                    tasks.push(addTask(std::make_shared<FrameBuffer>(), size, lum.begin()));
                 }
             }
 

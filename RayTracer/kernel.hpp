@@ -5,8 +5,8 @@
 #include <PBR/PhotorealisticRendering.hpp>
 #include <PBR/BRDF.hpp>
 
-struct FrameBufferGPU final {
-    BuiltinRenderTargetGPU<RGBA> color;
+struct FrameBufferRef final {
+    BuiltinRenderTargetRef<RGBA> color;
     uvec2 fsize;
     CUDAINLINE uvec2 size() const {
         return fsize;
@@ -19,7 +19,7 @@ struct FrameBufferCPU final {
     std::unique_ptr<BuiltinRenderTarget<RGBA>> colorRT;
     std::unique_ptr<BuiltinRenderTarget<RGBA8>> postRT;
     uvec2 size;
-    FrameBufferGPU data;
+    FrameBufferRef data;
 
     void resize(const uvec2 nsiz) {
         if (size == nsiz)return;
@@ -32,21 +32,21 @@ struct FrameBufferCPU final {
         data.fsize = size;
     }
 
-    MemoryRef<FrameBufferGPU> getData(CommandBuffer& buffer) const {
-        auto dataGPU = buffer.allocConstant<FrameBufferGPU>();
-        buffer.memcpy(dataGPU, [buf = data](auto call) {
+    MemoryRef<FrameBufferRef> getData(CommandBuffer& buffer) const {
+        auto dataRef = buffer.allocConstant<FrameBufferRef>();
+        buffer.memcpy(dataRef, [buf = data](auto call) {
             call(&buf);
         });
-        return dataGPU;
+        return dataRef;
     }
 };
 
 struct PostUniform final {
-    ALIGN FrameBufferGPU in;
+    ALIGN FrameBufferRef in;
     ALIGN float* lum;
     ALIGN std::pair<float, unsigned int>* sum;
 
-    PostUniform(const FrameBufferGPU buf, float* clum, std::pair<float, unsigned int>* cnt)
+    PostUniform(const FrameBufferRef buf, float* clum, std::pair<float, unsigned int>* cnt)
         : in(buf), lum(clum), sum(cnt) {}
 };
 

@@ -195,7 +195,7 @@ CUDAINLINE void applyLFS(unsigned int*, LineInfo<Out>*, LineRef*, Uniform*, Fram
 
 template <typename Out, typename Uniform, typename FrameBuffer,
     FSFL<Out, Uniform, FrameBuffer>... fs>
-GLOBAL void renderLinesGPU(unsigned int* offset, LineInfo<Out>* tri, LineRef* idx,
+GLOBAL void renderLinesKernel(unsigned int* offset, LineInfo<Out>* tri, LineRef* idx,
                            Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float invnf,
                            const vec4 scissor) {
     applyLFS<Out, Uniform, FrameBuffer, fs...>(offset, tri, idx, uniform, frameBuffer, near, invnf, scissor);
@@ -220,6 +220,6 @@ void renderLines(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,con
     cnt.earlyRelease();
     ref.earlyRelease();
     const auto invnf = 1.0f / (far - near);
-    buffer.callKernel(renderLinesGPU<Out, Uniform, FrameBuffer, fs...>, sortedLines.first, info,
+    buffer.callKernel(renderLinesKernel<Out, Uniform, FrameBuffer, fs...>, sortedLines.first, info,
                       sortedLines.second, uniform.get(), frameBuffer.get(), near, invnf, scissor);
 }

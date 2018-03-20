@@ -127,11 +127,11 @@ public:
 };
 
 template <typename T>
-class BuiltinSamplerGPU final {
+class BuiltinSamplerRef final {
 public:
     using Type = typename Rename<T>::Type;
-    CUDAINLINE BuiltinSamplerGPU(): mTexture(0) {}
-    explicit BuiltinSamplerGPU(const cudaTextureObject_t texture): mTexture(texture) {}
+    CUDAINLINE BuiltinSamplerRef(): mTexture(0) {}
+    explicit BuiltinSamplerRef(const cudaTextureObject_t texture): mTexture(texture) {}
     CUDAINLINE T get(const vec2 p) const {
         T res;
         tex2D<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y);
@@ -223,7 +223,7 @@ public:
     }
 
     auto toSampler() const {
-        return BuiltinSamplerGPU<T>{mTexture};
+        return BuiltinSamplerRef<T>{mTexture};
     }
 
     ~BuiltinSampler() {
@@ -232,11 +232,11 @@ public:
 };
 
 template <typename T>
-class BuiltinRenderTargetGPU final {
+class BuiltinRenderTargetRef final {
 public:
     using Type = typename Rename<T>::Type;
-    CUDAINLINE BuiltinRenderTargetGPU(): mTarget(0) {};
-    explicit BuiltinRenderTargetGPU(const cudaSurfaceObject_t target) : mTarget(target) {}
+    CUDAINLINE BuiltinRenderTargetRef(): mTarget(0) {};
+    explicit BuiltinRenderTargetRef(const cudaSurfaceObject_t target) : mTarget(target) {}
     CUDAINLINE T get(ivec2 p) const {
         auto res = surf2Dread<Type>(mTarget, p.x * sizeof(Type), p.y, cudaBoundaryModeClamp);
         return *reinterpret_cast<T*>(&res);
@@ -253,7 +253,7 @@ private:
 
 namespace Impl {
     template <typename T>
-    GLOBAL void clear(BuiltinRenderTargetGPU<T> rt, T val) {
+    GLOBAL void clear(BuiltinRenderTargetRef<T> rt, T val) {
         uvec2 p = {blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
         rt.set(p, val);
     }
@@ -277,7 +277,7 @@ public:
     explicit BuiltinRenderTarget(BuiltinArray<T>& array): BuiltinRenderTarget(array.get(), array.size()) {}
 
     auto toTarget() const {
-        return BuiltinRenderTargetGPU<T>{mTarget};
+        return BuiltinRenderTargetRef<T>{mTarget};
     }
 
     void clear(CommandBuffer& buffer, T val) {
@@ -333,7 +333,7 @@ public:
         return mArray;
     }
 
-    BuiltinSamplerGPU<T> toSampler() const {
+    BuiltinSamplerRef<T> toSampler() const {
         return mTexture;
     }
 };
@@ -370,14 +370,14 @@ public:
         return mArray;
     }
 
-    BuiltinSamplerGPU<T> toSampler() const {
+    BuiltinSamplerRef<T> toSampler() const {
         return mTexture;
     }
 };
 
 namespace Impl {
     template <typename T>
-    GLOBAL void downSample(BuiltinSamplerGPU<T> src, BuiltinRenderTargetGPU<T> rt) {
+    GLOBAL void downSample(BuiltinSamplerRef<T> src, BuiltinRenderTargetRef<T> rt) {
         uvec2 p{blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
         const uvec2 base = {p.x << 1, p.y << 1};
         T val = {};

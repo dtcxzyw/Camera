@@ -92,7 +92,7 @@ public:
         const auto fac = pow(0.1, scalePow);
         std::vector<vec4> data(mPlanets.size());
         for (size_t i = 0; i < mPlanets.size(); ++i){
-            data[i] = { mPlanets[i].pos*fac,mPlanets[i].r*fac };
+            data[i] = { mPlanets[i].pos*fac,fmax(0.1f,mPlanets[i].r*fac) };
         }
         auto buf = buffer.allocBuffer<vec4>(data.size());
         buffer.memcpy(buf, [holder = std::move(data)](auto&& call){
@@ -142,7 +142,7 @@ private:
         return u;
     }
 
-    using SharedFrame= std::shared_ptr<FrameBufferCPU>;
+    using SharedFrame= std::shared_ptr<FrameBuffer>;
 
     struct RenderingTask {
         Future future;
@@ -213,7 +213,7 @@ public:
             {
                 const auto size = window.size();
                 for (auto i = 0; i < queueSize; ++i) {
-                    tasks.push(addTask(system,std::make_shared<FrameBufferCPU>(), size));
+                    tasks.push(addTask(system,std::make_shared<FrameBuffer>(), size));
                 }
             }
 

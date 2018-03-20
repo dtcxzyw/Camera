@@ -5,12 +5,12 @@
 #include <Base/CompileEnd.hpp>
 
 template<typename T>
-class QueueGPU final {
+class QueueRef final {
 private:
     T * mAddress;
     unsigned int* mCnt;
 public:
-    QueueGPU(T* address,unsigned int* cnt):mAddress(address),mCnt(cnt){}
+    QueueRef(T* address,unsigned int* cnt):mAddress(address),mCnt(cnt){}
     CUDAINLINE void push(T val) {
         constexpr auto maxv = std::numeric_limits<unsigned int>::max();
         mAddress[atomicInc(mCnt, maxv)] = val;
@@ -33,7 +33,7 @@ public:
         buffer.memset(mCnt);
     }
     auto get(CommandBuffer& buffer) const {
-        return buffer.makeLazyConstructor<QueueGPU<T>>(mData,mCnt);
+        return buffer.makeLazyConstructor<QueueRef<T>>(mData,mCnt);
     }
     auto size() const {
         return mCnt;
