@@ -29,17 +29,20 @@ template<typename T>
 class Buffer2D final:Uncopyable {
 private:
     uvec2 mSize;
-    DataViewer<T> mData;
+    MemoryRef<T> mData;
+    CommandBuffer& mBuffer;
 public:
-    explicit Buffer2D(const uvec2 size) :mSize(size),
-        mData(calcBlockSize(size.x,32U)*calcBlockSize(size.y,32U)*1024U) {}
-    void clear(CommandBuffer& buffer) {
-        buffer.pushOperator([=](Id,ResourceManager&,Stream& stream) {stream.memset(mData, 0xff); });
+    explicit Buffer2D(CommandBuffer& buffer,const uvec2 size) :mSize(size),
+        mData(buffer.allocBuffer<T>(calcBlockSize(size.x, 32U)*calcBlockSize(size.y, 32U) * 1024U)),
+        mBuffer(buffer) {}
+    void clear(int mask) {
+        mBuffer.memset(mData, mask);
     }
     auto size() const {
         return mSize;
     }
-    Buffer2DRef<T> toBuffer() {
-        return { mData.begin(),static_cast<int>(calcBlockSize(mSize.y,32U)) };
+    auto toBuffer() const {
+        return mBuffer.makeLazyConstructor<Buffer2DRef<T>>
+            (mData, static_cast<int>(calcBlockSize(mSize.y, 32U)));
     }
 };

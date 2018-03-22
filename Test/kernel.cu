@@ -11,7 +11,7 @@ CUDAINLINE vec3 toPos(const vec3 p, const Uniform& u) {
     return {p.x * u.mul.x, p.y * u.mul.y, -p.z};
 }
 
-CUDAINLINE void setDepth(unsigned int& data,const unsigned int val) {
+CUDAINLINE void setDepth(unsigned int& data, const unsigned int val) {
     atomicMin(&data, val);
 }
 
@@ -29,7 +29,7 @@ CUDAINLINE void VS(VI in, const Uniform& uniform, vec3& cpos, OI& out) {
 }
 
 CUDAINLINE void drawSky(unsigned int, ivec2 uv, float, const OI& out, const OI&, const OI&,
-                        const Uniform& uniform, FrameBufferRef& fbo) {
+    const Uniform& uniform, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == 0xffffffff) {
         const vec3 p = out.get<Pos>();
         fbo.color.set(uv, uniform.sampler.getCubeMap(p));
@@ -55,12 +55,12 @@ CUDAINLINE bool CSM(unsigned int id, vec3& pa, vec3& pb, vec3& pc, const Uniform
 constexpr float maxdu = std::numeric_limits<unsigned int>::max();
 
 CUDAINLINE void setModel(unsigned int, ivec2 uv, float z, const OI&, const OI&, const OI&,
-                         const Uniform&, FrameBufferRef& fbo) {
+    const Uniform&, FrameBufferRef& fbo) {
     setDepth(fbo.depth.get(uv), z * maxdu);
 }
 
 CUDAINLINE void drawModel(unsigned int triID, ivec2 uv, float z, const OI& out, const OI&,
-                          const OI&, const Uniform& uniform, FrameBufferRef& fbo) {
+    const OI&, const Uniform& uniform, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
         uniform.cache.record(triID);
         const vec3 p = out.get<Pos>();
@@ -83,12 +83,12 @@ CUDAINLINE void drawModel(unsigned int triID, ivec2 uv, float z, const OI& out, 
 }
 
 CUDAINLINE void setPoint(unsigned int, ivec2 uv, float z, const OI&,
-                         const Uniform&, FrameBufferRef& fbo) {
+    const Uniform&, FrameBufferRef& fbo) {
     setDepth(fbo.depth.get(uv), z * maxdu);
 }
 
 CUDAINLINE void drawPoint(unsigned int, ivec2 uv, float z, const OI&,
-                          const Uniform&, FrameBufferRef& fbo) {
+    const Uniform&, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu))
         fbo.color.set(uv, {1.0f, 1.0f, 1.0f, 1.0f});
 }
@@ -112,17 +112,17 @@ GLOBAL void updateLum(const PostUniform uniform) {
     *uniform.lum = calcLum(uniform.sum->first / (uniform.sum->second + 1));
 }
 
-template <VSF<VI, OI, Uniform> vs, TCSF<Uniform> cs,FSFT<OI, Uniform, FrameBufferRef>... fs>
+template <VSF<VI, OI, Uniform> vs, TCSF<Uniform> cs, FSFT<OI, Uniform, FrameBufferRef>... fs>
 void renderMesh(const StaticMesh& model, const MemoryRef<Uniform>& uniform,
-                const MemoryRef<FrameBufferRef>& frameBuffer, const uvec2 size, const Camera::RasterPosConverter converter,
-                const CullFace mode, TriangleRenderingHistory& history, const vec4 scissor,
-                CommandBuffer& buffer) {
+    const MemoryRef<FrameBufferRef>& frameBuffer, const uvec2 size,
+    const Camera::RasterPosConverter converter,
+    const CullFace mode, TriangleRenderingHistory& history, const vec4 scissor,
+    CommandBuffer& buffer) {
     auto vert = calcVertex<VI, OI, Uniform, vs>(buffer, model.vert, uniform);
     const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(model.index.size(),
         model.index.begin());
-    renderTriangles<decltype(index), OI, Uniform, FrameBufferRef, cs, fs...>(buffer, 
-        vert, index, uniform, frameBuffer, size,
-        converter.near, converter.far, history, scissor, mode);
+    renderTriangles<decltype(index), OI, Uniform, FrameBufferRef, cs, fs...>(buffer, vert, index,
+        uniform, frameBuffer, size, converter.near, converter.far, history, scissor, mode);
     /*
     renderPoints<OI, Uniform, FrameBufferRef, toPos, setPoint, drawPoint>(buffer,
         vert,uniform, frameBuffer, size, converter.near, converter.far);
@@ -140,16 +140,16 @@ CUDAINLINE vec4 vsSphere(vec4 sp, const Uniform& uniform) {
 }
 
 CUDAINLINE void setSpherePoint(unsigned int, ivec2 uv, float z, vec3, vec3, float, bool,
-                               vec2, const Uniform&, FrameBufferRef& fbo) {
+    vec2, const Uniform&, FrameBufferRef& fbo) {
     setDepth(fbo.depth.get(uv), z * maxdu);
 }
 
-CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, vec3 p, vec3 dir, float invr, 
-                                bool inSphere,vec2, const Uniform& u, FrameBufferRef& fbo) {
+CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, vec3 p, vec3 dir, float invr,
+    bool inSphere, vec2, const Uniform& u, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
-        const vec3 pos = u.invV*vec4(p,1.0f);
-        const auto normalizedDir = u.normalInvV*dir*invr;
-        const auto N = calcSphereNormal(normalizedDir,inSphere);
+        const vec3 pos = u.invV * vec4(p, 1.0f);
+        const auto normalizedDir = u.normalInvV * dir * invr;
+        const auto N = calcSphereNormal(normalizedDir, inSphere);
         const auto Y = calcSphereBiTangent(N);
         const auto X = calcSphereTangent(N, Y);
         const auto off = u.lp - pos;
@@ -159,31 +159,34 @@ CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, vec3 p, vec3 di
         const auto V = normalize(u.cp - pos);
         const auto F = disneyBRDF(L, V, N, X, Y, u.arg);
         const auto ref = reflect(-V, N);
-        const auto lc = u.lc * distUE4(dis2, u.r2) +vec3(u.sampler.getCubeMap(ref));
+        const auto lc = u.lc * distUE4(dis2, u.r2) + vec3(u.sampler.getCubeMap(ref));
         const auto res = lc * F * fabs(dot(N, L));
-        fbo.color.set(uv, { res, 1.0f });
+        fbo.color.set(uv, {res, 1.0f});
     }
 }
 
 void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
-            const StaticMesh& skybox, TriangleRenderingHistory& sh,
-            const DataViewer<vec4>& spheres,
-            const MemoryRef<Uniform>& uniform, FrameBuffer& fbo, float* lum,
-            const Camera::RasterPosConverter converter, CommandBuffer& buffer) {
+    const StaticMesh& skybox, TriangleRenderingHistory& sh,
+    const DataViewer<vec4>& spheres,
+    const MemoryRef<Uniform>& uniform, FrameBuffer& fbo, float* lum,
+    const Camera::RasterPosConverter converter, CommandBuffer& buffer) {
     fbo.colorRT->clear(buffer, vec4{0.0f, 0.0f, 0.0f, 1.0f});
-    fbo.depthBuffer->clear(buffer);
-    const auto frameBuffer = fbo.getData(buffer);
-    const vec4 scissor = { 0.0f,fbo.size.x,0.0f,fbo.size.y };
-    renderMesh<VSM, CSM, setModel, drawModel>(model, uniform, frameBuffer, fbo.size, 
-                                              converter, CullFace::Back, mh,scissor,buffer);
-    renderSpheres<Uniform,FrameBufferRef,vsSphere,setSpherePoint,drawSpherePoint>(buffer,
-                                                                                  spheres,uniform,frameBuffer,fbo.size,converter.near,converter.far,converter.mul,scissor);
-    renderMesh<VS, CS, drawSky>(skybox, uniform, frameBuffer, fbo.size, converter, 
-                                CullFace::Front, sh,scissor,buffer);
+    Buffer2D<unsigned int> depth(buffer, fbo.size);
+    depth.clear(0xff);
+    const auto frameBuffer = fbo.getData(buffer, depth);
+    const vec4 scissor = {0.0f, fbo.size.x, 0.0f, fbo.size.y};
+    renderMesh<VSM, CSM, setModel, drawModel>(model, uniform, frameBuffer, fbo.size,
+        converter, CullFace::Back, mh, scissor, buffer);
+    renderSpheres<Uniform, FrameBufferRef, vsSphere, setSpherePoint, drawSpherePoint>(buffer,
+        spheres, uniform, frameBuffer, fbo.size, converter.near, converter.far, converter.mul, scissor);
+    renderMesh<VS, CS, drawSky>(skybox, uniform, frameBuffer, fbo.size, converter,
+        CullFace::Front, sh, scissor, buffer);
     auto puni = buffer.allocConstant<PostUniform>();
     auto sum = buffer.allocBuffer<std::pair<float, unsigned int>>();
     buffer.memset(sum);
-    auto punidata = buffer.makeLazyConstructor<PostUniform>(fbo.data, lum, sum);
+    const auto depthBufferRef = depth.toBuffer();
+    const auto fboData = buffer.makeLazyConstructor<FrameBufferRef>(fbo.data, depthBufferRef);
+    auto punidata = buffer.makeLazyConstructor<PostUniform>(fboData, lum, sum);
     auto&& manager = buffer.getResourceManager();
     buffer.memcpy(puni, [punidata,&manager](auto call) {
         auto pd = punidata;
@@ -191,6 +194,6 @@ void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
         call(&data);
     });
     renderFullScreen<PostUniform, BuiltinRenderTargetRef<RGBA8>, post>(buffer, puni,
-                                                                       fbo.postRT->toTarget(),fbo.size);
+        fbo.postRT->toTarget(), fbo.size);
     buffer.callKernel(updateLum, punidata);
 }

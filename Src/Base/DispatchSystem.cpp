@@ -178,9 +178,9 @@ void ResourceManager::registerResource(Id id, std::unique_ptr<ResourceInstance>&
     mResources.emplace(id, std::make_pair(mOperatorCount, std::move(instance)));
 }
 
-void CommandBuffer::memset(Impl::DMRef& memory, int mark) {
+void CommandBuffer::memset(Impl::DMRef& memory, int mask) {
     mCommandQueue.emplace(std::make_unique<Impl::Memset>(*mResourceManager,
-                                                         memory.getId(), mark));
+                                                         memory.getId(), mask));
 }
 
 void CommandBuffer::memcpy(Impl::DMRef& dst,

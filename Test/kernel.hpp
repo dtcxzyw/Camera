@@ -25,6 +25,12 @@ struct FrameBufferRef final {
     BuiltinRenderTargetRef<RGBA> color;
     Buffer2DRef<unsigned int> depth;
     uvec2 fsize;
+    FrameBufferRef() = default;
+    FrameBufferRef(const FrameBufferRef& rhs, const Buffer2DRef<unsigned int> buf) {
+        color = rhs.color;
+        depth = buf;
+        fsize = rhs.fsize;
+    }
     CUDAINLINE uvec2 size() const {
         return fsize;
     }
@@ -33,7 +39,6 @@ struct FrameBufferRef final {
 struct FrameBuffer final {
     std::unique_ptr<BuiltinArray<RGBA>> colorBuffer;
     std::unique_ptr<BuiltinArray<RGBA8>> postBuffer;
-    std::unique_ptr<Buffer2D<unsigned int>> depthBuffer;
     std::unique_ptr<BuiltinRenderTarget<RGBA>> colorRT;
     std::unique_ptr<BuiltinRenderTarget<RGBA8>> postRT;
     uvec2 size;
@@ -46,15 +51,17 @@ struct FrameBuffer final {
         colorRT = std::make_unique<BuiltinRenderTarget<RGBA>>(*colorBuffer);
         postBuffer = std::make_unique<BuiltinArray<RGBA8>>(size, cudaArraySurfaceLoadStore);
         postRT = std::make_unique<BuiltinRenderTarget<RGBA8>>(*postBuffer);
-        depthBuffer = std::make_unique<Buffer2D<unsigned int>>(size);
         data.color = colorRT->toTarget();
-        data.depth = depthBuffer->toBuffer();
         data.fsize = size;
     }
 
-    MemoryRef<FrameBufferRef> getData(CommandBuffer& buffer) const {
+    MemoryRef<FrameBufferRef> getData(CommandBuffer& buffer,
+        Buffer2D<unsigned int>& depth) const {
         auto dataRef = buffer.allocConstant<FrameBufferRef>();
-        buffer.memcpy(dataRef, [buf=data](auto call) {
+        auto&& manager = buffer.getResourceManager();
+        buffer.memcpy(dataRef, [this,&manager, depthRef= depth.toBuffer()](auto call) {
+            auto buf = data;
+            buf.depth = depthRef.get(manager);
             call(&buf);
         });
         return dataRef;

@@ -225,14 +225,14 @@ namespace Impl {
         std::tuple<Args...> mArgs;
 
         template <size_t... I>
-        auto constructImpl(ResourceManager& manager, std::index_sequence<I...>) {
+        auto constructImpl(ResourceManager& manager, std::index_sequence<I...>) const{
             return T{cast(std::get<I>(mArgs), manager)...};
         }
 
     public:
         explicit LazyConstructor(Args ... args) : mArgs(std::make_tuple(args...)) {}
 
-        auto get(ResourceManager& manager) {
+        auto get(ResourceManager& manager) const{
             return constructImpl(manager, std::make_index_sequence<std::tuple_size<decltype(mArgs)>::value>());
         }
     };
@@ -490,7 +490,7 @@ public:
         };
     }
 
-    void memset(Impl::DMRef& memory, int mark = 0);
+    void memset(Impl::DMRef& memory, int mask = 0);
 
     void memcpy(Impl::DMRef& dst, std::function<void(std::function<void(const void*)>)>&& src);
 

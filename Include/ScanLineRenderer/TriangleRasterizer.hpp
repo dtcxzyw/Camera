@@ -1,4 +1,4 @@
- #pragma once
+#pragma once
 #include <ScanLineRenderer/Vertex.hpp>
 #include <ScanLineRenderer/Shared.hpp>
 #include <Base/CompileBegin.hpp>
@@ -48,7 +48,7 @@ class SeparateTrianglesWithIndex final {
 private:
     READONLY(uvec3) mPtr;
 public:
-    explicit SeparateTrianglesWithIndex(READONLY(uvec3) idx): mPtr(idx){}
+    explicit SeparateTrianglesWithIndex(READONLY(uvec3) idx): mPtr(idx) {}
 
     static auto size(const unsigned int faceSize) {
         return faceSize;
@@ -80,7 +80,7 @@ template <typename Out>
 struct Triangle final {
     vec3 invz;
     mat3 w;
-    unsigned int id,type;
+    unsigned int id, type;
     Out out[3];
 };
 
@@ -101,15 +101,15 @@ struct TriangleProcessingArgs final {
     unsigned int maxSize;
 
     TriangleProcessingArgs(unsigned int* iCnt, Triangle<Out>* iInfo, TileRef* iOut,
-                           const vec4 iScissor, const vec2 iHsiz, const int iMode,const unsigned int iMaxSize)
-        : cnt(iCnt), info(iInfo), out(iOut), scissor(iScissor), hsiz(iHsiz), mode(iMode),maxSize(iMaxSize) {}
+        const vec4 iScissor, const vec2 iHsiz, const int iMode, const unsigned int iMaxSize)
+        : cnt(iCnt), info(iInfo), out(iOut), scissor(iScissor), hsiz(iHsiz), mode(iMode), maxSize(iMaxSize) {}
 };
 
 template <typename Out>
 CUDAINLINE void calcTriangleInfo(const TriangleVert<Out>& tri, const TriangleProcessingArgs<Out>& args) {
     const auto a = toRaster(tri.vert[0].pos, args.hsiz),
-               b = toRaster(tri.vert[1].pos, args.hsiz),
-               c = toRaster(tri.vert[2].pos, args.hsiz);
+        b = toRaster(tri.vert[1].pos, args.hsiz),
+        c = toRaster(tri.vert[2].pos, args.hsiz);
     const uvec4 rect = {
         fmax(args.scissor.x, min3(a.x, b.x, c.x) - tileOffset),
         fmin(args.scissor.y, max3(a.x, b.x, c.x) + tileOffset),
@@ -167,8 +167,8 @@ CUDAINLINE void sortIndex(const TriangleVert<Out>& tri, uvec3& idx) {
 }
 
 template <typename Out, CompareZ Func, typename Callable>
-CUDAINLINE void clipVertT1(const TriangleVert<Out>& tri, const float z,const Callable& emit) {
-    uvec3 idx{ 0,1,2 };
+CUDAINLINE void clipVertT1(const TriangleVert<Out>& tri, const float z, const Callable& emit) {
+    uvec3 idx{0, 1, 2};
     sortIndex<Out, Func>(tri, idx);
     const auto a = tri.vert[idx[0]], b = tri.vert[idx[1]], c = tri.vert[idx[2]];
     const auto d = lerpZ(b, a, z), e = lerpZ(c, a, z);
@@ -190,8 +190,8 @@ CUDAINLINE void clipVertT1(const TriangleVert<Out>& tri, const float z,const Cal
 }
 
 template <typename Out, CompareZ Func, typename Callable>
-CUDAINLINE void clipVertT2(const TriangleVert<Out>& tri, const float z,const Callable& emit) {
-    uvec3 idx{ 0,1,2 };
+CUDAINLINE void clipVertT2(const TriangleVert<Out>& tri, const float z, const Callable& emit) {
+    uvec3 idx{0, 1, 2};
     sortIndex<Out, Func>(tri, idx);
     const auto a = tri.vert[idx[0]], b = tri.vert[idx[1]], c = tri.vert[idx[2]];
     const auto d = lerpZ(a, c, z), e = lerpZ(b, c, z);
@@ -206,7 +206,7 @@ CUDAINLINE void clipVertT2(const TriangleVert<Out>& tri, const float z,const Cal
 }
 
 template <typename Out, CompareZ Func, typename Callable>
-CUDAINLINE void clipTriangle(const TriangleVert<Out>& tri, const float z,const Callable& emit) {
+CUDAINLINE void clipTriangle(const TriangleVert<Out>& tri, const float z, const Callable& emit) {
     const auto type = calcTriangleType<Out, Func>(tri, z);
     switch (type) {
         case 0: emit(tri);
@@ -224,8 +224,8 @@ using TCSF = bool(*)(unsigned int idx, vec3& pa, vec3& pb, vec3& pc, const Unifo
 
 template <typename Index, typename Out, typename Uniform, TCSF<Uniform> cs>
 GLOBAL void processTriangles(const unsigned int size,READONLY(VertexInfo<Out>) vert,
-                             Index index,READONLY(Uniform) uniform, const float near, const float far,
-                             TriangleProcessingArgs<Out> args) {
+    Index index,READONLY(Uniform) uniform, const float near, const float far,
+    TriangleProcessingArgs<Out> args) {
     const auto id = getId();
     if (id >= size)return;
     const auto idx = index[id];
@@ -243,12 +243,12 @@ GLOBAL void processTriangles(const unsigned int size,READONLY(VertexInfo<Out>) v
 }
 
 CUDAINLINE bool calcWeight(const mat4 w0, const int type, const vec2 p, const vec3 invz,
-                           const float near, const float invnf,vec3& w, float& nz) {
+    const float near, const float invnf, vec3& w, float& nz) {
     #pragma unroll
-    for(auto i=0;i<3;++i)
+    for (auto i = 0; i < 3; ++i)
         w[i] = w0[i].x * p.x + w0[i].y * p.y + w0[i].z;
     //w /= w.x + w.y + w.z;
-    const bool flag = (w.x == 0.0f ? type : w.x > 0.0f)&
+    const bool flag = (w.x == 0.0f ? type : w.x > 0.0f) &
         (w.y == 0.0f ? type >> 1 : w.y > 0.0f) &
         (w.z == 0.0f ? type >> 2 : w.z > 0.0f) & 1;
     const auto z = 1.0f / (invz.x * w.x + invz.y * w.y + invz.z * w.z);
@@ -270,7 +270,7 @@ GLOBAL void drawMicroT(READONLY(Triangle<Out>) info,READONLY(TileRef) idx,
     const auto& ref = idx[blockIdx.x];
     const auto offX = threadIdx.x >> 1U, offY = threadIdx.x & 1U;
     const ivec2 uv{ref.rect.x + (threadIdx.y << 1) + offX, ref.rect.z + (threadIdx.z << 1) + offY};
-    const vec2 p{ uv.x + sx, uv.y + sy };
+    const vec2 p{uv.x + sx, uv.y + sy};
     const auto& tri = info[ref.id];
     vec3 w;
     float z;
@@ -288,7 +288,7 @@ GLOBAL void drawMicroT(READONLY(Triangle<Out>) info,READONLY(TileRef) idx,
 template <typename Out, typename Uniform, typename FrameBuffer,
     FSFT<Out, Uniform, FrameBuffer> first, FSFT<Out, Uniform, FrameBuffer>... then>
 CUDAINLINE void applyTFS(unsigned int* offset, Triangle<Out>* tri, TileRef* idx, Uniform* uniform,
-                         FrameBuffer* frameBuffer, const float near, const float invnf,const vec2 samplePoint) {
+    FrameBuffer* frameBuffer, const float near, const float invnf, const vec2 samplePoint) {
     #pragma unroll
     for (auto i = 0; i < 5; ++i) {
         const auto size = offset[i + 1] - offset[i];
@@ -302,13 +302,13 @@ CUDAINLINE void applyTFS(unsigned int* offset, Triangle<Out>* tri, TileRef* idx,
     }
 
     cudaDeviceSynchronize();
-    applyTFS<Out, Uniform, FrameBuffer, then...>(offset, tri, idx, uniform, frameBuffer, near, invnf, 
+    applyTFS<Out, Uniform, FrameBuffer, then...>(offset, tri, idx, uniform, frameBuffer, near, invnf,
         samplePoint);
 }
 
 template <typename Out, typename Uniform, typename FrameBuffer>
 CUDAINLINE void applyTFS(unsigned int*, Triangle<Out>*, TileRef*, Uniform*, FrameBuffer*,
-                         float, float,vec2) {}
+    float, float, vec2) {}
 
 template <typename Out, typename Uniform, typename FrameBuffer,
     FSFT<Out, Uniform, FrameBuffer>... fs>
@@ -341,9 +341,9 @@ struct TriangleRenderingHistory final : Uncopyable {
 template <typename IndexDesc, typename Out, typename Uniform, typename FrameBuffer,
     TCSF<Uniform> cs, FSFT<Out, Uniform, FrameBuffer>... fs>
 void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
-                     const IndexDesc& index, const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
-                     const uvec2 size, const float near, const float far, TriangleRenderingHistory& history,
-    vec4 scissor, const CullFace mode = CullFace::Back, const vec2 samplePoint = { 0.5f,0.5f }) {
+    const IndexDesc& index, const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
+    const uvec2 size, const float near, const float far, TriangleRenderingHistory& history,
+    vec4 scissor, const CullFace mode = CullFace::Back, const vec2 samplePoint = {0.5f, 0.5f}) {
     //pass 1:process triangles
     const auto psiz = history.calcBufferSize(index.size());
     //5+ext+cnt=7
@@ -351,8 +351,12 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
     buffer.memset(cnt);
     auto info = buffer.allocBuffer<Triangle<Out>>(psiz);
     auto idx = buffer.allocBuffer<TileRef>(psiz);
-    scissor = { fmax(samplePoint.x,scissor.x),fmin(size.x - 1 + samplePoint.x,scissor.y),
-        fmax(samplePoint.y,scissor.z),fmin(size.y - 1 + samplePoint.y,scissor.w) };
+    scissor = {
+        fmax(samplePoint.x, scissor.x),
+        fmin(size.x - 1 + samplePoint.x, scissor.y),
+        fmax(samplePoint.y, scissor.z),
+        fmin(size.y - 1 + samplePoint.y, scissor.w)
+    };
     const auto hfsize = static_cast<vec2>(size) * 0.5f;
     const unsigned int maxSize = std::min(info.maxSize(), idx.maxSize());
     buffer.runKernelLinear(processTriangles<IndexDesc::IndexType, Out, Uniform, cs>, index.size(),
