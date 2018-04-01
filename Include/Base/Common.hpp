@@ -1,4 +1,5 @@
 #pragma once
+#include <Base/Config.hpp>
 #include <Base/CompileBegin.hpp>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
@@ -10,7 +11,8 @@
 #define HOST __host__
 #define BOTH CUDAINLINE HOST
 #define GLOBAL __global__
-#define ALIGN __align__(16)
+#define ALIGN __align__(TRANSFER_ALIGN)
+#define STRUCT_ALIGN __align__(CACHE_ALIGN)
 #define READONLY(type) const type* __restrict__ const
 
 struct Uncopyable {

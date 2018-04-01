@@ -77,7 +77,7 @@ public:
 };
 
 template <typename Out>
-struct LineInfo final {
+struct STRUCT_ALIGN LineInfo final {
     unsigned int id;
     VertexInfo<Out> a, b;
 };

@@ -73,7 +73,7 @@ static std::vector<std::pair<size_t, size_t>> sortPrimitives(const VertInfo* ver
             vert[b.x].pos, vert[b.y].pos, vert[b.z].pos);
     };
     const auto canUnion = [index,&testOverlap](const uvec3& cur,const std::pair<size_t,size_t>& set) {
-        for (auto i = 0; i < set.second; ++i)
+        for (auto i = static_cast<int>(set.second - 1); i >= 0; --i)
             if (testOverlap(index[set.first + i], cur))
                 return false;
         return true;

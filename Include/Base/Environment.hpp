@@ -1,5 +1,4 @@
 #pragma once
-#include <Base/Config.hpp>
 #include <Base/Common.hpp>
 #include <Base/DispatchSystem.hpp>
 #include <vector>

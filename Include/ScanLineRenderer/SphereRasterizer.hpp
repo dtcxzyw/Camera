@@ -55,7 +55,7 @@ CUDAINLINE vec4 calcSphereTdd(const vec3 dir, const vec2 pdd) {
     return {pdd.x * duddx, pdd.x * dvddx, pdd.y * duddx, pdd.y * dvddx};
 }
 
-struct SphereInfo final {
+struct STRUCT_ALIGN SphereInfo final {
     unsigned int id;
     vec4 info;
     float c;
@@ -71,9 +71,8 @@ struct SphereProcessResult final {
         : offset(off), info(sphereInfo), ref(sphereRef) {}
 };
 
-SphereProcessResult processSphereInfo(
-    CommandBuffer& buffer, const MemoryRef<vec4>& spheres, vec4 scissor, vec2 hsiz,
-    float near, float far, vec2 mul);
+SphereProcessResult processSphereInfo(CommandBuffer& buffer,
+    const MemoryRef<vec4>& spheres, vec4 scissor, vec2 hsiz, float near, float far, vec2 mul);
 
 /*
  * pos=td

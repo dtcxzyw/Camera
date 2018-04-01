@@ -23,7 +23,7 @@ private:
     DisneyBRDFArg mArg;
     Camera mCamera;
 
-    void setUIStyle() {
+    static void setStyle() {
         ImGui::StyleColorsDark();
         auto& style = ImGui::GetStyle();
         style.Alpha = 0.8f;
@@ -111,7 +111,7 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
 
     static constexpr auto enableSAA = true;
 
-    float getTime() {
+    static float getTime() {
         const double t = std::chrono::high_resolution_clock::now().time_since_epoch().count();
         return static_cast<float>(t * 1e-9);
     }
@@ -153,7 +153,7 @@ public:
     void run() {
         auto&& window = D3D11Window::get();
         window.show(true);
-        setUIStyle();
+        setStyle();
         ImGui::GetIO().WantCaptureKeyboard = true;
 
         auto&& env = Environment::get();

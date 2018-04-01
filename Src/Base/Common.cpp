@@ -1,5 +1,4 @@
 #include <Base/Common.hpp>
-#include <Base/Config.hpp>
 #include <cstdio>
 #include <stdexcept>
 

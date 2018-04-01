@@ -369,20 +369,17 @@ bool ResourceInstance::hasRecycler() const {
 
 void CommandBufferQueue::submit(std::shared_ptr<Impl::TaskState> promise,
                                 std::unique_ptr<CommandBuffer> buffer) {
-    std::lock_guard<std::mutex> guard(mMutex);
-    mQueue.emplace(std::move(promise), std::move(buffer));
+    mQueue.enqueue({ std::move(promise), std::move(buffer) });
 }
 
 CommandBufferQueue::UnboundTask CommandBufferQueue::getTask() {
-    if (mQueue.empty())return {};
-    std::lock_guard<std::mutex> guard(mMutex);
-    auto ptr = std::move(mQueue.front());
-    mQueue.pop();
-    return ptr;
+    UnboundTask res;
+    mQueue.try_dequeue(res);
+    return res;
 }
 
 size_t CommandBufferQueue::size() const {
-    return mQueue.size();
+    return mQueue.size_approx();
 }
 
 void CommandBufferQueue::clear() {

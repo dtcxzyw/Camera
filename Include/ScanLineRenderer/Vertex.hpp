@@ -7,7 +7,7 @@ template<typename Vert, typename Out, typename Uniform>
 using VertShader = void(*)(Vert in, const Uniform& uniform, vec3& pos, Out& out);
 
 template<typename Out>
-struct VertexInfo {
+struct STRUCT_ALIGN VertexInfo {
     vec3 pos;//in camera space
     Out out;
 };

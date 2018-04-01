@@ -109,7 +109,7 @@ class App final : Uncopyable {
 private:
     Camera mCamera;
 
-    void setUIStyle() {
+    void setStyle() {
         ImGui::StyleColorsDark();
         auto& style = ImGui::GetStyle();
         style.Alpha = 0.8f;
@@ -182,7 +182,7 @@ public:
     void run() {
         auto&& window = D3D11Window::get();
         window.show(true);
-        setUIStyle();
+        setStyle();
         ImGui::GetIO().WantCaptureKeyboard = true;
 
         auto&& env = Environment::get();

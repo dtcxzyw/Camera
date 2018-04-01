@@ -58,7 +58,7 @@ public:
 };
 
 template <typename Out>
-struct TriangleVert final {
+struct STRUCT_ALIGN TriangleVert final {
     unsigned int id;
     VertexInfo<Out> vert[3];
 };
@@ -75,7 +75,7 @@ CUDAINLINE vec3 calcBase(const vec3 a, const vec3 b) {
 }
 
 template <typename Out>
-struct Triangle final {
+struct STRUCT_ALIGN Triangle final {
     vec3 invz;
     mat3 w;
     unsigned int id, type;

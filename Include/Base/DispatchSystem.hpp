@@ -1,5 +1,5 @@
 #pragma once
-#include <Base/Config.hpp>
+#include <Base/Common.hpp>
 #include <Base/Pipeline.hpp>
 #include <map>
 #include <queue>
@@ -7,10 +7,12 @@
 #include <chrono>
 #include <tuple>
 #include <functional>
-#include <mutex>
 #ifdef CAMERA_RESOURCE_CHECK
 #include <set>
 #endif
+#include <Base/CompileBegin.hpp>
+#include <concurrentqueue.h>
+#include <Base/CompileEnd.hpp>
 
 class CommandBuffer;
 class ResourceManager;
@@ -547,8 +549,7 @@ class CommandBufferQueue final : Uncopyable {
 public:
     using UnboundTask = std::pair<std::shared_ptr<Impl::TaskState>, std::unique_ptr<CommandBuffer>>;
 private:
-    std::queue<UnboundTask> mQueue;
-    std::mutex mMutex;
+    moodycamel::ConcurrentQueue<UnboundTask> mQueue;
 public:
     void submit(std::shared_ptr<Impl::TaskState> promise, std::unique_ptr<CommandBuffer> buffer);
     UnboundTask getTask();

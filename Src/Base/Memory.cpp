@@ -1,7 +1,7 @@
+#include <Base/Common.hpp>
 #include <Base/Memory.hpp>
 #include <vector>
 #include <algorithm>
-#include <Base/Config.hpp>
 
 struct PinnedMemoryApi final {
     using PtrType = void*;
