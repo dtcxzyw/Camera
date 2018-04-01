@@ -57,3 +57,5 @@ CUDAINLINE void cudaSwap(T& a, T& b) {
     a = b;
     b = c;
 }
+
+struct Empty final {};

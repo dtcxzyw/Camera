@@ -112,27 +112,19 @@ GLOBAL void updateLum(const PostUniform uniform) {
     *uniform.lum = calcLum(uniform.sum->first / (uniform.sum->second + 1));
 }
 
-template <VSF<VI, OI, Uniform> vs, TCSF<Uniform> cs, FSFT<OI, Uniform, FrameBufferRef>... fs>
+template <VertShader<VI, OI, Uniform> VertFunc, TriangleClipShader<Uniform> ClipFunc, 
+    FragmentShader<OI, Uniform, FrameBufferRef>... FragFunc>
 void renderMesh(const StaticMesh& model, const MemoryRef<Uniform>& uniform,
     const MemoryRef<FrameBufferRef>& frameBuffer, const uvec2 size,
     const Camera::RasterPosConverter converter,
     const CullFace mode, TriangleRenderingHistory& history, const vec4 scissor,
     CommandBuffer& buffer) {
-    auto vert = calcVertex<VI, OI, Uniform, vs>(buffer, model.vert, uniform);
+    auto vert = calcVertex<VI, OI, Uniform, VertFunc>(buffer, model.vert, uniform);
     const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(model.index.size(),
         model.index.begin());
-    renderTriangles<decltype(index), OI, Uniform, FrameBufferRef, cs, fs...>(buffer, vert, index,
-        uniform, frameBuffer, size, converter.near, converter.far, history, scissor, mode);
-    /*
-    renderPoints<OI, Uniform, FrameBufferRef, toPos, setPoint, drawPoint>(buffer,
-        vert,uniform, frameBuffer, size, converter.near, converter.far);
-    */
-    /*
-    const auto index = makeIndexDescriptor<SeparateTrianglesWireframeWithIndex>
-        (model.index.size(), model.index.begin());
-    renderLines<decltype(index),OI, Uniform, FrameBufferRef, toPos, setPoint, drawPoint>(buffer,
-        vert,index ,uniform,frameBuffer, size, converter.near,converter.far);
-    */
+    renderTriangles<decltype(index), OI, Uniform, FrameBufferRef, ClipFunc,
+        emptyTriangleTileClipShader<Uniform>, FragFunc...>(buffer, vert, index, uniform, frameBuffer,
+            size, converter.near, converter.far, history, scissor, mode);
 }
 
 CUDAINLINE vec4 vsSphere(vec4 sp, const Uniform& uniform) {

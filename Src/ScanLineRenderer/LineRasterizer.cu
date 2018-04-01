@@ -33,7 +33,7 @@ GLOBAL void sortLinesKernel(unsigned int* cnt, unsigned int* offset, unsigned in
 #pragma unroll
     for (auto i = 0; i < 11; ++i)tmp[i] = 0;
     constexpr auto block = 1024U;
-    run(emitLine, block, cnt[12], tmp, offset, ref, out);
+    launchLinear(emitLine, block, cnt[12], tmp, offset, ref, out);
     cudaDeviceSynchronize();
     offset[11] = offset[10] + tmp[10];
 }

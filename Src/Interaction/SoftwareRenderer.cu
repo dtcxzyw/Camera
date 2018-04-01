@@ -41,7 +41,7 @@ CUDAINLINE bool clipShader(unsigned int, vec3&, vec3&, vec3&, const BuiltinSampl
     return true;
 }
 
-CUDAINLINE void colorShade(unsigned int id, ivec2 uv, float, const VertOut& in, const VertOut&, const VertOut&,
+CUDAINLINE void fragShader(unsigned int id, ivec2 uv, float, const VertOut& in, const VertOut&, const VertOut&,
     const BuiltinSamplerRef<float>& texture, FrameBufferInfo& fbo) {
     const auto texAlpha = texture.get(in.get<VertOutAttr::TexCoord>());
     auto src = in.get<VertOutAttr::Color>();
@@ -187,8 +187,9 @@ void SoftwareRenderer::render(CommandBuffer& buffer, BuiltinRenderTarget<RGBA8>&
         TriangleRenderingHistory history;
         history.reset(cmd.idxCount, 65536U);
         renderTriangles<decltype(index), VertOut, BuiltinSamplerRef<float>,
-            FrameBufferInfo, clipShader, colorShade>(buffer, vertPtr, index, uni, frameBuffer,
-                renderTarget.size(), 0.5f, 1.5f, history, cmd.scissor, CullFace::None);
+            FrameBufferInfo, clipShader,emptyTriangleTileClipShader<BuiltinSamplerRef<float>>, 
+            fragShader>(buffer, vertPtr, index, uni, frameBuffer, renderTarget.size(), 0.5f, 1.5f, 
+            history, cmd.scissor, CullFace::None);
     }
 }
 

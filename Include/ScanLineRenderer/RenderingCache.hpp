@@ -40,7 +40,7 @@ public:
     RenderingCacheBlock(T* address, T* begin, T* end, const bool isBlock=false)
         :mAddress(address), mBegin(begin), mEnd(end),mIsBlock(isBlock) {}
     void update(CommandBuffer& buffer) {
-        buffer.runKernelLinear(Impl::updateCache<T>,mEnd-mBegin,mBegin);
+        buffer.launchKernelLinear(Impl::updateCache<T>,mEnd-mBegin,mBegin);
     }
     auto toBlock() const {
         return RenderingCacheBlockRef<T>{mAddress,mBegin,mEnd};

@@ -22,7 +22,7 @@ auto genPrimitive(CommandBuffer& buffer,const DataPtr<Vert>& vert,Index idx
     if (outSize == 0U)outSize = idx.size();
     outSize *= outv;
     Queue<Vert> out(buffer,outSize);
-    buffer.runKernelLinear(GTHelper<inv,Index, Vert, Uniform, gs>, idx.size(), vert.begin(), idx, 
+    buffer.launchKernelLinear(GTHelper<inv,Index, Vert, Uniform, gs>, idx.size(), vert.begin(), idx, 
         uniform,out.get(buffer));
     return out;
 }

@@ -285,7 +285,7 @@ public:
             const unsigned int mul = sqrt(stream.getMaxBlockSize());
             dim3 grid(calcBlockSize(mSize.x, mul), calcBlockSize(mSize.y, mul));
             dim3 block(mul, mul);
-            stream.runDim(Impl::clear<T>, grid, block, toTarget(), val);
+            stream.launchDim(Impl::clear<T>, grid, block, toTarget(), val);
         });
     }
 
@@ -398,5 +398,5 @@ void downSample(cudaArray_t src, cudaArray_t dst, uvec2 size, Stream& stream) {
     const uint mul = sqrt(stream.getMaxBlockSize());
     dim3 grid(calcBlockSize(size.x, mul), calcBlockSize(size.y, mul));
     dim3 block(mul, mul);
-    stream.runDim(Impl::downSample<T>, grid, block, sampler.toSampler(), RT.toTarget());
+    stream.launchDim(Impl::downSample<T>, grid, block, sampler.toSampler(), RT.toTarget());
 }

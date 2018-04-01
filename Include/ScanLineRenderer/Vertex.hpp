@@ -4,7 +4,7 @@
 #include <Base/DispatchSystem.hpp>
 
 template<typename Vert, typename Out, typename Uniform>
-using VSF = void(*)(Vert in, const Uniform& uniform, vec3& pos, Out& out);
+using VertShader = void(*)(Vert in, const Uniform& uniform, vec3& pos, Out& out);
 
 template<typename Out>
 struct VertexInfo {
@@ -21,8 +21,8 @@ CUDAINLINE VertexInfo<Out> lerpZ(VertexInfo<Out> a, VertexInfo<Out> b, float z) 
     return res;
 }
 
-template<typename Vert, typename Out, typename Uniform, VSF<Vert, Out, Uniform> vs>
-GLOBAL void runVS(const unsigned int size, READONLY(Vert) in,
+template<typename Vert, typename Out, typename Uniform, VertShader<Vert, Out, Uniform> vs>
+GLOBAL void calcVertexKernel(const unsigned int size, READONLY(Vert) in,
     READONLY(Uniform) u, VertexInfo<Out>* res) {
     const auto id = getId();
     if (id >= size)return;
@@ -30,9 +30,9 @@ GLOBAL void runVS(const unsigned int size, READONLY(Vert) in,
     vs(in[id], *u, vert.pos, vert.out);
 }
 
-template<typename Vert, typename Out, typename Uniform, VSF<Vert, Out, Uniform> vs>
+template<typename Vert, typename Out, typename Uniform, VertShader<Vert, Out, Uniform> vs>
 auto calcVertex(CommandBuffer& buffer, const DataPtr<Vert>& vert, const DataPtr<Uniform>& uniform) {
     auto vertex = buffer.allocBuffer<VertexInfo<Out>>(vert.size());
-    buffer.runKernelLinear(runVS<Vert, Out, Uniform, vs>, vert.size(),vert.get(), uniform.get(), vertex);
+    buffer.launchKernelLinear(calcVertexKernel<Vert, Out, Uniform, vs>, vert.size(),vert.get(), uniform.get(), vertex);
     return vertex;
 }

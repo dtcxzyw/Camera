@@ -71,4 +71,3 @@ template<typename... Units>
 using Args = Impl::DataSet<Units..., void>;
 
 using EmptyArg = Args<>;
-struct Empty final{};

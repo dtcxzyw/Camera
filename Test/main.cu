@@ -171,8 +171,8 @@ public:
             SoftwareRenderer::get().init(resLoader);
 
             uploadSpheres();
-            mModel.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
-            //mModel.load("Res/dragon.obj", resLoader);
+            //mModel.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
+            mModel.load("Res/dragon.obj", resLoader);
             mCache = std::make_unique<RC8>(mModel.index.size());
             mMh = std::make_unique<TriangleRenderingHistory>();
             mMh->reset(mModel.index.size(), mCache->blockSize() * 3, enableSAA);

@@ -4,7 +4,7 @@
 #include <Base/Math.hpp>
 
 template<typename Func, typename... Args>
-CUDAINLINE void run(Func func,unsigned int block, unsigned int size, Args... args) {
+CUDAINLINE void launchLinear(Func func,unsigned int block, unsigned int size, Args... args) {
     if (size)func << <calcBlockSize(size, block), min(block, size)>> > (size, args...);
 }
 
@@ -23,7 +23,7 @@ public:
     cudaError_t query() const;
 
     template<typename Func, typename... Args>
-    void run(Func func, unsigned int size, Args... args) {
+    void launchLinear(Func func, unsigned int size, Args... args) {
         if (size) {
             func <<<calcBlockSize(size, mMaxThread),min(mMaxThread,size), 0, mStream >>> (size, args...);
             checkError();
@@ -31,7 +31,7 @@ public:
     }
 
     template<typename Func, typename... Args>
-    void runDim(Func func, dim3 grid, dim3 block, Args... args) {
+    void launchDim(Func func, dim3 grid, dim3 block, Args... args) {
         func <<<grid, block,0, mStream >>> (args...);
         checkError();
     }

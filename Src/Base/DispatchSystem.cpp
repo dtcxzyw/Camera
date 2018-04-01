@@ -149,9 +149,9 @@ namespace Impl {
         manager.getResource(id).getRes(ptr, manager.getStream());
     }
 
-    DMRef::DMRef(const std::shared_ptr<DeviceMemory>& ref): ResourceRef(ref) {}
+    DeviceMemoryRef::DeviceMemoryRef(const std::shared_ptr<DeviceMemory>& ref): ResourceRef(ref) {}
 
-    size_t DMRef::size() const {
+    size_t DeviceMemoryRef::size() const {
         return dynamic_cast<DeviceMemory&>(*mRef).size();
     }
 
@@ -178,12 +178,12 @@ void ResourceManager::registerResource(Id id, std::unique_ptr<ResourceInstance>&
     mResources.emplace(id, std::make_pair(mOperatorCount, std::move(instance)));
 }
 
-void CommandBuffer::memset(Impl::DMRef& memory, int mask) {
+void CommandBuffer::memset(Impl::DeviceMemoryRef& memory, int mask) {
     mCommandQueue.emplace(std::make_unique<Impl::Memset>(*mResourceManager,
                                                          memory.getId(), mask));
 }
 
-void CommandBuffer::memcpy(Impl::DMRef& dst,
+void CommandBuffer::memcpy(Impl::DeviceMemoryRef& dst,
                            std::function<void(std::function<void(const void*)>)>&& src) {
     mCommandQueue.emplace(std::make_unique<Impl::Memcpy>(*mResourceManager,
                                                          dst.getId(), std::move(src)));

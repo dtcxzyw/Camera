@@ -1,7 +1,6 @@
 #pragma once
 #include <Base/Common.hpp>
 #include <Base/Math.hpp>
-#include <Base/DispatchSystem.hpp>
 
 CUDAINLINE vec3 toRaster(const vec3 p, const vec2 hsiz) {
     const auto invz = 1.0f / p.z;
@@ -15,16 +14,6 @@ CUDAINLINE int calcTileSize(const uvec4 rect) {
     const auto bit = findMSB(delta);
     return min(bit + ((1U << bit) != delta) - 1, 5);
 }
-
-struct TileRef final {
-    unsigned int id;
-    unsigned int size;
-    uvec4 rect;
-};
-
-std::pair<MemoryRef<unsigned int>, MemoryRef<TileRef>> sortTiles(CommandBuffer& buffer,
-    const MemoryRef<unsigned int>& cnt, const MemoryRef<TileRef>& ref,size_t refSize,
-    unsigned int maxSize);
 
 CUDAINLINE float shuffleFloat(const float w,const int laneMask) {
     constexpr auto mask = 0xffffffff;

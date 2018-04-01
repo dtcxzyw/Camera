@@ -1,19 +1,21 @@
 #pragma once
 #include <ScanLineRenderer/Shared.hpp>
+#include <Base/DispatchSystem.hpp>
+#include <ScanLineRenderer/Tile.hpp>
 
 template <typename Uniform>
-using VSFS = vec4(*)(vec4 sp, const Uniform& uniform);
+using SphereVertShader = vec4(*)(vec4 sp, const Uniform& uniform);
 
 CUDAINLINE vec4 calcCameraSphere(const vec4 sp, const mat4& mat) {
     return {vec3{mat * vec4(sp.x, sp.y, sp.z, 1.0f)}, sp.w};
 }
 
-template <typename Uniform, VSFS<Uniform> vs>
+template <typename Uniform, SphereVertShader<Uniform> Func>
 GLOBAL void calcCameraSpheres(const unsigned int size, READONLY(vec4) in, vec4* out,
                               READONLY(Uniform) uniform) {
     const auto id = getId();
     if (id >= size)return;
-    out[id] = vs(in[id], *uniform);
+    out[id] = Func(in[id], *uniform);
 }
 
 /*
@@ -91,12 +93,12 @@ CUDAINLINE vec2 raster2NDC(const vec2 p, const float ihx, const float ihy) {
 
 //in camera pos
 template <typename Uniform, typename FrameBuffer>
-using FSFS = void(*)(unsigned int id, ivec2 uv, float z, vec3 pos, vec3 dir, float invr, bool inSphere,
-                     vec2 pdd, const Uniform& uniform, FrameBuffer& frameBuffer);
+using SphereFragmentShader = void(*)(unsigned int id, ivec2 uv, float z, vec3 pos, vec3 dir,
+    float invr, bool inSphere, vec2 pdd, const Uniform& uniform, FrameBuffer& frameBuffer);
 
 //2,4,8,16,32
 template <typename Uniform, typename FrameBuffer,
-    FSFS<Uniform, FrameBuffer> fs>
+    SphereFragmentShader<Uniform, FrameBuffer> FragShader>
 GLOBAL void drawMicroS(READONLY(SphereInfo) info, READONLY(TileRef) idx,
                        READONLY(Uniform) uniform, FrameBuffer* frameBuffer,
                        const float near, const float far, const float invnf, const float imx, const float imy,
@@ -126,11 +128,13 @@ GLOBAL void drawMicroS(READONLY(SphereInfo) info, READONLY(TileRef) idx,
     const auto ddx = (shuffleFloat(pos.x, 0b10) - pos.x) * (offX ? -1.0f : 1.0f);
     const auto ddy = (shuffleFloat(pos.x, 0b01) - pos.x) * (offY ? -1.0f : 1.0f);
     const auto nz = (t - near) * invnf;
-    fs(sphere.id, p, nz, pos, pos - mid, sphere.info.w, inSphere, {ddx, ddy}, *uniform, *frameBuffer);
+    FragShader(sphere.id, p, nz, pos, pos - mid, sphere.info.w, inSphere, {ddx, ddy}, *uniform,
+        *frameBuffer);
 }
 
 template <typename Uniform, typename FrameBuffer,
-    FSFS<Uniform, FrameBuffer> first, FSFS<Uniform, FrameBuffer>... then>
+    SphereFragmentShader<Uniform, FrameBuffer> Func,
+    SphereFragmentShader<Uniform, FrameBuffer>... Then>
 CUDAINLINE void applySFS(unsigned int* offset, SphereInfo* info, TileRef* idx, Uniform* uniform,
                          FrameBuffer* frameBuffer, const float near, const float far, const float invnf,
                          const vec2 invMul, const vec2 invHsiz) {
@@ -141,14 +145,14 @@ CUDAINLINE void applySFS(unsigned int* offset, SphereInfo* info, TileRef* idx, U
             dim3 grid(size);
             const auto bsiz = 1 << i;
             dim3 block(4, bsiz, bsiz);
-            drawMicroS<Uniform, FrameBuffer, first> << <grid, block >> >(info, idx + offset[i],
+            drawMicroS<Uniform, FrameBuffer, Func> << <grid, block >> >(info, idx + offset[i],
                                                                          uniform, frameBuffer, near, far, invnf,
                                                                          invMul.x, invMul.y, invHsiz.x, invHsiz.y);
         }
     }
 
     cudaDeviceSynchronize();
-    applySFS<Uniform, FrameBuffer, then...>(offset, info, idx, uniform, frameBuffer, near, far, invnf,
+    applySFS<Uniform, FrameBuffer, Then...>(offset, info, idx, uniform, frameBuffer, near, far, invnf,
                                             invMul, invHsiz);
 }
 
@@ -157,29 +161,28 @@ CUDAINLINE void applySFS(unsigned int*, SphereInfo*, TileRef*, Uniform*, FrameBu
                          const float, const float, const float, const vec2, const vec2) {}
 
 template <typename Uniform, typename FrameBuffer,
-    FSFS<Uniform, FrameBuffer>... fs>
+    SphereFragmentShader<Uniform, FrameBuffer>... FragShader>
 GLOBAL void renderSpheresKernel(unsigned int* offset, SphereInfo* tri, TileRef* idx,
-                             Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float far,
-                             const float invnf,
-                             const vec2 invmul, const vec2 invHsiz) {
-    applySFS<Uniform, FrameBuffer, fs...>(offset, tri, idx, uniform, frameBuffer, near, far, invnf,
-                                          invmul, invHsiz);
+    Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float far,
+    const float invnf,const vec2 invmul, const vec2 invHsiz) {
+    applySFS<Uniform, FrameBuffer, FragShader...>(offset, tri, idx, uniform, frameBuffer, near, far, 
+        invnf, invmul, invHsiz);
 }
 
 template <typename Uniform, typename FrameBuffer,
-    VSFS<Uniform> vs, FSFS<Uniform, FrameBuffer>... fs>
+    SphereVertShader<Uniform> VertShader, SphereFragmentShader<Uniform, FrameBuffer>... FragShader>
 void renderSpheres(CommandBuffer& buffer, const DataPtr<vec4>& spheres,
                    const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
     const uvec2 size, const float near, const float far, const vec2 mul, vec4 scissor) {
     auto cameraSpheres = buffer.allocBuffer<vec4>(spheres.size());
-    buffer.runKernelLinear(calcCameraSpheres<Uniform, vs>, spheres.size(), spheres.get(),
+    buffer.launchKernelLinear(calcCameraSpheres<Uniform, VertShader>, spheres.size(), spheres.get(),
                            cameraSpheres, uniform.get());
     scissor = { fmax(0.5f,scissor.x),fmin(size.x - 0.5f,scissor.y),
         fmax(0.5f,scissor.z),fmin(size.y - 0.5f,scissor.w) };
     const auto hfsize = static_cast<vec2>(size) * 0.5f;
     auto processRes = processSphereInfo(buffer, cameraSpheres, scissor, hfsize, near, far, mul);
     const auto invnf = 1.0f / (far - near);
-    buffer.callKernel(renderSpheresKernel<Uniform, FrameBuffer, fs...>, processRes.offset,
-                      processRes.info, processRes.ref, uniform.get(), frameBuffer.get(), near, far, invnf,
-                      1.0f / mul, 1.0f / hfsize);
+    buffer.callKernel(renderSpheresKernel<Uniform, FrameBuffer, FragShader...>, processRes.offset,
+        processRes.info, processRes.ref, uniform.get(), frameBuffer.get(), near, far, invnf,
+        1.0f / mul, 1.0f / hfsize);
 }

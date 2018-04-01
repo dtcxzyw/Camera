@@ -80,9 +80,10 @@ SphereProcessResult processSphereInfo(CommandBuffer& buffer, const MemoryRef<vec
     buffer.memset(cnt);
     const auto info = buffer.allocBuffer<SphereInfo>(spheres.size());
     auto ref = buffer.allocBuffer<TileRef>(spheres.size());
-    buffer.runKernelLinear(processSphereInfoKernel, spheres.size(), spheres, info, ref, cnt,
+    buffer.launchKernelLinear(processSphereInfoKernel, spheres.size(), spheres, info, ref, cnt,
                            scissor, hsiz, near, far, mul);
-    const auto sortedSphere = sortTiles(buffer, cnt, ref, spheres.size() * 2U + 2048U, spheres.size());
+    const auto sortedSphere = sortTiles<Empty,void,emptyTileClipShader>
+        (buffer, cnt, ref, spheres.size() * 2U + 2048U, spheres.size(), nullptr, nullptr);
     cnt.earlyRelease();
     ref.earlyRelease();
     return SphereProcessResult(sortedSphere.first, info, sortedSphere.second);

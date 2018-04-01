@@ -3,24 +3,26 @@
 #include <Base/Math.hpp>
 
 template<typename Uniform, typename FrameBuffer>
-using FSFSF = void(*)(ivec2 NDC, const Uniform& uniform, FrameBuffer frameBuffer);
+using FullScreenShader = void(*)(ivec2 NDC, const Uniform& uniform, FrameBuffer frameBuffer);
 
-template<typename Uniform, typename FrameBuffer, FSFSF<Uniform, FrameBuffer> fs>
-GLOBAL void runFSFS(READONLY(Uniform) u,
+template<typename Uniform, typename FrameBuffer,
+    FullScreenShader<Uniform, FrameBuffer> FragShader>
+GLOBAL void renderFullScreenKernel(READONLY(Uniform) u,
     FrameBuffer frameBuffer, const uvec2 size) {
     const auto x = blockIdx.x*blockDim.x + threadIdx.x;
     const auto y = blockIdx.y*blockDim.y + threadIdx.y;
     if (x<size.x & y<size.y)
-        fs(ivec2{ x,y }, *u, frameBuffer);
+        FragShader(ivec2{ x,y }, *u, frameBuffer);
 }
 
-template<typename Uniform, typename FrameBuffer, FSFSF<Uniform, FrameBuffer> fs>
+template<typename Uniform, typename FrameBuffer, 
+    FullScreenShader<Uniform, FrameBuffer> FragShader>
 void renderFullScreen(CommandBuffer& buffer, const DataPtr<Uniform>& uniform,
     const Value<FrameBuffer>& frameBuffer, uvec2 size) {
     constexpr auto tileSize = 32U;
     dim3 grid(calcBlockSize(size.x, tileSize), calcBlockSize(size.y, tileSize));
     dim3 block(tileSize, tileSize);
-    buffer.runKernelDim(runFSFS<Uniform, FrameBuffer, fs>, grid, block, uniform.get(),
-        frameBuffer.get(), size);
+    buffer.launchKernelDim(renderFullScreenKernel<Uniform, FrameBuffer, FragShader>, 
+        grid, block, uniform.get(), frameBuffer.get(), size);
 }
 

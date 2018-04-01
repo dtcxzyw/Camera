@@ -3,10 +3,8 @@
 #include <ScanLineRenderer/Shared.hpp>
 #include <Base/CompileBegin.hpp>
 #include <math_functions.h>
-#include <device_atomic_functions.h>
-#include <cuda_device_runtime_api.h>
-#include <sm_30_intrinsics.h>
 #include <Base/CompileEnd.hpp>
+#include <ScanLineRenderer/Tile.hpp>
 
 ///@see <a href="https://www.khronos.org/registry/OpenGL/specs/gl/glspec46.compatibility.pdf">OpenGL 4.6 API Specification, Section 10.1 Primitive Types</a>
 
@@ -220,9 +218,9 @@ CUDAINLINE void clipTriangle(const TriangleVert<Out>& tri, const float z, const 
 }
 
 template <typename Uniform>
-using TCSF = bool(*)(unsigned int idx, vec3& pa, vec3& pb, vec3& pc, const Uniform& uniform);
+using TriangleClipShader = bool(*)(unsigned int id, vec3& pa, vec3& pb, vec3& pc, const Uniform& uniform);
 
-template <typename Index, typename Out, typename Uniform, TCSF<Uniform> cs>
+template <typename Index, typename Out, typename Uniform, TriangleClipShader<Uniform> Func>
 GLOBAL void processTriangles(const unsigned int size,READONLY(VertexInfo<Out>) vert,
     Index index,READONLY(Uniform) uniform, const float near, const float far,
     TriangleProcessingArgs<Out> args) {
@@ -231,7 +229,7 @@ GLOBAL void processTriangles(const unsigned int size,READONLY(VertexInfo<Out>) v
     const auto idx = index[id];
     TriangleVert<Out> tri;
     tri.id = id, tri.vert[0] = vert[idx[0]], tri.vert[1] = vert[idx[1]], tri.vert[2] = vert[idx[2]];
-    if (cs(tri.id, tri.vert[0].pos, tri.vert[1].pos, tri.vert[2].pos, *uniform)) {
+    if (Func(tri.id, tri.vert[0].pos, tri.vert[1].pos, tri.vert[2].pos, *uniform)) {
         const auto emitF = [&args](const TriangleVert<Out>& t) {
             calcTriangleInfo<Out>(t, args);
         };
@@ -258,12 +256,12 @@ CUDAINLINE bool calcWeight(const mat4 w0, const int type, const vec2 p, const ve
 }
 
 template <typename Out, typename Uniform, typename FrameBuffer>
-using FSFT = void(*)(unsigned int id, ivec2 uv, float z, const Out& in,
+using FragmentShader = void(*)(unsigned int id, ivec2 uv, float z, const Out& in,
     const Out& ddx, const Out& ddy, const Uniform& uniform, FrameBuffer& frameBuffer);
 
 //2,4,8,16,32
 template <typename Out, typename Uniform, typename FrameBuffer,
-    FSFT<Out, Uniform, FrameBuffer> fs>
+    FragmentShader<Out, Uniform, FrameBuffer> FragShader>
 GLOBAL void drawMicroT(READONLY(Triangle<Out>) info,READONLY(TileRef) idx,
     READONLY(Uniform) uniform, FrameBuffer* frameBuffer,
     const float near, const float invnf, const float sx, const float sy) {
@@ -281,12 +279,12 @@ GLOBAL void drawMicroT(READONLY(Triangle<Out>) info,READONLY(TileRef) idx,
         const auto fout = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
         const auto ddxo = tri.out[0] * ddx.x + tri.out[1] * ddx.y + tri.out[2] * ddx.z;
         const auto ddyo = tri.out[0] * ddy.x + tri.out[1] * ddy.y + tri.out[2] * ddy.z;
-        fs(tri.id, uv, z, fout, ddxo, ddyo, *uniform, *frameBuffer);
+        FragShader(tri.id, uv, z, fout, ddxo, ddyo, *uniform, *frameBuffer);
     }
 }
 
 template <typename Out, typename Uniform, typename FrameBuffer,
-    FSFT<Out, Uniform, FrameBuffer> first, FSFT<Out, Uniform, FrameBuffer>... then>
+    FragmentShader<Out, Uniform, FrameBuffer> Func, FragmentShader<Out, Uniform, FrameBuffer>... Then>
 CUDAINLINE void applyTFS(unsigned int* offset, Triangle<Out>* tri, TileRef* idx, Uniform* uniform,
     FrameBuffer* frameBuffer, const float near, const float invnf, const vec2 samplePoint) {
     #pragma unroll
@@ -296,13 +294,13 @@ CUDAINLINE void applyTFS(unsigned int* offset, Triangle<Out>* tri, TileRef* idx,
             const dim3 grid(size);
             const auto bsiz = 1 << i;
             const dim3 block(4, bsiz, bsiz);
-            drawMicroT<Out, Uniform, FrameBuffer, first> << <grid, block >> >(tri, idx + offset[i],
+            drawMicroT<Out, Uniform, FrameBuffer, Func> << <grid, block >> >(tri, idx + offset[i],
                 uniform, frameBuffer, near, invnf, samplePoint.x, samplePoint.y);
         }
     }
 
     cudaDeviceSynchronize();
-    applyTFS<Out, Uniform, FrameBuffer, then...>(offset, tri, idx, uniform, frameBuffer, near, invnf,
+    applyTFS<Out, Uniform, FrameBuffer, Then...>(offset, tri, idx, uniform, frameBuffer, near, invnf,
         samplePoint);
 }
 
@@ -311,11 +309,11 @@ CUDAINLINE void applyTFS(unsigned int*, Triangle<Out>*, TileRef*, Uniform*, Fram
     float, float, vec2) {}
 
 template <typename Out, typename Uniform, typename FrameBuffer,
-    FSFT<Out, Uniform, FrameBuffer>... fs>
+    FragmentShader<Out, Uniform, FrameBuffer>... FragShader>
 GLOBAL void renderTrianglesKernel(unsigned int* offset, Triangle<Out>* tri, TileRef* idx,
     Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float invnf,
     const vec2 samplePoint) {
-    applyTFS<Out, Uniform, FrameBuffer, fs...>(offset, tri, idx, uniform, frameBuffer, near, invnf,
+    applyTFS<Out, Uniform, FrameBuffer, FragShader...>(offset, tri, idx, uniform, frameBuffer, near, invnf,
         samplePoint);
 }
 
@@ -338,8 +336,30 @@ struct TriangleRenderingHistory final : Uncopyable {
     }
 };
 
+template<typename Uniform>
+using TriangleTileClipShader = bool(*)(const uvec4& rect, const Uniform& uniform);
+
+template<typename Uniform>
+CUDAINLINE bool emptyTriangleTileClipShader(const uvec4&, const Uniform&) {
+    return true;
+}
+
+CUDAINLINE bool intersect(const mat3& w0,const vec4& rect) {
+    const auto test=[&rect](const vec3 w){
+        return fmax(rect.x*w.x, rect.y*w.x) + fmax(rect.z*w.y, rect.w*w.y) + w.z >= 0.0;
+    };
+    return test(w0[0]) & test(w0[1]) & test(w0[2]);
+}
+
+template<typename Out,typename Uniform,TriangleTileClipShader<Uniform> Func>
+CUDAINLINE bool triangleTileClipShader(const TileRef& ref,const Uniform& uni,
+    READONLY(Triangle<Out>) data) {
+    return intersect(data[ref.id].w,ref.rect) && Func(ref.rect,uni);
+}
+
 template <typename IndexDesc, typename Out, typename Uniform, typename FrameBuffer,
-    TCSF<Uniform> cs, FSFT<Out, Uniform, FrameBuffer>... fs>
+    TriangleClipShader<Uniform> ClipShader,TriangleTileClipShader<Uniform> TileClipShader, 
+    FragmentShader<Out, Uniform, FrameBuffer>... FragShader>
 void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
     const IndexDesc& index, const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
     const uvec2 size, const float near, const float far, TriangleRenderingHistory& history,
@@ -359,13 +379,15 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
     };
     const auto hfsize = static_cast<vec2>(size) * 0.5f;
     const unsigned int maxSize = std::min(info.maxSize(), idx.maxSize());
-    buffer.runKernelLinear(processTriangles<IndexDesc::IndexType, Out, Uniform, cs>, index.size(),
-        vert.get(), index.get(), uniform.get(), near, far,
+    buffer.launchKernelLinear(processTriangles<IndexDesc::IndexType, Out, Uniform, ClipShader>,
+        index.size(), vert.get(), index.get(), uniform.get(), near, far,
         buffer.makeLazyConstructor<TriangleProcessingArgs<Out>>(cnt, info, idx, scissor, hfsize,
             static_cast<int>(mode), maxSize));
 
     //pass 2:sort triangles
-    auto sortedTri = sortTiles(buffer, cnt, idx, psiz * 2, maxSize);
+    auto sortedTri = sortTiles<Uniform, Triangle<Out>, 
+        triangleTileClipShader<Out, Uniform, TileClipShader>>(buffer, cnt, idx, psiz * 2, maxSize,
+        uniform, info);
     if ((++history.renderCount & 31) == 0 && history.enableSelfAdaptiveAllocation) {
         LaunchSize triNumData(cnt, 6);
         triNumData.download(*history.triNum, buffer);
@@ -375,6 +397,6 @@ void renderTriangles(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
 
     //pass 3:render triangles
     const auto invnf = 1.0f / (far - near);
-    buffer.callKernel(renderTrianglesKernel<Out, Uniform, FrameBuffer, fs...>, sortedTri.first, info,
-        sortedTri.second, uniform.get(), frameBuffer.get(), near, invnf, samplePoint);
+    buffer.callKernel(renderTrianglesKernel<Out, Uniform, FrameBuffer, FragShader...>, 
+        sortedTri.first, info, sortedTri.second, uniform.get(), frameBuffer.get(), near, invnf, samplePoint);
 }

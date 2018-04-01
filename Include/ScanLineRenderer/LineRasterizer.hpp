@@ -214,7 +214,7 @@ void renderLines(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,con
     scissor = { fmax(0.5f,scissor.x),fmin(size.x - 0.5f,scissor.y),
         fmax(0.5f,scissor.z),fmin(size.y - 0.5f,scissor.w) };
     const auto hsiz = static_cast<vec2>(size) * 0.5f;
-    buffer.runKernelLinear(processLines<IndexDesc::IndexType, Out, Uniform, toPos>, lsiz, vert.get(),
+    buffer.launchKernelLinear(processLines<IndexDesc::IndexType, Out, Uniform, toPos>, lsiz, vert.get(),
         index.get(), info, ref, cnt, scissor, hsiz, near, far, uniform.get());
     auto sortedLines = sortLines(buffer, cnt, ref);
     cnt.earlyRelease();

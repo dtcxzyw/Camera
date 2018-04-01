@@ -113,9 +113,9 @@ namespace Impl {
         void set(const void* src, Stream& stream) override;
     };
 
-    class DMRef : public ResourceRef<void*> {
+    class DeviceMemoryRef : public ResourceRef<void*> {
     public:
-        explicit DMRef(const std::shared_ptr<DeviceMemory>& ref);
+        explicit DeviceMemoryRef(const std::shared_ptr<DeviceMemory>& ref);
         size_t size() const;
     };
 
@@ -136,7 +136,7 @@ namespace Impl {
         Id mMemoryId;
         int mMask;
     public:
-        Memset(ResourceManager& manager, Id memoryID, int mask);
+        Memset(ResourceManager& manager, Id memoryId, int mask);
         void emit(Stream& stream) override;
     };
 
@@ -161,12 +161,12 @@ public:
 };
 
 template <typename T>
-class MemoryRef final : public Impl::DMRef {
+class MemoryRef final : public Impl::DeviceMemoryRef {
 public:
-    explicit MemoryRef(const std::shared_ptr<Impl::DeviceMemory>& ref) : DMRef(ref) {}
+    explicit MemoryRef(const std::shared_ptr<Impl::DeviceMemory>& ref) : DeviceMemoryRef(ref) {}
 
     size_t size() const {
-        return DMRef::size() / sizeof(T);
+        return DeviceMemoryRef::size() / sizeof(T);
     }
 
     size_t maxSize() const {
@@ -371,7 +371,7 @@ namespace Impl {
         KernelLaunchDim(ResourceManager& manager, Func func, const dim3 grid, const dim3 block,
                         Args ... args): Operator(manager) {
             mClosure = [=, &manager](Stream& stream) {
-                stream.runDim(func, grid, block, cast(args, manager)...);
+                stream.launchDim(func, grid, block, cast(args, manager)...);
             };
         }
 
@@ -386,7 +386,7 @@ namespace Impl {
         KernelLaunchLinear(ResourceManager& manager, Func func, const size_t size, Args ... args)
             : Operator(manager) {
             mClosure = [=, &manager](Stream& stream) {
-                stream.run(func, size, cast(args, manager)...);
+                stream.launchLinear(func, size, cast(args, manager)...);
             };
         }
 
@@ -490,9 +490,9 @@ public:
         };
     }
 
-    void memset(Impl::DMRef& memory, int mask = 0);
+    void memset(Impl::DeviceMemoryRef& memory, int mask = 0);
 
-    void memcpy(Impl::DMRef& dst, std::function<void(std::function<void(const void*)>)>&& src);
+    void memcpy(Impl::DeviceMemoryRef& dst, std::function<void(std::function<void(const void*)>)>&& src);
 
     template <typename T>
     void memcpy(MemoryRef<T>& dst, const DataViewer<T>& src) {
@@ -512,18 +512,18 @@ public:
     }
 
     template <typename Func, typename... Args>
-    void runKernelDim(Func func, const dim3 grid, const dim3 block, Args ... args) {
+    void launchKernelDim(Func func, const dim3 grid, const dim3 block, Args ... args) {
         mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchDim>(*mResourceManager,
                                                                       func, grid, block, Impl::castId(args)...));
     }
 
     template <typename Func, typename... Args>
     void callKernel(Func func, Args ... args) {
-        runKernelDim(func, dim3{}, dim3{}, args...);
+        launchKernelDim(func, dim3{}, dim3{}, args...);
     }
 
     template <typename Func, typename... Args>
-    void runKernelLinear(Func func, const size_t size, Args ... args) {
+    void launchKernelLinear(Func func, const size_t size, Args ... args) {
         mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchLinear>(*mResourceManager,
                                                                          func, size, Impl::castId(args)...));
     }

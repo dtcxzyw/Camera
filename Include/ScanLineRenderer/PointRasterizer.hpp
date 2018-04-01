@@ -33,7 +33,7 @@ template <typename Out, typename Uniform, typename FrameBuffer, PosConverter<Uni
 void drawPointHelper(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
                      const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,const vec4 scissor,
                      const float near, const float invnf, const vec2 hfsize) {
-    buffer.runKernelLinear(drawPointHelperKernel<Out, Uniform, FrameBuffer,toPos, first>, vert.size(), vert.get(),
+    buffer.launchKernelLinear(drawPointHelperKernel<Out, Uniform, FrameBuffer,toPos, first>, vert.size(), vert.get(),
         uniform.get(), frameBuffer.get(), scissor, near, invnf, hfsize);
     drawPointHelper<Out, Uniform, FrameBuffer,toPos, then...>(buffer, vert, uniform, frameBuffer, scissor,
         near, invnf, hfsize);
