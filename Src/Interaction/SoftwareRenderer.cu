@@ -1,3 +1,4 @@
+#include <Base/Config.hpp>
 #include <Interaction/SoftwareRenderer.hpp>
 #include <Base/CompileBegin.hpp>
 #include <IMGUI/imgui.h>
@@ -20,14 +21,13 @@ struct VertInfo final {
     ALIGN unsigned int col;
 };
 
-constexpr auto int2Float = 1.0f / 256.0f;
+constexpr auto int2Float = 1.0f / 255.0f;
 
 CUDAINLINE vec4 toRGBA(const unsigned int col) {
     return vec4{col & 0xff, (col >> 8) & 0xff, (col >> 16) & 0xff, col >> 24} * int2Float;
 }
 
-CUDAINLINE void vertShader(VertInfo in, const Empty&, vec3& cpos,
-    VertOut& out) {
+CUDAINLINE void vertShader(VertInfo in, const Empty&, vec3& cpos, VertOut& out) {
     cpos = {in.pos.x, in.pos.y, 1.0f};
     out.get<VertOutAttr::TexCoord>() = {in.uv.x, in.uv.y};
     out.get<VertOutAttr::Color>() = toRGBA(in.col);
@@ -52,24 +52,45 @@ CUDAINLINE void colorShade(unsigned int id, ivec2 uv, float, const VertOut& in, 
     fbo.color.set(uv, RGBA8{clamp(col, 0.0f, 1.0f) * 255.0f, 255});
 }
 
-static bool isOverlap(vec2 a1, const vec2 a2, vec2 a3, vec2 b1, vec2 b2, vec2 b3) {
-    const auto edgeFunction=[](const vec2 a,const vec2 b,const vec2 c) {
+static bool isOverlap(vec2 a1, const vec2 a2, vec2 a3, const vec2 b1, const vec2 b2, const vec2 b3) {
+    const auto edgeFunction = [](const vec2 a,const vec2 b,const vec2 c) {
         return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
     };
     if (edgeFunction(a1, a2, a3) < 0.0f)std::swap(a1, a3);
     const auto test = [&](const vec2 a, const vec2 b, const vec2 c) {
-        return edgeFunction(a, b, c) <= 0.0f;
+        return edgeFunction(a, b, c) <= 1e-6f;
     };
-    const auto out=[&](const vec2 a,const vec2 b) {
+    const auto out = [&](const vec2 a,const vec2 b) {
         return test(a, b, b1) && test(a, b, b2) && test(a, b, b3);
     };
     return !(out(a1, a2) || out(a2, a3) || out(a3, a1));
 }
 
+static std::vector<std::pair<size_t, size_t>> sortPrimitives(const VertInfo* vert,
+    const uvec3* index, const size_t idxCount) {
+    const auto testOverlap = [vert](const uvec3& a,const uvec3& b) {
+        return isOverlap(vert[a.x].pos, vert[a.y].pos, vert[a.z].pos,
+            vert[b.x].pos, vert[b.y].pos, vert[b.z].pos);
+    };
+    const auto canUnion = [index,&testOverlap](const uvec3& cur,const std::pair<size_t,size_t>& set) {
+        for (auto i = 0; i < set.second; ++i)
+            if (testOverlap(index[set.first + i], cur))
+                return false;
+        return true;
+    };
+    std::vector<std::pair<size_t, size_t>> res;
+    for (size_t i = 0; i < idxCount; ++i) {
+        const auto cur = index[i];
+        if (!res.empty() && canUnion(cur, res.back()))++res.back().second;
+        else res.emplace_back(i, 1);
+    }
+    return res;
+}
+
 void SoftwareRenderer::render(CommandBuffer& buffer, BuiltinRenderTarget<RGBA8>& renderTarget) {
     const auto drawData = ImGui::GetDrawData();
     #ifdef CAMERA_DEBUG
-    if(!drawData->Valid)throw std::logic_error("This draw data is invalid.");
+    if (!drawData->Valid)throw std::logic_error("This draw data is invalid.");
     #endif
     auto&& io = ImGui::GetIO();
     const int fbw = io.DisplaySize.x * io.DisplayFramebufferScale.x;
@@ -85,13 +106,12 @@ void SoftwareRenderer::render(CommandBuffer& buffer, BuiltinRenderTarget<RGBA8>&
 
     auto frameBuffer = buffer.allocConstant<FrameBufferInfo>();
     buffer.memcpy(frameBuffer, [rt = renderTarget.toTarget()](auto&& call) {
-            FrameBufferInfo info;
-            info.color = rt;
-            call(&info);
-        });
+        FrameBufferInfo info;
+        info.color = rt;
+        call(&info);
+    });
 
-    auto vbo = buffer.allocBuffer<VertInfo>(drawData->TotalVtxCount);
-    std::vector<VertInfo> vertData(vbo.size());
+    std::vector<VertInfo> vertData(drawData->TotalVtxCount);
     {
         const auto mul = 2.0f / static_cast<vec2>(renderTarget.size());
         auto idx = 0U;
@@ -104,81 +124,71 @@ void SoftwareRenderer::render(CommandBuffer& buffer, BuiltinRenderTarget<RGBA8>&
                 res.col = vert.col;
             }
         }
-        buffer.memcpy(vbo, [buf = vertData](auto&& call) {
-            call(buf.data());
-        });
     }
 
-    const auto vert = calcVertex<VertInfo, VertOut, Empty, vertShader>(buffer, vbo, nullptr);
-    const auto vertBase = DataPtr<VertexInfo<VertOut>>{vert};
-    auto vertBufferOffset = 0;
-
-    auto ibo = buffer.allocBuffer<uvec3>(drawData->TotalIdxCount / 3);
-    std::vector<uvec3> indexData(ibo.size());
-    {
-        auto idx = 0;
-        for (auto i = 0; i < drawData->CmdListsCount; ++i) {
-            auto&& idxBuf = drawData->CmdLists[i]->IdxBuffer;
-            const auto idxSiz = idxBuf.size() / 3;
-            for (auto j = 0; j < idxSiz; ++j)
-                indexData[idx++] = { idxBuf[j * 3], idxBuf[j * 3 + 1], idxBuf[j * 3 + 2] };
-        }
-        buffer.memcpy(ibo, [buf = indexData](auto&& call) {
-            call(buf.data());
-        });
-    }
-
-    const auto testOverlap = [&vertData, &indexData](auto i, auto j, auto vertOffset, auto indexOffset) {
-        const auto ii = indexData[i + indexOffset], ij = indexData[j + indexOffset];
-        const auto base = vertData.data() + vertOffset;
-        return isOverlap(base[ii[0]].pos, base[ii[1]].pos, base[ii[2]].pos,
-            base[ij[0]].pos, base[ij[1]].pos, base[ij[2]].pos);
+    struct DrawCommand final {
+        size_t vertOffset, idxOffset, idxCount;
+        vec4 scissor;
     };
 
-    const auto iboBase = DataPtr<uvec3>{ibo};
-    auto idxBufferOffset = 0;
-
-    for (auto i = 0; i < drawData->CmdListsCount; ++i) {
-        const auto cmdList = drawData->CmdLists[i];
-        const auto vertPtr= vertBase + vertBufferOffset;
-
-        for (auto j = 0; j < cmdList->CmdBuffer.size(); ++j) {
-            const auto& cmd = cmdList->CmdBuffer[j];
-
-            if (cmd.UserCallback)
-                throw std::logic_error("Software renderer doesn't support user call back.");
-            const vec4 scissor = {cmd.ClipRect.x, cmd.ClipRect.z, cmd.ClipRect.y, cmd.ClipRect.w};
-            const auto faceCount = cmd.ElemCount / 3;
-            const auto render = [&](auto base, auto size) {
-                const auto idxPtr = iboBase + (idxBufferOffset + base);
-                const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(size, idxPtr.get());
-                TriangleRenderingHistory history;
-                history.reset(size, 65536U);
-                renderTriangles<decltype(index), VertOut, BuiltinSamplerRef<float>,
-                    FrameBufferInfo, clipShader, colorShade>(buffer,vertPtr, index, uni,frameBuffer,
-                    renderTarget.size(), 0.5f, 1.5f, history, scissor, CullFace::None);
-            };
-            auto current = 0U;
-            for (auto k = 0U; k < faceCount; ++k) {
-                auto flag = false;
-                for (auto l = current; l < k; ++l)
-                    if (testOverlap(k, l, vertBufferOffset, idxBufferOffset)) {
-                        flag = true;
-                        break;
-                    }
-
-                if(flag){
-                    render(current, k - current);
-                    current = k;
+    std::vector<DrawCommand> drawCmd;
+    std::vector<uvec3> idxData(drawData->TotalIdxCount / 3);
+    {
+        size_t vertOffset = 0;
+        size_t idxOffset = 0;
+        for (auto i = 0; i < drawData->CmdListsCount; ++i) {
+            auto&& list = drawData->CmdLists[i];
+            auto&& idxBuf = list->IdxBuffer;
+            const auto idxSize = idxBuf.size() / 3;
+            for (auto j = 0; j < idxSize; ++j)
+                idxData[idxOffset + j] = { idxBuf[j * 3], idxBuf[j * 3 + 1], idxBuf[j * 3 + 2] };
+            auto&& cmdBuffer = list->CmdBuffer;
+            for (auto j = 0; j < cmdBuffer.size(); ++j) {
+                auto&& cmd = cmdBuffer[j];
+                if (cmd.UserCallback)
+                    throw std::logic_error("Software renderer doesn't support user call back.");
+                const auto cnt = cmd.ElemCount / 3;
+                auto drawCalls = sortPrimitives(vertData.data() + vertOffset, idxData.data() + idxOffset, cnt);
+                for (auto&& drawCall : drawCalls) {
+                    DrawCommand info;
+                    info.vertOffset = vertOffset;
+                    info.idxOffset = idxOffset + drawCall.first;
+                    info.idxCount = drawCall.second;
+                    info.scissor = {cmd.ClipRect.x, cmd.ClipRect.z, cmd.ClipRect.y, cmd.ClipRect.w};
+                    drawCmd.emplace_back(info);
                 }
+                idxOffset += cnt;
             }
-
-            render(current, faceCount - current);
-
-            idxBufferOffset += faceCount;
+            vertOffset += list->VtxBuffer.size();
         }
+    }
 
-        vertBufferOffset += cmdList->VtxBuffer.size();
+    auto vbo = buffer.allocBuffer<VertInfo>(drawData->TotalVtxCount);
+    buffer.memcpy(vbo, [buf = std::move(vertData)](auto&& call) {
+        call(buf.data());
+    });
+    const auto vert = calcVertex<VertInfo, VertOut, Empty, vertShader>(buffer, vbo, nullptr);
+    const auto vertBase = DataPtr<VertexInfo<VertOut>>{vert};
+
+    auto ibo = buffer.allocBuffer<uvec3>(idxData.size());
+    buffer.memcpy(ibo, [buf = std::move(idxData)](auto&& call) {
+        call(buf.data());
+    });
+    const auto iboBase = DataPtr<uvec3>{ibo};
+
+    #ifdef CAMERA_SOFTWARE_RENDERER_COUNT_DRAWCALL
+    printf("draw call %u\n", static_cast<unsigned int>(drawCmd.size()));
+    #endif
+
+    for(auto&& cmd:drawCmd) {
+        const auto vertPtr = vertBase + cmd.vertOffset;
+        const auto idxPtr = iboBase + cmd.idxOffset;
+        const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(cmd.idxCount, idxPtr.get());
+        TriangleRenderingHistory history;
+        history.reset(cmd.idxCount, 65536U);
+        renderTriangles<decltype(index), VertOut, BuiltinSamplerRef<float>,
+            FrameBufferInfo, clipShader, colorShade>(buffer, vertPtr, index, uni, frameBuffer,
+                renderTarget.size(), 0.5f, 1.5f, history, cmd.scissor, CullFace::None);
     }
 }
 

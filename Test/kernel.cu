@@ -170,7 +170,7 @@ void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
     const DataViewer<vec4>& spheres,
     const MemoryRef<Uniform>& uniform, FrameBuffer& fbo, float* lum,
     const Camera::RasterPosConverter converter, CommandBuffer& buffer) {
-    fbo.colorRT->clear(buffer, vec4{0.0f, 0.0f, 0.0f, 1.0f});
+    fbo.colorRT->clear(buffer, vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
     Buffer2D<unsigned int> depth(buffer, fbo.size);
     depth.clear(0xff);
     const auto frameBuffer = fbo.getData(buffer, depth);

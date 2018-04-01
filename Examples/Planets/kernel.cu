@@ -2,8 +2,6 @@
 #include "kernel.hpp"
 #include <ScanLineRenderer/SphereRasterizer.hpp>
 
-constexpr float maxdu = std::numeric_limits<unsigned int>::max();
-
 CUDAINLINE vec4 vsSphere(vec4 sp, const Uniform& uniform) {
     return calcCameraSphere(sp, uniform.V);
 }
