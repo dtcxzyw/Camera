@@ -1,7 +1,7 @@
 #pragma once
-#include <ScanLineRenderer/Shared.hpp>
+#include <Rasterizer/Shared.hpp>
 #include <Base/DispatchSystem.hpp>
-#include <ScanLineRenderer/Tile.hpp>
+#include <Rasterizer/Tile.hpp>
 
 template <typename Uniform>
 using SphereVertShader = vec4(*)(vec4 sp, const Uniform& uniform);

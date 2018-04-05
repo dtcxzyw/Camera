@@ -3,10 +3,10 @@
 #include <Base/CompileBegin.hpp>
 #include <IMGUI/imgui.h>
 #include <Base/CompileEnd.hpp>
-#include <ScanLineRenderer/TriangleRasterizer.hpp>
+#include <Rasterizer/TriangleRasterizer.hpp>
 #include <Base/DataSet.hpp>
-#include <ScanLineRenderer/IndexDescriptor.hpp>
-#include <ScanLineRenderer/Buffer2D.hpp>
+#include <Rasterizer/IndexDescriptor.hpp>
+#include <Rasterizer/Buffer2D.hpp>
 
 enum class VertOutAttr {
     TexCoord,

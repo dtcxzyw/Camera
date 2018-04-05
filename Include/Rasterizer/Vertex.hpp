@@ -2,6 +2,7 @@
 #include <Base/Common.hpp>
 #include  <Base/Math.hpp>
 #include <Base/DispatchSystem.hpp>
+#include <Base/Cache.hpp>
 
 template<typename Vert, typename Out, typename Uniform>
 using VertShader = void(*)(Vert in, const Uniform& uniform, vec3& pos, Out& out);
@@ -30,9 +31,18 @@ GLOBAL void calcVertexKernel(const unsigned int size, READONLY(Vert) in,
     vs(in[id], *u, vert.pos, vert.out);
 }
 
-template<typename Vert, typename Out, typename Uniform, VertShader<Vert, Out, Uniform> vs>
-auto calcVertex(CommandBuffer& buffer, const DataPtr<Vert>& vert, const DataPtr<Uniform>& uniform) {
-    auto vertex = buffer.allocBuffer<VertexInfo<Out>>(vert.size());
-    buffer.launchKernelLinear(calcVertexKernel<Vert, Out, Uniform, vs>, vert.size(),vert.get(), uniform.get(), vertex);
+template<typename Out,typename Judge>
+using VertexCache = CachedMemoryHolder<VertexInfo<Out>, Judge>;
+
+template<typename Vert, typename Out, typename Uniform, VertShader<Vert, Out, Uniform> Func,
+    typename Judge = EmptyJudge>
+DataPtr<VertexInfo<Out>> calcVertex(CommandBuffer& buffer, const DataPtr<Vert>& vert,
+    const DataPtr<Uniform>& uniform,
+    CacheRef<DataViewer<VertexInfo<Out>>, Judge> cache = {}) {
+    if (cache && cache.vaild())return cache.getValue();
+    auto vertex = buffer.allocBuffer<VertexInfo<Out>>(vert.size(), 
+        updateMemory(cache.getRef(), cache.getJudge()));
+    buffer.launchKernelLinear(calcVertexKernel<Vert, Out, Uniform, Func>, vert.size(), vert.get(),
+        uniform.get(), vertex);
     return vertex;
 }

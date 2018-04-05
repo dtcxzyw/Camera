@@ -3,12 +3,12 @@
 #include <Base/DispatchSystem.hpp>
 #include <Base/DataSet.hpp>
 #include <Base/Builtin.hpp>
-#include <ScanLineRenderer/Buffer2D.hpp>
+#include <Rasterizer/Buffer2D.hpp>
 #include <IO/Model.hpp>
 #include <PBR/BRDF.hpp>
 #include <PBR/PhotorealisticRendering.hpp>
-#include <ScanLineRenderer/RenderingCache.hpp>
-#include <ScanLineRenderer/TriangleRasterizer.hpp>
+#include <Rasterizer/RenderingCache.hpp>
+#include <Rasterizer/TriangleRasterizer.hpp>
 
 using VI = StaticMesh::Vertex;
 
@@ -94,8 +94,17 @@ struct PostUniform final {
         : in(buf), lum(clum), sum(cnt) {}
 };
 
-void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
-            const StaticMesh& skybox, TriangleRenderingHistory& sh,
+struct RenderingContext final {
+    VersionCounter vertCounter;
+    VertexCache<OI, VersionComparer> cache;
+    TriangleRenderingHistory history;
+    CacheRef<DataViewer<VertexInfo<OI>>, VersionComparer> get() {
+        return { cache,vertCounter.get() };
+    }
+};
+
+void kernel(const StaticMesh& model, RenderingContext& mc,
+            const StaticMesh& skybox, RenderingContext& sc,
             const DataViewer<vec4>& spheres,
             const MemoryRef<Uniform>& uniform, FrameBuffer& fbo, float* lum,
             Camera::RasterPosConverter converter, CommandBuffer& buffer);

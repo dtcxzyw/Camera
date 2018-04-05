@@ -40,15 +40,16 @@ namespace Impl {
         }
     };
 
-    DeviceMemory::DeviceMemory(ResourceManager& manager, const size_t size, const MemoryType type)
-        : Resource(manager), mSize(size), mType(type) {
+    DeviceMemory::DeviceMemory(ResourceManager& manager, const size_t size, 
+        const MemoryType type, MemoryReleaseFunction onRelease)
+        : Resource(manager), mSize(size), mType(type), mOnRelease(std::move(onRelease)) {
         if (mType == MemoryType::Global)
             manager.getRecycler<L1GlobalMemoryPool>().registerAlloc(mSize);
     }
 
     DeviceMemory::~DeviceMemory() {
         if (mType == MemoryType::Global)
-            addInstance(std::make_unique<GlobalMemory>(mManager, mSize));
+            addInstance(std::make_unique<GlobalMemory>(mManager, mSize, std::move(mOnRelease)));
         else
             addInstance(std::make_unique<ConstantMemory>(mSize));
     }
@@ -71,13 +72,16 @@ namespace Impl {
         return true;
     }
 
-    GlobalMemory::GlobalMemory(ResourceManager& manager, const size_t size)
-        : DeviceMemoryInstance(size), mPool(manager.getRecycler<L1GlobalMemoryPool>()) {
-        mPool.registerFree(mSize);
+    GlobalMemory::GlobalMemory(ResourceManager& manager, const size_t size,
+        MemoryReleaseFunction onRelease)
+        : DeviceMemoryInstance(size), mPool(manager.getRecycler<L1GlobalMemoryPool>()),
+        mOnRelease(std::move(onRelease)) {
+        if (!mOnRelease)mPool.registerFree(mSize);
     }
 
     GlobalMemory::~GlobalMemory() {
-        mPool.free(std::move(mMemory), mSize);
+        if (mOnRelease && mMemory)mOnRelease(std::move(mMemory), mSize);
+        else mPool.free(std::move(mMemory), mSize);
     }
 
     void* GlobalMemory::get() {
@@ -120,8 +124,8 @@ namespace Impl {
         return mId;
     }
 
-    Memset::Memset(ResourceManager& manager, const Id memoryID, const int mask)
-        : Operator(manager), mMemoryId(memoryID), mMask(mask) {}
+    Memset::Memset(ResourceManager& manager, const Id memoryId, const int mask)
+        : Operator(manager), mMemoryId(memoryId), mMask(mask) {}
 
     void Memset::emit(Stream& stream) {
         getMemory(mMemoryId).memset(mMask, stream);

@@ -1,6 +1,6 @@
 #pragma once
-#include <ScanLineRenderer/Vertex.hpp>
-#include <ScanLineRenderer/Shared.hpp>
+#include <Rasterizer/Vertex.hpp>
+#include <Rasterizer/Shared.hpp>
 
 template <typename Out, typename Uniform, typename FrameBuffer>
 using FSFP = void(*)(unsigned int id, ivec2 uv, float z, const Out& in,

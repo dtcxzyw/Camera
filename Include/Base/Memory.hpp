@@ -39,6 +39,9 @@ public:
     explicit DataViewer(const size_t size)
         : mMem(allocGlobalMemory(size*sizeof(T),true)),mSize(size) {}
 
+    explicit DataViewer(UniqueMemory memory, const size_t size)
+        : mMem(std::move(memory)), mSize(size) {}
+
     T* begin() const {
         return reinterpret_cast<T*>(mMem.get());
     }

@@ -1,6 +1,6 @@
-#include <ScanLineRenderer/PostProcess.hpp>
+#include <Rasterizer/PostProcess.hpp>
 #include "kernel.hpp"
-#include <ScanLineRenderer/SphereRasterizer.hpp>
+#include <Rasterizer/SphereRasterizer.hpp>
 
 CUDAINLINE vec4 vsSphere(vec4 sp, const Uniform& uniform) {
     return calcCameraSphere(sp, uniform.V);

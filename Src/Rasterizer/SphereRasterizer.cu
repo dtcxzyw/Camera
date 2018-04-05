@@ -1,4 +1,4 @@
-#include <ScanLineRenderer/SphereRasterizer.hpp>
+#include <Rasterizer/SphereRasterizer.hpp>
 #include <Base/CompileBegin.hpp>
 #include <device_atomic_functions.h>
 #include <Base/CompileEnd.hpp>

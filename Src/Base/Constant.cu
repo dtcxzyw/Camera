@@ -2,6 +2,7 @@
 #include <Base/Constant.hpp>
 #include <algorithm>
 #include <stdexcept>
+#include <cstring>
 
 namespace Impl {
     __constant__ unsigned char memory[blockNum * blockSize];
@@ -113,8 +114,11 @@ namespace Impl {
     }
 
     void constantSet(void* dest, const void* src, const unsigned int size, const cudaStream_t stream) {
-        checkError(cudaMemcpyToSymbolAsync(memory, src, size,
-                                           static_cast<unsigned char*>(dest) - getAddress(), cudaMemcpyHostToDevice,
-                                           stream));
+        const auto offset = static_cast<unsigned char*>(dest) - getAddress();
+        if (std::memcmp(memory + offset, src, size) != 0) {
+            std::memcpy(memory + offset, src, size);
+            checkError(cudaMemcpyToSymbolAsync(memory, src, size, offset,
+                cudaMemcpyHostToDevice, stream));
+        }
     }
 }

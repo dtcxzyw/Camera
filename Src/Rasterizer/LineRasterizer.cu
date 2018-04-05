@@ -1,4 +1,4 @@
-#include <ScanLineRenderer/LineRasterizer.hpp>
+#include <Rasterizer/LineRasterizer.hpp>
 
 CUDAINLINE void cutLine(LineRef ref, unsigned int* cnt, LineRef* out) {
     const auto offset = ref.range.x;

@@ -1,11 +1,11 @@
 #include <PostProcess/ToneMapping.hpp>
-#include <ScanLineRenderer/PostProcess.hpp>
+#include <Rasterizer/PostProcess.hpp>
 #include "kernel.hpp"
 #include <PBR/Dist.hpp>
-#include <ScanLineRenderer/LineRasterizer.hpp>
-#include <ScanLineRenderer/PointRasterizer.hpp>
-#include <ScanLineRenderer/SphereRasterizer.hpp>
-#include <ScanLineRenderer/IndexDescriptor.hpp>
+#include <Rasterizer/LineRasterizer.hpp>
+#include <Rasterizer/PointRasterizer.hpp>
+#include <Rasterizer/SphereRasterizer.hpp>
+#include <Rasterizer/IndexDescriptor.hpp>
 
 CUDAINLINE vec3 toPos(const vec3 p, const Uniform& u) {
     return {p.x * u.mul.x, p.y * u.mul.y, -p.z};
@@ -117,14 +117,14 @@ template <VertShader<VI, OI, Uniform> VertFunc, TriangleClipShader<Uniform> Clip
 void renderMesh(const StaticMesh& model, const MemoryRef<Uniform>& uniform,
     const MemoryRef<FrameBufferRef>& frameBuffer, const uvec2 size,
     const Camera::RasterPosConverter converter,
-    const CullFace mode, TriangleRenderingHistory& history, const vec4 scissor,
+    const CullFace mode, RenderingContext& context, const vec4 scissor,
     CommandBuffer& buffer) {
-    auto vert = calcVertex<VI, OI, Uniform, VertFunc>(buffer, model.vert, uniform);
+    auto vert = calcVertex<VI, OI, Uniform, VertFunc>(buffer, model.vert, uniform, context.get());
     const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(model.index.size(),
         model.index.begin());
     renderTriangles<decltype(index), OI, Uniform, FrameBufferRef, ClipFunc,
         emptyTriangleTileClipShader<Uniform>, FragFunc...>(buffer, vert, index, uniform, frameBuffer,
-            size, converter.near, converter.far, history, scissor, mode);
+            size, converter.near, converter.far, context.history, scissor, mode);
 }
 
 CUDAINLINE vec4 vsSphere(vec4 sp, const Uniform& uniform) {
@@ -157,8 +157,8 @@ CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, vec3 p, vec3 di
     }
 }
 
-void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
-    const StaticMesh& skybox, TriangleRenderingHistory& sh,
+void kernel(const StaticMesh& model, RenderingContext& mc,
+    const StaticMesh& skybox, RenderingContext& sc,
     const DataViewer<vec4>& spheres,
     const MemoryRef<Uniform>& uniform, FrameBuffer& fbo, float* lum,
     const Camera::RasterPosConverter converter, CommandBuffer& buffer) {
@@ -168,11 +168,11 @@ void kernel(const StaticMesh& model, TriangleRenderingHistory& mh,
     const auto frameBuffer = fbo.getData(buffer, depth);
     const vec4 scissor = {0.0f, fbo.size.x, 0.0f, fbo.size.y};
     renderMesh<VSM, CSM, setModel, drawModel>(model, uniform, frameBuffer, fbo.size,
-        converter, CullFace::Back, mh, scissor, buffer);
+        converter, CullFace::Back, mc, scissor, buffer);
     renderSpheres<Uniform, FrameBufferRef, vsSphere, setSpherePoint, drawSpherePoint>(buffer,
         spheres, uniform, frameBuffer, fbo.size, converter.near, converter.far, converter.mul, scissor);
     renderMesh<VS, CS, drawSky>(skybox, uniform, frameBuffer, fbo.size, converter,
-        CullFace::Front, sh, scissor, buffer);
+        CullFace::Front, sc, scissor, buffer);
     auto puni = buffer.allocConstant<PostUniform>();
     auto sum = buffer.allocBuffer<std::pair<float, unsigned int>>();
     buffer.memset(sum);

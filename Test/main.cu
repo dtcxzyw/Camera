@@ -16,17 +16,28 @@ private:
     StaticMesh mBox, mModel;
     std::unique_ptr<RC8> mCache;
     DataViewer<vec4> mSpheres;
-    std::unique_ptr<TriangleRenderingHistory> mMh;
-    std::unique_ptr<TriangleRenderingHistory> mSh;
+    std::unique_ptr<RenderingContext> mMc;
+    std::unique_ptr<RenderingContext> mSc;
     std::shared_ptr<BuiltinCubeMap<RGBA>> mEnvMap;
     std::shared_ptr<BuiltinSampler<RGBA>> mEnvMapSampler;
     DisneyBRDFArg mArg;
     Camera mCamera;
+    Uniform mOld;
 
     static void setStyle() {
         ImGui::StyleColorsDark();
         auto& style = ImGui::GetStyle();
         style.Alpha = 0.8f;
+        style.ChildBorderSize=0.0f;
+        style.ChildRounding=0.0f;
+        style.FrameBorderSize=0.0f;
+        style.FrameRounding=0.0f;
+        style.GrabRounding=0.0f;
+        style.PopupBorderSize=0.0f;
+        style.PopupRounding=0.0f;
+        style.ScrollbarRounding=0.0f;
+        style.WindowRounding=0.0f;
+        style.WindowBorderSize = 0.0f;
         style.AntiAliasedFill = true;
         style.AntiAliasedLines = true;
     }
@@ -39,7 +50,7 @@ private:
         ImGui::SetWindowFontScale(1.5f);
         ImGui::Text("vertices: %d, triangles: %d\n", static_cast<int>(mModel.vert.size()),
                     static_cast<int>(mModel.index.size()));
-        ImGui::Text("triNum: %u\n", *mMh->triNum);
+        ImGui::Text("triNum: %u\n", *mMc->history.triNum);
         ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
         ImGui::Text("FOV %.1f ", degrees(mCamera.toFov()));
         ImGui::SliderFloat("focal length", &mCamera.focalLength, 1.0f, 500.0f, "%.1f");
@@ -122,20 +133,26 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
         const auto converter = mCamera.toRasterPos(size);
         auto buffer = std::make_unique<CommandBuffer>();
         if (frame->size != size) {
-            mMh->reset(mModel.index.size(), mCache->blockSize() * 3, enableSAA);
+            mMc->history.reset(mModel.index.size(), mCache->blockSize() * 3, enableSAA);
             mCache->reset();
-            mSh->reset(mBox.index.size());
+            mSc->history.reset(mBox.index.size());
         }
         frame->resize(size);
         auto block = mCache->pop(*buffer);
         {
             auto uniform = getUniform(now - last, converter.mul);
+            if (uniform.cp != mOld.cp)mMc->vertCounter.count();
+            if (uniform.mul != mOld.mul) {
+                mMc->vertCounter.count();
+                mSc->vertCounter.count();
+            }
+            mOld = uniform;
             auto uni = buffer->allocConstant<Uniform>();
             uniform.cache = block.toBlock();
             buffer->memcpy(uni, [uniform](auto call) {
                 call(&uniform);
             });
-            kernel(mModel, *mMh, mBox, *mSh, mSpheres, uni, *frame, lum, converter, *buffer);
+            kernel(mModel, *mMc, mBox, *mSc, mSpheres, uni, *frame, lum, converter, *buffer);
         }
         last = now;
         renderGUI(D3D11Window::get());
@@ -174,12 +191,12 @@ public:
             //mModel.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
             mModel.load("Res/dragon.obj", resLoader);
             mCache = std::make_unique<RC8>(mModel.index.size());
-            mMh = std::make_unique<TriangleRenderingHistory>();
-            mMh->reset(mModel.index.size(), mCache->blockSize() * 3, enableSAA);
+            mMc = std::make_unique<RenderingContext>();
+            mMc->history.reset(mModel.index.size(), mCache->blockSize() * 3, enableSAA);
 
             mBox.load("Res/cube.obj", resLoader);
-            mSh = std::make_unique<TriangleRenderingHistory>();
-            mSh->reset(mBox.index.size());
+            mSc = std::make_unique<RenderingContext>();
+            mSc->history.reset(mBox.index.size());
 
             mEnvMap = loadCubeMap([](size_t id) {
                 const char* table[] = {"right", "left", "top", "bottom", "back", "front"};

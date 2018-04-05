@@ -62,6 +62,8 @@ public:
     }
 };
 
+using MemoryReleaseFunction = std::function<void(UniqueMemory, size_t)>;
+
 namespace Impl {
     enum class MemoryType {
         Global,
@@ -72,8 +74,10 @@ namespace Impl {
     private:
         const size_t mSize;
         MemoryType mType;
+        MemoryReleaseFunction mOnRelease;
     public:
-        DeviceMemory(ResourceManager& manager, size_t size, MemoryType type);
+        DeviceMemory(ResourceManager& manager, size_t size, MemoryType type,
+            MemoryReleaseFunction onRelease = {});
         virtual ~DeviceMemory();
         size_t size() const;
     };
@@ -96,9 +100,11 @@ namespace Impl {
     private:
         UniqueMemory mMemory;
         L1GlobalMemoryPool& mPool;
+        MemoryReleaseFunction mOnRelease;
         bool hasRecycler() const override;
     public:
-        GlobalMemory(ResourceManager& manager, size_t size);
+        GlobalMemory(ResourceManager& manager, size_t size, 
+            MemoryReleaseFunction onRelease);
         ~GlobalMemory();
         void* get() override;
         void set(const void* src, Stream& stream) override;
@@ -477,17 +483,18 @@ public:
     CommandBuffer();
 
     template <typename T>
-    MemoryRef<T> allocBuffer(const size_t size = 1) {
+    MemoryRef<T> allocBuffer(const size_t size = 1, 
+        MemoryReleaseFunction onRelease = {}) {
         return MemoryRef<T>{
             std::make_shared<Impl::DeviceMemory>(*mResourceManager, size * sizeof(T),
-                                                 Impl::MemoryType::Global)
+                Impl::MemoryType::Global, std::move(onRelease))
         };
     }
 
     template <typename T>
-    MemoryRef<T> allocConstant() {
+    MemoryRef<T> allocConstant(const size_t size = 1) {
         return MemoryRef<T>{
-            std::make_shared<Impl::DeviceMemory>(*mResourceManager, sizeof(T),
+            std::make_shared<Impl::DeviceMemory>(*mResourceManager, size * sizeof(T),
                                                  Impl::MemoryType::Constant)
         };
     }

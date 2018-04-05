@@ -15,7 +15,7 @@
     <ClInclude Include="..\..\Include\Base\Common.hpp" />
     <ClInclude Include="..\..\Include\Base\CompileBegin.hpp" />
     <ClInclude Include="..\..\Include\Base\CompileEnd.hpp" />
-    <ClInclude Include="..\..\Include\Base\ComputePass.hpp" />
+    <ClInclude Include="..\..\Include\Base\Cache.hpp" />
     <ClInclude Include="..\..\Include\Base\Config.hpp" />
     <ClInclude Include="..\..\Include\Base\Constant.hpp" />
     <ClInclude Include="..\..\Include\Base\DataSet.hpp" />
@@ -38,24 +38,23 @@
     <ClInclude Include="..\..\Include\PBR\Dist.hpp" />
     <ClInclude Include="..\..\Include\PBR\PhotorealisticRendering.hpp" />
     <ClInclude Include="..\..\Include\PostProcess\ToneMapping.hpp" />
+    <ClInclude Include="..\..\Include\Rasterizer\Buffer2D.hpp" />
+    <ClInclude Include="..\..\Include\Rasterizer\IndexDescriptor.hpp" />
+    <ClInclude Include="..\..\Include\Rasterizer\LineRasterizer.hpp" />
+    <ClInclude Include="..\..\Include\Rasterizer\PointRasterizer.hpp" />
+    <ClInclude Include="..\..\Include\Rasterizer\PostProcess.hpp" />
+    <ClInclude Include="..\..\Include\Rasterizer\Primitive.hpp" />
+    <ClInclude Include="..\..\Include\Rasterizer\RenderingCache.hpp" />
+    <ClInclude Include="..\..\Include\Rasterizer\Shared.hpp" />
+    <ClInclude Include="..\..\Include\Rasterizer\SphereRasterizer.hpp" />
+    <ClInclude Include="..\..\Include\Rasterizer\Tile.hpp" />
+    <ClInclude Include="..\..\Include\Rasterizer\TriangleRasterizer.hpp" />
+    <ClInclude Include="..\..\Include\Rasterizer\Vertex.hpp" />
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\Buffer2D.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\IndexDescriptor.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\LineRasterizer.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\PointRasterizer.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\PostProcess.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\Primitive.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\Shared.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\SphereRasterizer.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\Tile.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\TriangleRasterizer.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\RenderingCache.hpp" />
-    <ClInclude Include="..\..\Include\ScanLineRenderer\Vertex.hpp" />
     <ClInclude Include="..\..\Include\Scene\ECS.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp" />
-    <ClCompile Include="..\..\Src\Base\ComputePass.cpp" />
     <ClCompile Include="..\..\Src\Base\DispatchSystem.cpp" />
     <ClCompile Include="..\..\Src\Base\Environment.cpp" />
     <ClCompile Include="..\..\Src\Base\Memory.cpp" />
@@ -72,8 +71,8 @@
     </ClCompile>
     <CudaCompile Include="..\..\Src\Interaction\SoftwareRenderer.cu" />
     <CudaCompile Include="..\..\Src\PBR\DataDrivenBRDF.cu" />
-    <CudaCompile Include="..\..\Src\ScanLineRenderer\LineRasterizer.cu" />
-    <CudaCompile Include="..\..\Src\ScanLineRenderer\SphereRasterizer.cu" />
+    <CudaCompile Include="..\..\Src\Rasterizer\LineRasterizer.cu" />
+    <CudaCompile Include="..\..\Src\Rasterizer\SphereRasterizer.cu" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\IO\Image.cu" />
