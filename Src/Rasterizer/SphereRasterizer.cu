@@ -73,7 +73,7 @@ GLOBAL void processSphereInfoKernel(const unsigned int size,READONLY(vec4) in, S
     }
 }
 
-SphereProcessResult processSphereInfo(CommandBuffer& buffer, const MemoryRef<vec4>& spheres,
+SphereProcessingResult processSphereInfo(CommandBuffer& buffer, const MemoryRef<vec4>& spheres,
                                       const vec4 scissor, const vec2 hsiz, const float near, const float far,
                                       const vec2 mul) {
     auto cnt = buffer.allocBuffer<unsigned int>(7);
@@ -86,5 +86,5 @@ SphereProcessResult processSphereInfo(CommandBuffer& buffer, const MemoryRef<vec
         (buffer, cnt, ref, spheres.size() * 2U + 2048U, spheres.size(), nullptr, nullptr);
     cnt.earlyRelease();
     ref.earlyRelease();
-    return SphereProcessResult(sortedSphere.first, info, sortedSphere.second);
+    return SphereProcessingResult(sortedSphere.cnt, info, sortedSphere.array);
 }

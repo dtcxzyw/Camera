@@ -2,8 +2,6 @@
 #include <Rasterizer/PostProcess.hpp>
 #include "kernel.hpp"
 #include <PBR/Dist.hpp>
-#include <Rasterizer/LineRasterizer.hpp>
-#include <Rasterizer/PointRasterizer.hpp>
 #include <Rasterizer/SphereRasterizer.hpp>
 #include <Rasterizer/IndexDescriptor.hpp>
 
@@ -45,11 +43,11 @@ CUDAINLINE void VSM(VI in, const Uniform& uniform, vec3& cpos, OI& out) {
     cpos = uniform.V * wp;
 }
 
-CUDAINLINE bool CSM(unsigned int id, vec3& pa, vec3& pb, vec3& pc, const Uniform& u) {
+CUDAINLINE bool CSM(unsigned int, vec3& pa, vec3& pb, vec3& pc, const Uniform& u) {
     pa = toPos(pa, u);
     pb = toPos(pb, u);
     pc = toPos(pc, u);
-    return u.cache.query(id);
+    return true;
 }
 
 constexpr float maxdu = std::numeric_limits<unsigned int>::max();
@@ -62,7 +60,6 @@ CUDAINLINE void setModel(unsigned int, ivec2 uv, float z, const OI&, const OI&, 
 CUDAINLINE void drawModel(unsigned int triID, ivec2 uv, float z, const OI& out, const OI&,
     const OI&, const Uniform& uniform, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
-        uniform.cache.record(triID);
         const vec3 p = out.get<Pos>();
         const vec3 N = normalize(out.get<Normal>());
         const vec3 T = normalize(out.get<Tangent>());
@@ -123,8 +120,9 @@ void renderMesh(const StaticMesh& model, const MemoryRef<Uniform>& uniform,
     const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(model.index.size(),
         model.index.begin());
     renderTriangles<decltype(index), OI, Uniform, FrameBufferRef, ClipFunc,
-        emptyTriangleTileClipShader<Uniform>, FragFunc...>(buffer, vert, index, uniform, frameBuffer,
-            size, converter.near, converter.far, context.history, scissor, mode);
+        emptyTriangleTileClipShader<Uniform>, VersionComparer, FragFunc...>(buffer, vert, index,
+            uniform, frameBuffer, size, converter.near, converter.far, scissor, context.triContext, 
+            context.vertCounter.get(), mode);
 }
 
 CUDAINLINE vec4 vsSphere(vec4 sp, const Uniform& uniform) {

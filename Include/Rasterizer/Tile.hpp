@@ -56,20 +56,27 @@ GLOBAL void sortTilesKernel(unsigned int* cnt, unsigned int* offset, unsigned in
     for (auto i = 0; i < 6; ++i)tmp[i] = 0;
     constexpr auto block = 1024U;
     launchLinear(emitTile<Uniform, RefData, Func>, block, launchSize, tmp, offset, ref, out,
-        maxOutSize, uni, data);
+        maxOutSize - offset[5], uni, data);
     cudaDeviceSynchronize();
     offset[5] += tmp[5];
 }
 
+struct TileProcessingResult final {
+    MemoryRef<unsigned int> cnt;
+    MemoryRef<TileRef> array;
+    TileProcessingResult(const MemoryRef<unsigned>& cnt, const MemoryRef<TileRef>& array)
+        : cnt(cnt), array(array) {}
+};
+
 template<typename Uniform, typename RefData, TileClipShader<Uniform, RefData> Func>
-std::pair<MemoryRef<unsigned int>, MemoryRef<TileRef>> sortTiles(CommandBuffer& buffer,
-    const MemoryRef<unsigned int>& cnt, const MemoryRef<TileRef>& ref, const size_t refSize,
+TileProcessingResult sortTiles(CommandBuffer& buffer,
+    const DataPtr<unsigned int>& cnt, const DataPtr<TileRef>& ref, const size_t refSize,
     const unsigned int maxSize, const DataPtr<Uniform>& uni, const DataPtr<RefData>& data) {
     auto sortedIdx = buffer.allocBuffer<TileRef>(refSize);
     auto tmp = buffer.allocBuffer<unsigned int>(6);
     auto offset = buffer.allocBuffer<unsigned int>(6);
     const unsigned int maxOutSize = sortedIdx.maxSize();
-    buffer.callKernel(sortTilesKernel<Uniform, RefData, Func>, cnt, offset, tmp, ref, sortedIdx,
-        maxSize, maxOutSize, uni.get(), data.get());
+    buffer.callKernel(sortTilesKernel<Uniform, RefData, Func>, cnt.get(), offset, tmp, ref.get(),
+        sortedIdx, maxSize, maxOutSize, uni.get(), data.get());
     return { offset,sortedIdx };
 }

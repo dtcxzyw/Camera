@@ -16,6 +16,7 @@ class VersionComparer final:public JudgeBase {
 private:
     Id mCount;
 public:
+    VersionComparer() = default;
     explicit VersionComparer(const Id count) :mCount(count) {}
     bool judge(const VersionComparer& rhs) const {
         return mCount == rhs.mCount;
@@ -36,10 +37,31 @@ public:
 };
 
 template<typename Type>
+class EqualComparer final :public JudgeBase {
+private:
+    Type mValue;
+public:
+    EqualComparer() = default;
+    explicit EqualComparer(const Type& val) :mValue(val) {}
+    const Type& get() const {
+        return mValue;
+    }
+    bool judge(const EqualComparer& rhs) const {
+        return mValue == rhs.mValue;
+    }
+};
+
+template<typename Type>
+auto makeEqualComparer(const Type& val) {
+    return EqualComparer<Type>{val};
+}
+
+template<typename Type>
 class BinaryComparer final :public JudgeBase {
 private:
     unsigned char mData[sizeof(Type)];
 public:
+    BinaryComparer() = default;
     explicit BinaryComparer(const Type& val) {
         memcpy(mData, &val, sizeof(Type));
     }
@@ -51,12 +73,12 @@ public:
     }
 };
 
-template<typename Type>
 class TimeOutJudge final :public JudgeBase {
 private:
     Clock::time_point mTimeStamp;
     Clock::duration mTimeOut;
 public:
+    TimeOutJudge() = default;
     explicit TimeOutJudge(const Clock::duration timeOut)
         :mTimeStamp(Clock::now()), mTimeOut(timeOut) {}
     bool judge(const TimeOutJudge& rhs) const {
@@ -69,6 +91,7 @@ class Not final :public JudgeBase {
 private:
     Judge mJudge;
 public:
+    Not() = default;
     explicit Not(const Judge& judge) :mJudge(judge) {}
     bool judge(const Not& rhs) const {
         return !mJudge.judge(rhs);
@@ -81,11 +104,12 @@ auto operator!(const Judge& val) {
 }
 
 template<typename L,typename R>
-class And final {
+class And final :public JudgeBase {
 private:
     L mLhs;
     R mRhs;
 public:
+    And() = default;
     And(const L& lhs, const R& rhs) :mLhs(lhs), mRhs(rhs) {}
     bool judge(const And& rhs) const {
         return mLhs.judge(rhs.mLhs) && mRhs.judge(rhs.mRhs);
@@ -99,11 +123,12 @@ auto operator&&(const L& lhs, const R& rhs) {
 }
 
 template<typename L, typename R>
-class Or final {
+class Or final :public JudgeBase {
 private:
     L mLhs;
     R mRhs;
 public:
+    Or() = default;
     Or(const L& lhs, const R& rhs) :mLhs(lhs), mRhs(rhs) {}
     bool judge(const Or& rhs) const {
         return mLhs.judge(rhs.mLhs) || mRhs.judge(rhs.mRhs);

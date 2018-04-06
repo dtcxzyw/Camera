@@ -344,8 +344,8 @@ namespace Impl {
     private:
         std::function<unsigned int*(ResourceManager&)> mClosure;
     public:
-        LaunchSizeHelper(const MemoryRef<unsigned int>& ptr, unsigned int off) {
-            auto rval = castId(ptr);
+        LaunchSizeHelper(const DataPtr<unsigned int>& ptr, unsigned int off) {
+            auto rval = ptr.get();
             mClosure = [rval,off](ResourceManager& manager) {
                 return cast(rval, manager) + off;
             };
@@ -359,9 +359,9 @@ namespace Impl {
     class LaunchSize final {
     private:
         LaunchSizeHelper mHelper;
-        MemoryRef<unsigned int> mRef;
+        DataPtr<unsigned int> mRef;
     public:
-        explicit LaunchSize(const MemoryRef<unsigned int>& ptr, const unsigned int off = 0)
+        explicit LaunchSize(const DataPtr<unsigned int>& ptr, const unsigned int off = 0)
             : mHelper(ptr, off), mRef(ptr) {}
 
         auto get() const {

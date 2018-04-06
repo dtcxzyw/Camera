@@ -7,6 +7,8 @@
 #include <IMGUI/imgui.h>
 #include <Base/CompileEnd.hpp>
 #include <Interaction/SoftwareRenderer.hpp>
+#include <Interaction/D3D11.hpp>
+#include "PostProcess/ToneMapping.hpp"
 
 using namespace std::chrono_literals;
 
@@ -14,7 +16,6 @@ class App final : Uncopyable {
 private:
     float mLight = 65.0f, mR = 20.0f;
     StaticMesh mBox, mModel;
-    std::unique_ptr<RC8> mCache;
     DataViewer<vec4> mSpheres;
     std::unique_ptr<RenderingContext> mMc;
     std::unique_ptr<RenderingContext> mSc;
@@ -50,7 +51,7 @@ private:
         ImGui::SetWindowFontScale(1.5f);
         ImGui::Text("vertices: %d, triangles: %d\n", static_cast<int>(mModel.vert.size()),
                     static_cast<int>(mModel.index.size()));
-        ImGui::Text("triNum: %u\n", *mMc->history.triNum);
+        ImGui::Text("triNum: %u\n", *mMc->triContext.triNum);
         ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
         ImGui::Text("FOV %.1f ", degrees(mCamera.toFov()));
         ImGui::SliderFloat("focal length", &mCamera.focalLength, 1.0f, 500.0f, "%.1f");
@@ -114,13 +115,10 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
     struct RenderingTask {
         Future future;
         SharedFrame frame;
-        RC8::Block block;
 
-        RenderingTask(const Future& fut, const SharedFrame& fbo, const RC8::Block blockInfo)
-            : future(fut), frame(fbo), block(blockInfo) {}
+        RenderingTask(const Future& fut, const SharedFrame& fbo)
+            : future(fut), frame(fbo) {}
     };
-
-    static constexpr auto enableSAA = true;
 
     static float getTime() {
         const double t = std::chrono::high_resolution_clock::now().time_since_epoch().count();
@@ -133,12 +131,10 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
         const auto converter = mCamera.toRasterPos(size);
         auto buffer = std::make_unique<CommandBuffer>();
         if (frame->size != size) {
-            mMc->history.reset(mModel.index.size(), mCache->blockSize() * 3, enableSAA);
-            mCache->reset();
-            mSc->history.reset(mBox.index.size());
+            mMc->triContext.reset(mModel.index.size(), 65536U, false, true);
+            mSc->triContext.reset(mBox.index.size(), 2048U, false, true);
         }
         frame->resize(size);
-        auto block = mCache->pop(*buffer);
         {
             auto uniform = getUniform(now - last, converter.mul);
             if (uniform.cp != mOld.cp)mMc->vertCounter.count();
@@ -148,7 +144,6 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
             }
             mOld = uniform;
             auto uni = buffer->allocConstant<Uniform>();
-            uniform.cache = block.toBlock();
             buffer->memcpy(uni, [uniform](auto call) {
                 call(&uniform);
             });
@@ -157,7 +152,7 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
         last = now;
         renderGUI(D3D11Window::get());
         SoftwareRenderer::get().render(*buffer, *frame->postRT);
-        return RenderingTask{Environment::get().submit(std::move(buffer)), frame, block};
+        return RenderingTask{Environment::get().submit(std::move(buffer)), frame};
     }
 
     void uploadSpheres() {
@@ -190,13 +185,12 @@ public:
             uploadSpheres();
             //mModel.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
             mModel.load("Res/dragon.obj", resLoader);
-            mCache = std::make_unique<RC8>(mModel.index.size());
             mMc = std::make_unique<RenderingContext>();
-            mMc->history.reset(mModel.index.size(), mCache->blockSize() * 3, enableSAA);
+            mMc->triContext.reset(mModel.index.size(), 65536U, false, true);
 
             mBox.load("Res/cube.obj", resLoader);
             mSc = std::make_unique<RenderingContext>();
-            mSc->history.reset(mBox.index.size());
+            mSc->triContext.reset(mBox.index.size(), 2048U, false, true);
 
             mEnvMap = loadCubeMap([](size_t id) {
                 const char* table[] = {"right", "left", "top", "bottom", "back", "front"};
@@ -232,7 +226,6 @@ public:
 
                 tasks.front().future.sync();
                 auto frame = std::move(tasks.front().frame);
-                mCache->push(tasks.front().block);
                 tasks.pop();
 
                 if (frame->size == size) {

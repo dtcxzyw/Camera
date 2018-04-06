@@ -184,12 +184,12 @@ void SoftwareRenderer::render(CommandBuffer& buffer, BuiltinRenderTarget<RGBA8>&
         const auto vertPtr = vertBase + cmd.vertOffset;
         const auto idxPtr = iboBase + cmd.idxOffset;
         const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(cmd.idxCount, idxPtr.get());
-        TriangleRenderingHistory history;
-        history.reset(cmd.idxCount, 65536U);
+        TriangleRenderingContext<VertOut> context;
+        context.reset(cmd.idxCount, 65536U, false, false);
         renderTriangles<decltype(index), VertOut, BuiltinSamplerRef<float>,
             FrameBufferInfo, clipShader,emptyTriangleTileClipShader<BuiltinSamplerRef<float>>, 
-            fragShader>(buffer, vertPtr, index, uni, frameBuffer, renderTarget.size(), 0.5f, 1.5f, 
-            history, cmd.scissor, CullFace::None);
+            EmptyJudge, fragShader>(buffer, vertPtr, index, uni, frameBuffer, renderTarget.size(),
+                0.5f, 1.5f, cmd.scissor, context, {}, CullFace::None);
     }
 }
 

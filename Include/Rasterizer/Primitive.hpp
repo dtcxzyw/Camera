@@ -2,27 +2,27 @@
 #include <Base/Queue.hpp>
 
 template<typename Vert, typename Uniform>
-using GSF = void(*)(Vert* in,const Uniform& uniform,QueueRef<Vert> queue);
+using GeometryShader = void(*)(Vert* in,const Uniform& uniform,QueueRef<Vert> queue);
 
-template<unsigned int inv,typename Index, typename Vert, typename Uniform,
-    GSF<Vert, Uniform> gs>
-GLOBAL void GTHelper(const unsigned int size,READONLY(Vert) vert, Index idx,
+template<unsigned int In, typename Index, typename Vert, typename Uniform,
+    GeometryShader<Vert, Uniform> Func>
+GLOBAL void genPrimitiveKernel(const unsigned int size,READONLY(Vert) vert, Index idx,
     READONLY(Uniform) uniform,QueueRef<Vert> queue) {
     const auto id = getId();
     if (id >= size)return;
-    Vert in[inv];
-    for (auto i = 0; i < inv; ++i)in[i] = vert[idx[id][i]];
-    gs(in, *uniform, queue);
+    Vert in[In];
+    for (auto i = 0; i < In; ++i)in[i] = vert[idx[id][i]];
+    Func(in, *uniform, queue);
 }
 
-template<unsigned int inv,unsigned int outv,typename Index,typename Vert,typename Uniform
-    ,GSF<Vert,Uniform> gs>
+template<unsigned int In,unsigned int Out,typename Index,typename Vert,typename Uniform
+    ,GeometryShader<Vert,Uniform> Func>
 auto genPrimitive(CommandBuffer& buffer,const DataPtr<Vert>& vert,Index idx
     ,const DataPtr<Uniform>& uniform,unsigned int outSize=0U) {
     if (outSize == 0U)outSize = idx.size();
-    outSize *= outv;
+    outSize *= Out;
     Queue<Vert> out(buffer,outSize);
-    buffer.launchKernelLinear(GTHelper<inv,Index, Vert, Uniform, gs>, idx.size(), vert.begin(), idx, 
-        uniform,out.get(buffer));
+    buffer.launchKernelLinear(genPrimitiveKernel<In, Index, Vert, Uniform, Func>, idx.size(),
+        vert.begin(), idx, uniform, out.get(buffer));
     return out;
 }

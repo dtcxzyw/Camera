@@ -1,5 +1,4 @@
 #pragma once
-#include <Interaction/D3D11.hpp>
 #include <Base/DispatchSystem.hpp>
 #include <Base/DataSet.hpp>
 #include <Base/Builtin.hpp>
@@ -7,7 +6,6 @@
 #include <IO/Model.hpp>
 #include <PBR/BRDF.hpp>
 #include <PBR/PhotorealisticRendering.hpp>
-#include <Rasterizer/RenderingCache.hpp>
 #include <Rasterizer/TriangleRasterizer.hpp>
 
 using VI = StaticMesh::Vertex;
@@ -82,7 +80,6 @@ struct Uniform final {
     ALIGN float r2;
     ALIGN DisneyBRDFArg arg;
     ALIGN BuiltinSamplerRef<RGBA> sampler;
-    ALIGN RC8::BlockRef cache;
 };
 
 struct PostUniform final {
@@ -97,7 +94,7 @@ struct PostUniform final {
 struct RenderingContext final {
     VersionCounter vertCounter;
     VertexCache<OI, VersionComparer> cache;
-    TriangleRenderingHistory history;
+    TriangleRenderingContext<OI, VersionComparer> triContext;
     CacheRef<DataViewer<VertexInfo<OI>>, VersionComparer> get() {
         return { cache,vertCounter.get() };
     }

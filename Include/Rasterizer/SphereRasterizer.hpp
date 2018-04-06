@@ -61,17 +61,17 @@ struct STRUCT_ALIGN SphereInfo final {
     float c;
 };
 
-struct SphereProcessResult final {
+struct SphereProcessingResult final {
     MemoryRef<unsigned int> offset;
     MemoryRef<SphereInfo> info;
     MemoryRef<TileRef> ref;
 
-    SphereProcessResult(const MemoryRef<unsigned int>& off,
+    SphereProcessingResult(const MemoryRef<unsigned int>& off,
                         const MemoryRef<SphereInfo>& sphereInfo, const MemoryRef<TileRef>& sphereRef)
         : offset(off), info(sphereInfo), ref(sphereRef) {}
 };
 
-SphereProcessResult processSphereInfo(CommandBuffer& buffer,
+SphereProcessingResult processSphereInfo(CommandBuffer& buffer,
     const MemoryRef<vec4>& spheres, vec4 scissor, vec2 hsiz, float near, float far, vec2 mul);
 
 /*
