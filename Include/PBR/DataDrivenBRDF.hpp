@@ -110,7 +110,7 @@ public:
 
 class MERLBRDFData final {
 private:
-    DataViewer<vec3> mData;
+    MemorySpan<vec3> mData;
 public:
     MERLBRDFData(const std::string& path,Stream& loader);
     BRDFSampler toSampler() const;

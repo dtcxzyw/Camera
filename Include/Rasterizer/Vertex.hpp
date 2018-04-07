@@ -36,13 +36,13 @@ using VertexCache = CachedMemoryHolder<VertexInfo<Out>, Judge>;
 
 template<typename Vert, typename Out, typename Uniform, VertShader<Vert, Out, Uniform> Func,
     typename Judge = EmptyJudge>
-DataPtr<VertexInfo<Out>> calcVertex(CommandBuffer& buffer, const DataPtr<Vert>& vert,
-    const DataPtr<Uniform>& uniform,
-    CacheRef<DataViewer<VertexInfo<Out>>, Judge> cache = {}) {
-    if (cache && cache.vaild())return cache.getValue();
+    Span<VertexInfo<Out>> calcVertex(CommandBuffer& buffer, const Span<Vert>& vert,
+    const Span<Uniform>& uniform,
+    CacheRef<MemorySpan<VertexInfo<Out>>, Judge> cache = {}) {
+    if (cache && cache.vaild())return buffer.useAllocated(cache.getValue());
     auto vertex = buffer.allocBuffer<VertexInfo<Out>>(vert.size(), 
         updateMemory(cache.getRef(), cache.getJudge()));
-    buffer.launchKernelLinear(calcVertexKernel<Vert, Out, Uniform, Func>, vert.size(), vert.get(),
-        uniform.get(), vertex);
+    buffer.launchKernelLinear(calcVertexKernel<Vert, Out, Uniform, Func>, vert.size(), vert,
+        uniform, vertex);
     return vertex;
 }

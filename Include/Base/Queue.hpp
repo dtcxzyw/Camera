@@ -25,8 +25,8 @@ public:
 template<typename T>
 class Queue final:Uncopyable {
 private:
-    MemoryRef<T> mData;
-    MemoryRef<unsigned int> mCnt;
+    Span<T> mData;
+    Span<unsigned int> mCnt;
 public:
     Queue(CommandBuffer& buffer, const size_t size)
         :mData(buffer.allocBuffer<T>(size)), mCnt(buffer.allocBuffer<unsigned int>()) {

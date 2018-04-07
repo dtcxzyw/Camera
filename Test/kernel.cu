@@ -111,12 +111,13 @@ GLOBAL void updateLum(const PostUniform uniform) {
 
 template <VertShader<VI, OI, Uniform> VertFunc, TriangleClipShader<Uniform> ClipFunc, 
     FragmentShader<OI, Uniform, FrameBufferRef>... FragFunc>
-void renderMesh(const StaticMesh& model, const MemoryRef<Uniform>& uniform,
-    const MemoryRef<FrameBufferRef>& frameBuffer, const uvec2 size,
+void renderMesh(const StaticMesh& model, const Span<Uniform>& uniform,
+    const Span<FrameBufferRef>& frameBuffer, const uvec2 size,
     const Camera::RasterPosConverter converter,
     const CullFace mode, RenderingContext& context, const vec4 scissor,
     CommandBuffer& buffer) {
-    auto vert = calcVertex<VI, OI, Uniform, VertFunc>(buffer, model.vert, uniform, context.get());
+    auto vert = calcVertex<VI, OI, Uniform, VertFunc>(buffer, buffer.useAllocated(model.vert),
+        uniform, context.get());
     const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(model.index.size(),
         model.index.begin());
     renderTriangles<decltype(index), OI, Uniform, FrameBufferRef, ClipFunc,
@@ -157,8 +158,8 @@ CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, vec3 p, vec3 di
 
 void kernel(const StaticMesh& model, RenderingContext& mc,
     const StaticMesh& skybox, RenderingContext& sc,
-    const DataViewer<vec4>& spheres,
-    const MemoryRef<Uniform>& uniform, FrameBuffer& fbo, float* lum,
+    const MemorySpan<vec4>& spheres,
+    const Span<Uniform>& uniform, FrameBuffer& fbo, float* lum,
     const Camera::RasterPosConverter converter, CommandBuffer& buffer) {
     fbo.colorRT->clear(buffer, vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
     Buffer2D<unsigned int> depth(buffer, fbo.size);
@@ -168,7 +169,8 @@ void kernel(const StaticMesh& model, RenderingContext& mc,
     renderMesh<VSM, CSM, setModel, drawModel>(model, uniform, frameBuffer, fbo.size,
         converter, CullFace::Back, mc, scissor, buffer);
     renderSpheres<Uniform, FrameBufferRef, vsSphere, setSpherePoint, drawSpherePoint>(buffer,
-        spheres, uniform, frameBuffer, fbo.size, converter.near, converter.far, converter.mul, scissor);
+        buffer.useAllocated(spheres), uniform, frameBuffer, fbo.size, converter.near, converter.far, 
+        converter.mul, scissor);
     renderMesh<VS, CS, drawSky>(skybox, uniform, frameBuffer, fbo.size, converter,
         CullFace::Front, sc, scissor, buffer);
     auto puni = buffer.allocConstant<PostUniform>();

@@ -41,7 +41,7 @@ public:
     }
 
     template<typename T>
-    void memset(const DataViewer<T>& data, const int val=0) {
+    void memset(const MemorySpan<T>& data, const int val=0) {
         checkError(cudaMemsetAsync(data.begin(),val,data.size()*sizeof(T),mStream));
     }
 

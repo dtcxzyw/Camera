@@ -31,7 +31,7 @@ struct FrameBuffer final {
         data.fsize = size;
     }
 
-    MemoryRef<FrameBufferRef> getData(CommandBuffer& buffer) const {
+    Span<FrameBufferRef> getData(CommandBuffer& buffer) const {
         auto dataRef = buffer.allocConstant<FrameBufferRef>();
         buffer.memcpy(dataRef, [buf=data](auto call) {
             call(&buf);
@@ -44,6 +44,6 @@ struct Uniform final {
     ALIGN mat4 V;
 };
 
-void kernel(const MemoryRef<vec4>& spheres,
-            const MemoryRef<Uniform>& uniform, FrameBuffer& fbo,
+void kernel(const Span<vec4>& spheres,
+            const Span<Uniform>& uniform, FrameBuffer& fbo,
             Camera::RasterPosConverter converter, CommandBuffer& buffer);

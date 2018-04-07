@@ -53,7 +53,7 @@ struct FrameBuffer final {
         data.fsize = size;
     }
 
-    MemoryRef<FrameBufferRef> getData(CommandBuffer& buffer,
+    Span<FrameBufferRef> getData(CommandBuffer& buffer,
         Buffer2D<unsigned int>& depth) const {
         auto dataRef = buffer.allocConstant<FrameBufferRef>();
         auto&& manager = buffer.getResourceManager();
@@ -95,13 +95,13 @@ struct RenderingContext final {
     VersionCounter vertCounter;
     VertexCache<OI, VersionComparer> cache;
     TriangleRenderingContext<OI, VersionComparer> triContext;
-    CacheRef<DataViewer<VertexInfo<OI>>, VersionComparer> get() {
+    CacheRef<MemorySpan<VertexInfo<OI>>, VersionComparer> get() {
         return { cache,vertCounter.get() };
     }
 };
 
 void kernel(const StaticMesh& model, RenderingContext& mc,
             const StaticMesh& skybox, RenderingContext& sc,
-            const DataViewer<vec4>& spheres,
-            const MemoryRef<Uniform>& uniform, FrameBuffer& fbo, float* lum,
+            const MemorySpan<vec4>& spheres,
+            const Span<Uniform>& uniform, FrameBuffer& fbo, float* lum,
             Camera::RasterPosConverter converter, CommandBuffer& buffer);

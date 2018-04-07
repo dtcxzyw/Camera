@@ -2,6 +2,7 @@
 #include <memory>
 #include <Base/Common.hpp>
 #include <Base/Math.hpp>
+#include <stdexcept>
 
 inline size_t calcSizeLevel(const size_t size) {
     const auto msb=findMSB(size);
@@ -25,33 +26,59 @@ public:
     void operator()(void* ptr) const;
 };
 
-using UniqueMemory = std::unique_ptr<void,GlobalMemoryDeleter>;
+using UniqueMemory = std::unique_ptr<void, GlobalMemoryDeleter>;
 
 UniqueMemory allocGlobalMemory(size_t size,bool isStatic=false);
 
 template <typename T>
-class DataViewer final {
+class MemorySpan final {
 private:
     std::shared_ptr<void> mMem;
-    size_t mSize;
+    size_t mBegin, mEnd;
 public:
-    DataViewer() :mSize(0){}
-    explicit DataViewer(const size_t size)
-        : mMem(allocGlobalMemory(size*sizeof(T),true)),mSize(size) {}
+    template<typename U>
+    friend class MemorySpan;
 
-    explicit DataViewer(UniqueMemory memory, const size_t size)
-        : mMem(std::move(memory)), mSize(size / sizeof(T)) {}
+    MemorySpan() :mBegin(0), mEnd(0) {}
+
+    explicit MemorySpan(UniqueMemory memory, const size_t size)
+        : mMem(std::move(memory)), mBegin(0), mEnd(size / sizeof(T)) {}
+
+    explicit MemorySpan(const size_t size)
+        : mMem(allocGlobalMemory(size * sizeof(T), true)), mBegin(0), mEnd(size) {}
+
+    template<typename U>
+    explicit MemorySpan(const MemorySpan<U>& rhs)
+        : mMem(rhs.mMem), mBegin(rhs.mBegin * sizeof(U) / sizeof(T)),
+        mEnd(rhs.mEnd * sizeof(U) / sizeof(T)) {
+        #ifdef CAMERA_DEBUG
+        if (rhs.mBegin % sizeof(T) != 0 || rhs.mEnd % sizeof(T) != 0)
+            throw std::logic_error("bad cast");
+        #endif
+    }
 
     T* begin() const {
-        return reinterpret_cast<T*>(mMem.get());
+        return reinterpret_cast<T*>(mMem.get()) + mBegin;
     }
 
     T* end() const {
-        return begin() + mSize;
+        return reinterpret_cast<T*>(mMem.get()) + mEnd;
     }
 
     size_t size() const {
-        return mSize;
+        return mEnd - mBegin;
+    }
+
+    MemorySpan subSpan(const size_t begin, const size_t end = std::numeric_limits<size_t>::max()) const {
+#ifdef CAMERA_DEBUG
+        if (mBegin + begin > mEnd)throw std::logic_error("bad cast");
+#endif
+        MemorySpan res;
+        res.mMem = mMem;
+        res.mBegin = mBegin + begin;
+        if (end == std::numeric_limits<size_t>::max())res.mEnd = mEnd;
+        else res.mEnd = mBegin + end;
+        return res;
     }
 };
 

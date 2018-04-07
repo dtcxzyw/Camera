@@ -15,7 +15,7 @@ MERLBRDFData::MERLBRDFData(const std::string& path, Stream& loader) {
         throw std::runtime_error("Failed to load the BRDF database.");
     std::vector<double> brdf(3*rsiz);
     in.read(reinterpret_cast<char*>(brdf.data()),brdf.size()*sizeof(double));
-    mData = DataViewer<vec3>(rsiz);
+    mData = MemorySpan<vec3>(rsiz);
     PinnedBuffer<vec3> data(rsiz);    
     for (int i = 0; i < mData.size(); ++i) {
         data[i].r = static_cast<float>(brdf[i])*rfac;

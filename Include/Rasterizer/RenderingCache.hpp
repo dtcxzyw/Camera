@@ -53,7 +53,7 @@ public:
 template<typename T>
 class RenderingCache final:Uncopyable {
 private:
-    DataViewer<T> mData;
+    MemorySpan<T> mData;
     std::queue<RenderingCacheBlock<T>> mBlocks;
     unsigned int mBlockSize;
     bool mShouldReset;
@@ -65,7 +65,7 @@ public:
     }
 
     explicit RenderingCache(const size_t size, const size_t blockNum = 30)
-        :mData(DataViewer<T>(size)),mBlockSize(std::max(static_cast<size_t>(1), size / blockNum)) {
+        :mData(MemorySpan<T>(size)),mBlockSize(std::max(static_cast<size_t>(1), size / blockNum)) {
         auto begin = mData.begin();
         auto end = begin + mBlockSize;
         while (end < mData.end()) {

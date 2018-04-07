@@ -24,14 +24,14 @@ GLOBAL void drawPointHelperKernel(const unsigned int size, READONLY(VertexInfo<O
 }
 
 template <typename Out, typename Uniform, typename FrameBuffer,PosConverter<Uniform> toPos>
-void drawPointHelper(CommandBuffer&, const DataPtr<VertexInfo<Out>>&,
-                     const DataPtr<Uniform>&, const DataPtr<FrameBuffer>&,const vec4,
+void drawPointHelper(CommandBuffer&, const Span<VertexInfo<Out>>&,
+                     const Span<Uniform>&, const Span<FrameBuffer>&,const vec4,
                      const float, const float, const vec2) {}
 
 template <typename Out, typename Uniform, typename FrameBuffer, PosConverter<Uniform> toPos,
     FSFP<Out, Uniform, FrameBuffer> first, FSFP<Out, Uniform, FrameBuffer>... then>
-void drawPointHelper(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
-                     const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,const vec4 scissor,
+void drawPointHelper(CommandBuffer& buffer, const Span<VertexInfo<Out>>& vert,
+                     const Span<Uniform>& uniform, const Span<FrameBuffer>& frameBuffer,const vec4 scissor,
                      const float near, const float invnf, const vec2 hfsize) {
     buffer.launchKernelLinear(drawPointHelperKernel<Out, Uniform, FrameBuffer,toPos, first>, vert.size(), vert.get(),
         uniform.get(), frameBuffer.get(), scissor, near, invnf, hfsize);
@@ -41,8 +41,8 @@ void drawPointHelper(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert
 
 template <typename Out, typename Uniform, typename FrameBuffer, 
     PosConverter<Uniform> toPos, FSFP<Out, Uniform, FrameBuffer>... fs>
-void renderPoints(CommandBuffer& buffer, const DataPtr<VertexInfo<Out>>& vert,
-                  const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
+void renderPoints(CommandBuffer& buffer, const Span<VertexInfo<Out>>& vert,
+                  const Span<Uniform>& uniform, const Span<FrameBuffer>& frameBuffer,
                   const uvec2 size, const float near, const float far,vec4 scissor) {
     scissor = { fmax(0.5f,scissor.x),fmin(size.x - 0.5f,scissor.y),
         fmax(0.5f,scissor.z),fmin(size.y - 0.5f,scissor.w) };

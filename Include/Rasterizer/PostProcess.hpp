@@ -17,12 +17,12 @@ GLOBAL void renderFullScreenKernel(READONLY(Uniform) u,
 
 template<typename Uniform, typename FrameBuffer, 
     FullScreenShader<Uniform, FrameBuffer> FragShader>
-void renderFullScreen(CommandBuffer& buffer, const DataPtr<Uniform>& uniform,
+void renderFullScreen(CommandBuffer& buffer, const Span<Uniform>& uniform,
     const Value<FrameBuffer>& frameBuffer, uvec2 size) {
     constexpr auto tileSize = 32U;
     dim3 grid(calcBlockSize(size.x, tileSize), calcBlockSize(size.y, tileSize));
     dim3 block(tileSize, tileSize);
     buffer.launchKernelDim(renderFullScreenKernel<Uniform, FrameBuffer, FragShader>, 
-        grid, block, uniform.get(), frameBuffer.get(), size);
+        grid, block, uniform, frameBuffer.get(), size);
 }
 

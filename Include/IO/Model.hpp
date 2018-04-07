@@ -11,8 +11,8 @@ struct StaticMesh final {
         ALIGN vec3 tangent;
         ALIGN UV uv;
     };
-    DataViewer<Vertex> vert;
-    DataViewer<uvec3> index;
+    MemorySpan<Vertex> vert;
+    MemorySpan<uvec3> index;
     static void convertToBinary(const std::string& path);
     void loadBinary(const std::string& path, Stream& loader);
     void load(const std::string& path, Stream& loader);

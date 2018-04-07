@@ -38,9 +38,9 @@ GLOBAL void sortLinesKernel(unsigned int* cnt, unsigned int* offset, unsigned in
     offset[11] = offset[10] + tmp[10];
 }
 
-std::pair<MemoryRef<unsigned int>, MemoryRef<LineRef>> sortLines(CommandBuffer& buffer,
-                                                                 const MemoryRef<unsigned int>& cnt,
-                                                                 const MemoryRef<LineRef>& ref) {
+std::pair<Span<unsigned int>, Span<LineRef>> sortLines(CommandBuffer& buffer,
+                                                                 const Span<unsigned int>& cnt,
+                                                                 const Span<LineRef>& ref) {
     auto sortedIdx = buffer.allocBuffer<LineRef>(ref.size() * 2U+2048U);
     auto tmp = buffer.allocBuffer<unsigned int>(11);
     auto offset = buffer.allocBuffer<unsigned int>(12);

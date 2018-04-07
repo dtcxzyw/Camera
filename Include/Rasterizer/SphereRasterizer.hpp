@@ -62,17 +62,17 @@ struct STRUCT_ALIGN SphereInfo final {
 };
 
 struct SphereProcessingResult final {
-    MemoryRef<unsigned int> offset;
-    MemoryRef<SphereInfo> info;
-    MemoryRef<TileRef> ref;
+    Span<unsigned int> offset;
+    Span<SphereInfo> info;
+    Span<TileRef> ref;
 
-    SphereProcessingResult(const MemoryRef<unsigned int>& off,
-                        const MemoryRef<SphereInfo>& sphereInfo, const MemoryRef<TileRef>& sphereRef)
+    SphereProcessingResult(const Span<unsigned int>& off,
+                        const Span<SphereInfo>& sphereInfo, const Span<TileRef>& sphereRef)
         : offset(off), info(sphereInfo), ref(sphereRef) {}
 };
 
 SphereProcessingResult processSphereInfo(CommandBuffer& buffer,
-    const MemoryRef<vec4>& spheres, vec4 scissor, vec2 hsiz, float near, float far, vec2 mul);
+    const Span<vec4>& spheres, vec4 scissor, vec2 hsiz, float near, float far, vec2 mul);
 
 /*
  * pos=td
@@ -170,18 +170,18 @@ GLOBAL void renderSpheresKernel(unsigned int* offset, SphereInfo* tri, TileRef* 
 
 template <typename Uniform, typename FrameBuffer,
     SphereVertShader<Uniform> VertShader, SphereFragmentShader<Uniform, FrameBuffer>... FragShader>
-void renderSpheres(CommandBuffer& buffer, const DataPtr<vec4>& spheres,
-                   const DataPtr<Uniform>& uniform, const DataPtr<FrameBuffer>& frameBuffer,
+void renderSpheres(CommandBuffer& buffer, const Span<vec4>& spheres,
+                   const Span<Uniform>& uniform, const Span<FrameBuffer>& frameBuffer,
     const uvec2 size, const float near, const float far, const vec2 mul, vec4 scissor) {
     auto cameraSpheres = buffer.allocBuffer<vec4>(spheres.size());
-    buffer.launchKernelLinear(calcCameraSpheres<Uniform, VertShader>, spheres.size(), spheres.get(),
-                           cameraSpheres, uniform.get());
+    buffer.launchKernelLinear(calcCameraSpheres<Uniform, VertShader>, spheres.size(), spheres,
+                           cameraSpheres, uniform);
     scissor = { fmax(0.5f,scissor.x),fmin(size.x - 0.5f,scissor.y),
         fmax(0.5f,scissor.z),fmin(size.y - 0.5f,scissor.w) };
     const auto hfsize = static_cast<vec2>(size) * 0.5f;
     auto processRes = processSphereInfo(buffer, cameraSpheres, scissor, hfsize, near, far, mul);
     const auto invnf = 1.0f / (far - near);
     buffer.callKernel(renderSpheresKernel<Uniform, FrameBuffer, FragShader...>, processRes.offset,
-        processRes.info, processRes.ref, uniform.get(), frameBuffer.get(), near, far, invnf,
+        processRes.info, processRes.ref, uniform, frameBuffer, near, far, invnf,
         1.0f / mul, 1.0f / hfsize);
 }

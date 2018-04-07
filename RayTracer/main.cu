@@ -93,7 +93,7 @@ int main() {
         {
             Stream copyStream;
             window.bindBackBuffer(copyStream.get());
-            auto lum = DataViewer<float>();
+            auto lum = MemorySpan<float>();
             while (window.update()) {
                 const auto size = window.size();
                 if (size.x == 0 || size.y == 0) {

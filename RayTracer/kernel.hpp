@@ -32,7 +32,7 @@ struct FrameBufferCPU final {
         data.fsize = size;
     }
 
-    MemoryRef<FrameBufferRef> getData(CommandBuffer& buffer) const {
+    Span<FrameBufferRef> getData(CommandBuffer& buffer) const {
         auto dataRef = buffer.allocConstant<FrameBufferRef>();
         buffer.memcpy(dataRef, [buf = data](auto call) {
             call(&buf);

@@ -144,15 +144,15 @@ auto operator||(const L& lhs, const R& rhs) {
 template<typename Type, typename Judge>
 class CachedValueHolder final :Uncopyable {
 private:
-    Type mType;
+    Type mValue;
     Judge mJudge;
 public:
-    CachedValueHolder(const Type& type, const Judge& judge) :mType(type), mJudge(judge) {}
+    CachedValueHolder(const Type& type, const Judge& judge) :mValue(type), mJudge(judge) {}
     bool vaild(const Judge& rhs) {
         return mJudge.judge(rhs);
     }
     Type& get() {
-        return mType;
+        return mValue;
     }
 };
 
@@ -162,15 +162,15 @@ template<typename Type,typename Judge>
 using SharedCacheHolder = std::shared_ptr<CachedValueHolder<Type, Judge>>;
 
 template<typename Type, typename Judge>
-using CachedMemoryHolder = SharedCacheHolder<DataViewer<Type>, Judge>;
+using CachedMemoryHolder = SharedCacheHolder<MemorySpan<Type>, Judge>;
 
 template<typename Type, typename Judge>
 MemoryReleaseFunction updateMemory(CachedMemoryHolder<Type, Judge>& cache,
     const Judge& judge) {
     if (&cache == nullptr)return {};
     return [&cache, judge](UniqueMemory memory, const size_t size) {
-        DataViewer<Type> data{ std::move(memory), size };
-        cache = std::make_shared<CachedValueHolder<DataViewer<Type>, Judge>>(data, judge);
+        MemorySpan<Type> data{ std::move(memory), size };
+        cache = std::make_shared<CachedValueHolder<MemorySpan<Type>, Judge>>(data, judge);
     };
 }
 

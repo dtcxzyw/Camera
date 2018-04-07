@@ -67,14 +67,14 @@ void StaticMesh::loadBinary(const std::string & path, Stream & loader) {
     read(in, &vertSize);
     PinnedBuffer<Vertex> vertHost(vertSize);
     read(in, vertHost.get(), vertSize);
-    vert = DataViewer<Vertex>(vertSize);
+    vert = MemorySpan<Vertex>(vertSize);
     checkError(cudaMemcpyAsync(vert.begin(),vertHost.get(),vertSize*sizeof(Vertex),
         cudaMemcpyHostToDevice,loader.get()));
     uint64_t faceSize;
     read(in, &faceSize);
     PinnedBuffer<uvec3> indexHost(faceSize);
     read(in, indexHost.get(),faceSize);
-    index = DataViewer<uvec3>(faceSize);
+    index = MemorySpan<uvec3>(faceSize);
     checkError(cudaMemcpyAsync(index.begin(),indexHost.get(),faceSize*sizeof(uvec3),
         cudaMemcpyHostToDevice,loader.get()));
     loader.sync();

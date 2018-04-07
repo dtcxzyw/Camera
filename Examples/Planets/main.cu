@@ -88,7 +88,7 @@ public:
         updateStep(delta);
         check();
     }
-    MemoryRef<vec4> getDrawData(CommandBuffer& buffer) {
+    Span<vec4> getDrawData(CommandBuffer& buffer) {
         const auto fac = pow(0.1, scalePow);
         std::vector<vec4> data(mPlanets.size());
         for (size_t i = 0; i < mPlanets.size(); ++i){

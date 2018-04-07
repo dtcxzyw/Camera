@@ -2,12 +2,15 @@
 #include <Base/Memory.hpp>
 #include <vector>
 #include <algorithm>
+#ifdef CAMERA_MEMORY_TRACE
+#include <set>
+#endif
 
 struct PinnedMemoryApi final {
     using PtrType = void*;
 
     static bool alloc(PtrType& ptr, const size_t size) {
-        #ifdef CAMERA_MEMORY_MESSAGE
+        #ifdef CAMERA_MEMORY_TRACE
         printf("alloc pinned memory %zu byte\n", size);
         #endif
         return cudaMallocHost(&ptr, size, cudaHostAllocPortable | cudaHostAllocWriteCombined)
@@ -15,7 +18,7 @@ struct PinnedMemoryApi final {
     }
 
     static void free(void* ptr) {
-        #ifdef CAMERA_MEMORY_MESSAGE
+        #ifdef CAMERA_MEMORY_TRACE
         puts("free pinned memory");
         #endif
         checkError(cudaFreeHost(ptr));
@@ -26,14 +29,14 @@ struct GlobalMemoryApi final {
     using PtrType = void*;
 
     static bool alloc(PtrType& res, const size_t size) {
-        #ifdef CAMERA_MEMORY_MESSAGE
+        #ifdef CAMERA_MEMORY_TRACE
         printf("alloc device memory %zu byte\n", size);
         #endif
         return cudaMalloc(&res, size) == cudaSuccess;
     }
 
     static void free(void* ptr) {
-        #ifdef CAMERA_MEMORY_MESSAGE
+        #ifdef CAMERA_MEMORY_TRACE
         puts("free device memory");
         #endif
         checkError(cudaFree(ptr));
@@ -46,9 +49,13 @@ public:
     using PtrType = typename Api::PtrType;
 private:
     static constexpr auto timeBlock = 1024U;
-    std::vector<typename Api::PtrType> mPool[41];
+    std::vector<PtrType> mPool[41];
     uintmax_t mLastRequireTimeStamp[41]{};
     uintmax_t mTimeCount;
+
+    #ifdef CAMERA_MEMORY_TRACE
+    std::set<PtrType> mAlloced;
+    #endif
 
     void clearLevel(const size_t level) {
         for (auto&& p : mPool[level])
@@ -82,11 +89,6 @@ private:
         return ptr;
     }
 
-public:
-    MemoryPool() : mTimeCount(0) {
-        std::fill(std::begin(mLastRequireTimeStamp), std::end(mLastRequireTimeStamp), 0);
-    }
-
     PtrType memAlloc(const size_t size, const bool isStatic) {
         if (size == 0)return {};
         if (isStatic)return tryAlloc(size);
@@ -104,6 +106,26 @@ public:
     void memFree(PtrType ptr, const size_t size) {
         if (size)mPool[calcSizeLevel(size)].push_back(ptr);
         else checkError(cudaFree(ptr));
+    }
+
+public:
+    MemoryPool() : mTimeCount(0) {
+        std::fill(std::begin(mLastRequireTimeStamp), std::end(mLastRequireTimeStamp), 0);
+    }
+
+    PtrType alloc(const size_t size, const bool isStatic) {
+        const auto ptr = memAlloc(size, isStatic);
+        #ifdef CAMERA_MEMORY_TRACE
+        mAlloced.emplace(ptr);
+        #endif
+        return ptr;
+    }
+
+    void free(PtrType ptr, const size_t size) {
+        #ifdef CAMERA_MEMORY_TRACE
+        if (!mAlloced.erase(ptr))throw std::logic_error("freed ptr");
+        #endif
+        memFree(ptr, size);
     }
 
     void clear() {
@@ -130,21 +152,21 @@ void clearMemoryPool() {
 GlobalMemoryDeleter::GlobalMemoryDeleter(const size_t size) noexcept: mSize(size) {}
 
 void GlobalMemoryDeleter::operator()(void* ptr) const {
-    getMemoryPool<GlobalMemoryApi>().memFree(ptr, mSize);
+    getMemoryPool<GlobalMemoryApi>().free(ptr, mSize);
 }
 
 UniqueMemory allocGlobalMemory(const size_t size, const bool isStatic) {
     return UniqueMemory{
-        getMemoryPool<GlobalMemoryApi>().memAlloc(size, isStatic),
+        getMemoryPool<GlobalMemoryApi>().alloc(size, isStatic),
         GlobalMemoryDeleter(isStatic ? 0 : size)
     };
 }
 
 PinnedMemory::PinnedMemory(const size_t size)
-    : mPtr(getMemoryPool<PinnedMemoryApi>().memAlloc(size, false)), mSize(size) {}
+    : mPtr(getMemoryPool<PinnedMemoryApi>().alloc(size, false)), mSize(size) {}
 
 PinnedMemory::~PinnedMemory() {
-    getMemoryPool<PinnedMemoryApi>().memFree(mPtr, mSize);
+    getMemoryPool<PinnedMemoryApi>().free(mPtr, mSize);
 }
 
 void* PinnedMemory::get() const noexcept {

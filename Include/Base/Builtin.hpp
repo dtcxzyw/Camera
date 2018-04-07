@@ -47,8 +47,8 @@ public:
         checkError(cudaFreeArray(mArray));
     }
 
-    DataViewer<T> download(CommandBuffer& buffer) const {
-        DataViewer<T> res(mSize.x * mSize.y);
+    MemorySpan<T> download(CommandBuffer& buffer) const {
+        MemorySpan<T> res(mSize.x * mSize.y);
         buffer.pushOperator([=](Stream& stream) {
             checkError(cudaMemcpyFromArrayAsync(res.begin(), mArray, 0, 0, res.size() * sizeof(T)
                                                 , cudaMemcpyDefault, stream.get()));

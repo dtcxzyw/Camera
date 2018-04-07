@@ -73,7 +73,7 @@ GLOBAL void processSphereInfoKernel(const unsigned int size,READONLY(vec4) in, S
     }
 }
 
-SphereProcessingResult processSphereInfo(CommandBuffer& buffer, const MemoryRef<vec4>& spheres,
+SphereProcessingResult processSphereInfo(CommandBuffer& buffer, const Span<vec4>& spheres,
                                       const vec4 scissor, const vec2 hsiz, const float near, const float far,
                                       const vec2 mul) {
     auto cnt = buffer.allocBuffer<unsigned int>(7);
@@ -82,9 +82,9 @@ SphereProcessingResult processSphereInfo(CommandBuffer& buffer, const MemoryRef<
     auto ref = buffer.allocBuffer<TileRef>(spheres.size());
     buffer.launchKernelLinear(processSphereInfoKernel, spheres.size(), spheres, info, ref, cnt,
                            scissor, hsiz, near, far, mul);
-    const auto sortedSphere = sortTiles<Empty,void,emptyTileClipShader>
-        (buffer, cnt, ref, spheres.size() * 2U + 2048U, spheres.size(), nullptr, nullptr);
-    cnt.earlyRelease();
-    ref.earlyRelease();
+    const auto sortedSphere = sortTiles<Empty,unsigned char,emptyTileClipShader>
+        (buffer, cnt, ref, spheres.size() * 2U + 2048U, spheres.size(), {}, {});
+    cnt.reset();
+    ref.reset();
     return SphereProcessingResult(sortedSphere.cnt, info, sortedSphere.array);
 }

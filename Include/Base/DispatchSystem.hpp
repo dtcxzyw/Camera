@@ -7,6 +7,7 @@
 #include <chrono>
 #include <tuple>
 #include <functional>
+#include <limits>
 #ifdef CAMERA_RESOURCE_CHECK
 #include <set>
 #endif
@@ -22,7 +23,7 @@ class ResourceInstance : Uncopyable {
 public:
     ResourceInstance() = default;
     virtual ~ResourceInstance() = default;
-    virtual bool hasRecycler() const;
+    virtual bool canBeRecycled() const;
     virtual void getRes(void*, cudaStream_t) = 0;
 };
 
@@ -65,21 +66,36 @@ public:
 using MemoryReleaseFunction = std::function<void(UniqueMemory, size_t)>;
 
 namespace Impl {
-    enum class MemoryType {
-        Global,
-        Constant
+    class DeviceMemoryDesc : public Resource<void*> {
+    protected:
+        const size_t mSize;
+    public:
+        DeviceMemoryDesc(ResourceManager& manager, size_t size);
+        size_t size() const;
     };
 
-    class DeviceMemory final : public Resource<void*> {
+    class GlobalMemoryDesc final : public DeviceMemoryDesc {
     private:
-        const size_t mSize;
-        MemoryType mType;
         MemoryReleaseFunction mOnRelease;
     public:
-        DeviceMemory(ResourceManager& manager, size_t size, MemoryType type,
-            MemoryReleaseFunction onRelease = {});
-        virtual ~DeviceMemory();
-        size_t size() const;
+        GlobalMemoryDesc(ResourceManager& manager, size_t size,
+            MemoryReleaseFunction onRelease);
+        virtual ~GlobalMemoryDesc();
+    };
+
+    class ConstantMemoryDesc final : public DeviceMemoryDesc {
+    public:
+        ConstantMemoryDesc(ResourceManager& manager, size_t size);
+        virtual ~ConstantMemoryDesc();
+    };
+
+    class AllocatedMemoryDesc final : public DeviceMemoryDesc {
+    private:
+        MemorySpan<unsigned char> mRef;
+    public:
+        AllocatedMemoryDesc(ResourceManager& manager,
+            const MemorySpan<unsigned char>& ref);
+        virtual ~AllocatedMemoryDesc();
     };
 
     class DeviceMemoryInstance : public ResourceInstance {
@@ -90,8 +106,8 @@ namespace Impl {
         explicit DeviceMemoryInstance(size_t size);
         virtual ~DeviceMemoryInstance() = default;
         virtual void* get() = 0;
-        virtual void set(const void* src, Stream& stream) = 0;
-        virtual void memset(int mask, Stream& stream);
+        virtual void set(const void* src, size_t begin, size_t end, Stream& stream) = 0;
+        virtual void memset(int mask, size_t begin, size_t end, Stream& stream);
     };
 
     class L1GlobalMemoryPool;
@@ -101,14 +117,14 @@ namespace Impl {
         UniqueMemory mMemory;
         L1GlobalMemoryPool& mPool;
         MemoryReleaseFunction mOnRelease;
-        bool hasRecycler() const override;
+        bool canBeRecycled() const override;
     public:
-        GlobalMemory(ResourceManager& manager, size_t size, 
+        GlobalMemory(ResourceManager& manager, size_t size,
             MemoryReleaseFunction onRelease);
         ~GlobalMemory();
         void* get() override;
-        void set(const void* src, Stream& stream) override;
-        void memset(int mask, Stream& stream) override;
+        void set(const void* src, size_t begin, size_t end, Stream& stream) override;
+        void memset(int mask, size_t begin, size_t end, Stream& stream) override;
     };
 
     class ConstantMemory final : public DeviceMemoryInstance {
@@ -118,71 +134,19 @@ namespace Impl {
         explicit ConstantMemory(size_t size);
         ~ConstantMemory();
         void* get() override;
-        void set(const void* src, Stream& stream) override;
+        void set(const void* src, size_t begin, size_t end, Stream& stream) override;
     };
 
-    class DeviceMemoryRef : public ResourceRef<void*> {
-    public:
-        explicit DeviceMemoryRef(const std::shared_ptr<DeviceMemory>& ref);
-        size_t size() const;
-    };
-
-    class Operator : Uncopyable {
-    protected:
-        ResourceManager& mManager;
-        Id mId;
-        DeviceMemoryInstance& getMemory(Id id) const;
-    public:
-        explicit Operator(ResourceManager& manager);
-        virtual ~Operator() = default;
-        Id getId() const;
-        virtual void emit(Stream& stream) = 0;
-    };
-
-    class Memset final : public Operator {
+    class AllocatedMemory final : public DeviceMemoryInstance {
     private:
-        Id mMemoryId;
-        int mMask;
+        MemorySpan<unsigned char> mRef;
     public:
-        Memset(ResourceManager& manager, Id memoryId, int mask);
-        void emit(Stream& stream) override;
+        explicit AllocatedMemory(const MemorySpan<unsigned char>& ref);
+        void* get() override;
+        void set(const void* src, size_t begin, size_t end, Stream& stream) override;
+        void memset(int mask, size_t begin, size_t end, Stream& stream) override;
     };
 
-    class Memcpy final : public Operator {
-    private:
-        Id mDst;
-        std::function<void(std::function<void(const void*)>)> mSrc;
-    public:
-        Memcpy(ResourceManager& manager, Id dst,
-               std::function<void(std::function<void(const void*)>)>&& src);
-        void emit(Stream& stream) override;
-    };
-}
-
-class FunctionOperator final : public Impl::Operator {
-private:
-    std::function<void(Id, ResourceManager&, Stream&)> mClosure;
-public:
-    FunctionOperator(ResourceManager& manager,
-                     std::function<void(Id, ResourceManager&, Stream&)>&& closure);
-    void emit(Stream& stream) override;
-};
-
-template <typename T>
-class MemoryRef final : public Impl::DeviceMemoryRef {
-public:
-    explicit MemoryRef(const std::shared_ptr<Impl::DeviceMemory>& ref) : DeviceMemoryRef(ref) {}
-
-    size_t size() const {
-        return DeviceMemoryRef::size() / sizeof(T);
-    }
-
-    size_t maxSize() const {
-        return calcMaxBufferSize<T>(size());
-    }
-};
-
-namespace Impl {
     class CastTag {
     protected:
         static void get(ResourceManager& manager, Id id, void* ptr);
@@ -202,6 +166,92 @@ namespace Impl {
         }
     };
 
+    template <typename T>
+    class SpanHelper final : public CastTag {
+    private:
+        Id mId;
+        size_t mBegin, mEnd;
+    public:
+        SpanHelper() :mId(0), mBegin(0), mEnd(0) {}
+        SpanHelper(const Id id, const size_t begin, const size_t end)
+            : mId(id), mBegin(begin), mEnd(end) {}
+
+        T* get(ResourceManager& manager) {
+            if (mId){
+                T* res;
+                CastTag::get(manager, mId, &res);
+                return res + mBegin;
+            }
+            return nullptr;
+        }
+
+        size_t begin() const {
+            return mBegin;
+        }
+
+        size_t end() const {
+            return mEnd;
+        }
+
+        Id getId() const {
+            return mId;
+        }
+    };
+
+    template <typename T>
+    class Span final {
+    private:
+        std::shared_ptr<DeviceMemoryDesc> mRef;
+        size_t mBegin, mEnd;
+    public:
+        template <typename U>
+        friend class Span;
+
+        Span() : mBegin(0), mEnd(0) {}
+
+        explicit Span(const std::shared_ptr<DeviceMemoryDesc>& ref)
+            : mRef(ref), mBegin(0), mEnd(mRef->size() / sizeof(T)) {}
+
+        template <typename U>
+        Span(const Span<U>& rhs) : mRef(rhs.mRef), mBegin(rhs.mBegin * sizeof(U) / sizeof(T)),
+            mEnd(rhs.mEnd * sizeof(U) / sizeof(T)) {
+            #ifdef CAMERA_DEBUG
+            if (rhs.mBegin % sizeof(T) != 0 || rhs.mEnd % sizeof(T) != 0)
+                throw std::logic_error("bad cast");
+            #endif
+        }
+
+        Span subSpan(const size_t begin, const size_t end = std::numeric_limits<size_t>::max()) const {
+            #ifdef CAMERA_DEBUG
+            if (mBegin + begin > mEnd)throw std::logic_error("bad cast");
+            #endif
+            Span res;
+            res.mRef = mRef;
+            res.mBegin = mBegin + begin;
+            if (end == std::numeric_limits<size_t>::max())res.mEnd = mEnd;
+            else res.mEnd = mBegin + end;
+            return res;
+        }
+
+        size_t size() const {
+            return mEnd - mBegin;
+        }
+
+        size_t maxSize() const {
+            return calcMaxBufferSize<T>(size());
+        }
+
+        operator SpanHelper<T>() const {
+            if(mRef)return {mRef->getId(), mBegin, mEnd};
+            return {};
+        }
+
+        void reset() {
+            mRef.reset();
+            mBegin = mEnd = 0;
+        }
+    };
+
     template <typename T, typename = std::enable_if_t<!std::is_base_of<ResourceTag, T>::value>>
     T castId(T arg) {
         return arg;
@@ -213,8 +263,8 @@ namespace Impl {
     }
 
     template <typename T>
-    auto castId(const MemoryRef<T>& ref) -> ResourceId<T*> {
-        return ResourceId<T*>{ref.getId()};
+    auto castId(const Span<T>& ref) {
+        return SpanHelper<T>(ref);
     }
 
     template <typename T, typename = std::enable_if_t<!std::is_base_of<CastTag, T>::value>>
@@ -233,80 +283,26 @@ namespace Impl {
         std::tuple<Args...> mArgs;
 
         template <size_t... I>
-        auto constructImpl(ResourceManager& manager, std::index_sequence<I...>) const{
+        auto constructImpl(ResourceManager& manager, std::index_sequence<I...>) const {
             return T{cast(std::get<I>(mArgs), manager)...};
         }
 
     public:
         explicit LazyConstructor(Args ... args) : mArgs(std::make_tuple(args...)) {}
 
-        auto get(ResourceManager& manager) const{
+        auto get(ResourceManager& manager) const {
             return constructImpl(manager, std::make_index_sequence<std::tuple_size<decltype(mArgs)>::value>());
         }
     };
 
-    template <typename T>
-    class DataPtrHelper final : public CastTag {
+    class LaunchSize final {
     private:
-        std::function<T*(ResourceManager&)> mClosure;
+        SpanHelper<unsigned int> mHelper;
+        Span<unsigned int> mRef;
     public:
-        explicit DataPtrHelper(const MemoryRef<T>& ref): mClosure(
-            [rval = castId(ref)](ResourceManager& manager) {
-                return cast(rval, manager);
-            }) {}
-
-        explicit DataPtrHelper(T* ptr) : mClosure(
-            [ptr](ResourceManager&) {
-                return ptr;
-            }) {}
-
-        explicit DataPtrHelper(const DataPtrHelper& rhs, const size_t offset): mClosure(
-            [closure=rhs.mClosure,offset](ResourceManager& manager) {
-                return closure(manager) + offset;
-            }) {}
-
-        T* get(ResourceManager& manager) {
-            return mClosure(manager);
-        }
-    };
-
-    template <typename T>
-    class DataPtr final {
-    private:
-        std::function<DataPtrHelper<T>()> mHolder;
-        size_t mSize;
-    public:
-        DataPtr(const MemoryRef<T>& ref) : mHolder([ref] {
-            return DataPtrHelper<T>(ref);
-        }), mSize(ref.size()) {}
-
-        DataPtr(T* ptr, const size_t size) : mHolder([ptr] {
-            return DataPtrHelper<T>(ptr);
-        }), mSize(size) {}
-
-        DataPtr(const DataViewer<T>& data) : DataPtr(data.begin(), data.size()) {}
-
-        DataPtr(std::nullptr_t): DataPtr(nullptr, 0) {}
-
-        DataPtr operator+(const size_t offset) const {
-            DataPtr res = nullptr;
-            res.mHolder = [=] {
-                return DataPtrHelper<T>(mHolder(), offset);
-            };
-            #ifdef CAMERA_DEBUG
-            if (mSize <= offset)throw std::logic_error("Out of memory.");
-            #endif
-            res.mSize = mSize - offset;
-            return res;
-        }
-
-        auto get() const {
-            return mHolder();
-        }
-
-        auto size() const {
-            return mSize;
-        }
+        explicit LaunchSize(const Span<unsigned int>& ptr);
+        SpanHelper<unsigned int> get() const;
+        void download(unsigned int& dst, CommandBuffer& buffer) const;
     };
 
     template <typename T>
@@ -317,8 +313,8 @@ namespace Impl {
         template <typename U>
         explicit ValueHelper(const U& val) : mClosure(
             [rval = castId(val)](ResourceManager& manager) {
-                return cast(rval, manager);
-            }) {}
+            return cast(rval, manager);
+        }) {}
 
         T get(ResourceManager& manager) {
             return mClosure(manager);
@@ -331,7 +327,7 @@ namespace Impl {
         std::function<ValueHelper<T>()> mHolder;
     public:
         template <typename U>
-        Value(U val): mHolder([val] {
+        Value(U val) : mHolder([val] {
             return ValueHelper<T>(val);
         }) {}
 
@@ -340,35 +336,44 @@ namespace Impl {
         }
     };
 
-    class LaunchSizeHelper final : public CastTag {
-    private:
-        std::function<unsigned int*(ResourceManager&)> mClosure;
+    class Operator : Uncopyable {
+    protected:
+        ResourceManager& mManager;
+        Id mId;
+        DeviceMemoryInstance& getMemory(Id id) const;
     public:
-        LaunchSizeHelper(const DataPtr<unsigned int>& ptr, unsigned int off) {
-            auto rval = ptr.get();
-            mClosure = [rval,off](ResourceManager& manager) {
-                return cast(rval, manager) + off;
-            };
-        }
-
-        unsigned int* get(ResourceManager& manager) const {
-            return mClosure(manager);
-        }
+        explicit Operator(ResourceManager& manager);
+        virtual ~Operator() = default;
+        Id getId() const;
+        virtual void emit(Stream& stream) = 0;
     };
 
-    class LaunchSize final {
+    class FunctionOperator final : public Operator {
     private:
-        LaunchSizeHelper mHelper;
-        DataPtr<unsigned int> mRef;
+        std::function<void(Id, ResourceManager&, Stream&)> mClosure;
     public:
-        explicit LaunchSize(const DataPtr<unsigned int>& ptr, const unsigned int off = 0)
-            : mHelper(ptr, off), mRef(ptr) {}
+        FunctionOperator(ResourceManager& manager,
+            std::function<void(Id, ResourceManager&, Stream&)>&& closure);
+        void emit(Stream& stream) override;
+    };
 
-        auto get() const {
-            return mHelper;
-        }
+    class Memset final : public Operator {
+    private:
+        SpanHelper<unsigned char> mSpan;
+        int mMask;
+    public:
+        Memset(ResourceManager& manager, SpanHelper<unsigned char> span, int mask);
+        void emit(Stream& stream) override;
+    };
 
-        void download(unsigned int& dst, CommandBuffer& buffer) const;
+    class Memcpy final : public Operator {
+    private:
+        SpanHelper<unsigned char> mDst;
+        std::function<void(std::function<void(const void*)>)> mSrc;
+    public:
+        Memcpy(ResourceManager& manager, SpanHelper<unsigned char> dst,
+            std::function<void(std::function<void(const void*)>)>&& src);
+        void emit(Stream& stream) override;
     };
 
     class KernelLaunchDim final : public Operator {
@@ -377,7 +382,7 @@ namespace Impl {
     public:
         template <typename Func, typename... Args>
         KernelLaunchDim(ResourceManager& manager, Func func, const dim3 grid, const dim3 block,
-                        Args ... args): Operator(manager) {
+            Args ... args): Operator(manager) {
             mClosure = [=, &manager](Stream& stream) {
                 stream.launchDim(func, grid, block, cast(args, manager)...);
             };
@@ -403,15 +408,16 @@ namespace Impl {
 
 }
 
-using Impl::DataPtr;
-using Impl::Value;
 using Impl::LaunchSize;
+using Impl::Span;
+using Impl::Value;
 
 namespace Impl {
     struct TaskState final {
         bool isLaunched;
         Event event;
-        TaskState() :isLaunched(false) {}
+        TaskState() : isLaunched(false) {}
+        bool isDone() const;
     };
 }
 
@@ -469,7 +475,7 @@ private:
     Stream& mStream;
 public:
     Task(Stream& stream, std::unique_ptr<ResourceManager> manager,
-         std::queue<std::unique_ptr<Impl::Operator>>& commandQueue,
+        std::queue<std::unique_ptr<Impl::Operator>>& commandQueue,
         std::shared_ptr<Impl::TaskState> promise);
     bool update();
     bool isDone() const;
@@ -483,35 +489,38 @@ public:
     CommandBuffer();
 
     template <typename T>
-    MemoryRef<T> allocBuffer(const size_t size = 1, 
+    Span<T> allocBuffer(const size_t size = 1,
         MemoryReleaseFunction onRelease = {}) {
-        return MemoryRef<T>{
-            std::make_shared<Impl::DeviceMemory>(*mResourceManager, size * sizeof(T),
-                Impl::MemoryType::Global, std::move(onRelease))
+        return Span<T>{
+            std::make_shared<Impl::GlobalMemoryDesc>(*mResourceManager, size * sizeof(T),
+                std::move(onRelease))
         };
     }
 
     template <typename T>
-    MemoryRef<T> allocConstant(const size_t size = 1) {
-        return MemoryRef<T>{
-            std::make_shared<Impl::DeviceMemory>(*mResourceManager, size * sizeof(T),
-                                                 Impl::MemoryType::Constant)
+    Span<T> allocConstant(const size_t size = 1) {
+        return Span<T>{
+            std::make_shared<Impl::ConstantMemoryDesc>(*mResourceManager, size * sizeof(T))
         };
     }
 
-    void memset(Impl::DeviceMemoryRef& memory, int mask = 0);
-
-    void memcpy(Impl::DeviceMemoryRef& dst, std::function<void(std::function<void(const void*)>)>&& src);
-
     template <typename T>
-    void memcpy(MemoryRef<T>& dst, const DataViewer<T>& src) {
-        memcpy(dst, [src](auto call) {
-            call(src.begin());
-        });
+    Span<T> useAllocated(const MemorySpan<T>& ref) {
+        return Span<T>{
+            std::make_shared<Impl::AllocatedMemoryDesc>(*mResourceManager,
+                static_cast<MemorySpan<unsigned char>>(ref))
+        };
     }
 
+    void memset(const Span<unsigned char>& memory, int mask = 0);
+
+    void memcpy(const Span<unsigned char>& dst,
+        std::function<void(std::function<void(const void*)>)>&& src);
+
+    void memcpy(const Span<unsigned char>& dst, const MemorySpan<unsigned char>& src);
+
     template <typename T>
-    void memcpy(MemoryRef<T>& dst, const MemoryRef<T>& src) {
+    void memcpy(Span<T>& dst, const Span<T>& src) {
         const auto id = src.getID();
         memcpy(dst, [id, this](auto call) {
             void* res;
@@ -523,7 +532,7 @@ public:
     template <typename Func, typename... Args>
     void launchKernelDim(Func func, const dim3 grid, const dim3 block, Args ... args) {
         mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchDim>(*mResourceManager,
-                                                                      func, grid, block, Impl::castId(args)...));
+            func, grid, block, Impl::castId(args)...));
     }
 
     template <typename Func, typename... Args>
@@ -534,7 +543,7 @@ public:
     template <typename Func, typename... Args>
     void launchKernelLinear(Func func, const size_t size, Args ... args) {
         mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchLinear>(*mResourceManager,
-                                                                         func, size, Impl::castId(args)...));
+            func, size, Impl::castId(args)...));
     }
 
     void addCallback(const std::function<void()>& func);
@@ -588,7 +597,7 @@ private:
     bool mYield;
     size_t mIndex;
 public:
-    DispatchSystem(CommandBufferQueue& queue,size_t index, bool yield);
+    DispatchSystem(CommandBufferQueue& queue, size_t index, bool yield);
     size_t getId() const;
     void update();
 };

@@ -8,7 +8,6 @@
 #include <Base/CompileEnd.hpp>
 #include <Interaction/SoftwareRenderer.hpp>
 #include <Interaction/D3D11.hpp>
-#include "PostProcess/ToneMapping.hpp"
 
 using namespace std::chrono_literals;
 
@@ -16,7 +15,7 @@ class App final : Uncopyable {
 private:
     float mLight = 65.0f, mR = 20.0f;
     StaticMesh mBox, mModel;
-    DataViewer<vec4> mSpheres;
+    MemorySpan<vec4> mSpheres;
     std::unique_ptr<RenderingContext> mMc;
     std::unique_ptr<RenderingContext> mSc;
     std::shared_ptr<BuiltinCubeMap<RGBA>> mEnvMap;
@@ -82,7 +81,7 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
         ImGui::Render();
     }
 
-    Uniform getUniform(float, const vec2 mul) {
+    Uniform getUniform(float, const vec2 mul) const {
         static vec3 cp = {10.0f, 0.0f, 0.0f}, mid = {-100000.0f, 0.0f, 0.0f};
         const auto V = lookAt(cp, mid, {0.0f, 1.0f, 0.0f});
         auto M = scale(mat4{}, vec3(5.0f));
@@ -125,14 +124,16 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
         return static_cast<float>(t * 1e-9);
     }
 
+    static constexpr auto enableTriCache = true;
+
     auto addTask(SharedFrame frame, const uvec2 size, float* lum) {
         static auto last = getTime();
         const auto now = getTime();
         const auto converter = mCamera.toRasterPos(size);
         auto buffer = std::make_unique<CommandBuffer>();
         if (frame->size != size) {
-            mMc->triContext.reset(mModel.index.size(), 65536U, false, true);
-            mSc->triContext.reset(mBox.index.size(), 2048U, false, true);
+            mMc->triContext.reset(mModel.index.size(), 65536U, false, enableTriCache);
+            mSc->triContext.reset(mBox.index.size(), 65536U, false, enableTriCache);
         }
         frame->resize(size);
         {
@@ -157,7 +158,7 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
 
     void uploadSpheres() {
         vec4 sphere[] = {{0.0f, 3.0f, 10.0f, 5.0f}, {0.0f, 0.0f, 13.0f, 3.0f}};
-        mSpheres = DataViewer<vec4>(std::size(sphere));
+        mSpheres = MemorySpan<vec4>(std::size(sphere));
         checkError(cudaMemcpy(mSpheres.begin(), sphere, sizeof(sphere), cudaMemcpyHostToDevice));
     }
 
@@ -186,11 +187,11 @@ public:
             //mModel.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
             mModel.load("Res/dragon.obj", resLoader);
             mMc = std::make_unique<RenderingContext>();
-            mMc->triContext.reset(mModel.index.size(), 65536U, false, true);
+            mMc->triContext.reset(mModel.index.size(), 65536U, false, enableTriCache);
 
             mBox.load("Res/cube.obj", resLoader);
             mSc = std::make_unique<RenderingContext>();
-            mSc->triContext.reset(mBox.index.size(), 2048U, false, true);
+            mSc->triContext.reset(mBox.index.size(), 65536U, false, enableTriCache);
 
             mEnvMap = loadCubeMap([](size_t id) {
                 const char* table[] = {"right", "left", "top", "bottom", "back", "front"};
@@ -206,14 +207,18 @@ public:
         {
             Stream copyStream;
             window.bindBackBuffer(copyStream.get());
-            auto lum = DataViewer<float>(1);
+            auto lum = MemorySpan<float>(1);
 
             constexpr auto queueSize = 3;
 
             {
                 const auto size = window.size();
                 for (auto i = 0; i < queueSize; ++i) {
+                    const auto tb = Clock::now();
                     tasks.push(addTask(std::make_shared<FrameBuffer>(), size, lum.begin()));
+                    const auto te = Clock::now();
+                    const auto delta = (te - tb).count() * 1e-6f;
+                    printf("build time:%.3f ms\n", delta);
                 }
             }
 

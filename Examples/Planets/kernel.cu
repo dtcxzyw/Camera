@@ -17,8 +17,8 @@ CUDAINLINE void post(ivec2 NDC, const FrameBufferRef& uni, BuiltinRenderTargetRe
     out.set(NDC, color);
 }
 
-void kernel(const MemoryRef<vec4>& spheres,
-            const MemoryRef<Uniform>& uniform, FrameBuffer& fbo,
+void kernel(const Span<vec4>& spheres,
+            const Span<Uniform>& uniform, FrameBuffer& fbo,
             const Camera::RasterPosConverter converter, CommandBuffer& buffer) {
     //fbo.colorRT->clear(buffer, {});
     const auto frameBuffer = fbo.getData(buffer);

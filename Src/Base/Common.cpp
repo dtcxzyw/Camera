@@ -10,13 +10,13 @@ void debugBreak() {
 
 void checkError(const cudaError_t error) {
     if (error != cudaSuccess) {
+        //reset error
+        cudaGetLastError();
         puts(cudaGetErrorName(error));
         puts(cudaGetErrorString(error));
         debugBreak();
         throw std::runtime_error(cudaGetErrorString(error));
     }
-    //reset error
-    cudaGetLastError();
 }
 
 void checkError() {

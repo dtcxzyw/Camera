@@ -29,7 +29,7 @@ template<typename T>
 class Buffer2D final:Uncopyable {
 private:
     uvec2 mSize;
-    MemoryRef<T> mData;
+    Span<T> mData;
     CommandBuffer& mBuffer;
 public:
     explicit Buffer2D(CommandBuffer& buffer,const uvec2 size) :mSize(size),
