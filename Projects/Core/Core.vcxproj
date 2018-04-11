@@ -52,6 +52,8 @@
     <ClInclude Include="..\..\Include\Rasterizer\Vertex.hpp" />
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp" />
     <ClInclude Include="..\..\Include\Scene\ECS.hpp" />
+    <ClInclude Include="..\..\Include\Texture\Filter.hpp" />
+    <ClInclude Include="..\..\Include\Texture\TextureMapping.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Base\Common.cpp" />

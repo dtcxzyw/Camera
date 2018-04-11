@@ -193,6 +193,9 @@ public:
     const Judge& getJudge() const {
         return mJudge;
     }
+    void reset() {
+        if (mRef)mRef->reset();
+    }
     SharedCacheHolder<Type, Judge>& getRef() {
         return *mRef;
     }

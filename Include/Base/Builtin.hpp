@@ -144,14 +144,14 @@ public:
         return res;
     }
 
-    CUDAINLINE T getGrad(vec2 p, vec2 ddx, vec2 ddy) const {
+    CUDAINLINE T getGrad(const vec2 p, const vec2 ddx, const vec2 ddy) const {
         T res;
         tex2DGrad<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y,
                         *reinterpret_cast<float2*>(&ddx), *reinterpret_cast<float2*>(&ddy));
         return res;
     }
 
-    CUDAINLINE T getCubeMap(vec3 p) const {
+    CUDAINLINE T getCubeMap(const vec3 p) const {
         T res;
         texCubemap<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y, p.z);
         return res;
@@ -167,11 +167,6 @@ public:
 private:
     cudaTextureObject_t mTexture;
 };
-
-//The trick comes from https://learnopengl.com/#!PBR/IBL/Diffuse-irradiance.
-CUDAINLINE vec2 calcHDRUV(const vec3 p) {
-    return {atan(p.z, p.x) * 0.1591f + 0.5f, asin(p.y) * 0.3183f + 0.5f};
-}
 
 template <typename T>
 class BuiltinSampler final : Uncopyable {
@@ -309,7 +304,8 @@ private:
     cudaArray_t mArray;
     cudaTextureObject_t mTexture;
 public:
-    explicit BuiltinCubeMap(const size_t size) {
+    explicit BuiltinCubeMap(const size_t size, const unsigned int maxAnisotropy = 0,
+        const bool sRGB = false) {
         auto desc = cudaCreateChannelDesc<Type>();
         const cudaExtent extent{size, size, 6};
         checkError(cudaMalloc3DArray(&mArray, &desc, extent,cudaArrayCubemap));
@@ -318,6 +314,9 @@ public:
         RD.res.array.array = mArray;
         cudaTextureDesc TD;
         memset(&TD, 0, sizeof(TD));
+        TD.maxAnisotropy = maxAnisotropy;
+        TD.sRGB = sRGB;
+        TD.addressMode[0] = TD.addressMode[1] = TD.addressMode[2] = cudaAddressModeClamp;
         TD.filterMode = cudaFilterModeLinear;
         TD.normalizedCoords = 1;
         TD.readMode = cudaReadModeElementType;

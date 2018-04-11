@@ -28,6 +28,9 @@
     <Filter Include="Rasterizer">
       <UniqueIdentifier>{76de8573-926b-496c-8836-7485698092e8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Texture">
+      <UniqueIdentifier>{424be77f-8fd1-402c-bcf9-3f0f66f68010}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Include\Base\Common.hpp">
@@ -152,6 +155,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\Rasterizer\Vertex.hpp">
       <Filter>Rasterizer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\Filter.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\TextureMapping.hpp">
+      <Filter>Texture</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -40,6 +40,7 @@ template<typename Vert, typename Out, typename Uniform, VertShader<Vert, Out, Un
     const Span<Uniform>& uniform,
     CacheRef<MemorySpan<VertexInfo<Out>>, Judge> cache = {}) {
     if (cache && cache.vaild())return buffer.useAllocated(cache.getValue());
+    cache.reset();
     auto vertex = buffer.allocBuffer<VertexInfo<Out>>(vert.size(), 
         updateMemory(cache.getRef(), cache.getJudge()));
     buffer.launchKernelLinear(calcVertexKernel<Vert, Out, Uniform, Func>, vert.size(), vert,

@@ -17,6 +17,8 @@
 
 class CommandBuffer;
 class ResourceManager;
+class StreamInfo;
+
 using Id = uint32_t;
 
 class ResourceInstance : Uncopyable {
@@ -24,6 +26,7 @@ public:
     ResourceInstance() = default;
     virtual ~ResourceInstance() = default;
     virtual bool canBeRecycled() const;
+    virtual void bindStream(StreamInfo&);
     virtual void getRes(void*, cudaStream_t) = 0;
 };
 
@@ -115,12 +118,12 @@ namespace Impl {
     class GlobalMemory final : public DeviceMemoryInstance {
     private:
         UniqueMemory mMemory;
-        L1GlobalMemoryPool& mPool;
+        L1GlobalMemoryPool* mPool;
         MemoryReleaseFunction mOnRelease;
         bool canBeRecycled() const override;
     public:
-        GlobalMemory(ResourceManager& manager, size_t size,
-            MemoryReleaseFunction onRelease);
+        GlobalMemory(size_t size,MemoryReleaseFunction onRelease);
+        void bindStream(StreamInfo& info) override;
         ~GlobalMemory();
         void* get() override;
         void set(const void* src, size_t begin, size_t end, Stream& stream) override;
@@ -439,32 +442,19 @@ class ResourceManager final : Uncopyable {
 private:
     std::map<Id, std::pair<Id, std::unique_ptr<ResourceInstance>>> mResources;
     cudaStream_t mStream = nullptr;
-    Id mResourceCount = 0, mRegisteredResourceCount = 0, mOperatorCount = 0, mSyncPoint = 0;
-    std::map<size_t, std::unique_ptr<ResourceRecycler>> mRecyclers;
+    Id mResourceCount = 0, mOperatorCount = 0, mSyncPoint = 0;
     #ifdef CAMERA_RESOURCE_CHECK
     std::set<Id> mUnknownResource;
     #endif
 public:
-    ~ResourceManager();
     void registerResource(Id id, std::unique_ptr<ResourceInstance>&& instance);
     ResourceInstance& getResource(Id id);
-    void bindStream(cudaStream_t stream);
+    void bindStream(StreamInfo& stream);
     cudaStream_t getStream() const;
     void gc(Id time);
     Id allocResource();
     Id getOperatorPid();
     void syncPoint(Id time);
-
-    template <typename Recycler>
-    Recycler& getRecycler() {
-        const auto tid = typeid(Recycler).hash_code();
-        auto it = mRecyclers.find(tid);
-        if (it == mRecyclers.end()) {
-            std::unique_ptr<ResourceRecycler> ptr = std::make_unique<Recycler>();
-            it = mRecyclers.emplace(tid, std::move(ptr)).first;
-        }
-        return dynamic_cast<Recycler&>(*it->second);
-    }
 };
 
 class Task final : Uncopyable {
@@ -474,7 +464,7 @@ private:
     std::shared_ptr<Impl::TaskState> mPromise;
     Stream& mStream;
 public:
-    Task(Stream& stream, std::unique_ptr<ResourceManager> manager,
+    Task(StreamInfo& stream, std::unique_ptr<ResourceManager> manager,
         std::queue<std::unique_ptr<Impl::Operator>>& commandQueue,
         std::shared_ptr<Impl::TaskState> promise);
     bool update();
@@ -558,7 +548,7 @@ public:
     }
 
     ResourceManager& getResourceManager();
-    std::unique_ptr<Task> bindStream(Stream& stream, std::shared_ptr<Impl::TaskState> promise);
+    std::unique_ptr<Task> bindStream(StreamInfo& stream, std::shared_ptr<Impl::TaskState> promise);
 };
 
 class CommandBufferQueue final : Uncopyable {
@@ -575,22 +565,35 @@ public:
 
 using Clock = std::chrono::high_resolution_clock;
 
+class StreamInfo final : Uncopyable {
+private:
+    Stream mStream;
+    std::unique_ptr<Task> mTask;
+    std::vector<std::unique_ptr<Task>> mPool;
+    std::map<size_t, std::unique_ptr<ResourceRecycler>> mRecyclers;
+    Clock::time_point mLast;
+public:
+    StreamInfo();
+    ~StreamInfo();
+    template <typename Recycler>
+    Recycler& getRecycler() {
+        const auto tid = typeid(Recycler).hash_code();
+        auto it = mRecyclers.find(tid);
+        if (it == mRecyclers.end()) {
+            std::unique_ptr<ResourceRecycler> ptr = std::make_unique<Recycler>();
+            it = mRecyclers.emplace(tid, std::move(ptr)).first;
+        }
+        return dynamic_cast<Recycler&>(*it->second);
+    }
+    bool free() const;
+    void set(CommandBufferQueue::UnboundTask&& task);
+    Stream& getStream();
+    void update(Clock::time_point point);
+    bool operator<(const StreamInfo& rhs) const;
+};
+
 class DispatchSystem final : Uncopyable {
 private:
-    class StreamInfo final : Uncopyable {
-    private:
-        Stream mStream;
-        std::unique_ptr<Task> mTask;
-        std::vector<std::unique_ptr<Task>> mPool;
-        Clock::time_point mLast;
-    public:
-        StreamInfo();
-        bool free() const;
-        void set(CommandBufferQueue::UnboundTask&& task);
-        void update(Clock::time_point point);
-        bool operator<(const StreamInfo& rhs) const;
-    };
-
     StreamInfo& getStream();
     std::vector<StreamInfo> mStreams;
     CommandBufferQueue& mQueue;

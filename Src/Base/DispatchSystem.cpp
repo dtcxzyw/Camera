@@ -40,18 +40,21 @@ namespace Impl {
         return !mOnRelease;
     }
 
-    GlobalMemory::GlobalMemory(ResourceManager& manager, const size_t size,
+    GlobalMemory::GlobalMemory(const size_t size,
         MemoryReleaseFunction onRelease)
-        : DeviceMemoryInstance(size), mPool(manager.getRecycler<L1GlobalMemoryPool>()),
-        mOnRelease(std::move(onRelease)) {}
+        : DeviceMemoryInstance(size), mPool(nullptr), mOnRelease(std::move(onRelease)) {}
+
+    void GlobalMemory::bindStream(StreamInfo& info) {
+        mPool = &info.getRecycler<L1GlobalMemoryPool>();
+    }
 
     GlobalMemory::~GlobalMemory() {
         if (mOnRelease)mOnRelease(std::move(mMemory), mSize);
-        else mPool.free(std::move(mMemory), mSize);
+        else if(mPool)mPool->free(std::move(mMemory), mSize);
     }
 
     void* GlobalMemory::get() {
-        if (!mMemory)mMemory = mPool.alloc(mSize);
+        if (!mMemory)mMemory = mPool->alloc(mSize);
         return mMemory.get();
     }
 
@@ -173,7 +176,7 @@ namespace Impl {
         mOnRelease(std::move(onRelease)) {}
 
     GlobalMemoryDesc::~GlobalMemoryDesc() {
-        addInstance(std::make_unique<GlobalMemory>(mManager, mSize, std::move(mOnRelease)));
+        addInstance(std::make_unique<GlobalMemory>(mSize, std::move(mOnRelease)));
     }
 
     ConstantMemoryDesc::ConstantMemoryDesc(ResourceManager& manager, const size_t size)
@@ -192,13 +195,7 @@ namespace Impl {
 
 }
 
-ResourceManager::~ResourceManager() {
-    mResources.clear();
-    mRecyclers.clear();
-}
-
 void ResourceManager::registerResource(Id id, std::unique_ptr<ResourceInstance>&& instance) {
-    ++mRegisteredResourceCount;
     #ifdef CAMERA_RESOURCE_CHECK
     mUnknownResource.erase(id);
     #endif
@@ -249,21 +246,24 @@ ResourceManager& CommandBuffer::getResourceManager() {
     return *mResourceManager;
 }
 
-std::unique_ptr<Task> CommandBuffer::bindStream(Stream& stream,
+std::unique_ptr<Task> CommandBuffer::bindStream(StreamInfo& stream,
     std::shared_ptr<Impl::TaskState> promise) {
     return std::make_unique<Task>(stream, std::move(mResourceManager),
         mCommandQueue, std::move(promise));
 }
 
 ResourceInstance& ResourceManager::getResource(const Id id) {
-    if (id == 0)return *static_cast<ResourceInstance*>(nullptr);
     return *mResources.find(id)->second.second;
 }
 
-void ResourceManager::bindStream(cudaStream_t stream) {
-    if (mResourceCount != mRegisteredResourceCount)
+void ResourceManager::bindStream(StreamInfo& stream) {
+#ifdef CAMERA_RESOUREC_CHECK
+    if (mResourceCount != mResources.size())
         throw std::logic_error("Some resources haven't been registered yet.");
-    mStream = stream;
+#endif
+    for (auto&& res : mResources)
+        res.second.second->bindStream(stream);
+    mStream = stream.getStream().get();
 }
 
 cudaStream_t ResourceManager::getStream() const {
@@ -315,7 +315,7 @@ void CommandBuffer::memcpy(const Span<unsigned char>& dst,
     });
 }
 
-DispatchSystem::StreamInfo& DispatchSystem::getStream() {
+StreamInfo& DispatchSystem::getStream() {
     return *std::min_element(mStreams.begin(), mStreams.end());
 }
 
@@ -371,17 +371,25 @@ bool Future::finished() const {
     return mPromise->isLaunched && mPromise->isDone();
 }
 
-DispatchSystem::StreamInfo::StreamInfo(): mLast(Clock::now()) {}
+StreamInfo::StreamInfo(): mLast(Clock::now()) {}
+StreamInfo::~StreamInfo() {
+    mTask.reset();
+    mRecyclers.clear();
+}
 
-bool DispatchSystem::StreamInfo::free() const {
+bool StreamInfo::free() const {
     return mTask == nullptr;
 }
 
-void DispatchSystem::StreamInfo::set(CommandBufferQueue::UnboundTask&& task) {
-    mTask = task.second->bindStream(mStream, std::move(task.first));
+void StreamInfo::set(CommandBufferQueue::UnboundTask&& task) {
+    mTask = task.second->bindStream(*this, std::move(task.first));
 }
 
-void DispatchSystem::StreamInfo::update(const Clock::time_point point) {
+Stream& StreamInfo::getStream() {
+    return mStream;
+}
+
+void StreamInfo::update(const Clock::time_point point) {
     mPool.erase(std::remove_if(mPool.begin(), mPool.end(),
         [](auto&& task) {
             return task->isDone();
@@ -391,13 +399,15 @@ void DispatchSystem::StreamInfo::update(const Clock::time_point point) {
     mLast = point;
 }
 
-bool DispatchSystem::StreamInfo::operator<(const StreamInfo& rhs) const {
+bool StreamInfo::operator<(const StreamInfo& rhs) const {
     return mLast < rhs.mLast;
 }
 
 bool ResourceInstance::canBeRecycled() const {
     return false;
 }
+
+void ResourceInstance::bindStream(StreamInfo&) {}
 
 void CommandBufferQueue::submit(std::shared_ptr<Impl::TaskState> promise,
     std::unique_ptr<CommandBuffer> buffer) {
@@ -419,12 +429,12 @@ void CommandBufferQueue::clear() {
     mQueue.swap(empty);
 }
 
-Task::Task(Stream& stream, std::unique_ptr<ResourceManager> manager,
+Task::Task(StreamInfo& stream, std::unique_ptr<ResourceManager> manager,
     std::queue<std::unique_ptr<Impl::Operator>>& commandQueue,
     std::shared_ptr<Impl::TaskState> promise): mResourceManager(std::move(manager)),
-    mPromise(std::move(promise)), mStream(stream) {
+    mPromise(std::move(promise)), mStream(stream.getStream()) {
     mCommandQueue.swap(commandQueue);
-    mResourceManager->bindStream(mStream.get());
+    mResourceManager->bindStream(stream);
 }
 
 bool Task::update() {

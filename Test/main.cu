@@ -144,7 +144,7 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
                 mSc->vertCounter.count();
             }
             mOld = uniform;
-            auto uni = buffer->allocConstant<Uniform>();
+            const auto uni = buffer->allocConstant<Uniform>();
             buffer->memcpy(uni, [uniform](auto call) {
                 call(&uniform);
             });

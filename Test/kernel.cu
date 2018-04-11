@@ -31,7 +31,6 @@ CUDAINLINE void drawSky(unsigned int, ivec2 uv, float, const OI& out, const OI&,
     if (fbo.depth.get(uv) == 0xffffffff) {
         const vec3 p = out.get<Pos>();
         fbo.color.set(uv, uniform.sampler.getCubeMap(p));
-        //fbo.color.set(uv, uniform.sampler.get(calcHDRUV(p)));
     }
 }
 
@@ -57,7 +56,7 @@ CUDAINLINE void setModel(unsigned int, ivec2 uv, float z, const OI&, const OI&, 
     setDepth(fbo.depth.get(uv), z * maxdu);
 }
 
-CUDAINLINE void drawModel(unsigned int triID, ivec2 uv, float z, const OI& out, const OI&,
+CUDAINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, const OI&,
     const OI&, const Uniform& uniform, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
         const vec3 p = out.get<Pos>();
@@ -119,7 +118,7 @@ void renderMesh(const StaticMesh& model, const Span<Uniform>& uniform,
     auto vert = calcVertex<VI, OI, Uniform, VertFunc>(buffer, buffer.useAllocated(model.vert),
         uniform, context.get());
     const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(model.index.size(),
-        model.index.begin());
+        buffer.useAllocated(model.index));
     renderTriangles<decltype(index), OI, Uniform, FrameBufferRef, ClipFunc,
         emptyTriangleTileClipShader<Uniform>, VersionComparer, FragFunc...>(buffer, vert, index,
             uniform, frameBuffer, size, converter.near, converter.far, scissor, context.triContext, 
@@ -173,8 +172,8 @@ void kernel(const StaticMesh& model, RenderingContext& mc,
         converter.mul, scissor);
     renderMesh<VS, CS, drawSky>(skybox, uniform, frameBuffer, fbo.size, converter,
         CullFace::Front, sc, scissor, buffer);
-    auto puni = buffer.allocConstant<PostUniform>();
-    auto sum = buffer.allocBuffer<std::pair<float, unsigned int>>();
+    const auto puni = buffer.allocConstant<PostUniform>();
+    const auto sum = buffer.allocBuffer<std::pair<float, unsigned int>>();
     buffer.memset(sum);
     const auto depthBufferRef = depth.toBuffer();
     const auto fboData = buffer.makeLazyConstructor<FrameBufferRef>(fbo.data, depthBufferRef);
