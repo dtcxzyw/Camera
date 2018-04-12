@@ -8,13 +8,18 @@ namespace Impl {
 
     class L1GlobalMemoryPool final : public ResourceRecycler {
     private:
-        std::vector<UniqueMemory> mPool[41];
+        std::vector<std::pair<uint64_t, UniqueMemory>> mPool[41];
     public:
+        void gc(uint64_t id) override {
+            for (auto&& p : mPool)
+                p.erase(std::remove_if(p.begin(), p.end(),
+                    [id](auto&& mem) {return mem.first == id; }), p.end());
+        }
         UniqueMemory alloc(const size_t size) {
             if (size == 0)return nullptr;
             const auto level = calcSizeLevel(size);
             if (mPool[level].empty())return allocGlobalMemory(size);
-            auto ptr = std::move(mPool[level].back());
+            auto ptr = std::move(mPool[level].back().second);
             mPool[level].pop_back();
             return ptr;
         }
@@ -22,7 +27,7 @@ namespace Impl {
         void free(UniqueMemory ptr, const size_t size) {
             if (size == 0)return;
             const auto level = calcSizeLevel(size);
-            mPool[level].emplace_back(std::move(ptr));
+            mPool[level].emplace_back(mCurrent, std::move(ptr));
         }
     };
 
@@ -371,7 +376,13 @@ bool Future::finished() const {
     return mPromise->isLaunched && mPromise->isDone();
 }
 
-StreamInfo::StreamInfo(): mLast(Clock::now()) {}
+ResourceRecycler::ResourceRecycler() :mCurrent(0) {}
+
+void ResourceRecycler::gc(uint64_t) {}
+void ResourceRecycler::setCurrent(const uint64_t id) { mCurrent = id; }
+
+StreamInfo::StreamInfo(): mLast(Clock::now()), mTaskCount(0) {}
+
 StreamInfo::~StreamInfo() {
     mTask.reset();
     mRecyclers.clear();
@@ -382,6 +393,9 @@ bool StreamInfo::free() const {
 }
 
 void StreamInfo::set(CommandBufferQueue::UnboundTask&& task) {
+    ++mTaskCount;
+    for (auto&& recycler : mRecyclers)
+        recycler.second->setCurrent(mTaskCount);
     mTask = task.second->bindStream(*this, std::move(task.first));
 }
 
@@ -391,11 +405,16 @@ Stream& StreamInfo::getStream() {
 
 void StreamInfo::update(const Clock::time_point point) {
     mPool.erase(std::remove_if(mPool.begin(), mPool.end(),
-        [](auto&& task) {
-            return task->isDone();
+        [this](auto&& task) {
+            if(task.second->isDone()) {
+                for (auto&& recycler : mRecyclers)
+                    recycler.second->gc(task.first);
+                return true;
+            }
+            return false;
         }), mPool.end());
     if (mTask && mTask->update())
-        mPool.emplace_back(std::move(mTask));
+        mPool.emplace_back(mTaskCount, std::move(mTask));
     mLast = point;
 }
 

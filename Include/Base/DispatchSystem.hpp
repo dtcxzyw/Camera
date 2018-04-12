@@ -434,8 +434,13 @@ public:
 };
 
 class ResourceRecycler : Uncopyable {
+protected:
+    uint64_t mCurrent;
 public:
+    ResourceRecycler();
     virtual ~ResourceRecycler() = default;
+    virtual void gc(uint64_t id);
+    void setCurrent(uint64_t id);
 };
 
 class ResourceManager final : Uncopyable {
@@ -569,9 +574,10 @@ class StreamInfo final : Uncopyable {
 private:
     Stream mStream;
     std::unique_ptr<Task> mTask;
-    std::vector<std::unique_ptr<Task>> mPool;
+    std::vector<std::pair<uint64_t,std::unique_ptr<Task>>> mPool;
     std::map<size_t, std::unique_ptr<ResourceRecycler>> mRecyclers;
     Clock::time_point mLast;
+    uint64_t mTaskCount;
 public:
     StreamInfo();
     ~StreamInfo();
@@ -581,6 +587,7 @@ public:
         auto it = mRecyclers.find(tid);
         if (it == mRecyclers.end()) {
             std::unique_ptr<ResourceRecycler> ptr = std::make_unique<Recycler>();
+            ptr->setCurrent(mTaskCount);
             it = mRecyclers.emplace(tid, std::move(ptr)).first;
         }
         return dynamic_cast<Recycler&>(*it->second);
