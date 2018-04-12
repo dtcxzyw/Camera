@@ -1,9 +1,9 @@
 #include <IO/Image.hpp>
 
-#include <Base/CompileBegin.hpp>
+#include <Core/CompileBegin.hpp>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
-#include <Base/CompileEnd.hpp>
+#include <Core/CompileEnd.hpp>
 
 struct ImageDeleter final {
     void operator()(float* ptr) const {

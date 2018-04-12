@@ -1,5 +1,5 @@
-#include <Base/Common.hpp>
-#include <Base/Memory.hpp>
+#include <Core/Common.hpp>
+#include <Core/Memory.hpp>
 #include <vector>
 #include <algorithm>
 #ifdef CAMERA_MEMORY_TRACE

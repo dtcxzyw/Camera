@@ -1,6 +1,6 @@
 #pragma once
-#include <Base/Common.hpp>
-#include <Base/Pipeline.hpp>
+#include <Core/Common.hpp>
+#include <Core/Pipeline.hpp>
 #include <map>
 #include <queue>
 #include <type_traits>
@@ -11,9 +11,9 @@
 #ifdef CAMERA_RESOURCE_CHECK
 #include <set>
 #endif
-#include <Base/CompileBegin.hpp>
+#include <Core/CompileBegin.hpp>
 #include <concurrentqueue.h>
-#include <Base/CompileEnd.hpp>
+#include <Core/CompileEnd.hpp>
 
 class CommandBuffer;
 class ResourceManager;

@@ -1,6 +1,6 @@
 #pragma once
 #include <Rasterizer/Shared.hpp>
-#include <Base/DispatchSystem.hpp>
+#include <Core/DispatchSystem.hpp>
 #include <Rasterizer/Tile.hpp>
 
 template <typename Uniform>

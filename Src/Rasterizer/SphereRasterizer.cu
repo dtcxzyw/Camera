@@ -1,7 +1,7 @@
 #include <Rasterizer/SphereRasterizer.hpp>
-#include <Base/CompileBegin.hpp>
+#include <Core/CompileBegin.hpp>
 #include <device_atomic_functions.h>
-#include <Base/CompileEnd.hpp>
+#include <Core/CompileEnd.hpp>
 
 CUDAINLINE bool cmpMin(const float a, const float b) {
     return a < b;

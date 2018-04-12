@@ -1,5 +1,5 @@
 #pragma once
-#include <Base/Pipeline.hpp>
+#include <Core/Pipeline.hpp>
 #include <stdexcept>
 
 namespace Impl {

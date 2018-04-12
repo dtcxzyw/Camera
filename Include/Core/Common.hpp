@@ -1,9 +1,9 @@
 #pragma once
-#include <Base/Config.hpp>
-#include <Base/CompileBegin.hpp>
+#include <Core/Config.hpp>
+#include <Core/CompileBegin.hpp>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
-#include <Base/CompileEnd.hpp>
+#include <Core/CompileEnd.hpp>
 
 #define CUDA __device__
 #define CUDAINLINE __forceinline__ CUDA

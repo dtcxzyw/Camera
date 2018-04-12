@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Base">
-      <UniqueIdentifier>{36a4e775-4fae-4fdd-8e21-586cebe3142a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Interaction">
       <UniqueIdentifier>{33bcbec0-5389-4d17-aedf-be73fcf99958}</UniqueIdentifier>
     </Filter>
@@ -31,20 +28,11 @@
     <Filter Include="Texture">
       <UniqueIdentifier>{424be77f-8fd1-402c-bcf9-3f0f66f68010}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core">
+      <UniqueIdentifier>{36a4e775-4fae-4fdd-8e21-586cebe3142a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Include\Base\Common.hpp">
-      <Filter>Base</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Base\DataSet.hpp">
-      <Filter>Base</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Base\Pipeline.hpp">
-      <Filter>Base</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Base\Builtin.hpp">
-      <Filter>Base</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp">
       <Filter>Interaction</Filter>
     </ClInclude>
@@ -66,14 +54,8 @@
     <ClInclude Include="..\..\Include\PBR\DataDrivenBRDF.hpp">
       <Filter>PBR</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Base\Constant.hpp">
-      <Filter>Base</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\PBR\PhotorealisticRendering.hpp">
       <Filter>PBR</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Base\DispatchSystem.hpp">
-      <Filter>Base</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\PBR\Dist.hpp">
       <Filter>PBR</Filter>
@@ -81,32 +63,11 @@
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp">
       <Filter>Sampler</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Base\Memory.hpp">
-      <Filter>Base</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Base\Math.hpp">
-      <Filter>Base</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Base\Queue.hpp">
-      <Filter>Base</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Base\CompileBegin.hpp">
-      <Filter>Base</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Base\CompileEnd.hpp">
-      <Filter>Base</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Scene\ECS.hpp">
       <Filter>Scene</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Base\Environment.hpp">
-      <Filter>Base</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Interaction\SwapChain.hpp">
       <Filter>Interaction</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Base\Config.hpp">
-      <Filter>Base</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Interaction\Counter.hpp">
       <Filter>Interaction</Filter>
@@ -116,9 +77,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\Interaction\D3D11.hpp">
       <Filter>Interaction</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Base\Cache.hpp">
-      <Filter>Base</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Rasterizer\Buffer2D.hpp">
       <Filter>Rasterizer</Filter>
@@ -162,28 +120,55 @@
     <ClInclude Include="..\..\Include\Texture\TextureMapping.hpp">
       <Filter>Texture</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Core\Builtin.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\Cache.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\Common.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\CompileBegin.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\CompileEnd.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\Config.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\Constant.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\DataSet.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\DispatchSystem.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\Environment.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\Math.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\Memory.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\Pipeline.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\Queue.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Src\Base\Common.cpp">
-      <Filter>Base</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\IO\Model.cpp">
       <Filter>IO</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Base\DispatchSystem.cpp">
-      <Filter>Base</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Base\Memory.cpp">
-      <Filter>Base</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Base\Pipeline.cpp">
-      <Filter>Base</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Scene\ECS.cpp">
       <Filter>Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Base\Environment.cpp">
-      <Filter>Base</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Interaction\OpenGL.cpp">
       <Filter>Interaction</Filter>
@@ -194,6 +179,21 @@
     <ClCompile Include="..\..\Src\Interaction\Counter.cpp">
       <Filter>Interaction</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Src\Core\Common.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Core\DispatchSystem.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Core\Environment.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Core\Memory.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Core\Pipeline.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\IO\Image.cu">
@@ -201,9 +201,6 @@
     </CudaCompile>
     <CudaCompile Include="..\..\Src\PBR\DataDrivenBRDF.cu">
       <Filter>PBR</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\Src\Base\Constant.cu">
-      <Filter>Base</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\Src\Interaction\SoftwareRenderer.cu">
       <Filter>Interaction</Filter>
@@ -213,6 +210,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\Src\Rasterizer\SphereRasterizer.cu">
       <Filter>Rasterizer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Core\Constant.cu">
+      <Filter>Core</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

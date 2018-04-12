@@ -1,5 +1,5 @@
 #pragma once
-#include <Base/DispatchSystem.hpp>
+#include <Core/DispatchSystem.hpp>
 
 namespace Impl {
     template<typename T>

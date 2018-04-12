@@ -1,14 +1,14 @@
-#include <Base/Config.hpp>
+#include <Core/Config.hpp>
 #ifdef CAMERA_OPENGL_SUPPORT
-#include <Base/CompileBegin.hpp>
+#include <Core/CompileBegin.hpp>
 #include <GL/glew.h>
-#include <Base/CompileEnd.hpp>
+#include <Core/CompileEnd.hpp>
 #include <Interaction/OpenGL.hpp>
-#include <Base/CompileBegin.hpp>
+#include <Core/CompileBegin.hpp>
 #include <GLFW/glfw3.h>
 #include <cuda_gl_interop.h>
 #include <IMGUI/imgui.h>
-#include <Base/CompileEnd.hpp>
+#include <Core/CompileEnd.hpp>
 #include <stdexcept>
 #include <iostream>
 

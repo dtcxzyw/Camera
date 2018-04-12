@@ -1,8 +1,8 @@
 #pragma once
-#include <Base/Common.hpp>
-#include <Base/CompileBegin.hpp>
+#include <Core/Common.hpp>
+#include <Core/CompileBegin.hpp>
 #include <device_functions.h>
-#include <Base/CompileEnd.hpp>
+#include <Core/CompileEnd.hpp>
 
 CUDAINLINE vec3 calcHalf(const vec3 in, const vec3 out) {
     return normalize(in + out);

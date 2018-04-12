@@ -1,8 +1,8 @@
 #pragma once
-#include <Base/Common.hpp>
-#include  <Base/Math.hpp>
-#include <Base/DispatchSystem.hpp>
-#include <Base/Cache.hpp>
+#include <Core/Common.hpp>
+#include  <Core/Math.hpp>
+#include <Core/DispatchSystem.hpp>
+#include <Core/Cache.hpp>
 
 template<typename Vert, typename Out, typename Uniform>
 using VertShader = void(*)(Vert in, const Uniform& uniform, vec3& pos, Out& out);

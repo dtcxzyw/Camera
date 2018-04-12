@@ -1,6 +1,6 @@
 #pragma once
-#include <Base/Common.hpp>
-#include <Base/Math.hpp>
+#include <Core/Common.hpp>
+#include <Core/Math.hpp>
 
 CUDAINLINE RGB reinhard(RGB color, const float exposure) {
     color = 1.0f-exp(-color*exposure);

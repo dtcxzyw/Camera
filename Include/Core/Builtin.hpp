@@ -1,15 +1,15 @@
 #pragma once
-#include <Base/Math.hpp>
-#include <Base/Common.hpp>
+#include <Core/Math.hpp>
+#include <Core/Common.hpp>
 
-#include <Base/CompileBegin.hpp>
+#include <Core/CompileBegin.hpp>
 #include <cuda_runtime.h>
 #include <cuda_texture_types.h>
 #include <texture_indirect_functions.h>
 #include <cuda_surface_types.h>
 #include <surface_indirect_functions.h>
-#include <Base/CompileEnd.hpp>
-#include <Base/DispatchSystem.hpp>
+#include <Core/CompileEnd.hpp>
+#include <Core/DispatchSystem.hpp>
 
 template <typename T>
 struct Rename final {

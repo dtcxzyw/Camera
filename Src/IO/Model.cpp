@@ -1,9 +1,9 @@
 #include <IO/Model.hpp>
-#include <Base/CompileBegin.hpp>
+#include <Core/CompileBegin.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-#include <Base/CompileEnd.hpp>
+#include <Core/CompileEnd.hpp>
 #include <vector>
 #include <fstream>
 #include <filesystem>

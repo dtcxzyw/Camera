@@ -1,6 +1,6 @@
 #pragma once
-#include <Base/Common.hpp>
-#include <Base/Math.hpp>
+#include <Core/Common.hpp>
+#include <Core/Math.hpp>
 
 using Filter1D = float(*)(float);
 

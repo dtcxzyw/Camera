@@ -1,8 +1,8 @@
 #pragma once
-#include <Base/DispatchSystem.hpp>
-#include <Base/CompileBegin.hpp>
+#include <Core/DispatchSystem.hpp>
+#include <Core/CompileBegin.hpp>
 #include <device_atomic_functions.h>
-#include <Base/CompileEnd.hpp>
+#include <Core/CompileEnd.hpp>
 
 template<typename T>
 class QueueRef final {

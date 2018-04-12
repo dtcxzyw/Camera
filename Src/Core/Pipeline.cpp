@@ -1,5 +1,5 @@
-#include <Base/Pipeline.hpp>
-#include <Base/Environment.hpp>
+#include <Core/Pipeline.hpp>
+#include <Core/Environment.hpp>
 
 Stream::Stream() {
     checkError(cudaStreamCreateWithFlags(&mStream,cudaStreamNonBlocking));

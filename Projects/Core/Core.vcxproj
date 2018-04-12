@@ -11,20 +11,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Include\Base\Builtin.hpp" />
-    <ClInclude Include="..\..\Include\Base\Common.hpp" />
-    <ClInclude Include="..\..\Include\Base\CompileBegin.hpp" />
-    <ClInclude Include="..\..\Include\Base\CompileEnd.hpp" />
-    <ClInclude Include="..\..\Include\Base\Cache.hpp" />
-    <ClInclude Include="..\..\Include\Base\Config.hpp" />
-    <ClInclude Include="..\..\Include\Base\Constant.hpp" />
-    <ClInclude Include="..\..\Include\Base\DataSet.hpp" />
-    <ClInclude Include="..\..\Include\Base\DispatchSystem.hpp" />
-    <ClInclude Include="..\..\Include\Base\Environment.hpp" />
-    <ClInclude Include="..\..\Include\Base\Memory.hpp" />
-    <ClInclude Include="..\..\Include\Base\Pipeline.hpp" />
-    <ClInclude Include="..\..\Include\Base\Math.hpp" />
-    <ClInclude Include="..\..\Include\Base\Queue.hpp" />
+    <ClInclude Include="..\..\Include\Core\Builtin.hpp" />
+    <ClInclude Include="..\..\Include\Core\Cache.hpp" />
+    <ClInclude Include="..\..\Include\Core\Common.hpp" />
+    <ClInclude Include="..\..\Include\Core\CompileBegin.hpp" />
+    <ClInclude Include="..\..\Include\Core\CompileEnd.hpp" />
+    <ClInclude Include="..\..\Include\Core\Config.hpp" />
+    <ClInclude Include="..\..\Include\Core\Constant.hpp" />
+    <ClInclude Include="..\..\Include\Core\DataSet.hpp" />
+    <ClInclude Include="..\..\Include\Core\DispatchSystem.hpp" />
+    <ClInclude Include="..\..\Include\Core\Environment.hpp" />
+    <ClInclude Include="..\..\Include\Core\Math.hpp" />
+    <ClInclude Include="..\..\Include\Core\Memory.hpp" />
+    <ClInclude Include="..\..\Include\Core\Pipeline.hpp" />
+    <ClInclude Include="..\..\Include\Core\Queue.hpp" />
     <ClInclude Include="..\..\Include\Interaction\Counter.hpp" />
     <ClInclude Include="..\..\Include\Interaction\D3D11.hpp" />
     <ClInclude Include="..\..\Include\Interaction\SoftwareRenderer.hpp" />
@@ -56,21 +56,21 @@
     <ClInclude Include="..\..\Include\Texture\TextureMapping.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Src\Base\Common.cpp" />
-    <ClCompile Include="..\..\Src\Base\DispatchSystem.cpp" />
-    <ClCompile Include="..\..\Src\Base\Environment.cpp" />
-    <ClCompile Include="..\..\Src\Base\Memory.cpp" />
-    <ClCompile Include="..\..\Src\Base\Pipeline.cpp" />
+    <ClCompile Include="..\..\Src\Core\Common.cpp" />
+    <ClCompile Include="..\..\Src\Core\DispatchSystem.cpp" />
+    <ClCompile Include="..\..\Src\Core\Environment.cpp" />
+    <ClCompile Include="..\..\Src\Core\Memory.cpp" />
+    <ClCompile Include="..\..\Src\Core\Pipeline.cpp" />
     <ClCompile Include="..\..\Src\Interaction\Counter.cpp" />
     <ClCompile Include="..\..\Src\IO\Model.cpp" />
     <ClCompile Include="..\..\Src\Scene\ECS.cpp" />
-    <CudaCompile Include="..\..\Src\Base\Constant.cu" />
     <ClCompile Include="..\..\Src\Interaction\D3D11.cpp">
       <FileType>Document</FileType>
     </ClCompile>
     <ClCompile Include="..\..\Src\Interaction\OpenGL.cpp">
       <FileType>Document</FileType>
     </ClCompile>
+    <CudaCompile Include="..\..\Src\Core\Constant.cu" />
     <CudaCompile Include="..\..\Src\Interaction\SoftwareRenderer.cu" />
     <CudaCompile Include="..\..\Src\PBR\DataDrivenBRDF.cu" />
     <CudaCompile Include="..\..\Src\Rasterizer\LineRasterizer.cu" />

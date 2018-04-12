@@ -1,12 +1,12 @@
-#include <Base/Config.hpp>
+#include <Core/Config.hpp>
 #ifdef CAMERA_D3D11_SUPPORT
 #include <Interaction/D3D11.hpp>
-#include <Base/CompileBegin.hpp>
+#include <Core/CompileBegin.hpp>
 #define NOMINMAX
 #include <d3d11.h>
 #include <cuda_d3d11_interop.h>
 #include <IMGUI/imgui.h>
-#include <Base/CompileEnd.hpp>
+#include <Core/CompileEnd.hpp>
 #include <stdexcept>
 
 static LRESULT setEvent(HWND hwnd, const UINT msg, const WPARAM wParam, 

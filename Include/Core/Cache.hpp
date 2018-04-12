@@ -1,18 +1,18 @@
 #pragma once
-#include <Base/DispatchSystem.hpp>
+#include <Core/DispatchSystem.hpp>
 #include <chrono>
 #include <cstring>
 
-struct JudgeBase {};
+struct JudgeCore {};
 
-class EmptyJudge final :public JudgeBase {
+class EmptyJudge final :public JudgeCore {
 public:
     bool judge(const EmptyJudge&) const {
         return false;
     }
 };
 
-class VersionComparer final:public JudgeBase {
+class VersionComparer final:public JudgeCore {
 private:
     Id mCount;
 public:
@@ -37,7 +37,7 @@ public:
 };
 
 template<typename Type>
-class EqualComparer final :public JudgeBase {
+class EqualComparer final :public JudgeCore {
 private:
     Type mValue;
 public:
@@ -57,7 +57,7 @@ auto makeEqualComparer(const Type& val) {
 }
 
 template<typename Type>
-class BinaryComparer final :public JudgeBase {
+class BinaryComparer final :public JudgeCore {
 private:
     unsigned char mData[sizeof(Type)];
 public:
@@ -73,7 +73,7 @@ public:
     }
 };
 
-class TimeOutJudge final :public JudgeBase {
+class TimeOutJudge final :public JudgeCore {
 private:
     Clock::time_point mTimeStamp;
     Clock::duration mTimeOut;
@@ -87,7 +87,7 @@ public:
 };
 
 template<typename Judge>
-class Not final :public JudgeBase {
+class Not final :public JudgeCore {
 private:
     Judge mJudge;
 public:
@@ -98,13 +98,13 @@ public:
     }
 };
 
-template<typename Judge, typename = std::enable_if_t<std::is_base_of_v<JudgeBase, Judge>>>
+template<typename Judge, typename = std::enable_if_t<std::is_base_of_v<JudgeCore, Judge>>>
 auto operator!(const Judge& val) {
     return Not<Judge>(val);
 }
 
 template<typename L,typename R>
-class And final :public JudgeBase {
+class And final :public JudgeCore {
 private:
     L mLhs;
     R mRhs;
@@ -117,13 +117,13 @@ public:
 };
 
 template<typename L, typename R, typename = 
-    std::enable_if_t<std::is_base_of_v<JudgeBase, L>&&std::is_base_of_v<JudgeBase, R>>>
+    std::enable_if_t<std::is_base_of_v<JudgeCore, L>&&std::is_base_of_v<JudgeCore, R>>>
 auto operator&&(const L& lhs, const R& rhs) {
     return And<L, R>(lhs, rhs);
 }
 
 template<typename L, typename R>
-class Or final :public JudgeBase {
+class Or final :public JudgeCore {
 private:
     L mLhs;
     R mRhs;
@@ -136,7 +136,7 @@ public:
 };
 
 template<typename L, typename R, typename =
-    std::enable_if_t<std::is_base_of_v<JudgeBase, L>&&std::is_base_of_v<JudgeBase, R>>>
+    std::enable_if_t<std::is_base_of_v<JudgeCore, L>&&std::is_base_of_v<JudgeCore, R>>>
 auto operator||(const L& lhs, const R& rhs) {
     return Or<L, R>(lhs, rhs);
 }

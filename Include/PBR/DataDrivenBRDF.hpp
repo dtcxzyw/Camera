@@ -1,8 +1,8 @@
 #pragma once
-#include  <Base/Math.hpp>
-#include <Base/Common.hpp>
-#include <Base/Memory.hpp>
-#include <Base/Pipeline.hpp>
+#include  <Core/Math.hpp>
+#include <Core/Common.hpp>
+#include <Core/Memory.hpp>
+#include <Core/Pipeline.hpp>
 #include <string>
 
 /*

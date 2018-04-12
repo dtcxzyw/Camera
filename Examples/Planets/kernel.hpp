@@ -1,7 +1,7 @@
 #pragma once
 #include <Interaction/D3D11.hpp>
-#include <Base/DispatchSystem.hpp>
-#include <Base/Builtin.hpp>
+#include <Core/DispatchSystem.hpp>
+#include <Core/Builtin.hpp>
 #include <PBR/PhotorealisticRendering.hpp>
 
 struct FrameBufferRef final {

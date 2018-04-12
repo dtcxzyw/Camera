@@ -1,6 +1,6 @@
 #pragma once
-#include <Base/DispatchSystem.hpp>
-#include <Base/Math.hpp>
+#include <Core/DispatchSystem.hpp>
+#include <Core/Math.hpp>
 
 template<typename Uniform, typename FrameBuffer>
 using FullScreenShader = void(*)(ivec2 NDC, const Uniform& uniform, FrameBuffer frameBuffer);

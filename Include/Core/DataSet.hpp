@@ -1,5 +1,5 @@
 #pragma once
-#include <Base/Common.hpp>
+#include <Core/Common.hpp>
 
 template<typename Enum, Enum Name, typename T>
 struct UnitInfo {

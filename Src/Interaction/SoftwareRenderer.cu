@@ -1,10 +1,10 @@
-#include <Base/Config.hpp>
+#include <Core/Config.hpp>
 #include <Interaction/SoftwareRenderer.hpp>
-#include <Base/CompileBegin.hpp>
+#include <Core/CompileBegin.hpp>
 #include <IMGUI/imgui.h>
-#include <Base/CompileEnd.hpp>
+#include <Core/CompileEnd.hpp>
 #include <Rasterizer/TriangleRasterizer.hpp>
-#include <Base/DataSet.hpp>
+#include <Core/DataSet.hpp>
 #include <Rasterizer/IndexDescriptor.hpp>
 #include <Rasterizer/Buffer2D.hpp>
 
@@ -168,21 +168,21 @@ void SoftwareRenderer::render(CommandBuffer& buffer, BuiltinRenderTarget<RGBA8>&
         call(buf.data());
     });
     const auto vert = calcVertex<VertInfo, VertOut, Empty, vertShader>(buffer, vbo, {});
-    const auto vertBase = Span<VertexInfo<VertOut>>{vert};
+    const auto vertCore = Span<VertexInfo<VertOut>>{vert};
 
     auto ibo = buffer.allocBuffer<uvec3>(idxData.size());
     buffer.memcpy(ibo, [buf = std::move(idxData)](auto&& call) {
         call(buf.data());
     });
-    const auto iboBase = Span<uvec3>{ibo};
+    const auto iboCore = Span<uvec3>{ibo};
 
     #ifdef CAMERA_SOFTWARE_RENDERER_COUNT_DRAWCALL
     printf("draw call %u\n", static_cast<unsigned int>(drawCmd.size()));
     #endif
 
     for(auto&& cmd:drawCmd) {
-        const auto vertPtr = vertBase.subSpan(cmd.vertOffset);
-        const auto idxPtr = iboBase.subSpan(cmd.idxOffset);
+        const auto vertPtr = vertCore.subSpan(cmd.vertOffset);
+        const auto idxPtr = iboCore.subSpan(cmd.idxOffset);
         const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(cmd.idxCount, idxPtr);
         TriangleRenderingContext<VertOut> context;
         context.reset(cmd.idxCount, 65536U, false, false);

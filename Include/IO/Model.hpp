@@ -1,7 +1,7 @@
 #pragma once
-#include  <Base/Math.hpp>
-#include <Base/Memory.hpp>
-#include <Base/Pipeline.hpp>
+#include  <Core/Math.hpp>
+#include <Core/Memory.hpp>
+#include <Core/Pipeline.hpp>
 #include <string>
 
 struct StaticMesh final {

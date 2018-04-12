@@ -1,5 +1,5 @@
-#include <Base/Math.hpp>
-#include <Base/Constant.hpp>
+#include <Core/Math.hpp>
+#include <Core/Constant.hpp>
 #include <algorithm>
 #include <stdexcept>
 #include <cstring>

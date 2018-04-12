@@ -1,7 +1,7 @@
 #pragma once
-#include <Base/DispatchSystem.hpp>
-#include <Base/DataSet.hpp>
-#include <Base/Builtin.hpp>
+#include <Core/DispatchSystem.hpp>
+#include <Core/DataSet.hpp>
+#include <Core/Builtin.hpp>
 #include <Rasterizer/Buffer2D.hpp>
 #include <IO/Model.hpp>
 #include <PBR/BRDF.hpp>

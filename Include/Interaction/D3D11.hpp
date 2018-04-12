@@ -1,8 +1,8 @@
 #pragma once
-#include <Base/Config.hpp>
+#include <Core/Config.hpp>
 #ifdef CAMERA_D3D11_SUPPORT
-#include <Base/Common.hpp>
-#include <Base/Math.hpp>
+#include <Core/Common.hpp>
+#include <Core/Math.hpp>
 #include <Interaction/Counter.hpp>
 
 class HWND__;

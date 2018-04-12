@@ -1,5 +1,5 @@
 #pragma once
-#include <Base/Queue.hpp>
+#include <Core/Queue.hpp>
 
 template<typename Vert, typename Uniform>
 using GeometryShader = void(*)(Vert* in,const Uniform& uniform,QueueRef<Vert> queue);

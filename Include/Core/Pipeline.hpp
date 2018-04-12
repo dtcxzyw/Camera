@@ -1,7 +1,7 @@
 #pragma once
-#include <Base/Common.hpp>
-#include <Base/Memory.hpp>
-#include <Base/Math.hpp>
+#include <Core/Common.hpp>
+#include <Core/Memory.hpp>
+#include <Core/Math.hpp>
 
 template<typename Func, typename... Args>
 CUDAINLINE void launchLinear(Func func,unsigned int block, unsigned int size, Args... args) {

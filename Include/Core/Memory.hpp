@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
-#include <Base/Common.hpp>
-#include <Base/Math.hpp>
+#include <Core/Common.hpp>
+#include <Core/Math.hpp>
 #include <stdexcept>
 
 inline size_t calcSizeLevel(const size_t size) {

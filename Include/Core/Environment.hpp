@@ -1,6 +1,6 @@
 #pragma once
-#include <Base/Common.hpp>
-#include <Base/DispatchSystem.hpp>
+#include <Core/Common.hpp>
+#include <Core/DispatchSystem.hpp>
 #include <vector>
 #include <thread>
 

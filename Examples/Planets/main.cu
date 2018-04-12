@@ -1,10 +1,10 @@
 #include "kernel.hpp"
 #include <thread>
-#include <Base/Environment.hpp>
+#include <Core/Environment.hpp>
 #include <Interaction/SwapChain.hpp>
-#include <Base/CompileBegin.hpp>
+#include <Core/CompileBegin.hpp>
 #include <IMGUI/imgui.h>
-#include <Base/CompileEnd.hpp>
+#include <Core/CompileEnd.hpp>
 #include <Interaction/SoftwareRenderer.hpp>
 
 using namespace std::chrono_literals;

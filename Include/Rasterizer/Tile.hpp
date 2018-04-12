@@ -1,9 +1,9 @@
 #pragma once
-#include <Base/DispatchSystem.hpp>
-#include <Base/DataSet.hpp>
-#include <Base/CompileBegin.hpp>
+#include <Core/DispatchSystem.hpp>
+#include <Core/DataSet.hpp>
+#include <Core/CompileBegin.hpp>
 #include <device_atomic_functions.h>
-#include <Base/CompileEnd.hpp>
+#include <Core/CompileEnd.hpp>
 
 struct TileRef final {
     unsigned int id;

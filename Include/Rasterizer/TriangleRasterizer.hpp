@@ -1,9 +1,9 @@
 #pragma once
 #include <Rasterizer/Vertex.hpp>
 #include <Rasterizer/Shared.hpp>
-#include <Base/CompileBegin.hpp>
+#include <Core/CompileBegin.hpp>
 #include <math_functions.h>
-#include <Base/CompileEnd.hpp>
+#include <Core/CompileEnd.hpp>
 #include <Rasterizer/Tile.hpp>
 
 ///@see <a href="https://www.khronos.org/registry/OpenGL/specs/gl/glspec46.compatibility.pdf">OpenGL 4.6 API Specification, Section 10.1 Primitive Types</a>
@@ -67,7 +67,7 @@ CUDAINLINE float edgeFunction(const vec3 a, const vec3 b, const vec3 c) {
     return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
 
-CUDAINLINE vec3 calcBase(const vec3 a, const vec3 b) {
+CUDAINLINE vec3 calcCore(const vec3 a, const vec3 b) {
     vec3 w;
     w.x = b.y - a.y, w.y = a.x - b.x;
     w.z = -(a.x * w.x + a.y * w.y);
@@ -118,9 +118,9 @@ CUDAINLINE void calcTriangleInfo(const TriangleVert<Out>& tri, const TrianglePro
     if (static_cast<bool>((area < 0.0f) ^ args.mode) & rect.x < rect.y & rect.z < rect.w) {
         Triangle<Out> res;
         res.invz = {a.z, b.z, c.z};
-        res.w[0] = calcBase(b, c);
-        res.w[1] = calcBase(c, a);
-        res.w[2] = calcBase(a, b);
+        res.w[0] = calcCore(b, c);
+        res.w[1] = calcCore(c, a);
+        res.w[2] = calcCore(a, b);
         res.w *= 1.0f / area;
         res.id = tri.id;
         res.type = ((c.y == b.y & c.x > b.x) | (c.y > b.y)) |
