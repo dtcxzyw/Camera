@@ -27,12 +27,6 @@ GLOBAL void calcCameraSpheres(const unsigned int size, READONLY(vec4) in, vec4* 
  *v=theta/pi
  */
 
-CUDAINLINE vec2 calcSphereTexCoord(const vec3 normalizedWorldDir) {
-    const auto theta = std::acos(normalizedWorldDir.y);
-    const auto phi = std::atan2(normalizedWorldDir.z, normalizedWorldDir.x)+pi<float>();
-    return {phi * one_over_two_pi<float>(), theta * one_over_pi<float>()};
-}
-
 CUDAINLINE vec3 calcSphereNormal(const vec3 normalizedWorldDir, const bool inSphere) {
     return inSphere ? -normalizedWorldDir : normalizedWorldDir;
 }
@@ -46,13 +40,17 @@ CUDAINLINE vec3 calcSphereTangent(const vec3 normal, const vec3 biTangent) {
     return cross(biTangent, normal);
 }
 
-//ddx+ddy
-CUDAINLINE vec4 calcSphereTdd(const vec3 dir, const vec2 pdd) {
-    const auto ddxdu = -two_pi<float>() * dir.z;
-    const auto duddx = 1.0f / ddxdu;
-    const auto ddxdv = pi<float>() * dir.y * std::cos(std::atan2(dir.z, dir.x));
-    const auto dvddx = 1.0f / ddxdv;
-    return {pdd.x * duddx, pdd.x * dvddx, pdd.y * duddx, pdd.y * dvddx};
+CUDAINLINE vec2 calcSphereTexCoord(const vec3 normalizedWorldDir) {
+    const auto theta = std::acos(normalizedWorldDir.y);
+    const auto phi = std::atan2(normalizedWorldDir.z, normalizedWorldDir.x) + pi<float>();
+    return { phi * one_over_two_pi<float>(), theta * one_over_pi<float>() };
+}
+
+//dt.x/dx=dn.x/dx*dt.x/dn.x=dn.x/dx*1/(1+n.x*n.x)*(1/2pi)
+//dt.y/dx=dn.y/dx*dt.y/dn.y=dn.y/dx*-sqrt(1-n.y^2)*(1/pi)
+CUDAINLINE vec2 calcSphereTextureDerivative(const vec3 dir,const vec3 dndx) {
+    return { dndx.x / (1 + dir.x*dir.x)*one_over_two_pi<float>(),
+        dndx.y*-sqrt(1.0f - dir.y*dir.y)*one_over_pi<float>() };
 }
 
 struct STRUCT_ALIGN SphereInfo final {
@@ -93,7 +91,7 @@ CUDAINLINE vec2 raster2NDC(const vec2 p, const float ihx, const float ihy) {
 //in camera pos
 template <typename Uniform, typename FrameBuffer>
 using SphereFragmentShader = void(*)(unsigned int id, ivec2 uv, float z, vec3 pos, vec3 dir,
-    float invr, bool inSphere, vec2 pdd, const Uniform& uniform, FrameBuffer& frameBuffer);
+    float invr, bool inSphere, vec3 dpdx,vec3 dpdy, const Uniform& uniform, FrameBuffer& frameBuffer);
 
 //2,4,8,16,32
 template <typename Uniform, typename FrameBuffer,
@@ -124,10 +122,10 @@ GLOBAL void drawMicroS(READONLY(SphereInfo) info, READONLY(TileRef) idx,
     else if (near <= t2 & t2 <= far)t = t2, inSphere = true;
     else return;
     const auto pos = t * d;
-    const auto ddx = (shuffleFloat(pos.x, 0b10) - pos.x) * (offX ? -1.0f : 1.0f);
-    const auto ddy = (shuffleFloat(pos.x, 0b01) - pos.x) * (offY ? -1.0f : 1.0f);
+    const auto dpdx = (shuffleVec3(pos, 0b10) - pos) * (offX ? -1.0f : 1.0f);
+    const auto dpdy = (shuffleVec3(pos, 0b01) - pos) * (offY ? -1.0f : 1.0f);
     const auto nz = (t - near) * invnf;
-    FragShader(sphere.id, p, nz, pos, pos - mid, sphere.info.w, inSphere, {ddx, ddy}, *uniform,
+    FragShader(sphere.id, p, nz, pos, pos - mid, sphere.info.w, inSphere, dpdx, dpdy, *uniform,
         *frameBuffer);
 }
 

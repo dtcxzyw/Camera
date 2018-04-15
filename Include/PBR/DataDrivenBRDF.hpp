@@ -1,6 +1,6 @@
 #pragma once
-#include  <Core/Math.hpp>
 #include <Core/Common.hpp>
+#include <Core/Math.hpp>
 #include <Core/Memory.hpp>
 #include <Core/Pipeline.hpp>
 #include <string>

@@ -4,6 +4,7 @@
 #include <PBR/Dist.hpp>
 #include <Rasterizer/SphereRasterizer.hpp>
 #include <Rasterizer/IndexDescriptor.hpp>
+#include <Texture/Noise.hpp>
 
 CUDAINLINE vec3 toPos(const vec3 p, const Uniform& u) {
     return {p.x * u.mul.x, p.y * u.mul.y, -p.z};
@@ -56,6 +57,20 @@ CUDAINLINE void setModel(unsigned int, ivec2 uv, float z, const OI&, const OI&, 
     setDepth(fbo.depth.get(uv), z * maxdu);
 }
 
+CUDAINLINE vec3 shade(const vec3 p, const vec3 N, const vec3 X, const vec3 Y, 
+    const Uniform& uniform) {
+    const auto off = uniform.lp - p;
+    const auto dis2 = length2(off);
+    const auto dis = sqrt(dis2);
+    const auto L = off / dis;
+    const auto V = normalize(uniform.cp - p);
+    const auto F = disneyBRDF(L, V, N, X, Y, uniform.arg);
+    const auto ref = reflect(-V, N);
+    const auto lc = uniform.lc * distUE4(dis2, uniform.r2) +
+        vec3(uniform.sampler.getCubeMap(ref));
+    return lc * F * fabs(dot(N, L));
+}
+
 CUDAINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, const OI&,
     const OI&, const Uniform& uniform, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
@@ -64,17 +79,7 @@ CUDAINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, const 
         const vec3 T = normalize(out.get<Tangent>());
         const auto X = normalize(T - dot(T, N) * N);
         const auto Y = normalize(cross(X, N));
-        const auto off = uniform.lp - p;
-        const auto dis2 = length2(off);
-        const auto dis = sqrt(dis2);
-        const auto L = off / dis;
-        const auto V = normalize(uniform.cp - p);
-        const auto F = disneyBRDF(L, V, N, X, Y, uniform.arg);
-        const auto ref = reflect(-V, N);
-        const auto lc = uniform.lc * distUE4(dis2, uniform.r2) +
-            vec3(uniform.sampler.getCubeMap(ref));
-        const auto res = lc * F * fabs(dot(N, L));
-        fbo.color.set(uv, {res, 1.0f});
+        fbo.color.set(uv, { shade(p,N,X,Y,uniform), 1.0f });
     }
 }
 
@@ -130,28 +135,23 @@ CUDAINLINE vec4 vsSphere(vec4 sp, const Uniform& uniform) {
 }
 
 CUDAINLINE void setSpherePoint(unsigned int, ivec2 uv, float z, vec3, vec3, float, bool,
-    vec2, const Uniform&, FrameBufferRef& fbo) {
+    vec3, vec3, const Uniform&, FrameBufferRef& fbo) {
     setDepth(fbo.depth.get(uv), z * maxdu);
 }
 
 CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, vec3 p, vec3 dir, float invr,
-    bool inSphere, vec2, const Uniform& u, FrameBufferRef& fbo) {
+    bool inSphere, vec3 dpdx, vec3 dpdy, const Uniform& u, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
         const vec3 pos = u.invV * vec4(p, 1.0f);
-        const auto normalizedDir = u.normalInvV * dir * invr;
+        const auto modelDir = u.normalInvV*dir;
+        const auto normalizedDir = modelDir * invr;
         const auto N = calcSphereNormal(normalizedDir, inSphere);
         const auto Y = calcSphereBiTangent(N);
         const auto X = calcSphereTangent(N, Y);
-        const auto off = u.lp - pos;
-        const auto dis2 = length2(off);
-        const auto dis = sqrt(dis2);
-        const auto L = off / dis;
-        const auto V = normalize(u.cp - pos);
-        const auto F = disneyBRDF(L, V, N, X, Y, u.arg);
-        const auto ref = reflect(-V, N);
-        const auto lc = u.lc * distUE4(dis2, u.r2) + vec3(u.sampler.getCubeMap(ref));
-        const auto res = lc * F * fabs(dot(N, L));
-        fbo.color.set(uv, {res, 1.0f});
+        auto res = shade(pos, N, X, Y, u);
+        const auto octaves = calcOctavesAntiAliased(u.normalInvV*dpdx, u.normalInvV*dpdy);
+        res *= marble(modelDir, 1.0f, 0.5f, octaves) + 0.5f;
+        fbo.color.set(uv, { res, 1.0f });
     }
 }
 

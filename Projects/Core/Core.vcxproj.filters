@@ -162,6 +162,12 @@
     <ClInclude Include="..\..\Include\Core\Queue.hpp">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\ProceduralTexture.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\Noise.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\IO\Model.cpp">
