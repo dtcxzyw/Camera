@@ -3,7 +3,7 @@
 constexpr auto inch2mm = 25.4f;
 
 //http://www.scratchapixel.com/lessons/3d-basic-rendering/3d-viewing-pinhole-camera
-struct Camera final {
+struct PinholeCamera final {
     enum class FitResolutionGate {
         Fill, Overscan
     } mode;
@@ -43,12 +43,3 @@ struct Camera final {
         return 2.0f*atan((filmAperture.x*inch2mm / 2.0f) / focalLength);
     }
 };
-
-//https://developer.nvidia.com/gpugems/RefGems/gpugems_ch23.html
-CUDAINLINE float DoFRadius(const float z, const float znear, const float zfar, const float f, 
-    const float aperture, const float df) {
-    const auto CoCScale = (aperture * f * df * (zfar - znear)) / ((df - f) * znear * zfar);
-    const auto CoCBias = (aperture * f * (znear - df)) / ((df * f) * znear);
-    const auto CoC = fabs(z * CoCScale + CoCBias);
-    return CoC;
-}

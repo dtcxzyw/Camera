@@ -1,9 +1,6 @@
 #pragma once
-#include <Interaction/D3D11.hpp>
 #include <Core/DispatchSystem.hpp>
 #include <Core/Builtin.hpp>
-#include <PBR/PhotorealisticRendering.hpp>
-#include <PBR/BRDF.hpp>
 
 struct FrameBufferRef final {
     BuiltinRenderTargetRef<RGBA> color;

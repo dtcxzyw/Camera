@@ -7,7 +7,7 @@ CUDAINLINE vec4 vsSphere(vec4 sp, const Uniform& uniform) {
 }
 
 CUDAINLINE void drawSpherePoint(unsigned int id, ivec2 uv, float, vec3, vec3, float, 
-                                bool,vec2, const Uniform&, FrameBufferRef& fbo) {
+                                bool,vec3,vec3, const Uniform&, FrameBufferRef& fbo) {
     fbo.color.set(uv, { (id+1)/10.0f,1.0f,1.0f,1.0f });
 }
 
@@ -19,7 +19,7 @@ CUDAINLINE void post(ivec2 NDC, const FrameBufferRef& uni, BuiltinRenderTargetRe
 
 void kernel(const Span<vec4>& spheres,
             const Span<Uniform>& uniform, FrameBuffer& fbo,
-            const Camera::RasterPosConverter converter, CommandBuffer& buffer) {
+            const PinholeCamera::RasterPosConverter converter, CommandBuffer& buffer) {
     //fbo.colorRT->clear(buffer, {});
     const auto frameBuffer = fbo.getData(buffer);
     const vec4 scissor = { 0.0f,fbo.size.x,0.0f,fbo.size.y };

@@ -1,8 +1,7 @@
 #pragma once
-#include <Interaction/D3D11.hpp>
 #include <Core/DispatchSystem.hpp>
 #include <Core/Builtin.hpp>
-#include <PBR/PhotorealisticRendering.hpp>
+#include <Camera/PinholeCamera.hpp>
 
 struct FrameBufferRef final {
     BuiltinRenderTargetRef<RGBA> color;
@@ -46,4 +45,4 @@ struct Uniform final {
 
 void kernel(const Span<vec4>& spheres,
             const Span<Uniform>& uniform, FrameBuffer& fbo,
-            Camera::RasterPosConverter converter, CommandBuffer& buffer);
+            PinholeCamera::RasterPosConverter converter, CommandBuffer& buffer);

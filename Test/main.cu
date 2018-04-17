@@ -20,8 +20,8 @@ private:
     std::unique_ptr<RenderingContext> mSc;
     std::shared_ptr<BuiltinCubeMap<RGBA>> mEnvMap;
     std::shared_ptr<BuiltinSampler<RGBA>> mEnvMapSampler;
-    DisneyBRDFArg mArg;
-    Camera mCamera;
+    DisneyBRDFArg<RGBSpectrum> mArg;
+    PinholeCamera mCamera;
     Uniform mOld;
 
     static void setStyle() {
@@ -100,11 +100,9 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
         u.invV = inverse(u.V);
         u.normalInvV = mat3(transpose(u.V));
         u.normalMat = mat3(transpose(inverse(u.M)));
-        u.lc = vec3(mLight);
         u.arg = mArg;
         u.cp = cp;
-        u.lp = cp + vec3{0.0f, 4.0f, 0.0f};
-        u.r2 = mR * mR;
+        u.light = { cp + vec3{ 0.0f,4.0f,0.0f }, mLight };
         u.sampler = mEnvMapSampler->toSampler();
         return u;
     }
@@ -175,7 +173,7 @@ public:
         mCamera.near = 1.0f;
         mCamera.far = 200.0f;
         mCamera.filmAperture = {0.980f, 0.735f};
-        mCamera.mode = Camera::FitResolutionGate::Overscan;
+        mCamera.mode = PinholeCamera::FitResolutionGate::Overscan;
         mCamera.focalLength = 15.0f;
 
         {
@@ -200,7 +198,7 @@ public:
             mEnvMapSampler = std::make_shared<BuiltinSampler<RGBA>>(mEnvMap->get());
         }
 
-        mArg.baseColor = vec3{220, 223, 227} / 255.0f;
+        mArg.baseColor = vec3{ 220.0f, 223.0f, 227.0f } / 255.0f;
 
         std::queue<RenderingTask> tasks;
 

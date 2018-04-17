@@ -1,4 +1,5 @@
 #include <Core/Config.hpp>
+#include <Core/Environment.hpp>
 #ifdef CAMERA_D3D11_SUPPORT
 #include <Interaction/D3D11.hpp>
 #include <Core/CompileBegin.hpp>
@@ -253,7 +254,12 @@ void D3D11Window::present(cudaArray_t image) {
     parms.extent = make_cudaExtent(fsiz.x, fsiz.y, 1);
     parms.srcPos = parms.dstPos = make_cudaPos(0, 0, 0);
     checkError(cudaMemcpy3DAsync(&parms, mStream));
-    checkError(cudaStreamSynchronize(mStream));
+    while (true) {
+        const auto res = cudaStreamQuery(mStream);
+        if (res == cudaSuccess)return;
+        if (res != cudaErrorNotReady)checkError(res);
+        Environment::get().yield();
+    }
 }
 
 cudaArray_t D3D11Window::getBackBuffer() {

@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Include\Camera\PinholeCamera.hpp" />
     <ClInclude Include="..\..\Include\Core\Builtin.hpp" />
     <ClInclude Include="..\..\Include\Core\Cache.hpp" />
     <ClInclude Include="..\..\Include\Core\Common.hpp" />
@@ -33,10 +34,10 @@
     <ClInclude Include="..\..\Include\IO\Image.hpp" />
     <ClInclude Include="..\..\Include\IO\Model.hpp" />
     <ClInclude Include="..\..\Include\IO\Video.hpp" />
+    <ClInclude Include="..\..\Include\Light\DeltaPositionLight.hpp" />
+    <ClInclude Include="..\..\Include\Light\LightingSample.hpp" />
     <ClInclude Include="..\..\Include\PBR\BRDF.hpp" />
     <ClInclude Include="..\..\Include\PBR\DataDrivenBRDF.hpp" />
-    <ClInclude Include="..\..\Include\PBR\Dist.hpp" />
-    <ClInclude Include="..\..\Include\PBR\PhotorealisticRendering.hpp" />
     <ClInclude Include="..\..\Include\PostProcess\ToneMapping.hpp" />
     <ClInclude Include="..\..\Include\Rasterizer\Buffer2D.hpp" />
     <ClInclude Include="..\..\Include\Rasterizer\IndexDescriptor.hpp" />
@@ -52,6 +53,7 @@
     <ClInclude Include="..\..\Include\Rasterizer\Vertex.hpp" />
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp" />
     <ClInclude Include="..\..\Include\Scene\ECS.hpp" />
+    <ClInclude Include="..\..\Include\Spectrum\RGBSpectrum.hpp" />
     <ClInclude Include="..\..\Include\Texture\Filter.hpp" />
     <ClInclude Include="..\..\Include\Texture\Noise.hpp" />
     <ClInclude Include="..\..\Include\Texture\ProceduralTexture.hpp" />

@@ -31,6 +31,15 @@
     <Filter Include="Core">
       <UniqueIdentifier>{36a4e775-4fae-4fdd-8e21-586cebe3142a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Camera">
+      <UniqueIdentifier>{972b5c4a-f99b-416e-95f0-29977b2ade6e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Light">
+      <UniqueIdentifier>{1f8d9d50-5362-4e8a-9ccb-be6a5206ee81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Spectrum">
+      <UniqueIdentifier>{cbc43c27-cfd6-42f0-9874-d1a1853e5840}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp">
@@ -52,12 +61,6 @@
       <Filter>PostProcess</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\PBR\DataDrivenBRDF.hpp">
-      <Filter>PBR</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\PBR\PhotorealisticRendering.hpp">
-      <Filter>PBR</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\PBR\Dist.hpp">
       <Filter>PBR</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp">
@@ -167,6 +170,18 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\Texture\Noise.hpp">
       <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Camera\PinholeCamera.hpp">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Spectrum\RGBSpectrum.hpp">
+      <Filter>Spectrum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Light\DeltaPositionLight.hpp">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Light\LightingSample.hpp">
+      <Filter>Light</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

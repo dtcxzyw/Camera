@@ -1,7 +1,6 @@
 #include <PostProcess/ToneMapping.hpp>
 #include <Rasterizer/PostProcess.hpp>
 #include "kernel.hpp"
-#include <PBR/Dist.hpp>
 #include <Rasterizer/SphereRasterizer.hpp>
 #include <Rasterizer/IndexDescriptor.hpp>
 #include <Texture/Noise.hpp>
@@ -59,16 +58,13 @@ CUDAINLINE void setModel(unsigned int, ivec2 uv, float z, const OI&, const OI&, 
 
 CUDAINLINE vec3 shade(const vec3 p, const vec3 N, const vec3 X, const vec3 Y, 
     const Uniform& uniform) {
-    const auto off = uniform.lp - p;
-    const auto dis2 = length2(off);
-    const auto dis = sqrt(dis2);
-    const auto L = off / dis;
+    const auto sample = uniform.light.sample({}, p);
     const auto V = normalize(uniform.cp - p);
-    const auto F = disneyBRDF(L, V, N, X, Y, uniform.arg);
+    const auto F = disneyBRDF(sample.wi, V, N, X, Y, uniform.arg);
     const auto ref = reflect(-V, N);
-    const auto lc = uniform.lc * distUE4(dis2, uniform.r2) +
-        vec3(uniform.sampler.getCubeMap(ref));
-    return lc * F * fabs(dot(N, L));
+    const auto lc = uniform.light.sample({}, p).illumination +
+        RGBSpectrum(uniform.sampler.getCubeMap(ref));
+    return lc * F * fabs(dot(N, sample.wi));
 }
 
 CUDAINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, const OI&,
@@ -95,9 +91,9 @@ CUDAINLINE void drawPoint(unsigned int, ivec2 uv, float z, const OI&,
 }
 
 CUDAINLINE void post(ivec2 NDC, const PostUniform& uni, BuiltinRenderTargetRef<RGBA8> out) {
-    RGB c = uni.in.color.get(NDC);
-    const auto lum = luminosity(c);
+    RGBSpectrum c = uni.in.color.get(NDC);
     if (uni.in.depth.get(NDC) < 0xffffffff) {
+        const auto lum = c.lum();
         if (lum > 0.0f) {
             atomicAdd(&uni.sum->first, log(lum));
             atomicInc(&uni.sum->second, maxv);
@@ -117,7 +113,7 @@ template <VertShader<VI, OI, Uniform> VertFunc, TriangleClipShader<Uniform> Clip
     FragmentShader<OI, Uniform, FrameBufferRef>... FragFunc>
 void renderMesh(const StaticMesh& model, const Span<Uniform>& uniform,
     const Span<FrameBufferRef>& frameBuffer, const uvec2 size,
-    const Camera::RasterPosConverter converter,
+    const PinholeCamera::RasterPosConverter converter,
     const CullFace mode, RenderingContext& context, const vec4 scissor,
     CommandBuffer& buffer) {
     auto vert = calcVertex<VI, OI, Uniform, VertFunc>(buffer, buffer.useAllocated(model.vert),
@@ -159,7 +155,7 @@ void kernel(const StaticMesh& model, RenderingContext& mc,
     const StaticMesh& skybox, RenderingContext& sc,
     const MemorySpan<vec4>& spheres,
     const Span<Uniform>& uniform, FrameBuffer& fbo, float* lum,
-    const Camera::RasterPosConverter converter, CommandBuffer& buffer) {
+    const PinholeCamera::RasterPosConverter converter, CommandBuffer& buffer) {
     fbo.colorRT->clear(buffer, vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
     Buffer2D<unsigned int> depth(buffer, fbo.size);
     depth.clear(0xff);

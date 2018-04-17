@@ -5,8 +5,10 @@
 #include <Rasterizer/Buffer2D.hpp>
 #include <IO/Model.hpp>
 #include <PBR/BRDF.hpp>
-#include <PBR/PhotorealisticRendering.hpp>
+#include <Camera/PinholeCamera.hpp>
 #include <Rasterizer/TriangleRasterizer.hpp>
+#include <Spectrum/RGBSpectrum.hpp>
+#include <Light/DeltaPositionLight.hpp>
 
 using VI = StaticMesh::Vertex;
 
@@ -75,11 +77,9 @@ struct Uniform final {
     ALIGN mat3 normalInvV;
     ALIGN mat3 normalMat;
     ALIGN vec3 cp;
-    ALIGN vec3 lp;
-    ALIGN vec3 lc;
-    ALIGN float r2;
-    ALIGN DisneyBRDFArg arg;
+    ALIGN DisneyBRDFArg<RGBSpectrum> arg;
     ALIGN BuiltinSamplerRef<RGBA> sampler;
+    ALIGN PointLight<RGBSpectrum> light;
 };
 
 struct PostUniform final {
@@ -104,4 +104,4 @@ void kernel(const StaticMesh& model, RenderingContext& mc,
             const StaticMesh& skybox, RenderingContext& sc,
             const MemorySpan<vec4>& spheres,
             const Span<Uniform>& uniform, FrameBuffer& fbo, float* lum,
-            Camera::RasterPosConverter converter, CommandBuffer& buffer);
+            PinholeCamera::RasterPosConverter converter, CommandBuffer& buffer);

@@ -7,11 +7,12 @@
 #include <Core/CompileBegin.hpp>
 #include <IMGUI/imgui.h>
 #include <Core/CompileEnd.hpp>
+#include <Camera/PinholeCamera.hpp>
+#include <Interaction/D3D11.hpp>
 
 using namespace std::chrono_literals;
 
-Camera camera;
-DisneyBRDFArg arg;
+PinholeCamera camera;
 
 void setUIStyle() {
     ImGui::StyleColorsDark();
@@ -34,30 +35,6 @@ void renderGUI(D3D11Window& window) {
     ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
     ImGui::Text("FOV %.1f ",degrees(camera.toFov()));
     ImGui::SliderFloat("focal length",&camera.focalLength,1.0f,500.0f,"%.1f");
-
-#define COLOR(name)\
-arg.##name=clamp(arg.##name,vec3(0.01f),vec3(0.999f));\
-ImGui::ColorEdit3(#name,&arg.##name[0],ImGuiColorEditFlags_Float);\
-
-    COLOR(baseColor);
-    //Color(edgeTint);
-#undef COLOR
-
-#define ARG(name)\
- arg.##name=clamp(arg.##name,0.01f,0.999f);\
- ImGui::SliderFloat(#name, &arg.##name, 0.01f, 0.999f);\
-
-    ARG(metallic);
-    ARG(subsurface);
-    ARG(specular);
-    ARG(roughness);
-    ARG(specularTint);
-    ARG(anisotropic);
-    ARG(sheen);
-    ARG(sheenTint);
-    ARG(clearcoat);
-    ARG(clearcoatGloss);
-#undef ARG
     ImGui::End();
 }
 
@@ -81,12 +58,10 @@ int main() {
         camera.near = 1.0f;
         camera.far = 200.0f;
         camera.filmAperture = { 0.980f,0.735f };
-        camera.mode = Camera::FitResolutionGate::Overscan;
+        camera.mode = PinholeCamera::FitResolutionGate::Overscan;
         camera.focalLength = 15.0f;
 
         Stream resLoader;
-
-        arg.baseColor = vec3{220,223,227}/255.0f;
 
         SwapChainT swapChain(3);
         std::queue<RenderingTask> tasks;

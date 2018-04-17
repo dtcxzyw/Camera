@@ -6,6 +6,7 @@
 #include <IMGUI/imgui.h>
 #include <Core/CompileEnd.hpp>
 #include <Interaction/SoftwareRenderer.hpp>
+#include <Interaction/D3D11.hpp>
 
 using namespace std::chrono_literals;
 
@@ -107,7 +108,7 @@ public:
 
 class App final : Uncopyable {
 private:
-    Camera mCamera;
+    PinholeCamera mCamera;
 
     void setStyle() {
         ImGui::StyleColorsDark();
@@ -191,7 +192,7 @@ public:
         mCamera.near = 1.0f;
         mCamera.far = 250.0f;
         mCamera.filmAperture = {0.980f, 0.735f};
-        mCamera.mode = Camera::FitResolutionGate::Overscan;
+        mCamera.mode = PinholeCamera::FitResolutionGate::Overscan;
         mCamera.focalLength = 15.0f;
 
         {
