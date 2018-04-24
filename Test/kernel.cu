@@ -56,7 +56,7 @@ CUDAINLINE void setModel(unsigned int, ivec2 uv, float z, const OI&, const OI&, 
     setDepth(fbo.depth.get(uv), z * maxdu);
 }
 
-CUDAINLINE vec3 shade(const vec3 p, const vec3 N, const vec3 X, const vec3 Y, 
+CUDAINLINE RGBSpectrum shade(const vec3 p, const vec3 N, const vec3 X, const vec3 Y, 
     const Uniform& uniform) {
     const auto sample = uniform.light.sample({}, p);
     const auto V = normalize(uniform.cp - p);
@@ -75,7 +75,7 @@ CUDAINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, const 
         const vec3 T = normalize(out.get<Tangent>());
         const auto X = normalize(T - dot(T, N) * N);
         const auto Y = normalize(cross(X, N));
-        fbo.color.set(uv, { shade(p,N,X,Y,uniform), 1.0f });
+        fbo.color.set(uv, { shade(p,N,X,Y,uniform).toRGB(), 1.0f });
     }
 }
 
@@ -91,17 +91,16 @@ CUDAINLINE void drawPoint(unsigned int, ivec2 uv, float z, const OI&,
 }
 
 CUDAINLINE void post(ivec2 NDC, const PostUniform& uni, BuiltinRenderTargetRef<RGBA8> out) {
-    RGBSpectrum c = uni.in.color.get(NDC);
+    RGBSpectrum c(uni.in.color.get(NDC));
     if (uni.in.depth.get(NDC) < 0xffffffff) {
         const auto lum = c.lum();
         if (lum > 0.0f) {
             atomicAdd(&uni.sum->first, log(lum));
             atomicInc(&uni.sum->second, maxv);
         }
-        c = ACES(c, *uni.lum);
+        c = RGBSpectrum(ACES(c.toRGB(), *uni.lum));
     }
-    c = clamp(pow(c, vec3(1.0f / 2.2f)), 0.0f, 1.0f);
-    const RGBA8 color = {c * 255.0f, 255};
+    const RGBA8 color = { clamp(pow(c.toRGB(),vec3(1.0f / 2.2f)), 0.0f, 1.0f) * 255.0f, 255 };
     out.set(NDC, color);
 }
 
@@ -146,8 +145,8 @@ CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, vec3 p, vec3 di
         const auto X = calcSphereTangent(N, Y);
         auto res = shade(pos, N, X, Y, u);
         const auto octaves = calcOctavesAntiAliased(u.normalInvV*dpdx, u.normalInvV*dpdy);
-        res *= marble(modelDir, 1.0f, 0.5f, octaves) + 0.5f;
-        fbo.color.set(uv, { res, 1.0f });
+        res *= marble(modelDir, 1.0f, 0.5f, octaves) + RGBSpectrum(0.5f);
+        fbo.color.set(uv, { res.toRGB(), 1.0f });
     }
 }
 

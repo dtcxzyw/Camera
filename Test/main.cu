@@ -23,6 +23,7 @@ private:
     DisneyBRDFArg<RGBSpectrum> mArg;
     PinholeCamera mCamera;
     Uniform mOld;
+    vec3 mColor;
 
     static void setStyle() {
         ImGui::StyleColorsDark();
@@ -56,12 +57,8 @@ private:
         ImGui::SliderFloat("focal length", &mCamera.focalLength, 1.0f, 500.0f, "%.1f");
         ImGui::SliderFloat("light", &mLight, 0.0f, 100.0f);
         ImGui::SliderFloat("lightRadius", &mR, 0.0f, 40.0f);
-        #define COLOR(name)\
-mArg.##name=clamp(mArg.##name,vec3(0.01f),vec3(0.999f));\
-ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
-        COLOR(baseColor);
-        //Color(edgeTint);
-        #undef COLOR
+        mColor = clamp(mColor, vec3(0.01f), vec3(0.999f)); \
+        ImGui::ColorEdit3("baseColor",&mColor[0],ImGuiColorEditFlags_Float);
 
         #define ARG(name)\
  mArg.##name=clamp(mArg.##name,0.01f,0.999f);\
@@ -101,8 +98,9 @@ ImGui::ColorEdit3(#name,&mArg.##name[0],ImGuiColorEditFlags_Float);
         u.normalInvV = mat3(transpose(u.V));
         u.normalMat = mat3(transpose(inverse(u.M)));
         u.arg = mArg;
+        u.arg.baseColor = RGBSpectrum(mColor);
         u.cp = cp;
-        u.light = { cp + vec3{ 0.0f,4.0f,0.0f }, mLight };
+        u.light = { cp + vec3{ 0.0f,4.0f,0.0f },RGBSpectrum{ mLight} };
         u.sampler = mEnvMapSampler->toSampler();
         return u;
     }
@@ -169,7 +167,6 @@ public:
 
         auto&& env = Environment::get();
         env.init(AppType::Online,GraphicsInteroperability::D3D11);
-
         mCamera.near = 1.0f;
         mCamera.far = 200.0f;
         mCamera.filmAperture = {0.980f, 0.735f};
@@ -191,14 +188,14 @@ public:
             mSc = std::make_unique<RenderingContext>();
             mSc->triContext.reset(mBox.index.size(), 65536U, false, enableTriCache);
 
-            mEnvMap = loadCubeMap([](size_t id) {
+            mEnvMap = loadCubeMap([](const size_t id) {
                 const char* table[] = {"right", "left", "top", "bottom", "back", "front"};
                 return std::string("Res/skybox/") + table[id] + ".jpg";
             }, resLoader);
             mEnvMapSampler = std::make_shared<BuiltinSampler<RGBA>>(mEnvMap->get());
         }
 
-        mArg.baseColor = vec3{ 220.0f, 223.0f, 227.0f } / 255.0f;
+        mColor = vec3{ 220.0f, 223.0f, 227.0f } / 255.0f;
 
         std::queue<RenderingTask> tasks;
 

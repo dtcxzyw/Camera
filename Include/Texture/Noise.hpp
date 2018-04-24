@@ -1,6 +1,6 @@
 #pragma once
 #include <Core/Common.hpp>
-#include <Core/Math.hpp>
+#include <Math/Math.hpp>
 #include <Core/CompileBegin.hpp>
 #include <glm/gtc/noise.hpp>
 #include <glm/gtx/spline.hpp>
@@ -43,7 +43,7 @@ CUDAINLINE float turbulence(const vec3 p, const float omega, const float octaves
         lambda *= 1.99f;
         o *= omega;
     }
-    sum += o * lerp(smoothstep(0.3f, 0.7f, octaves - n), 0.2f, fabs(perlin(lambda * p)));
+    sum += o * mix(smoothstep(0.3f, 0.7f, octaves - n), 0.2f, fabs(perlin(lambda * p)));
     for (auto i = n; i < maxOctaves; ++i) {
         sum += o * 0.2f;
         o *= omega;
@@ -56,7 +56,7 @@ CUDAINLINE float windyWaves(const vec3 p, float octaves) {
     return fabs(fbm(0.1f * p, 0.5f, 0.5f*octaves)) * fbm(p, 0.5f, octaves);
 }
 
-CUDAINLINE vec3 marble(const vec3 p, const float var, const float omega, const float octaves) {
+CUDAINLINE RGBSpectrum marble(const vec3 p, const float var, const float omega, const float octaves) {
     const auto marble = p.y + var * fbm(p, omega, octaves);
     auto t = 0.5f + 0.5f * sin(marble);
     constexpr float c[][3] = {
@@ -74,7 +74,7 @@ CUDAINLINE vec3 marble(const vec3 p, const float var, const float omega, const f
     const int beg = std::floor(t * scale);
     t = t * scale - beg;
     #define CONSTRUCT(x) vec3(x[0],x[1],x[2])
-    return catmullRom<vec3>(CONSTRUCT(c[beg]), CONSTRUCT(c[beg + 1]),
-        CONSTRUCT(c[beg + 2]), CONSTRUCT(c[beg + 3]), t);
+    return RGBSpectrum{ catmullRom<vec3>(CONSTRUCT(c[beg]), CONSTRUCT(c[beg + 1]),
+        CONSTRUCT(c[beg + 2]), CONSTRUCT(c[beg + 3]), t) };
     #undef CONSTRUCT
 }

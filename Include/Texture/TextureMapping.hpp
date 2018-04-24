@@ -1,6 +1,6 @@
 #pragma once
 #include <Core/Common.hpp>
-#include <Core/Math.hpp>
+#include <Math/Math.hpp>
 
 //The trick comes from https://learnopengl.com/#!PBR/IBL/Diffuse-irradiance.
 CUDAINLINE vec2 sphericalMapping(const vec3 p) {

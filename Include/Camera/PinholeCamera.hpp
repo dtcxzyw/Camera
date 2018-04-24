@@ -1,5 +1,5 @@
 #pragma once
-#include <Core/Math.hpp>
+#include <Math/Math.hpp>
 constexpr auto inch2mm = 25.4f;
 
 //http://www.scratchapixel.com/lessons/3d-basic-rendering/3d-viewing-pinhole-camera

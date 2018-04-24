@@ -1,17 +1,19 @@
 #pragma once
 #include <memory>
 #include <Core/Common.hpp>
-#include <Core/Math.hpp>
+#include <Math/Math.hpp>
+#ifdef CAMERA_DEBUG
 #include <stdexcept>
+#endif
 
 inline size_t calcSizeLevel(const size_t size) {
-    const auto msb=findMSB(size);
+    const auto msb = findMSB(size);
     return msb + (size != (1ULL << msb));
 }
 
-template<typename T>
+template <typename T>
 size_t calcMaxBufferSize(const size_t size) {
-    const auto level = calcSizeLevel(size*sizeof(T));
+    const auto level = calcSizeLevel(size * sizeof(T));
     return (1 << level) / sizeof(T);
 }
 
@@ -21,14 +23,14 @@ class GlobalMemoryDeleter final {
 private:
     size_t mSize;
 public:
-    constexpr GlobalMemoryDeleter() noexcept:mSize(0){}
+    constexpr GlobalMemoryDeleter() noexcept: mSize(0) {}
     explicit GlobalMemoryDeleter(size_t size) noexcept;
     void operator()(void* ptr) const;
 };
 
 using UniqueMemory = std::unique_ptr<void, GlobalMemoryDeleter>;
 
-UniqueMemory allocGlobalMemory(size_t size,bool isStatic=false);
+UniqueMemory allocGlobalMemory(size_t size, bool isStatic = false);
 
 template <typename T>
 class MemorySpan final {
@@ -36,10 +38,10 @@ private:
     std::shared_ptr<void> mMem;
     size_t mBegin, mEnd;
 public:
-    template<typename U>
+    template <typename U>
     friend class MemorySpan;
 
-    MemorySpan() :mBegin(0), mEnd(0) {}
+    MemorySpan() : mBegin(0), mEnd(0) {}
 
     explicit MemorySpan(UniqueMemory memory, const size_t size)
         : mMem(std::move(memory)), mBegin(0), mEnd(size / sizeof(T)) {}
@@ -47,7 +49,7 @@ public:
     explicit MemorySpan(const size_t size)
         : mMem(allocGlobalMemory(size * sizeof(T), true)), mBegin(0), mEnd(size) {}
 
-    template<typename U>
+    template <typename U>
     explicit MemorySpan(const MemorySpan<U>& rhs)
         : mMem(rhs.mMem), mBegin(rhs.mBegin * sizeof(U) / sizeof(T)),
         mEnd(rhs.mEnd * sizeof(U) / sizeof(T)) {
@@ -70,9 +72,9 @@ public:
     }
 
     MemorySpan subSpan(const size_t begin, const size_t end = std::numeric_limits<size_t>::max()) const {
-#ifdef CAMERA_DEBUG
+        #ifdef CAMERA_DEBUG
         if (mBegin + begin > mEnd)throw std::logic_error("bad cast");
-#endif
+        #endif
         MemorySpan res;
         res.mMem = mMem;
         res.mBegin = mBegin + begin;
@@ -111,7 +113,15 @@ public:
         return *get();
     }
 
-    T operator*() const{
+    T operator*() const {
         return *get();
     }
 };
+
+template<typename T, size_t Rem = sizeof(T) % CACHE_ALIGN>
+struct AlignedType final :T {
+    unsigned char padding[CACHE_ALIGN - Rem];
+};
+
+template<typename T>
+struct AlignedType<T, 0> final :T {};

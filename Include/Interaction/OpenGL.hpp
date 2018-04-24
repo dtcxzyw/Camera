@@ -2,7 +2,7 @@
 #include <Core/Config.hpp>
 #ifdef CAMERA_OPENGL_SUPPORT
 #include <Core/Common.hpp>
-#include <Core/Math.hpp>
+#include <Math/Math.hpp>
 #include <Interaction/Counter.hpp>
 
 class GLFWwindow;

@@ -1,6 +1,6 @@
 #pragma once
 #include <Core/Common.hpp>
-#include  <Core/Math.hpp>
+#include  <Math/Math.hpp>
 #include <Core/DispatchSystem.hpp>
 #include <Core/Cache.hpp>
 

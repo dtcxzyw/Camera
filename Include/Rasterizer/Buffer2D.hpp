@@ -1,5 +1,5 @@
 #pragma once
-#include  <Core/Math.hpp>
+#include  <Math/Math.hpp>
 #include <Core/DispatchSystem.hpp>
 #include <Core/CompileBegin.hpp>
 #include <device_atomic_functions.h>

@@ -1,6 +1,6 @@
 #pragma once
 #include <Core/Common.hpp>
-#include <Core/Math.hpp>
+#include <Math/Math.hpp>
 
 CUDAINLINE vec3 uv(const vec2 uv) {
     return { uv.x - floor(uv.x),uv.y - floor(uv.y),0.0f };

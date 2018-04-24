@@ -40,6 +40,9 @@
     <Filter Include="Spectrum">
       <UniqueIdentifier>{cbc43c27-cfd6-42f0-9874-d1a1853e5840}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{f71e1dcb-f59d-4b72-8ae7-d1fc906c84ba}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp">
@@ -153,9 +156,6 @@
     <ClInclude Include="..\..\Include\Core\Environment.hpp">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Core\Math.hpp">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Core\Memory.hpp">
       <Filter>Core</Filter>
     </ClInclude>
@@ -182,6 +182,21 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\Light\LightingSample.hpp">
       <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\IO\LZ4Binary.hpp">
+      <Filter>IO</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\RayTracer\Primitive.hpp">
+      <Filter>RayTracer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Math\Math.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Math\EFloat.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Math\Geometry.hpp">
+      <Filter>Math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -214,6 +229,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Core\Pipeline.cpp">
       <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\IO\LZ4Binary.cpp">
+      <Filter>IO</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -22,7 +22,6 @@
     <ClInclude Include="..\..\Include\Core\DataSet.hpp" />
     <ClInclude Include="..\..\Include\Core\DispatchSystem.hpp" />
     <ClInclude Include="..\..\Include\Core\Environment.hpp" />
-    <ClInclude Include="..\..\Include\Core\Math.hpp" />
     <ClInclude Include="..\..\Include\Core\Memory.hpp" />
     <ClInclude Include="..\..\Include\Core\Pipeline.hpp" />
     <ClInclude Include="..\..\Include\Core\Queue.hpp" />
@@ -32,10 +31,14 @@
     <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp" />
     <ClInclude Include="..\..\Include\Interaction\SwapChain.hpp" />
     <ClInclude Include="..\..\Include\IO\Image.hpp" />
+    <ClInclude Include="..\..\Include\IO\LZ4Binary.hpp" />
     <ClInclude Include="..\..\Include\IO\Model.hpp" />
     <ClInclude Include="..\..\Include\IO\Video.hpp" />
     <ClInclude Include="..\..\Include\Light\DeltaPositionLight.hpp" />
     <ClInclude Include="..\..\Include\Light\LightingSample.hpp" />
+    <ClInclude Include="..\..\Include\Math\EFloat.hpp" />
+    <ClInclude Include="..\..\Include\Math\Geometry.hpp" />
+    <ClInclude Include="..\..\Include\Math\Math.hpp" />
     <ClInclude Include="..\..\Include\PBR\BRDF.hpp" />
     <ClInclude Include="..\..\Include\PBR\DataDrivenBRDF.hpp" />
     <ClInclude Include="..\..\Include\PostProcess\ToneMapping.hpp" />
@@ -51,6 +54,7 @@
     <ClInclude Include="..\..\Include\Rasterizer\Tile.hpp" />
     <ClInclude Include="..\..\Include\Rasterizer\TriangleRasterizer.hpp" />
     <ClInclude Include="..\..\Include\Rasterizer\Vertex.hpp" />
+    <ClInclude Include="..\..\Include\RayTracer\Primitive.hpp" />
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp" />
     <ClInclude Include="..\..\Include\Scene\ECS.hpp" />
     <ClInclude Include="..\..\Include\Spectrum\RGBSpectrum.hpp" />
@@ -66,6 +70,7 @@
     <ClCompile Include="..\..\Src\Core\Memory.cpp" />
     <ClCompile Include="..\..\Src\Core\Pipeline.cpp" />
     <ClCompile Include="..\..\Src\Interaction\Counter.cpp" />
+    <ClCompile Include="..\..\Src\IO\LZ4Binary.cpp" />
     <ClCompile Include="..\..\Src\IO\Model.cpp" />
     <ClCompile Include="..\..\Src\Scene\ECS.cpp" />
     <ClCompile Include="..\..\Src\Interaction\D3D11.cpp">
@@ -189,7 +194,7 @@
     </CudaLink>
     <Lib>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin;$(CUDA_PATH)\lib\x64;$(SolutionDir)ThirdParty\Libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp.lib;glfw3.lib;opengl32.lib;glew32.lib;cudart.lib;cudadevrt.lib;d3d11.lib;d3dcompiler.lib;imgui.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>assimp.lib;glfw3.lib;opengl32.lib;glew32.lib;cudart.lib;cudadevrt.lib;d3d11.lib;imgui.lib;lz4.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -252,7 +257,7 @@
       <AdditionalDependencies>cudart.lib;cudadevrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </CudaLink>
     <Lib>
-      <AdditionalDependencies>assimp.lib;glfw3.lib;opengl32.lib;glew32.lib;cudart.lib;cudadevrt.lib;d3d11.lib;d3dcompiler.lib;imgui.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>assimp.lib;glfw3.lib;opengl32.lib;glew32.lib;cudart.lib;cudadevrt.lib;d3d11.lib;imgui.lib;lz4.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <Lib>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin;$(CUDA_PATH)\lib\x64;$(SolutionDir)ThirdParty\Libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

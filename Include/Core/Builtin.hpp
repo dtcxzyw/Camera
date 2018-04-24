@@ -1,5 +1,5 @@
 #pragma once
-#include <Core/Math.hpp>
+#include <Math/Math.hpp>
 #include <Core/Common.hpp>
 
 #include <Core/CompileBegin.hpp>

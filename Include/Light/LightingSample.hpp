@@ -1,6 +1,6 @@
 #pragma once
 #include <Core/Common.hpp>
-#include <Core/Math.hpp>
+#include <Math/Math.hpp>
 
 template<typename Spectrum>
 struct LightingSample final {

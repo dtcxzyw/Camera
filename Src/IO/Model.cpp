@@ -4,18 +4,20 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <Core/CompileEnd.hpp>
-#include <vector>
-#include <fstream>
+#include <IO/LZ4Binary.hpp>
 #include <filesystem>
 
 template<typename T>
-void read(std::ifstream& stream,T* ptr, const size_t size = 1) {
-    stream.read(reinterpret_cast<char*>(ptr),sizeof(T)*size);
+void read(const std::vector<char>& stream, uint64_t& offset, T* ptr, const size_t size = 1) {
+    const auto rsiz= sizeof(T)*size;
+    memcpy(ptr, stream.data() + offset, rsiz);
+    offset+=rsiz;
 }
 
 template<typename T>
-void write(std::ofstream& stream,const T* ptr, const size_t size=1) {
-    stream.write(reinterpret_cast<const char*>(ptr), sizeof(T)*size);
+void write(std::vector<char>& stream, const T* ptr, const size_t size = 1) {
+    const auto begin = reinterpret_cast<const char*>(ptr);
+    stream.insert(stream.end(), begin, begin + sizeof(T)*size);
 }
 
 void StaticMesh::convertToBinary(const std::string & path) {
@@ -33,9 +35,7 @@ void StaticMesh::convertToBinary(const std::string & path) {
     if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE)
         throw std::runtime_error("Failed to load the mesh.");
     const auto mesh=scene->mMeshes[0];
-    std::ofstream out(path + ".bin", std::ios::binary|std::ios::out|std::ios::trunc);
-    if (!out.is_open())
-        throw std::runtime_error("Failed to open the output file.");
+    std::vector<char> data;
     {
         std::vector<Vertex> buf(mesh->mNumVertices);
         for (uint i = 0; i < mesh->mNumVertices; ++i) {
@@ -45,35 +45,35 @@ void StaticMesh::convertToBinary(const std::string & path) {
             buf[i].tangent = *reinterpret_cast<vec3*>(mesh->mTangents+i);
         }
         const uint64_t vertSize = mesh->mNumVertices;
-        write(out,&vertSize);
-        write(out, buf.data(), buf.size());
+        write(data,&vertSize);
+        write(data, buf.data(), buf.size());
     }
     {
         std::vector<uvec3> buf(mesh->mNumFaces);
         for (uint i = 0; i < mesh->mNumFaces; ++i)
             buf[i] = *reinterpret_cast<uvec3*>(mesh->mFaces[i].mIndices);
         const uint64_t faceSize = mesh->mNumFaces;
-        write(out, &faceSize);
-        write(out, buf.data(), buf.size());
+        write(data, &faceSize);
+        write(data, buf.data(), buf.size());
     }
     importer.FreeScene();
+    saveLZ4(path + ".bin", data);
 }
 
 void StaticMesh::loadBinary(const std::string & path, Stream & loader) {
-    std::ifstream in(path, std::ios::binary | std::ios::in);
-    if (!in.is_open())
-        throw std::runtime_error("Failed to open the input file.");
+    const auto data = loadLZ4(path);
+    uint64_t offset = 0;
     uint64_t vertSize;
-    read(in, &vertSize);
+    read(data,offset, &vertSize);
     PinnedBuffer<Vertex> vertHost(vertSize);
-    read(in, vertHost.get(), vertSize);
+    read(data, offset, vertHost.get(), vertSize);
     vert = MemorySpan<Vertex>(vertSize);
     checkError(cudaMemcpyAsync(vert.begin(),vertHost.get(),vertSize*sizeof(Vertex),
         cudaMemcpyHostToDevice,loader.get()));
     uint64_t faceSize;
-    read(in, &faceSize);
+    read(data,offset, &faceSize);
     PinnedBuffer<uvec3> indexHost(faceSize);
-    read(in, indexHost.get(),faceSize);
+    read(data, offset, indexHost.get(), faceSize);
     index = MemorySpan<uvec3>(faceSize);
     checkError(cudaMemcpyAsync(index.begin(),indexHost.get(),faceSize*sizeof(uvec3),
         cudaMemcpyHostToDevice,loader.get()));

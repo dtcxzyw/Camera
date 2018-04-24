@@ -1,4 +1,4 @@
-#include <Core/Math.hpp>
+#include <Math/Math.hpp>
 #include <Core/Constant.hpp>
 #include <algorithm>
 #include <stdexcept>

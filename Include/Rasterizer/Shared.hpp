@@ -1,6 +1,6 @@
 #pragma once
 #include <Core/Common.hpp>
-#include <Core/Math.hpp>
+#include <Math/Math.hpp>
 
 CUDAINLINE vec3 toRaster(const vec3 p, const vec2 hsiz) {
     const auto invz = 1.0f / p.z;
