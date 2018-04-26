@@ -23,7 +23,7 @@ CUDAINLINE float calcValue(const Func& func, const Cmp& cmp, float l, float r) {
     return func(l);
 }
 
-CUDAINLINE bool calcSphereRange(const vec4 sphere, const float near, const float far,vec4& res) {
+CUDAINLINE bool calcSphereRange(const vec4& sphere, const float near, const float far, vec4& res) {
     const auto r2 = sphere.w * sphere.w;
     const auto begin = fmax(-far, sphere.z - sphere.w), end = fmin(-near, sphere.z + sphere.w);
     if (begin >= end)return false;
@@ -46,14 +46,14 @@ CUDAINLINE bool calcSphereRange(const vec4 sphere, const float near, const float
     return true;
 }
 
-GLOBAL void processSphereInfoKernel(const unsigned int size,READONLY(vec4) in, SphereInfo* info,
+GLOBAL void processSphereInfoKernel(const unsigned int size, READONLY(SphereDesc) in, SphereInfo* info,
                                  TileRef* ref, unsigned int* cnt, const vec4 scissor, const vec2 hsiz,
                                  const float near, const float far, const vec2 mul) {
     const auto id = getId();
     if (id >= size)return;
     const auto sphere = in[id];
     vec4 range;
-    if (!calcSphereRange(sphere, near, far, range))return;
+    if (!calcSphereRange(*reinterpret_cast<const vec4*>(&sphere), near, far, range))return;
     const uvec4 rect = {
         fmax(scissor.x, (1.0f + range.x * mul.x) * hsiz.x - tileOffset),
         fmin(scissor.y, (1.0f + range.y * mul.x) * hsiz.x + tileOffset),
@@ -68,12 +68,13 @@ GLOBAL void processSphereInfoKernel(const unsigned int size,READONLY(vec4) in, S
         ref[wpos].size = tsiz;
         ref[wpos].rect = rect;
         info[wpos].id = id;
-        info[wpos].info = {vec3{sphere}, 1.0f / sphere.w};
-        info[wpos].c = length2(vec3{sphere}) - sphere.w * sphere.w;
+        const auto pos = sphere.pos;
+        info[wpos].info = { pos, 1.0f / sphere.radius };
+        info[wpos].c = length2(Vector{ pos }) - sphere.radius * sphere.radius;
     }
 }
 
-SphereProcessingResult processSphereInfo(CommandBuffer& buffer, const Span<vec4>& spheres,
+SphereProcessingResult processSphereInfo(CommandBuffer& buffer, const Span<SphereDesc>& spheres,
                                       const vec4 scissor, const vec2 hsiz, const float near, const float far,
                                       const vec2 mul) {
     auto cnt = buffer.allocBuffer<unsigned int>(7);

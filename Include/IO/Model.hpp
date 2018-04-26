@@ -1,14 +1,14 @@
 #pragma once
-#include  <Math/Math.hpp>
+#include <Math/Geometry.hpp>
 #include <Core/Memory.hpp>
 #include <Core/Pipeline.hpp>
 #include <string>
 
 struct StaticMesh final {
     struct Vertex final {
-        ALIGN vec3 pos;
-        ALIGN vec3 normal;
-        ALIGN vec3 tangent;
+        ALIGN Point pos;
+        ALIGN Vector normal;
+        ALIGN Vector tangent;
         ALIGN UV uv;
     };
     MemorySpan<Vertex> vert;

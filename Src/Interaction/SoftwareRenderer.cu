@@ -27,7 +27,7 @@ CUDAINLINE vec4 toRGBA(const unsigned int col) {
     return vec4{col & 0xff, (col >> 8) & 0xff, (col >> 16) & 0xff, col >> 24} * int2Float;
 }
 
-CUDAINLINE void vertShader(VertInfo in, const Empty&, vec3& cpos, VertOut& out) {
+CUDAINLINE void vertShader(VertInfo in, const Empty&, Point& cpos, VertOut& out) {
     cpos = {in.pos.x, in.pos.y, 1.0f};
     out.get<VertOutAttr::TexCoord>() = {in.uv.x, in.uv.y};
     out.get<VertOutAttr::Color>() = toRGBA(in.col);
@@ -37,18 +37,19 @@ struct FrameBufferInfo {
     BuiltinRenderTargetRef<RGBA8> color;
 };
 
-CUDAINLINE bool clipShader(unsigned int, vec3&, vec3&, vec3&, const BuiltinSamplerRef<float>&) {
+CUDAINLINE bool clipShader(unsigned int, Point&, Point&, Point&,
+    const BuiltinSamplerRef<float>&) {
     return true;
 }
 
-CUDAINLINE void fragShader(unsigned int id, ivec2 uv, float, const VertOut& in, const VertOut&, const VertOut&,
+CUDAINLINE void fragShader(unsigned int, ivec2 uv, float, const VertOut& in, const VertOut&, const VertOut&,
     const BuiltinSamplerRef<float>& texture, FrameBufferInfo& fbo) {
     const auto texAlpha = texture.get(in.get<VertOutAttr::TexCoord>());
     auto src = in.get<VertOutAttr::Color>();
     src.a *= texAlpha;
     const auto dst = vec4(fbo.color.get(uv)) * int2Float;
     const auto alpha = src.a, invAlpha = 1.0f - alpha;
-    const auto col = vec3(src) * alpha + vec3(dst) * invAlpha;
+    const auto col = RGB(src) * alpha + RGB(dst) * invAlpha;
     fbo.color.set(uv, RGBA8{clamp(col, 0.0f, 1.0f) * 255.0f, 255});
 }
 
@@ -98,13 +99,13 @@ void SoftwareRenderer::render(CommandBuffer& buffer, BuiltinRenderTarget<RGBA8>&
     if (fbw == 0 || fbh == 0)return;
     drawData->ScaleClipRects(io.DisplayFramebufferScale);
 
-    auto uni = buffer.allocConstant<BuiltinSamplerRef<float>>();
+    const auto uni = buffer.allocConstant<BuiltinSamplerRef<float>>();
     buffer.memcpy(uni, [this](auto&& call) {
         const auto data = mSampler->toSampler();
         call(&data);
     });
 
-    auto frameBuffer = buffer.allocConstant<FrameBufferInfo>();
+    const auto frameBuffer = buffer.allocConstant<FrameBufferInfo>();
     buffer.memcpy(frameBuffer, [rt = renderTarget.toTarget()](auto&& call) {
         FrameBufferInfo info;
         info.color = rt;
@@ -163,14 +164,14 @@ void SoftwareRenderer::render(CommandBuffer& buffer, BuiltinRenderTarget<RGBA8>&
         }
     }
 
-    auto vbo = buffer.allocBuffer<VertInfo>(drawData->TotalVtxCount);
+    const auto vbo = buffer.allocBuffer<VertInfo>(drawData->TotalVtxCount);
     buffer.memcpy(vbo, [buf = std::move(vertData)](auto&& call) {
         call(buf.data());
     });
     const auto vert = calcVertex<VertInfo, VertOut, Empty, vertShader>(buffer, vbo, {});
     const auto vertCore = Span<VertexInfo<VertOut>>{vert};
 
-    auto ibo = buffer.allocBuffer<uvec3>(idxData.size());
+    const auto ibo = buffer.allocBuffer<uvec3>(idxData.size());
     buffer.memcpy(ibo, [buf = std::move(idxData)](auto&& call) {
         call(buf.data());
     });

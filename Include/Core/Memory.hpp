@@ -7,7 +7,7 @@
 #endif
 
 inline size_t calcSizeLevel(const size_t size) {
-    const auto msb = findMSB(size);
+    const auto msb = glm::findMSB(size);
     return msb + (size != (1ULL << msb));
 }
 

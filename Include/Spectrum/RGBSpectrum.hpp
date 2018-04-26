@@ -1,13 +1,15 @@
 #pragma once
 #include <Core/Common.hpp>
-#include <Math/Math.hpp>
+#include <Core/CompileBegin.hpp>
+#include <glm/gtx/color_space.hpp>
+#include <Core/CompileEnd.hpp>
 
 class RGBSpectrum final {
 private:
-    vec3 mVal;
+    RGB mVal;
 public:
     BOTH explicit RGBSpectrum(const float v = 0.f) : mVal(v) {}
-    BOTH explicit RGBSpectrum(const vec3& v) : mVal(v) {}
+    BOTH explicit RGBSpectrum(const RGB& v) : mVal(v) {}
     #define OPVEC(op) \
     BOTH RGBSpectrum& operator##op##=(const RGBSpectrum& rhs) {\
         mVal op##= rhs.mVal;\
@@ -41,10 +43,10 @@ public:
 #undef OPFLOAT
 
     BOTH float lum() const {
-        return luminosity(mVal);
+        return glm::luminosity(mVal);
     }
 
-    BOTH vec3 toRGB() const {
+    BOTH RGB toRGB() const {
         return mVal;
     }
 };

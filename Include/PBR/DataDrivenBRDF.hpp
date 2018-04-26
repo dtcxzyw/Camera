@@ -1,6 +1,6 @@
 #pragma once
 #include <Core/Common.hpp>
-#include <Math/Math.hpp>
+#include <Math/Geometry.hpp>
 #include <Core/Memory.hpp>
 #include <Core/Pipeline.hpp>
 #include <string>
@@ -26,13 +26,14 @@ BibTeX:
 The implementation is based on http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp.
 */
 
+/*
 constexpr auto rth = 90, rtd = 90, rpd = 360, size = rth *rtd *rpd / 2;
 constexpr auto rfac = 1.0f / 1500.0f,gfac = 1.15f / 1500.0f,bfac=1.66f / 1500.0f;
 
 namespace Impl {
 
     // rotate vector along one axis
-    CUDAINLINE vec3 rotateVector(vec3 vector, vec3 axis, float angle) {
+    CUDAINLINE Vector rotateVector(Vector vector, Vector axis, float angle) {
         const auto cosAng = cos(angle);
         const auto sinAng = sin(angle);
         auto out = vector * cosAng;
@@ -115,3 +116,4 @@ public:
     MERLBRDFData(const std::string& path,Stream& loader);
     BRDFSampler toSampler() const;
 };
+*/

@@ -1,3 +1,4 @@
+/*
 #include <PBR/DataDrivenBRDF.hpp>
 #include <fstream>
 #include <vector>
@@ -30,3 +31,4 @@ MERLBRDFData::MERLBRDFData(const std::string& path, Stream& loader) {
 BRDFSampler MERLBRDFData::toSampler() const {
     return { mData.begin() };
 }
+*/

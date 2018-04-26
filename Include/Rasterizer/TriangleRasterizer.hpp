@@ -63,12 +63,12 @@ struct STRUCT_ALIGN TriangleVert final {
     VertexInfo<Out> vert[3];
 };
 
-CUDAINLINE float edgeFunction(const vec3 a, const vec3 b, const vec3 c) {
+CUDAINLINE float edgeFunction(const Vector a, const Vector b, const Vector c) {
     return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
 
-CUDAINLINE vec3 calcCore(const vec3 a, const vec3 b) {
-    vec3 w;
+CUDAINLINE Vector calcCore(const Vector a, const Vector b) {
+    Vector w;
     w.x = b.y - a.y, w.y = a.x - b.x;
     w.z = -(a.x * w.x + a.y * w.y);
     return w;
@@ -76,7 +76,7 @@ CUDAINLINE vec3 calcCore(const vec3 a, const vec3 b) {
 
 template <typename Out>
 struct STRUCT_ALIGN Triangle final {
-    vec3 invz;
+    Vector invz;
     mat3 w;
     unsigned int id, type;
     Out out[3];
@@ -114,13 +114,13 @@ CUDAINLINE void calcTriangleInfo(const TriangleVert<Out>& tri, const TrianglePro
         fmax(args.scissor.z, min3(a.y, b.y, c.y) - tileOffset),
         fmin(args.scissor.w, max3(a.y, b.y, c.y) + tileOffset)
     };
-    const auto area = edgeFunction(a, b, c);
+    const auto area = edgeFunction(Vector(a), Vector(b), Vector(c));
     if (static_cast<bool>((area < 0.0f) ^ args.mode) & rect.x < rect.y & rect.z < rect.w) {
         Triangle<Out> res;
         res.invz = {a.z, b.z, c.z};
-        res.w[0] = calcCore(b, c);
-        res.w[1] = calcCore(c, a);
-        res.w[2] = calcCore(a, b);
+        res.w[0] = calcCore(Vector(b), Vector(c));
+        res.w[1] = calcCore(Vector(c), Vector(a));
+        res.w[2] = calcCore(Vector(a), Vector(b));
         res.w *= 1.0f / area;
         res.id = tri.id;
         res.type = ((c.y == b.y & c.x > b.x) | (c.y > b.y)) |
@@ -218,7 +218,7 @@ CUDAINLINE void clipTriangle(const TriangleVert<Out>& tri, const float z, const 
 }
 
 template <typename Uniform>
-using TriangleClipShader = bool(*)(unsigned int id, vec3& pa, vec3& pb, vec3& pc, const Uniform& uniform);
+using TriangleClipShader = bool(*)(unsigned int id, Point& pa, Point& pb, Point& pc, const Uniform& uniform);
 
 template <typename Index, typename Out, typename Uniform, TriangleClipShader<Uniform> Func>
 GLOBAL void processTrianglesKernel(const unsigned int size,READONLY(VertexInfo<Out>) vert,
@@ -240,8 +240,8 @@ GLOBAL void processTrianglesKernel(const unsigned int size,READONLY(VertexInfo<O
     }
 }
 
-CUDAINLINE bool calcWeight(const mat4 w0, const int type, const vec2 p, const vec3 invz,
-    const float near, const float invnf, vec3& w, float& nz) {
+CUDAINLINE bool calcWeight(const mat3 w0, const int type, const vec2 p, const Vector invz,
+    const float near, const float invnf, Vector& w, float& nz) {
     #pragma unroll
     for (auto i = 0; i < 3; ++i)
         w[i] = w0[i].x * p.x + w0[i].y * p.y + w0[i].z;
@@ -270,11 +270,11 @@ GLOBAL void drawMicroT(READONLY(Triangle<Out>) info,READONLY(TileRef) idx,
     const ivec2 uv{ref.rect.x + (threadIdx.y << 1) + offX, ref.rect.z + (threadIdx.z << 1) + offY};
     const vec2 p{uv.x + sx, uv.y + sy};
     const auto& tri = info[ref.id];
-    vec3 w;
+    Vector w;
     float z;
     const auto flag = calcWeight(tri.w, tri.type, p, tri.invz, near, invnf, w, z);
-    const auto ddx = (shuffleVec3(w, 0b10) - w) * (offX ? -1.0f : 1.0f);
-    const auto ddy = (shuffleVec3(w, 0b01) - w) * (offY ? -1.0f : 1.0f);
+    const auto ddx = (shuffleVector(w, 0b10) - w) * (offX ? -1.0f : 1.0f);
+    const auto ddy = (shuffleVector(w, 0b01) - w) * (offY ? -1.0f : 1.0f);
     if (uv.x <= ref.rect.y & uv.y <= ref.rect.w & flag) {
         const auto fout = tri.out[0] * w.x + tri.out[1] * w.y + tri.out[2] * w.z;
         const auto ddxo = tri.out[0] * ddx.x + tri.out[1] * ddx.y + tri.out[2] * ddx.z;
@@ -326,7 +326,7 @@ CUDAINLINE bool emptyTriangleTileClipShader(const uvec4&, const Uniform&) {
 }
 
 CUDAINLINE bool intersect(const mat3& w0,const vec4& rect) {
-    const auto test=[&rect](const vec3 w){
+    const auto test = [&rect](const Vector w) {
         return fmax(rect.x*w.x, rect.y*w.x) + fmax(rect.z*w.y, rect.w*w.y) + w.z >= 0.0;
     };
     return test(w0[0]) & test(w0[1]) & test(w0[2]);

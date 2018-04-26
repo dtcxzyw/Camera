@@ -9,28 +9,31 @@
 #include <Rasterizer/TriangleRasterizer.hpp>
 #include <Spectrum/RGBSpectrum.hpp>
 #include <Light/DeltaPositionLight.hpp>
+#include <Rasterizer/SphereRasterizer.hpp>
 
 using VI = StaticMesh::Vertex;
 
 enum OutInfo {
     Pos,
-    Normal,
+    Nor,
     Tangent,
     TexCoord
 };
 
-using OI = Args<VAR(Pos, vec3), VAR(Normal, vec3),VAR(Tangent, vec3)>;
+using OI = Args<VAR(Pos, Point), VAR(Nor, Vector), VAR(Tangent, Vector)>;
 
 struct FrameBufferRef final {
     BuiltinRenderTargetRef<RGBA> color;
     Buffer2DRef<unsigned int> depth;
     uvec2 fsize;
     FrameBufferRef() = default;
+
     FrameBufferRef(const FrameBufferRef& rhs, const Buffer2DRef<unsigned int> buf) {
         color = rhs.color;
         depth = buf;
         fsize = rhs.fsize;
     }
+
     CUDAINLINE uvec2 size() const {
         return fsize;
     }
@@ -70,13 +73,11 @@ struct FrameBuffer final {
 
 struct Uniform final {
     ALIGN vec2 mul;
-    ALIGN mat4 M;
-    ALIGN mat4 Msky;
-    ALIGN mat4 V;
-    ALIGN mat4 invV;
-    ALIGN mat3 normalInvV;
-    ALIGN mat3 normalMat;
-    ALIGN vec3 cp;
+    ALIGN Transform cameraTransform;
+    ALIGN Transform skyTransform;
+    ALIGN Transform modelTransform;
+    ALIGN Transform invCameraTransform;
+    ALIGN Point cp;
     ALIGN DisneyBRDFArg<RGBSpectrum> arg;
     ALIGN BuiltinSamplerRef<RGBA> sampler;
     ALIGN PointLight<RGBSpectrum> light;
@@ -95,13 +96,14 @@ struct RenderingContext final {
     VersionCounter vertCounter;
     VertexCache<OI, VersionComparer> cache;
     TriangleRenderingContext<OI, VersionComparer> triContext;
+
     CacheRef<MemorySpan<VertexInfo<OI>>, VersionComparer> get() {
-        return { cache,vertCounter.get() };
+        return {cache, vertCounter.get()};
     }
 };
 
 void kernel(const StaticMesh& model, RenderingContext& mc,
-            const StaticMesh& skybox, RenderingContext& sc,
-            const MemorySpan<vec4>& spheres,
-            const Span<Uniform>& uniform, FrameBuffer& fbo, float* lum,
-            PinholeCamera::RasterPosConverter converter, CommandBuffer& buffer);
+    const StaticMesh& skybox, RenderingContext& sc,
+    const MemorySpan<SphereDesc>& spheres,
+    const Span<Uniform>& uniform, FrameBuffer& fbo, float* lum,
+    PinholeCamera::RasterPosConverter converter, CommandBuffer& buffer);

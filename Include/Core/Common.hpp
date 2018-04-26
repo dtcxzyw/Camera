@@ -7,7 +7,6 @@
 
 #define CUDA __device__
 #define CUDAINLINE __forceinline__ CUDA
-#define CUDANOINLINE __noinline__ CUDA
 #define HOST __host__
 #define BOTH CUDAINLINE HOST
 #define GLOBAL __global__

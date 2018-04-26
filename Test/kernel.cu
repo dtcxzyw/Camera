@@ -5,7 +5,8 @@
 #include <Rasterizer/IndexDescriptor.hpp>
 #include <Texture/Noise.hpp>
 
-CUDAINLINE vec3 toPos(const vec3 p, const Uniform& u) {
+CUDAINLINE Point toPos(const Point pos, const Uniform& u) {
+    const Vector p{ pos };
     return {p.x * u.mul.x, p.y * u.mul.y, -p.z};
 }
 
@@ -13,36 +14,35 @@ CUDAINLINE void setDepth(unsigned int& data, const unsigned int val) {
     atomicMin(&data, val);
 }
 
-CUDAINLINE bool CS(unsigned int, vec3& pa, vec3& pb, vec3& pc, const Uniform& u) {
+CUDAINLINE bool CS(unsigned int, Point& pa, Point& pb, Point& pc, const Uniform& u) {
     pa = toPos(pa, u);
     pb = toPos(pb, u);
     pc = toPos(pc, u);
     return true;
 }
 
-CUDAINLINE void VS(VI in, const Uniform& uniform, vec3& cpos, OI& out) {
-    const auto wp = uniform.Msky * vec4(in.pos, 1.0f);
+CUDAINLINE void VS(VI in, const Uniform& uniform, Point& cpos, OI& out) {
     out.get<Pos>() = in.pos;
-    cpos = mat4(mat3(uniform.V)) * wp;
+    cpos = uniform.skyTransform(in.pos);
 }
 
 CUDAINLINE void drawSky(unsigned int, ivec2 uv, float, const OI& out, const OI&, const OI&,
     const Uniform& uniform, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == 0xffffffff) {
-        const vec3 p = out.get<Pos>();
-        fbo.color.set(uv, uniform.sampler.getCubeMap(p));
+        const auto p = out.get<Pos>();
+        fbo.color.set(uv, uniform.sampler.getCubeMap(Vector(p)));
     }
 }
 
-CUDAINLINE void VSM(VI in, const Uniform& uniform, vec3& cpos, OI& out) {
-    const auto wp = uniform.M * vec4(in.pos, 1.0f);
+CUDAINLINE void VSM(VI in, const Uniform& uniform, Point& cpos, OI& out) {
+    const auto wp = uniform.modelTransform(in.pos);
     out.get<Pos>() = wp;
-    out.get<Normal>() = uniform.normalMat * in.normal;
-    out.get<Tangent>() = uniform.normalMat * in.tangent;
-    cpos = uniform.V * wp;
+    out.get<Nor>() = Vector(uniform.modelTransform(makeNormalUnsafe(in.normal)));
+    out.get<Tangent>() = Vector(uniform.modelTransform(makeNormalUnsafe(in.tangent)));
+    cpos = uniform.cameraTransform(wp);
 }
 
-CUDAINLINE bool CSM(unsigned int, vec3& pa, vec3& pb, vec3& pc, const Uniform& u) {
+CUDAINLINE bool CSM(unsigned int, Point& pa, Point& pb, Point& pc, const Uniform& u) {
     pa = toPos(pa, u);
     pb = toPos(pb, u);
     pc = toPos(pc, u);
@@ -56,25 +56,25 @@ CUDAINLINE void setModel(unsigned int, ivec2 uv, float z, const OI&, const OI&, 
     setDepth(fbo.depth.get(uv), z * maxdu);
 }
 
-CUDAINLINE RGBSpectrum shade(const vec3 p, const vec3 N, const vec3 X, const vec3 Y, 
+CUDAINLINE RGBSpectrum shade(const Point p, const Normal N, const Normal X, const Normal Y,
     const Uniform& uniform) {
     const auto sample = uniform.light.sample({}, p);
-    const auto V = normalize(uniform.cp - p);
-    const auto F = disneyBRDF(sample.wi, V, N, X, Y, uniform.arg);
+    const Normal V{ uniform.cp - p };
+    const auto F = disneyBRDF(Normal(sample.wi), V, N, X, Y, uniform.arg);
     const auto ref = reflect(-V, N);
     const auto lc = uniform.light.sample({}, p).illumination +
-        RGBSpectrum(uniform.sampler.getCubeMap(ref));
+        RGBSpectrum(uniform.sampler.getCubeMap(Vector(ref)));
     return lc * F * fabs(dot(N, sample.wi));
 }
 
 CUDAINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, const OI&,
     const OI&, const Uniform& uniform, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
-        const vec3 p = out.get<Pos>();
-        const vec3 N = normalize(out.get<Normal>());
-        const vec3 T = normalize(out.get<Tangent>());
-        const auto X = normalize(T - dot(T, N) * N);
-        const auto Y = normalize(cross(X, N));
+        const Point p = out.get<Pos>();
+        const Normal N{ out.get<Nor>() };
+        const Normal T{ out.get<Tangent>() };
+        const auto X = reorthogonalize(N, T);
+        const auto Y = cross(X, N);
         fbo.color.set(uv, { shade(p,N,X,Y,uniform).toRGB(), 1.0f });
     }
 }
@@ -100,7 +100,7 @@ CUDAINLINE void post(ivec2 NDC, const PostUniform& uni, BuiltinRenderTargetRef<R
         }
         c = RGBSpectrum(ACES(c.toRGB(), *uni.lum));
     }
-    const RGBA8 color = { clamp(pow(c.toRGB(),vec3(1.0f / 2.2f)), 0.0f, 1.0f) * 255.0f, 255 };
+    const RGBA8 color = { clamp(pow(c.toRGB(),RGB(1.0f / 2.2f)), 0.0f, 1.0f) * 255.0f, 255 };
     out.set(NDC, color);
 }
 
@@ -125,26 +125,27 @@ void renderMesh(const StaticMesh& model, const Span<Uniform>& uniform,
             context.vertCounter.get(), mode);
 }
 
-CUDAINLINE vec4 vsSphere(vec4 sp, const Uniform& uniform) {
-    return calcCameraSphere(sp, uniform.V);
+CUDAINLINE SphereDesc vsSphere(SphereDesc sp, const Uniform& uniform) {
+    return calcCameraSphere(uniform.cameraTransform, sp);
 }
 
-CUDAINLINE void setSpherePoint(unsigned int, ivec2 uv, float z, vec3, vec3, float, bool,
-    vec3, vec3, const Uniform&, FrameBufferRef& fbo) {
+CUDAINLINE void setSpherePoint(unsigned int, ivec2 uv, float z, Point, Vector, float, bool,
+    Vector, Vector, const Uniform&, FrameBufferRef& fbo) {
     setDepth(fbo.depth.get(uv), z * maxdu);
 }
 
-CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, vec3 p, vec3 dir, float invr,
-    bool inSphere, vec3 dpdx, vec3 dpdy, const Uniform& u, FrameBufferRef& fbo) {
+CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, Point p, Vector dir, float invr,
+    bool inSphere, Vector dpdx, Vector dpdy, const Uniform& u, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
-        const vec3 pos = u.invV * vec4(p, 1.0f);
-        const auto modelDir = u.normalInvV*dir;
-        const auto normalizedDir = modelDir * invr;
+        const auto pos = u.invCameraTransform(p);
+        const auto modelDir = u.invCameraTransform(dir);
+        const auto normalizedDir = makeNormalUnsafe(modelDir * invr);
         const auto N = calcSphereNormal(normalizedDir, inSphere);
         const auto Y = calcSphereBiTangent(N);
         const auto X = calcSphereTangent(N, Y);
         auto res = shade(pos, N, X, Y, u);
-        const auto octaves = calcOctavesAntiAliased(u.normalInvV*dpdx, u.normalInvV*dpdy);
+        const auto octaves = calcOctavesAntiAliased(u.invCameraTransform(dpdx),
+            u.invCameraTransform(dpdy));
         res *= marble(modelDir, 1.0f, 0.5f, octaves) + RGBSpectrum(0.5f);
         fbo.color.set(uv, { res.toRGB(), 1.0f });
     }
@@ -152,7 +153,7 @@ CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, vec3 p, vec3 di
 
 void kernel(const StaticMesh& model, RenderingContext& mc,
     const StaticMesh& skybox, RenderingContext& sc,
-    const MemorySpan<vec4>& spheres,
+    const MemorySpan<SphereDesc>& spheres,
     const Span<Uniform>& uniform, FrameBuffer& fbo, float* lum,
     const PinholeCamera::RasterPosConverter converter, CommandBuffer& buffer) {
     fbo.colorRT->clear(buffer, vec4{ 0.0f, 0.0f, 0.0f, 1.0f });

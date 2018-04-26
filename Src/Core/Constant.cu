@@ -7,6 +7,9 @@
 namespace Impl {
     __constant__ unsigned char memory[blockNum * blockSize];
 
+    using uint = unsigned int;
+    using u8 = unsigned char;
+
     class SegTree final {
     private:
         static constexpr auto treeSize = (blockNum + 1) << 2;

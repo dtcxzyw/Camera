@@ -5,6 +5,7 @@
 #include <Interaction/SwapChain.hpp>
 #include <Core/CompileBegin.hpp>
 #include <IMGUI/imgui.h>
+#include <glm/gtc/matrix_transform.hpp>
 #include <Core/CompileEnd.hpp>
 #include <Interaction/SoftwareRenderer.hpp>
 #include <Interaction/D3D11.hpp>
@@ -15,7 +16,7 @@ class App final : Uncopyable {
 private:
     float mLight = 65.0f, mR = 20.0f;
     StaticMesh mBox, mModel;
-    MemorySpan<vec4> mSpheres;
+    MemorySpan<SphereDesc> mSpheres;
     std::unique_ptr<RenderingContext> mMc;
     std::unique_ptr<RenderingContext> mSc;
     std::shared_ptr<BuiltinCubeMap<RGBA>> mEnvMap;
@@ -23,7 +24,7 @@ private:
     DisneyBRDFArg<RGBSpectrum> mArg;
     PinholeCamera mCamera;
     Uniform mOld;
-    vec3 mColor;
+    RGB mColor;
 
     static void setStyle() {
         ImGui::StyleColorsDark();
@@ -53,11 +54,11 @@ private:
                     static_cast<int>(mModel.index.size()));
         ImGui::Text("triNum: %u\n", *mMc->triContext.triNum);
         ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
-        ImGui::Text("FOV %.1f ", degrees(mCamera.toFov()));
+        ImGui::Text("FOV %.1f ", glm::degrees(mCamera.toFov()));
         ImGui::SliderFloat("focal length", &mCamera.focalLength, 1.0f, 500.0f, "%.1f");
         ImGui::SliderFloat("light", &mLight, 0.0f, 100.0f);
         ImGui::SliderFloat("lightRadius", &mR, 0.0f, 40.0f);
-        mColor = clamp(mColor, vec3(0.01f), vec3(0.999f)); \
+        mColor = clamp(mColor, RGB(0.01f), RGB(0.999f)); \
         ImGui::ColorEdit3("baseColor",&mColor[0],ImGuiColorEditFlags_Float);
 
         #define ARG(name)\
@@ -79,10 +80,10 @@ private:
     }
 
     Uniform getUniform(float, const vec2 mul) const {
-        static vec3 cp = {10.0f, 0.0f, 0.0f}, mid = {-100000.0f, 0.0f, 0.0f};
-        const auto V = lookAt(cp, mid, {0.0f, 1.0f, 0.0f});
-        auto M = scale(mat4{}, vec3(5.0f));
-        M = rotate(M, half_pi<float>(), {0.0f, 1.0f, 0.0f});
+        static Vector cp = { 10.0f, 0.0f, 0.0f }, mid = { -100000.0f, 0.0f, 0.0f };
+        const auto V =glm::lookAt(cp, mid, {0.0f, 1.0f, 0.0f});
+        auto M = glm::scale(glm::mat4{}, Vector(5.0f));
+        M = glm::rotate(M, half_pi<float>(), {0.0f, 1.0f, 0.0f});
         constexpr auto step = 50.0f;
         const auto off = ImGui::GetIO().DeltaTime * step;
         if (ImGui::IsKeyDown('W'))cp.x -= off;
@@ -91,16 +92,14 @@ private:
         if (ImGui::IsKeyDown('D'))cp.z -= off;
         Uniform u;
         u.mul = mul;
-        u.Msky = {};
-        u.M = M;
-        u.V = V;
-        u.invV = inverse(u.V);
-        u.normalInvV = mat3(transpose(u.V));
-        u.normalMat = mat3(transpose(inverse(u.M)));
+        u.cameraTransform = Transform(V);
+        u.skyTransform = Transform(mat3(V));
+        u.invCameraTransform = inverse(u.cameraTransform);
+        u.modelTransform = Transform(M);
         u.arg = mArg;
         u.arg.baseColor = RGBSpectrum(mColor);
-        u.cp = cp;
-        u.light = { cp + vec3{ 0.0f,4.0f,0.0f },RGBSpectrum{ mLight} };
+        u.cp = Point(cp);
+        u.light = { u.cp + Vector{ 0.0f,4.0f,0.0f },RGBSpectrum{ mLight} };
         u.sampler = mEnvMapSampler->toSampler();
         return u;
     }
@@ -153,8 +152,8 @@ private:
     }
 
     void uploadSpheres() {
-        vec4 sphere[] = {{0.0f, 3.0f, 10.0f, 5.0f}, {0.0f, 0.0f, 13.0f, 3.0f}};
-        mSpheres = MemorySpan<vec4>(std::size(sphere));
+        SphereDesc sphere[] = { {{0.0f, 3.0f, 10.0f}, 5.0f}, {{0.0f, 0.0f, 13.0f}, 3.0f} };
+        mSpheres = MemorySpan<SphereDesc>(std::size(sphere));
         checkError(cudaMemcpy(mSpheres.begin(), sphere, sizeof(sphere), cudaMemcpyHostToDevice));
     }
 
@@ -195,7 +194,7 @@ public:
             mEnvMapSampler = std::make_shared<BuiltinSampler<RGBA>>(mEnvMap->get());
         }
 
-        mColor = vec3{ 220.0f, 223.0f, 227.0f } / 255.0f;
+        mColor = RGB{ 220.0f, 223.0f, 227.0f } / 255.0f;
 
         std::queue<RenderingTask> tasks;
 

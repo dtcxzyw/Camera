@@ -38,11 +38,11 @@ void StaticMesh::convertToBinary(const std::string & path) {
     std::vector<char> data;
     {
         std::vector<Vertex> buf(mesh->mNumVertices);
-        for (uint i = 0; i < mesh->mNumVertices; ++i) {
-            buf[i].pos = *reinterpret_cast<vec3*>(mesh->mVertices + i);
-            buf[i].normal = *reinterpret_cast<vec3*>(mesh->mNormals + i);
+        for (auto i = 0U; i < mesh->mNumVertices; ++i) {
+            buf[i].pos = *reinterpret_cast<Point*>(mesh->mVertices + i);
+            buf[i].normal = *reinterpret_cast<Vector*>(mesh->mNormals + i);
             buf[i].uv = *reinterpret_cast<UV*>(mesh->mTextureCoords[0] + i);
-            buf[i].tangent = *reinterpret_cast<vec3*>(mesh->mTangents+i);
+            buf[i].tangent = *reinterpret_cast<Vector*>(mesh->mTangents+i);
         }
         const uint64_t vertSize = mesh->mNumVertices;
         write(data,&vertSize);
@@ -50,7 +50,7 @@ void StaticMesh::convertToBinary(const std::string & path) {
     }
     {
         std::vector<uvec3> buf(mesh->mNumFaces);
-        for (uint i = 0; i < mesh->mNumFaces; ++i)
+        for (auto i = 0U; i < mesh->mNumFaces; ++i)
             buf[i] = *reinterpret_cast<uvec3*>(mesh->mFaces[i].mIndices);
         const uint64_t faceSize = mesh->mNumFaces;
         write(data, &faceSize);

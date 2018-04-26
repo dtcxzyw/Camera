@@ -1,12 +1,9 @@
 #pragma once
 #include <Core/Common.hpp>
+#include <Math/Geometry.hpp>
 #include <Core/CompileBegin.hpp>
 #include <device_functions.h>
 #include <Core/CompileEnd.hpp>
-
-CUDAINLINE vec3 calcHalf(const vec3 in, const vec3 out) {
-    return normalize(in + out);
-}
 
 //F
 CUDAINLINE float fresnelSchlick(const float d) {
@@ -154,12 +151,12 @@ struct DisneyBRDFArg final {
 };
 
 template <typename Spectrum>
-CUDAINLINE Spectrum disneyBRDF(const vec3 L, const vec3 V, const vec3 N, const vec3 X, const vec3 Y,
-    const DisneyBRDFArg<Spectrum>& arg) {
+CUDAINLINE Spectrum disneyBRDF(const Normal L, const Normal V, const Normal N, const Normal X,
+    const Normal Y, const DisneyBRDFArg<Spectrum>& arg) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return Spectrum(0.0f);
-    const auto H = calcHalf(L, V);
+    const auto H = halfVector(L, V);
     const auto ldh = dot(L, H);
     const auto ndh = dot(N, H);
 
@@ -224,12 +221,12 @@ struct UE4BRDFArg final {
 
 //ratio = dis/radius
 template <typename Spectrum>
-CUDAINLINE Spectrum UE4BRDF(const vec3 L, const vec3 V, const vec3 N, const vec3 X, const vec3 Y,
+CUDAINLINE Spectrum UE4BRDF(const Normal L, const Normal V, const Normal N, const Normal X, const Normal Y,
     const UE4BRDFArg<Spectrum>& arg, const float ratio) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return Spectrum(0.0f);
-    const auto H = calcHalf(L, V);
+    const auto H = halfVector(L, V);
     const auto ldh = dot(L, H);
     const auto ndh = dot(N, H);
 
@@ -304,12 +301,12 @@ CUDAINLINE float calcFv(const float r) {
 }
 
 template <typename Spectrum>
-CUDAINLINE Spectrum frostbiteBRDF(const vec3 L, const vec3 V, const vec3 N,
+CUDAINLINE Spectrum frostbiteBRDF(const Normal L, const Normal V, const Normal N,
     const FrostbiteBRDFArg<Spectrum>& arg) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return Spectrum(0.0f);
-    const auto H = calcHalf(L, V);
+    const auto H = halfVector(L, V);
     const auto ldh = dot(L, H);
     const auto ndh = dot(N, H);
     const auto vdh = dot(V, H);
@@ -350,12 +347,12 @@ struct MixedBRDFArg final {
 };
 
 template <typename Spectrum>
-CUDAINLINE Spectrum mixedBRDF(const vec3 L, const vec3 V, const vec3 N, const vec3 X, const vec3 Y,
+CUDAINLINE Spectrum mixedBRDF(const Normal L, const Normal V, const Normal N, const Normal X, const Normal Y,
     const MixedBRDFArg<Spectrum>& arg) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return Spectrum(0.0f);
-    const auto H = calcHalf(L, V);
+    const auto H = halfVector(L, V);
     const auto ldh = dot(L, H);
     const auto vdh = dot(V, H);
     const auto ndh = dot(N, H);

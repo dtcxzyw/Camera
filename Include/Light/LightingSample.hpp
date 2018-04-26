@@ -1,12 +1,12 @@
 #pragma once
 #include <Core/Common.hpp>
-#include <Math/Math.hpp>
+#include <Math/Geometry.hpp>
 
 template<typename Spectrum>
 struct LightingSample final {
-    vec3 wi;
+    Normal wi;
     float pdf;
     Spectrum illumination;
-    CUDAINLINE LightingSample(const vec3 wi, const Spectrum& illumination, const float pdf = 1.0f)
-        :wi(wi), pdf(pdf), illumination(illumination) {}
+    CUDAINLINE LightingSample(const Vector wi, const Spectrum& illumination, const float pdf = 1.0f)
+        :wi(makeNormalUnsafe(wi)), pdf(pdf), illumination(illumination) {}
 };

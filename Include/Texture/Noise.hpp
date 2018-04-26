@@ -19,11 +19,11 @@ CUDAINLINE bool polkaDots(const vec2 uv, const float radius = 0.35f) {
     return false;
 }
 
-CUDAINLINE float calcOctavesAntiAliased(const vec3 dpdx, const vec3 dpdy) {
+CUDAINLINE float calcOctavesAntiAliased(const Vector dpdx, const Vector dpdy) {
     return fmax(0.0f, -1.0f - 0.5f*log2(fmax(length2(dpdx), length2(dpdy))));
 }
 
-CUDAINLINE float fbm(const vec3 p, const float omega, const float octaves) {
+CUDAINLINE float fbm(const Vector p, const float omega, const float octaves) {
     auto sum = 0.0f, lambda = 1.0f, o = 1.0f;
     const int n = octaves;
     for (auto i = 0; i < n; ++i) {
@@ -31,10 +31,10 @@ CUDAINLINE float fbm(const vec3 p, const float omega, const float octaves) {
         lambda *= 1.99f;
         o *= omega;
     }
-    return sum + o * smoothstep(0.3f, 0.7f, octaves - n) * perlin(lambda * p);
+    return sum + o * glm::smoothstep(0.3f, 0.7f, octaves - n) * perlin(lambda * p);
 }
 
-CUDAINLINE float turbulence(const vec3 p, const float omega, const float octaves, 
+CUDAINLINE float turbulence(const Vector p, const float omega, const float octaves,
     const int maxOctaves) {
     auto sum = 0.0f, lambda = 1.0f, o = 1.0f;
     const int n = octaves;
@@ -43,7 +43,7 @@ CUDAINLINE float turbulence(const vec3 p, const float omega, const float octaves
         lambda *= 1.99f;
         o *= omega;
     }
-    sum += o * mix(smoothstep(0.3f, 0.7f, octaves - n), 0.2f, fabs(perlin(lambda * p)));
+    sum += o * glm::mix(glm::smoothstep(0.3f, 0.7f, octaves - n), 0.2f, fabs(perlin(lambda * p)));
     for (auto i = n; i < maxOctaves; ++i) {
         sum += o * 0.2f;
         o *= omega;
@@ -51,12 +51,12 @@ CUDAINLINE float turbulence(const vec3 p, const float omega, const float octaves
     return sum;
 }
 
-CUDAINLINE float windyWaves(const vec3 p, float octaves) {
+CUDAINLINE float windyWaves(const Vector p, float octaves) {
     octaves = fmin(6.0f, octaves);
     return fabs(fbm(0.1f * p, 0.5f, 0.5f*octaves)) * fbm(p, 0.5f, octaves);
 }
 
-CUDAINLINE RGBSpectrum marble(const vec3 p, const float var, const float omega, const float octaves) {
+CUDAINLINE RGBSpectrum marble(const Vector p, const float var, const float omega, const float octaves) {
     const auto marble = p.y + var * fbm(p, omega, octaves);
     auto t = 0.5f + 0.5f * sin(marble);
     constexpr float c[][3] = {
@@ -73,8 +73,8 @@ CUDAINLINE RGBSpectrum marble(const vec3 p, const float var, const float omega, 
     constexpr float scale = std::extent_v<decltype(c)>;
     const int beg = std::floor(t * scale);
     t = t * scale - beg;
-    #define CONSTRUCT(x) vec3(x[0],x[1],x[2])
-    return RGBSpectrum{ catmullRom<vec3>(CONSTRUCT(c[beg]), CONSTRUCT(c[beg + 1]),
+    #define CONSTRUCT(x) Vector(x[0],x[1],x[2])
+    return RGBSpectrum{ glm::catmullRom(CONSTRUCT(c[beg]), CONSTRUCT(c[beg + 1]),
         CONSTRUCT(c[beg + 2]), CONSTRUCT(c[beg + 3]), t) };
     #undef CONSTRUCT
 }
