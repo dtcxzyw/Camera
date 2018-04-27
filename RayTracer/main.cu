@@ -33,7 +33,7 @@ void renderGUI(D3D11Window& window) {
     ImGui::SetWindowSize({ 500,550 });
     ImGui::SetWindowFontScale(1.5f);
     ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
-    ImGui::Text("FOV %.1f ",degrees(camera.toFov()));
+    ImGui::Text("FOV %.1f ",glm::degrees(camera.toFov()));
     ImGui::SliderFloat("focal length",&camera.focalLength,1.0f,500.0f,"%.1f");
     ImGui::End();
 }

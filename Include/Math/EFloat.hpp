@@ -2,20 +2,19 @@
 #include <Core/Common.hpp>
 #include <Math/Math.hpp>
 
-constexpr float gamma(const int n) {
-    constexpr auto machineEpsilon = epsilon<float>()*0.5f;
-    const auto x = n * machineEpsilon;
+BOTH float gamma(const int n) {
+    const auto x = n * (epsilon<float>()*0.5f);
     return x / (1.0f - x);
 }
 
 BOTH float nextFloatDown(const float val) {
-    auto bit = *reinterpret_cast<const uint*>(&val) - 1;
-    return *reinterpret_cast<float*>(&bit);
+    const auto bit = *reinterpret_cast<const unsigned int*>(&val) - 1;
+    return *reinterpret_cast<const float*>(&bit);
 }
 
 BOTH float nextFloatUp(const float val) {
-    auto bit = *reinterpret_cast<const uint*>(&val) + 1;
-    return *reinterpret_cast<float*>(&bit);
+    const auto bit = *reinterpret_cast<const unsigned int*>(&val) + 1;
+    return *reinterpret_cast<const float*>(&bit);
 }
 
 class EFloat final {

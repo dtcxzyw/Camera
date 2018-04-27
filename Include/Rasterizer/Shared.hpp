@@ -31,11 +31,3 @@ CUDAINLINE Vector shuffleVector(const Vector w, const int laneMask) {
 
 template <typename Uniform>
 using PosConverter = Point(*)(Point cameraPos, const Uniform& uniform);
-
-CUDAINLINE float max3(const float a, const float b, const float c) {
-    return fmax(a, fmax(b, c));
-}
-
-CUDAINLINE float min3(const float a, const float b, const float c) {
-    return fmin(a, fmin(b, c));
-}

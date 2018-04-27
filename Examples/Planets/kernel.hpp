@@ -2,6 +2,7 @@
 #include <Core/DispatchSystem.hpp>
 #include <Core/Builtin.hpp>
 #include <Camera/PinholeCamera.hpp>
+#include <Math/Geometry.hpp>
 
 struct FrameBufferRef final {
     BuiltinRenderTargetRef<RGBA> color;
@@ -40,7 +41,7 @@ struct FrameBuffer final {
 };
 
 struct Uniform final {
-    ALIGN mat4 V;
+    ALIGN Transform V;
 };
 
 void kernel(const Span<vec4>& spheres,

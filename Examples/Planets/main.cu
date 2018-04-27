@@ -4,6 +4,7 @@
 #include <Interaction/SwapChain.hpp>
 #include <Core/CompileBegin.hpp>
 #include <IMGUI/imgui.h>
+#include <glm/gtc/matrix_transform.hpp>
 #include <Core/CompileEnd.hpp>
 #include <Interaction/SoftwareRenderer.hpp>
 #include <Interaction/D3D11.hpp>
@@ -18,7 +19,7 @@ int timePow = 0;
 class System final:Uncopyable {
 private:
     struct Planet final {
-        dvec3 pos,vel;
+        glm::dvec3 pos,vel;
         double r,mass;
     };
     std::vector<Planet> mPlanets;
@@ -28,10 +29,10 @@ private:
         delta *= pow(10.0, timePow);
         constexpr auto g= 6.67259e-11;
         for (size_t i = 0; i < mPlanets.size(); ++i){
-            dvec3 acc{};
+            glm::dvec3 acc{};
             for (size_t j = 0; j < mPlanets.size(); ++j)
                 if (i != j){
-                    const auto deltaPos = dvec3(mPlanets[j].pos) - dvec3(mPlanets[i].pos);
+                    const auto deltaPos = mPlanets[j].pos - mPlanets[i].pos;
                     acc += normalize(deltaPos)*(mPlanets[j].mass / length2(deltaPos));
                 }
             mPlanets[i].vel += acc * (g*delta);
@@ -41,8 +42,8 @@ private:
     void check() {
         for (size_t i = 0; i < mPlanets.size(); ++i) {
             for (auto j = i + 1; j < mPlanets.size(); ++j) {
-                const auto deltaPos = dvec3(mPlanets[j].pos) - dvec3(mPlanets[i].pos);
-                const auto dis = length(deltaPos);
+                const auto deltaPos = glm::dvec3(mPlanets[j].pos) -glm::dvec3(mPlanets[i].pos);
+                const auto dis = glm::length(deltaPos);
                 const auto sr = mPlanets[i].r + mPlanets[j].r;
                 if (dis<sr) {
                     const auto deltaDis = sr - dis;
@@ -101,7 +102,7 @@ public:
         });
         return buf;
     }
-    vec3 getPlanetPos(const size_t id) const {
+    Vector getPlanetPos(const size_t id) const {
         return mPlanets[id].pos*pow(0.1, scalePow);
     }
 };
@@ -125,7 +126,7 @@ private:
         ImGui::SetWindowSize({500, 200});
         ImGui::SetWindowFontScale(1.5f);
         ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
-        ImGui::Text("FOV %.1f ", degrees(mCamera.toFov()));
+        ImGui::Text("FOV %.1f ", glm::degrees(mCamera.toFov()));
         ImGui::SliderFloat("focal length", &mCamera.focalLength, 1.0f, 500.0f, "%.1f");
         ImGui::SliderFloat("scale",&scalePow,0.0f,11.0f);
         ImGui::SliderFloat("time fac", &timeFac, 1.0f, 9.9f);
@@ -134,12 +135,12 @@ private:
         ImGui::Render();
     }
 
-    static Uniform getUniform(const vec3 earth) {
-        static vec3 cp = {120.0f, 0.0f, 0.0f};
-        const auto mid = ImGui::IsKeyDown('F') ? earth : vec3{ -100000.0f, 0.0f, 0.0f };
-        const auto V = lookAt(cp, mid, {0.0f, 1.0f, 0.0f});
+    static Uniform getUniform(const Vector earth) {
+        static Vector cp = {120.0f, 0.0f, 0.0f};
+        const auto mid = ImGui::IsKeyDown('F') ? earth : Vector { -100000.0f, 0.0f, 0.0f };
+        const auto V = glm::lookAt(cp, mid, {0.0f, 1.0f, 0.0f});
         Uniform u;
-        u.V = V;
+        u.V = Transform(V);
         return u;
     }
 
@@ -166,7 +167,7 @@ private:
         frame->resize(size);
         {
             auto uniform = getUniform(system.getPlanetPos(3));
-            auto uni = buffer->allocConstant<Uniform>();
+            const auto uni = buffer->allocConstant<Uniform>();
             buffer->memcpy(uni, [uniform](auto call) {
                 call(&uniform);
             });

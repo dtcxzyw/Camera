@@ -72,9 +72,9 @@ CUDAINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, const 
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
         const Point p = out.get<Pos>();
         const Normal N{ out.get<Nor>() };
-        const Normal T{ out.get<Tangent>() };
-        const auto X = reorthogonalize(N, T);
+        Normal X{ out.get<Tangent>() };
         const auto Y = cross(X, N);
+        X = cross(Y, N);
         fbo.color.set(uv, { shade(p,N,X,Y,uniform).toRGB(), 1.0f });
     }
 }

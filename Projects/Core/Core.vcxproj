@@ -54,7 +54,9 @@
     <ClInclude Include="..\..\Include\Rasterizer\Tile.hpp" />
     <ClInclude Include="..\..\Include\Rasterizer\TriangleRasterizer.hpp" />
     <ClInclude Include="..\..\Include\Rasterizer\Vertex.hpp" />
+    <ClInclude Include="..\..\Include\RayTracer\Interaction.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Primitive.hpp" />
+    <ClInclude Include="..\..\Include\RayTracer\Triangle.hpp" />
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp" />
     <ClInclude Include="..\..\Include\Scene\ECS.hpp" />
     <ClInclude Include="..\..\Include\Spectrum\RGBSpectrum.hpp" />

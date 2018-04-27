@@ -198,6 +198,12 @@
     <ClInclude Include="..\..\Include\Math\Geometry.hpp">
       <Filter>Math</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\RayTracer\Interaction.hpp">
+      <Filter>RayTracer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\RayTracer\Triangle.hpp">
+      <Filter>RayTracer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\IO\Model.cpp">

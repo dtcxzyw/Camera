@@ -5,6 +5,7 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/norm.hpp>
 #include <Core/CompileEnd.hpp>
+#include <Core/Common.hpp>
 
 using glm::vec2;
 using glm::uvec2;
@@ -36,3 +37,12 @@ using RGBA8 = glm::tvec4<unsigned char>;
 using A8 = unsigned char;
 
 constexpr auto maxv = std::numeric_limits<unsigned int>::max();
+
+CUDAINLINE float max3(const float a, const float b, const float c) {
+    return fmax(a, fmax(b, c));
+}
+
+CUDAINLINE float min3(const float a, const float b, const float c) {
+    return fmin(a, fmin(b, c));
+}
+
