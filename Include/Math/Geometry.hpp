@@ -142,18 +142,11 @@ struct Ray final {
     Point xOri, yOri;
     Vector xDir, yDir;
     BOTH Ray(const Point& ori, const Vector& dir, const float tMax = std::numeric_limits<float>::max(),
-        const Point& xOri = {}, const Vector& xDir = {}, const Vector& yOri = {}, const Vector& yDir = {}) :
+        const Point& xOri = {}, const Vector& xDir = {}, const Point& yOri = {}, const Vector& yDir = {}) :
         origin(ori), dir(dir), tMax(tMax), xOri(xOri), xDir(xDir), yOri(yOri), yDir(yDir) {}
 
     BOTH Point operator()(const float t) const {
         return origin + dir * t;
-    }
-
-    BOTH void scaleDiff(const float fac) {
-        dodx *= fac;
-        dddx *= fac;
-        dody *= fac;
-        dddy *= fac;
     }
 };
 
@@ -278,7 +271,7 @@ public:
         const auto dir = operator()(ray.dir);
         const auto dt = dot(abs(dir), err) / glm::length2(dir);
         return Ray(ori + dir * dt, dir, ray.tMax - dt,
-            operator()(ray.dodx), operator()(ray.dddx), operator()(ray.dody), operator()(ray.dddy));
+            operator()(ray.xOri), operator()(ray.xDir), operator()(ray.yOri), operator()(ray.yDir));
     }
 
     BOTH Bounds operator()(const Bounds& bounds) const {

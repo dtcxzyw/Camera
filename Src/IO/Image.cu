@@ -26,13 +26,8 @@ std::shared_ptr<BuiltinArray<RGBA>> loadRGBA(const std::string& path,Stream& str
 }
 
 std::shared_ptr<BuiltinMipmapedArray<RGBA>> loadMipmapedRGBA(const std::string & path, Stream & stream) {
-    stbi_set_flip_vertically_on_load(true);
-    int w, h, channel;
-    const ImageHolder image(stbi_loadf(path.c_str(), &w, &h, &channel, STBI_rgb_alpha));
-    if (!image)
-        throw std::runtime_error(stbi_failure_reason());
-    auto res = std::make_shared<BuiltinMipmapedArray<RGBA>>(image.get(),uvec2(w,h),stream);
-    return res;
+    const auto src = loadRGBA(path, stream);
+    return std::make_shared<BuiltinMipmapedArray<RGBA>>(*src, stream);
 }
 
 std::shared_ptr<BuiltinCubeMap<RGBA>> loadCubeMap(const std::function<std::string(size_t id)>& path, Stream & stream) {

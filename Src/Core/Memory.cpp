@@ -61,7 +61,6 @@ private:
         for (auto&& p : mPool[level])
             Api::free(p);
         mPool[level].clear();
-        printf("gc %zu\n", level);
     }
 
     PtrType tryAlloc(const size_t size) {

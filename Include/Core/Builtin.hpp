@@ -1,15 +1,16 @@
 #pragma once
 #include <Math/Math.hpp>
 #include <Core/Common.hpp>
-
 #include <Core/CompileBegin.hpp>
-#include <cuda_runtime.h>
 #include <cuda_texture_types.h>
 #include <texture_indirect_functions.h>
 #include <cuda_surface_types.h>
 #include <surface_indirect_functions.h>
 #include <Core/CompileEnd.hpp>
 #include <Core/DispatchSystem.hpp>
+#include <Core/CompileBegin.hpp>
+#include <glm/gtc/round.hpp>
+#include <Core/CompileEnd.hpp>
 
 template <typename T>
 struct Rename final {
@@ -72,27 +73,25 @@ inline auto calcMaxMipmapLevel(const uvec2 size) {
 template <typename T>
 void downSample(cudaArray_t src, cudaArray_t dst, uvec2 size, Stream& stream);
 
+template<typename T>
+void scaleArray(const BuiltinArray<T>& src, cudaArray_t dstArray, uvec2 dstSize,
+    Stream& stream);
+
 template <typename T>
 class BuiltinMipmapedArray final : Uncopyable {
 private:
     cudaMipmappedArray_t mArray;
     using Type = typename Rename<T>::Type;
     uvec2 mSize;
+    unsigned int mLevel;
 
-    void genMipmaps(const void* src, const unsigned int level, Stream& stream) {
+    void genMipmaps(const BuiltinArray<T>& src, Stream& stream) {
         cudaArray_t srcArray;
-        {
-            cudaMemcpy3DParms parms;
-            parms.extent = {mSize.x, mSize.y, 0};
-            parms.kind = cudaMemcpyHostToDevice;
-            parms.srcPtr = make_cudaPitchedPtr(const_cast<void*>(src), mSize.x * sizeof(T), mSize.x, mSize.y);
-            checkError(cudaGetMipmappedArrayLevel(&srcArray, mArray, 0));
-            parms.dstArray = srcArray;
-            checkError(cudaMemcpy3D(&parms));
-        }
+        checkError(cudaGetMipmappedArrayLevel(&srcArray, mArray, 0));
+        scaleArray(src, srcArray, mSize, stream);
         auto size = mSize;
-        for (unsigned int i = 1; i < level; ++i) {
-            size = max(size / 2U, uvec2{1, 1});
+        for (unsigned int i = 1; i < mLevel; ++i) {
+            size /= 2U;
             cudaArray_t dstArray;
             checkError(cudaGetMipmappedArrayLevel(&dstArray, mArray, i));
             downSample<T>(srcArray, dstArray, size, stream);
@@ -102,15 +101,18 @@ private:
     }
 
 public:
-    BuiltinMipmapedArray(const void* src, const uvec2 size, Stream& stream,
-        const int flags = cudaArrayDefault, unsigned int level = 0) : mSize(size) {
-        auto desc = cudaCreateChannelDesc<Type>();
+    BuiltinMipmapedArray(const BuiltinArray<T>& src, Stream& stream,
+        const int flags = cudaArrayDefault, const unsigned int level = 0) :mLevel(level) {
+        const auto desc = cudaCreateChannelDesc<Type>();
+        const auto size = src.size();
         const auto maxLevel = calcMaxMipmapLevel(size);
-        if (level == 0)level = maxLevel;
-        else level = std::max(level, maxLevel);
+        if (mLevel == 0)mLevel = maxLevel;
+        else mLevel = std::min(mLevel, maxLevel);
+        const auto length = glm::ceilPowerOfTwo(std::max(size.x, size.y));
+        mSize = uvec2{ length };
         checkError(cudaMallocMipmappedArray(&mArray, &desc,
-            make_cudaExtent(size.x, size.y, 0), level, flags));
-        genMipmaps(src, level, stream);
+            make_cudaExtent(length, length, 0), level, flags));
+        genMipmaps(src, stream);
     }
 
     ~BuiltinMipmapedArray() {
@@ -177,7 +179,7 @@ public:
     explicit BuiltinSampler(const cudaArray_t array,
         const cudaTextureAddressMode am = cudaAddressModeWrap,
         const vec4 borderColor = {}, const cudaTextureFilterMode fm = cudaFilterModeLinear,
-        const unsigned int maxAnisotropy = 0, const bool sRGB = false) {
+        const unsigned int maxAnisotropy = 0) {
         cudaResourceDesc RD;
         RD.res.array.array = array;
         RD.resType = cudaResourceTypeArray;
@@ -189,7 +191,7 @@ public:
         desc.maxAnisotropy = maxAnisotropy;
         desc.normalizedCoords = 1;
         desc.readMode = cudaReadModeElementType;
-        desc.sRGB = sRGB;
+        desc.sRGB = false;
         checkError(cudaCreateTextureObject(&mTexture, &RD, &desc, nullptr));
     }
 
@@ -210,7 +212,7 @@ public:
         TD.readMode = cudaReadModeElementType;
         TD.sRGB = sRGB;
         auto size = array.size();
-        TD.maxMipmapLevelClamp = calcMaxMipmapLevel(size.x, size.y);
+        TD.maxMipmapLevelClamp = array.maxLevel();
         TD.minMipmapLevelClamp = 1.0f;
         TD.mipmapFilterMode = fm;
         checkError(cudaCreateTextureObject(&mTexture, &RD, &TD, nullptr));
@@ -256,12 +258,13 @@ namespace Impl {
 template <typename T>
 class BuiltinRenderTarget final : Uncopyable {
 private:
-    cudaArray_t mArray;
     using Type = typename Rename<T>::Type;
+    cudaArray_t mArray;
     cudaSurfaceObject_t mTarget;
     uvec2 mSize;
 public:
-    BuiltinRenderTarget(const cudaArray_t array, const uvec2 size) : mArray(array), mSize(size) {
+    BuiltinRenderTarget(const cudaArray_t array, const uvec2 size) : mArray(array), mTarget(0), 
+        mSize(size) {
         cudaResourceDesc desc;
         desc.res.array.array = mArray;
         desc.resType = cudaResourceTypeArray;
@@ -304,17 +307,17 @@ private:
     cudaTextureObject_t mTexture;
 public:
     explicit BuiltinCubeMap(const size_t size, const unsigned int maxAnisotropy = 0,
-        const bool sRGB = false) {
+        const unsigned int flag = cudaArrayDefault) {
         auto desc = cudaCreateChannelDesc<Type>();
         const cudaExtent extent{size, size, 6};
-        checkError(cudaMalloc3DArray(&mArray, &desc, extent,cudaArrayCubemap));
+        checkError(cudaMalloc3DArray(&mArray, &desc, extent, cudaArrayCubemap | flag));
         cudaResourceDesc RD;
         RD.resType = cudaResourceTypeArray;
         RD.res.array.array = mArray;
         cudaTextureDesc TD;
         memset(&TD, 0, sizeof(TD));
         TD.maxAnisotropy = maxAnisotropy;
-        TD.sRGB = sRGB;
+        TD.sRGB = false;
         TD.addressMode[0] = TD.addressMode[1] = TD.addressMode[2] = cudaAddressModeClamp;
         TD.filterMode = cudaFilterModeLinear;
         TD.normalizedCoords = 1;
@@ -336,46 +339,9 @@ public:
     }
 };
 
-//TODO:complete mipmaped cube map
-template <typename T>
-class BuiltinMipmapedCubeMap final : Uncopyable {
-private:
-    using Type = typename Rename<T>::Type;
-    cudaMipmappedArray_t mArray;
-    cudaTextureObject_t mTexture;
-public:
-    explicit BuiltinMipmapedCubeMap(const size_t size) {
-        auto desc = cudaCreateChannelDesc<Type>();
-        const cudaExtent extent{size, size, 6};
-        checkError(cudaMallocMipmappedArray(&mArray, &desc, extent, cudaArrayCubemap));
-        cudaResourceDesc RD;
-        RD.resType = cudaResourceTypeMipmappedArray;
-        RD.res.mipmap.mipmap = mArray;
-        cudaTextureDesc TD;
-        memset(&TD, 0, sizeof(TD));
-        TD.filterMode = cudaFilterModeLinear;
-        TD.normalizedCoords = 1;
-        TD.readMode = cudaReadModeElementType;
-        checkError(cudaCreateTextureObject(&mTexture, &RD, &TD, nullptr));
-    }
-
-    ~BuiltinMipmapedCubeMap() {
-        checkError(cudaDestroyTextureObject(mTexture));
-        checkError(cudaFreeMipmappedArray(mArray));
-    }
-
-    cudaMipmappedArray_t get() const {
-        return mArray;
-    }
-
-    BuiltinSamplerRef<T> toSampler() const {
-        return mTexture;
-    }
-};
-
 namespace Impl {
     template <typename T>
-    GLOBAL void downSample(BuiltinSamplerRef<T> src, BuiltinRenderTargetRef<T> rt) {
+    GLOBAL void downSample2(BuiltinRenderTargetRef<T> src, BuiltinRenderTargetRef<T> rt) {
         uvec2 p{blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
         const uvec2 base = {p.x << 1, p.y << 1};
         T val = {};
@@ -383,18 +349,45 @@ namespace Impl {
         for (auto i = 0; i < 2; ++i) {
             #pragma unroll
             for (auto j = 0; j < 2; ++j)
-                val += src.get(base + uvec2{i, j});
+                val += src.get(base + uvec2{ i, j });
         }
         rt.set(p, val * 0.25f);
     }
 }
 
 template <typename T>
-void downSample(cudaArray_t src, cudaArray_t dst, uvec2 size, Stream& stream) {
-    BuiltinSampler<T> sampler(src);
-    BuiltinRenderTarget<T> RT(dst, size);
+void downSample(cudaArray_t srcArray, cudaArray_t dstArray, uvec2 size, Stream& stream) {
+    BuiltinRenderTarget<T> src(srcArray, size * 2U);
+    BuiltinRenderTarget<T> dst(dstArray, size);
     const unsigned int mul = sqrt(stream.getMaxBlockSize());
     dim3 grid(calcBlockSize(size.x, mul), calcBlockSize(size.y, mul));
     dim3 block(mul, mul);
-    stream.launchDim(Impl::downSample<T>, grid, block, sampler.toSampler(), RT.toTarget());
+    stream.launchDim(Impl::downSample2<T>, grid, block, src.toTarget(), dst.toTarget());
+}
+
+namespace Impl {
+    template <typename T>
+    GLOBAL void upSample(BuiltinSamplerRef<T> src, BuiltinRenderTargetRef<T> rt, vec2 mul) {
+        uvec2 p{ blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y };
+        rt.set(p, src.get(vec2(p)*mul));
+    }
+}
+
+template<typename T>
+void scaleArray(const BuiltinArray<T>& srcArray, cudaArray_t dstArray, const uvec2 dstSize,
+    Stream& stream) {
+    BuiltinSampler<T> src(srcArray.get());
+    BuiltinRenderTarget<T> dst(dstArray, dstSize);
+    const unsigned int mul = sqrt(stream.getMaxBlockSize());
+    dim3 grid(calcBlockSize(dstSize.x, mul), calcBlockSize(dstSize.y, mul));
+    dim3 block(mul, mul);
+    const auto invSize = 1.0f / vec2(dstSize);
+    stream.launchDim(Impl::upSample<T>, grid, block, src.toSampler(), dst.toTarget(), invSize);
+}
+
+template<typename T>
+auto makeConstantTexture(const T& val) {
+    auto res = std::make_unique<BuiltinArray<T>>(uvec2{ 1,1 });
+    checkError(cudaMemcpy(res.get(), &val, sizeof(T), cudaMemcpyHostToDevice));
+    return res;
 }
