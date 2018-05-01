@@ -95,7 +95,9 @@ public:
     BOTH explicit operator Vector() const {
         return mNormal;
     }
-
+    BOTH Vector operator*(const float rhs) const {
+        return mNormal * rhs;
+    }
     BOTH Normal operator-() const;
 };
 
@@ -137,11 +139,11 @@ struct Ray final {
     Point origin;
     Vector dir;
     float tMax;
-    Vector dodx, dddx, dody, dddy;
+    Point xOri, yOri;
+    Vector xDir, yDir;
     BOTH Ray(const Point& ori, const Vector& dir, const float tMax = std::numeric_limits<float>::max(),
-        const Vector& dodx = {}, const Vector& dddx = {}, const Vector& dody = {}, const Vector& dddy = {}) :
-        origin(ori), dir(dir), tMax(tMax),
-        dodx(dodx), dddx(dddx), dody(dody), dddy(dddy) {}
+        const Point& xOri = {}, const Vector& xDir = {}, const Vector& yOri = {}, const Vector& yDir = {}) :
+        origin(ori), dir(dir), tMax(tMax), xOri(xOri), xDir(xDir), yOri(yOri), yDir(yDir) {}
 
     BOTH Point operator()(const float t) const {
         return origin + dir * t;
@@ -161,7 +163,7 @@ private:
     Point mMax;
 public:
     BOTH Bounds() :mMin(Vector{ std::numeric_limits<float>::max() }), 
-        mMax(Vector{ std::numeric_limits<float>::min() }) {}
+        mMax(Vector{ -std::numeric_limits<float>::max() }) {}
     BOTH explicit Bounds(const Point& pos) :mMin(pos), mMax(pos) {}
     BOTH Bounds(const Point& min, const Point& max) : mMin(min), mMax(max) {}
     BOTH Bounds operator|(const Bounds& rhs) const {

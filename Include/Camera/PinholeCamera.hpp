@@ -1,45 +1,59 @@
 #pragma once
-#include <Math/Math.hpp>
-constexpr auto inch2mm = 25.4f;
+#include <Math/Geometry.hpp>
+#include <Camera/CamereSample.hpp>
+#include <Sampler/Samping.hpp>
 
 //http://www.scratchapixel.com/lessons/3d-basic-rendering/3d-viewing-pinhole-camera
-struct PinholeCamera final {
+class PinholeCamera final {
+public:
     enum class FitResolutionGate {
-        Fill, Overscan
+        Fill,
+        Overscan
     } mode;
-    float focalLength;//in mm
-    vec2 filmAperture;//in inches
-    float near,far;
+
+    float focalLength,lensRadius; //in mm
+    vec2 filmGate; //in mm
+    float near, far;
+
     struct RasterPosConverter final {
         vec2 mul;
-        float near,far;
+        float near, far;
     };
-    RasterPosConverter toRasterPos(const vec2 imageSize) const {
-        RasterPosConverter res;
-        res.near = near,res.far=far;
-        const auto fratio = filmAperture.x / filmAperture.y;
-        const auto iratio = imageSize.x / imageSize.y;
 
-        auto right = ((filmAperture.x*inch2mm / 2.0f) / focalLength) / near;
-        auto top = ((filmAperture.y*inch2mm / 2.0f) / focalLength) / near;
+    struct RayGenerator final {
+        float lensRadius, focalLength;
+        vec2 scale,offset;
+        //offset=2.0f*scale/screenSize
+        CUDA Ray generateRay(const CameraSample& sample) const {
+            const auto pRaster = sample.pFilm*2.0f - 1.0f;
+            const Point pCamera = { pRaster.x*scale.x,pRaster.y*scale.y,-1.0f };
+            Ray ray{ {},Vector(pCamera) };
+            if(lensRadius>0.0f) {
+                const auto pLens = lensRadius * concentricSampleDisk(sample.pLens);
+                const auto focus = ray(focalLength);
+                ray.origin = Point{ pLens.x,pLens.y,0.0f };
+                ray.dir = focus - ray.origin;
+                ray.xDir = ray.dir + Vector{ offset.x*focalLength, 0.0f, 0.0f };
+                ray.yDir = ray.dir + Vector{ 0.0f,offset.y*focalLength,0.0f };
+            }
+            else {
+                ray.xDir = { ray.dir.x + offset.x,ray.dir.y,ray.dir.z };
+                ray.yDir = { ray.dir.x,ray.dir.y + offset.y,ray.dir.z };
+            }
 
-        switch (mode) {
-        case FitResolutionGate::Fill:
-            if (fratio > iratio)right *= iratio / fratio;
-            else top *= fratio / iratio;
-            break;
-        case FitResolutionGate::Overscan:
-            if (fratio > iratio)top *= fratio / iratio;
-            else right *= iratio / fratio;
-            break;
+            ray.xOri = ray.yOri = ray.origin;
+
+            return ray;
         }
+    };
 
-        res.mul = {near/right,near/top};
-        return res;
-    }
+    PinholeCamera();
+    RasterPosConverter toRasterPos(vec2 imageSize) const;
 
     //horizontal
-    float toFov() const {
-        return 2.0f*atan((filmAperture.x*inch2mm / 2.0f) / focalLength);
-    }
+    float toFov() const;
+
+    RayGenerator getRayGenerator(vec2 imageSize) const;
+private:
+    vec2 calcScale(vec2 imageSize) const;
 };

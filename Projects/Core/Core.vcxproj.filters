@@ -210,6 +210,15 @@
     <ClInclude Include="..\..\Include\RayTracer\BVH.hpp">
       <Filter>RayTracer</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Camera\CamereSample.hpp">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Camera\BuiltinParameter.hpp">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Sampler\Samping.hpp">
+      <Filter>Sampler</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\IO\Model.cpp">
@@ -270,6 +279,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\Src\RayTracer\BVH.cu">
       <Filter>RayTracer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Camera\PinholeCamera.cu">
+      <Filter>Camera</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

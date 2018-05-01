@@ -6,7 +6,7 @@
 #include <Core/CompileEnd.hpp>
 
 #define CUDA __device__
-#define CUDAINLINE __forceinline__ CUDA
+#define CUDAINLINE inline CUDA
 #define HOST __host__
 #define BOTH CUDAINLINE HOST
 #define GLOBAL __global__

@@ -1,6 +1,5 @@
 #include "kernel.hpp"
 #include <IO/Image.hpp>
-#include <thread>
 #include <Core/Environment.hpp>
 #include <Interaction/SwapChain.hpp>
 #include <Core/CompileBegin.hpp>
@@ -168,9 +167,6 @@ public:
         env.init(AppType::Online,GraphicsInteroperability::D3D11);
         mCamera.near = 1.0f;
         mCamera.far = 200.0f;
-        mCamera.filmAperture = {0.980f, 0.735f};
-        mCamera.mode = PinholeCamera::FitResolutionGate::Overscan;
-        mCamera.focalLength = 15.0f;
 
         {
             Stream resLoader;
@@ -221,7 +217,7 @@ public:
             while (window.update()) {
                 const auto size = window.size();
                 if (size.x == 0 || size.y == 0) {
-                    std::this_thread::sleep_for(1ms);
+                    Environment::get().yield();
                     continue;
                 }
 

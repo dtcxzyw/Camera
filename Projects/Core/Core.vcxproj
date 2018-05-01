@@ -11,6 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Include\Camera\BuiltinParameter.hpp" />
+    <ClInclude Include="..\..\Include\Camera\CamereSample.hpp" />
     <ClInclude Include="..\..\Include\Camera\PinholeCamera.hpp" />
     <ClInclude Include="..\..\Include\Core\Builtin.hpp" />
     <ClInclude Include="..\..\Include\Core\Cache.hpp" />
@@ -59,6 +61,7 @@
     <ClInclude Include="..\..\Include\RayTracer\Interaction.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Primitive.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Triangle.hpp" />
+    <ClInclude Include="..\..\Include\Sampler\Samping.hpp" />
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp" />
     <ClInclude Include="..\..\Include\Scene\ECS.hpp" />
     <ClInclude Include="..\..\Include\Spectrum\RGBSpectrum.hpp" />
@@ -68,6 +71,9 @@
     <ClInclude Include="..\..\Include\Texture\TextureMapping.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="..\..\Src\Camera\PinholeCamera.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
     <ClCompile Include="..\..\Src\Core\Common.cpp" />
     <ClCompile Include="..\..\Src\Core\DispatchSystem.cpp" />
     <ClCompile Include="..\..\Src\Core\Environment.cpp" />

@@ -27,6 +27,7 @@ using glm::two_over_pi;
 using glm::one_over_pi;
 using glm::one_over_two_pi;
 using glm::half_pi;
+using glm::quarter_pi;
 
 using Vector = glm::vec3;
 using UV = vec2;

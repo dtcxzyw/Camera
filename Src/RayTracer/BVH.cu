@@ -139,7 +139,7 @@ BuildNode* buildTriangleRecursive(std::vector<BuildNode>& nodePool, const std::v
                     });
             }
             else {
-                constexpr auto bucketSize = 12U;
+                constexpr auto bucketSize = 16U;
                 struct Bucket final {
                     unsigned int count;
                     Bounds bounds;
