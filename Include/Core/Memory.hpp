@@ -17,6 +17,7 @@ size_t calcMaxBufferSize(const size_t size) {
     return (1 << level) / sizeof(T);
 }
 
+void gc();
 void clearMemoryPool();
 
 class GlobalMemoryDeleter final {
@@ -98,8 +99,9 @@ template <typename T>
 class PinnedBuffer final : Uncopyable {
 private:
     PinnedMemory mMemory;
+    size_t mSize;
 public:
-    explicit PinnedBuffer(const size_t size) : mMemory(size * sizeof(T)) {}
+    explicit PinnedBuffer(const size_t size) :mMemory(size * sizeof(T)), mSize(size) {}
 
     T* get() const noexcept {
         return reinterpret_cast<T*>(mMemory.get());
@@ -116,12 +118,8 @@ public:
     T operator*() const {
         return *get();
     }
-};
 
-template<typename T, size_t Rem = sizeof(T) % CACHE_ALIGN>
-struct AlignedType final :T {
-    unsigned char padding[CACHE_ALIGN - Rem];
+    size_t size() const {
+        return mSize;
+    }
 };
-
-template<typename T>
-struct AlignedType<T, 0> final :T {};

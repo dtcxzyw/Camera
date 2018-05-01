@@ -204,6 +204,12 @@
     <ClInclude Include="..\..\Include\RayTracer\Triangle.hpp">
       <Filter>RayTracer</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Core\DeviceMemory.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\RayTracer\BVH.hpp">
+      <Filter>RayTracer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\IO\Model.cpp">
@@ -230,14 +236,14 @@
     <ClCompile Include="..\..\Src\Core\Environment.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Core\Memory.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Core\Pipeline.cpp">
       <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\IO\LZ4Binary.cpp">
       <Filter>IO</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Core\Memory.cpp">
+      <Filter>Core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -258,6 +264,12 @@
     </CudaCompile>
     <CudaCompile Include="..\..\Src\Core\Constant.cu">
       <Filter>Core</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Core\DeviceMemory.cu">
+      <Filter>Core</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\RayTracer\BVH.cu">
+      <Filter>RayTracer</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

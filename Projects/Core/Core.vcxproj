@@ -20,6 +20,7 @@
     <ClInclude Include="..\..\Include\Core\Config.hpp" />
     <ClInclude Include="..\..\Include\Core\Constant.hpp" />
     <ClInclude Include="..\..\Include\Core\DataSet.hpp" />
+    <ClInclude Include="..\..\Include\Core\DeviceMemory.hpp" />
     <ClInclude Include="..\..\Include\Core\DispatchSystem.hpp" />
     <ClInclude Include="..\..\Include\Core\Environment.hpp" />
     <ClInclude Include="..\..\Include\Core\Memory.hpp" />
@@ -54,6 +55,7 @@
     <ClInclude Include="..\..\Include\Rasterizer\Tile.hpp" />
     <ClInclude Include="..\..\Include\Rasterizer\TriangleRasterizer.hpp" />
     <ClInclude Include="..\..\Include\Rasterizer\Vertex.hpp" />
+    <ClInclude Include="..\..\Include\RayTracer\BVH.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Interaction.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Primitive.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Triangle.hpp" />
@@ -69,7 +71,9 @@
     <ClCompile Include="..\..\Src\Core\Common.cpp" />
     <ClCompile Include="..\..\Src\Core\DispatchSystem.cpp" />
     <ClCompile Include="..\..\Src\Core\Environment.cpp" />
-    <ClCompile Include="..\..\Src\Core\Memory.cpp" />
+    <ClCompile Include="..\..\Src\Core\Memory.cpp">
+      <FileType>Document</FileType>
+    </ClCompile>
     <ClCompile Include="..\..\Src\Core\Pipeline.cpp" />
     <ClCompile Include="..\..\Src\Interaction\Counter.cpp" />
     <ClCompile Include="..\..\Src\IO\LZ4Binary.cpp" />
@@ -82,10 +86,12 @@
       <FileType>Document</FileType>
     </ClCompile>
     <CudaCompile Include="..\..\Src\Core\Constant.cu" />
+    <CudaCompile Include="..\..\Src\Core\DeviceMemory.cu" />
     <CudaCompile Include="..\..\Src\Interaction\SoftwareRenderer.cu" />
     <CudaCompile Include="..\..\Src\PBR\DataDrivenBRDF.cu" />
     <CudaCompile Include="..\..\Src\Rasterizer\LineRasterizer.cu" />
     <CudaCompile Include="..\..\Src\Rasterizer\SphereRasterizer.cu" />
+    <CudaCompile Include="..\..\Src\RayTracer\BVH.cu" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\IO\Image.cu" />

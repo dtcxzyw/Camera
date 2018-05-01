@@ -1,12 +1,6 @@
 #pragma once
 #include <RayTracer/Primitive.hpp>
 
-struct VertexDesc final {
-    Point pos;
-    vec2 uv;
-    Vector normal, tangent;
-};
-
 struct TriangleDesc final {
     unsigned int id;
     VertexDesc a, b, c;
@@ -89,40 +83,6 @@ struct TriangleDesc final {
 
 struct TriangleRef final {
     unsigned int id, a, b, c;
-};
-
-class TriangleGroup final : public Primitive {
-public:
-    static constexpr auto maxSize = 127U;
-    TriangleRef triangles[maxSize];
-    unsigned int size;
-    READONLY(VertexDesc) vertex;
-    Bounds bounds;
-
-    CUDA void initBounds() {
-        bounds = makeDesc(0).bounds();
-        for (auto i = 1U; i < size; ++i)
-            bounds |= makeDesc(i).bounds();
-    }
-
-    CUDA TriangleDesc makeDesc(const unsigned int i) const {
-        const auto ref = triangles[i];
-        return {ref.id, vertex[ref.a], vertex[ref.b], vertex[ref.c]};
-    }
-
-private:
-
-    CUDA bool intersectImpl(const Ray& ray) const override {
-        for (auto i = 0U; i < size; ++i)
-            if (makeDesc(i).intersect(ray))
-                return true;
-        return false;
-    }
-
-    CUDA bool intersectImpl(const Ray& ray, float& t, Interaction& interaction) const override {
-        auto res = false;
-        for (auto i = 0U; i < size; ++i)
-            res |= makeDesc(i).intersect(ray, t, interaction);
-        return res;
-    }
+    TriangleRef(const unsigned int id, const unsigned int a, const unsigned int b, 
+        const unsigned int c) :id(id), a(a), b(b), c(c) {}
 };

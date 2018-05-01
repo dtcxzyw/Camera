@@ -61,15 +61,7 @@ private:
         for (auto&& p : mPool[level])
             Api::free(p);
         mPool[level].clear();
-    }
-
-    void gc() {
-        auto x = -1;
-        for (auto i = 1; i <= 40; ++i)
-            if (!mPool[i].empty() && (x == -1 || mLastRequireTimeStamp[i] < mLastRequireTimeStamp[x]))
-                x = i;
-        if (mTimeCount - mLastRequireTimeStamp[x] > timeBlock)
-            clearLevel(x);
+        printf("gc %zu\n", level);
     }
 
     PtrType tryAlloc(const size_t size) {
@@ -113,6 +105,16 @@ public:
         std::fill(std::begin(mLastRequireTimeStamp), std::end(mLastRequireTimeStamp), 0);
     }
 
+    void gc() {
+        auto x = 0;
+        for (auto i = 1; i <= 40; ++i)
+            if (!mPool[i].empty() && 
+                (mPool[x].empty() || mLastRequireTimeStamp[i] < mLastRequireTimeStamp[x]))
+                x = i;
+        if (!mPool[x].empty() && mTimeCount - mLastRequireTimeStamp[x] > timeBlock)
+            clearLevel(x);
+    }
+
     PtrType alloc(const size_t size, const bool isStatic) {
         const auto ptr = memAlloc(size, isStatic);
         #ifdef CAMERA_MEMORY_TRACE
@@ -142,6 +144,11 @@ template <typename Api>
 static MemoryPool<Api>& getMemoryPool() {
     thread_local static MemoryPool<Api> pool;
     return pool;
+}
+
+void gc(){
+    getMemoryPool<GlobalMemoryApi>().gc();
+    getMemoryPool<PinnedMemoryApi>().gc();
 }
 
 void clearMemoryPool() {

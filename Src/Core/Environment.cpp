@@ -11,6 +11,7 @@
 static void setDevice(const int id, const AppType app, const std::vector<int>& devices) {
     const auto schedule = (app == AppType::Online ? cudaDeviceScheduleSpin : cudaDeviceScheduleBlockingSync);
     checkError(cudaSetDeviceFlags(schedule));
+    checkError(cudaSetDeviceFlags(cudaDeviceLmemResizeToMax));
     checkError(cudaSetDevice(id));
     for (auto&& dev : devices)
         if (dev != id)
@@ -162,6 +163,7 @@ DeviceMonitor::DeviceMonitor(): mId(0), mFree(0), mTotal(1), mTick(0) {
 
 void DeviceMonitor::update() {
     checkError(cudaMemGetInfo(&mFree, &mTotal));
+    gc();
 }
 
 uintmax_t DeviceMonitor::tick() {

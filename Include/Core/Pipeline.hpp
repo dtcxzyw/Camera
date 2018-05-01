@@ -2,6 +2,7 @@
 #include <Core/Common.hpp>
 #include <Core/Memory.hpp>
 #include <Math/Math.hpp>
+#include <vector>
 
 template<typename Func, typename... Args>
 CUDAINLINE void launchLinear(Func func,unsigned int block, unsigned int size, Args... args) {
@@ -43,6 +44,15 @@ public:
     template<typename T>
     void memset(const MemorySpan<T>& data, const int val=0) {
         checkError(cudaMemsetAsync(data.begin(),val,data.size()*sizeof(T),mStream));
+    }
+
+    template<typename Container>
+    auto upload(const Container& data) {
+        using T = typename std::decay<decltype(*std::data(data))>::type;
+        MemorySpan<T> res(std::size(data));
+        checkError(cudaMemcpyAsync(res.begin(), std::data(data), std::size(data) * sizeof(T),
+            cudaMemcpyHostToDevice, mStream));
+        return res;
     }
 
     void wait(Event& event);

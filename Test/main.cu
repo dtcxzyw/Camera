@@ -15,7 +15,7 @@ using namespace std::chrono_literals;
 class App final : Uncopyable {
 private:
     float mLight = 65.0f, mR = 20.0f;
-    StaticMesh mBox, mModel;
+    std::unique_ptr<StaticMeshData> mBox, mModel;
     MemorySpan<SphereDesc> mSpheres;
     std::unique_ptr<RenderingContext> mMc;
     std::unique_ptr<RenderingContext> mSc;
@@ -50,8 +50,8 @@ private:
         ImGui::SetWindowPos({0, 0});
         ImGui::SetWindowSize({500, 550});
         ImGui::SetWindowFontScale(1.5f);
-        ImGui::Text("vertices: %d, triangles: %d\n", static_cast<int>(mModel.vert.size()),
-                    static_cast<int>(mModel.index.size()));
+        ImGui::Text("vertices: %d, triangles: %d\n", static_cast<int>(mModel->vert.size()),
+                    static_cast<int>(mModel->index.size()));
         ImGui::Text("triNum: %u\n", *mMc->triContext.triNum);
         ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
         ImGui::Text("FOV %.1f ", glm::degrees(mCamera.toFov()));
@@ -127,8 +127,8 @@ private:
         const auto converter = mCamera.toRasterPos(size);
         auto buffer = std::make_unique<CommandBuffer>();
         if (frame->size != size) {
-            mMc->triContext.reset(mModel.index.size(), 65536U, false, enableTriCache);
-            mSc->triContext.reset(mBox.index.size(), 65536U, false, enableTriCache);
+            mMc->triContext.reset(mModel->index.size(), 65536U, false, enableTriCache);
+            mSc->triContext.reset(mBox->index.size(), 65536U, false, enableTriCache);
         }
         frame->resize(size);
         {
@@ -143,7 +143,7 @@ private:
             buffer->memcpy(uni, [uniform](auto call) {
                 call(&uniform);
             });
-            kernel(mModel, *mMc, mBox, *mSc, mSpheres, uni, *frame, lum, converter, *buffer);
+            kernel(*mModel, *mMc, *mBox, *mSc, mSpheres, uni, *frame, lum, converter, *buffer);
         }
         last = now;
         renderGUI(D3D11Window::get());
@@ -178,14 +178,16 @@ public:
             SoftwareRenderer::get().init(resLoader);
 
             uploadSpheres();
-            //mModel.load("Res/mitsuba/mitsuba-sphere.obj",resLoader);
-            mModel.load("Res/dragon.obj", resLoader);
+            //StaticMesh model("Res/mitsuba/mitsuba-sphere.obj");
+            StaticMesh model("Res/dragon.obj");
+            mModel = std::make_unique<StaticMeshData>(model, resLoader);
             mMc = std::make_unique<RenderingContext>();
-            mMc->triContext.reset(mModel.index.size(), 65536U, false, enableTriCache);
+            mMc->triContext.reset(mModel->index.size(), 65536U, false, enableTriCache);
 
-            mBox.load("Res/cube.obj", resLoader);
+            StaticMesh box("Res/cube.obj");
+            mBox = std::make_unique<StaticMeshData>(box, resLoader);
             mSc = std::make_unique<RenderingContext>();
-            mSc->triContext.reset(mBox.index.size(), 65536U, false, enableTriCache);
+            mSc->triContext.reset(mBox->index.size(), 65536U, false, enableTriCache);
 
             mEnvMap = loadCubeMap([](const size_t id) {
                 const char* table[] = {"right", "left", "top", "bottom", "back", "front"};

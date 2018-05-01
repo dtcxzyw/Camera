@@ -49,7 +49,7 @@ namespace Impl {
         MemoryReleaseFunction onRelease)
         : DeviceMemoryInstance(size), mPool(nullptr), mOnRelease(std::move(onRelease)) {}
 
-    void GlobalMemory::bindStream(StreamInfo& info) {
+    void GlobalMemory::bindStream(StreamContext& info) {
         mPool = &info.getRecycler<L1GlobalMemoryPool>();
     }
 
@@ -251,7 +251,7 @@ ResourceManager& CommandBuffer::getResourceManager() {
     return *mResourceManager;
 }
 
-std::unique_ptr<Task> CommandBuffer::bindStream(StreamInfo& stream,
+std::unique_ptr<Task> CommandBuffer::bindStream(StreamContext& stream,
     std::shared_ptr<Impl::TaskState> promise) {
     return std::make_unique<Task>(stream, std::move(mResourceManager),
         mCommandQueue, std::move(promise));
@@ -261,7 +261,7 @@ ResourceInstance& ResourceManager::getResource(const Id id) {
     return *mResources.find(id)->second.second;
 }
 
-void ResourceManager::bindStream(StreamInfo& stream) {
+void ResourceManager::bindStream(StreamContext& stream) {
 #ifdef CAMERA_RESOUREC_CHECK
     if (mResourceCount != mResources.size())
         throw std::logic_error("Some resources haven't been registered yet.");
@@ -320,7 +320,7 @@ void CommandBuffer::memcpy(const Span<unsigned char>& dst,
     });
 }
 
-StreamInfo& DispatchSystem::getStream() {
+StreamContext& DispatchSystem::getStream() {
     return *std::min_element(mStreams.begin(), mStreams.end());
 }
 
@@ -381,29 +381,29 @@ ResourceRecycler::ResourceRecycler() :mCurrent(0) {}
 void ResourceRecycler::gc(uint64_t) {}
 void ResourceRecycler::setCurrent(const uint64_t id) { mCurrent = id; }
 
-StreamInfo::StreamInfo(): mLast(Clock::now()), mTaskCount(0) {}
+StreamContext::StreamContext(): mLast(Clock::now()), mTaskCount(0) {}
 
-StreamInfo::~StreamInfo() {
+StreamContext::~StreamContext() {
     mTask.reset();
     mRecyclers.clear();
 }
 
-bool StreamInfo::free() const {
+bool StreamContext::free() const {
     return mTask == nullptr;
 }
 
-void StreamInfo::set(CommandBufferQueue::UnboundTask&& task) {
+void StreamContext::set(CommandBufferQueue::UnboundTask&& task) {
     ++mTaskCount;
     for (auto&& recycler : mRecyclers)
         recycler.second->setCurrent(mTaskCount);
     mTask = task.second->bindStream(*this, std::move(task.first));
 }
 
-Stream& StreamInfo::getStream() {
+Stream& StreamContext::getStream() {
     return mStream;
 }
 
-void StreamInfo::update(const Clock::time_point point) {
+void StreamContext::update(const Clock::time_point point) {
     mPool.erase(std::remove_if(mPool.begin(), mPool.end(),
         [this](auto&& task) {
             if(task.second->isDone()) {
@@ -418,7 +418,7 @@ void StreamInfo::update(const Clock::time_point point) {
     mLast = point;
 }
 
-bool StreamInfo::operator<(const StreamInfo& rhs) const {
+bool StreamContext::operator<(const StreamContext& rhs) const {
     return mLast < rhs.mLast;
 }
 
@@ -426,7 +426,7 @@ bool ResourceInstance::canBeRecycled() const {
     return false;
 }
 
-void ResourceInstance::bindStream(StreamInfo&) {}
+void ResourceInstance::bindStream(StreamContext&) {}
 
 void CommandBufferQueue::submit(std::shared_ptr<Impl::TaskState> promise,
     std::unique_ptr<CommandBuffer> buffer) {
@@ -448,7 +448,7 @@ void CommandBufferQueue::clear() {
     mQueue.swap(empty);
 }
 
-Task::Task(StreamInfo& stream, std::unique_ptr<ResourceManager> manager,
+Task::Task(StreamContext& stream, std::unique_ptr<ResourceManager> manager,
     std::queue<std::unique_ptr<Impl::Operator>>& commandQueue,
     std::shared_ptr<Impl::TaskState> promise): mResourceManager(std::move(manager)),
     mPromise(std::move(promise)), mStream(stream.getStream()) {

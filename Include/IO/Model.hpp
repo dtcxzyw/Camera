@@ -3,17 +3,21 @@
 #include <Core/Memory.hpp>
 #include <Core/Pipeline.hpp>
 #include <string>
+#include <vector>
 
-struct StaticMesh final {
-    struct Vertex final {
-        ALIGN Point pos;
-        ALIGN Vector normal;
-        ALIGN Vector tangent;
-        ALIGN UV uv;
-    };
-    MemorySpan<Vertex> vert;
-    MemorySpan<uvec3> index;
+class StaticMesh final {
+public:
+    std::vector<VertexDesc> vert;
+    std::vector<uvec3> index;
+    explicit StaticMesh(const std::string& path);
+private:
     static void convertToBinary(const std::string& path);
-    void loadBinary(const std::string& path, Stream& loader);
-    void load(const std::string& path, Stream& loader);
+    void loadBinary(const std::string& path);
 };
+
+struct StaticMeshData final {
+    MemorySpan<VertexDesc> vert;
+    MemorySpan<uvec3> index;
+    StaticMeshData(const StaticMesh& data, Stream& loader);
+};
+

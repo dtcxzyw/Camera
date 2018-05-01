@@ -67,15 +67,17 @@ CUDAINLINE RGBSpectrum shade(const Point p, const Normal N, const Normal X, cons
     return lc * F * fabs(dot(N, sample.wi));
 }
 
-CUDAINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, const OI&,
-    const OI&, const Uniform& uniform, FrameBufferRef& fbo) {
+CUDAINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, const OI& ddx,
+    const OI& ddy, const Uniform& uniform, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
         const Point p = out.get<Pos>();
         const Normal N{ out.get<Nor>() };
         Normal X{ out.get<Tangent>() };
         const auto Y = cross(X, N);
         X = cross(Y, N);
-        fbo.color.set(uv, { shade(p,N,X,Y,uniform).toRGB(), 1.0f });
+        const auto octaves = calcOctavesAntiAliased(Vector(ddx.get<Pos>()), Vector(ddy.get<Pos>()));
+        const auto col = marble(Vector(N)*30.0f, 1.0f, 0.8f, octaves) + RGBSpectrum(0.5f);
+        fbo.color.set(uv, { (shade(p,N,X,Y,uniform)*col).toRGB(), 1.0f });
     }
 }
 
@@ -110,7 +112,7 @@ GLOBAL void updateLum(const PostUniform uniform) {
 
 template <VertShader<VI, OI, Uniform> VertFunc, TriangleClipShader<Uniform> ClipFunc, 
     FragmentShader<OI, Uniform, FrameBufferRef>... FragFunc>
-void renderMesh(const StaticMesh& model, const Span<Uniform>& uniform,
+void renderMesh(const StaticMeshData& model, const Span<Uniform>& uniform,
     const Span<FrameBufferRef>& frameBuffer, const uvec2 size,
     const PinholeCamera::RasterPosConverter converter,
     const CullFace mode, RenderingContext& context, const vec4 scissor,
@@ -151,8 +153,8 @@ CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, Point p, Vector
     }
 }
 
-void kernel(const StaticMesh& model, RenderingContext& mc,
-    const StaticMesh& skybox, RenderingContext& sc,
+void kernel(const StaticMeshData& model, RenderingContext& mc,
+    const StaticMeshData& skybox, RenderingContext& sc,
     const MemorySpan<SphereDesc>& spheres,
     const Span<Uniform>& uniform, FrameBuffer& fbo, float* lum,
     const PinholeCamera::RasterPosConverter converter, CommandBuffer& buffer) {

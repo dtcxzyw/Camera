@@ -10,7 +10,7 @@
 template<typename T>
 void read(const std::vector<char>& stream, uint64_t& offset, T* ptr, const size_t size = 1) {
     const auto rsiz= sizeof(T)*size;
-    memcpy(ptr, stream.data() + offset, rsiz);
+    memcpy(static_cast<void*>(ptr), stream.data() + offset, rsiz);
     offset+=rsiz;
 }
 
@@ -18,6 +18,12 @@ template<typename T>
 void write(std::vector<char>& stream, const T* ptr, const size_t size = 1) {
     const auto begin = reinterpret_cast<const char*>(ptr);
     stream.insert(stream.end(), begin, begin + sizeof(T)*size);
+}
+
+StaticMesh::StaticMesh(const std::string& path) {
+    if (!std::experimental::filesystem::exists(path + ".bin"))
+        convertToBinary(path);
+    loadBinary(path + ".bin");
 }
 
 void StaticMesh::convertToBinary(const std::string & path) {
@@ -37,7 +43,7 @@ void StaticMesh::convertToBinary(const std::string & path) {
     const auto mesh=scene->mMeshes[0];
     std::vector<char> data;
     {
-        std::vector<Vertex> buf(mesh->mNumVertices);
+        std::vector<VertexDesc> buf(mesh->mNumVertices);
         for (auto i = 0U; i < mesh->mNumVertices; ++i) {
             buf[i].pos = *reinterpret_cast<Point*>(mesh->mVertices + i);
             buf[i].normal = *reinterpret_cast<Vector*>(mesh->mNormals + i);
@@ -60,28 +66,21 @@ void StaticMesh::convertToBinary(const std::string & path) {
     saveLZ4(path + ".bin", data);
 }
 
-void StaticMesh::loadBinary(const std::string & path, Stream & loader) {
+void StaticMesh::loadBinary(const std::string & path) {
     const auto data = loadLZ4(path);
     uint64_t offset = 0;
     uint64_t vertSize;
     read(data,offset, &vertSize);
-    PinnedBuffer<Vertex> vertHost(vertSize);
-    read(data, offset, vertHost.get(), vertSize);
-    vert = MemorySpan<Vertex>(vertSize);
-    checkError(cudaMemcpyAsync(vert.begin(),vertHost.get(),vertSize*sizeof(Vertex),
-        cudaMemcpyHostToDevice,loader.get()));
+    vert.resize(vertSize);
+    read(data, offset, vert.data(), vertSize);
     uint64_t faceSize;
     read(data,offset, &faceSize);
-    PinnedBuffer<uvec3> indexHost(faceSize);
-    read(data, offset, indexHost.get(), faceSize);
-    index = MemorySpan<uvec3>(faceSize);
-    checkError(cudaMemcpyAsync(index.begin(),indexHost.get(),faceSize*sizeof(uvec3),
-        cudaMemcpyHostToDevice,loader.get()));
-    loader.sync();
+    index.resize(faceSize);
+    read(data, offset, index.data(), faceSize);
 }
 
-void StaticMesh::load(const std::string& path, Stream& loader) {
-    if (!std::experimental::filesystem::exists(path + ".bin"))
-        convertToBinary(path);
-    loadBinary(path + ".bin",loader);
+StaticMeshData::StaticMeshData(const StaticMesh& data, Stream& loader) {
+    vert = loader.upload(data.vert);
+    index = loader.upload(data.index);
+    loader.sync();
 }

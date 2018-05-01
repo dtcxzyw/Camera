@@ -76,6 +76,14 @@ struct Point final {
     BOTH Point operator*(const float rhs) const {
         return Point{pos * rhs};
     }
+
+    BOTH float operator[](const int id) const {
+        return reinterpret_cast<const float*>(this)[id];
+    }
+
+    BOTH float& operator[](const int id) {
+        return reinterpret_cast<float*>(this)[id];
+    }
 };
 
 class Normal final {
@@ -149,9 +157,11 @@ struct Ray final {
 
 class Bounds final {
 private:
-    Point mMin, mMax;
+    Point mMin;
+    Point mMax;
 public:
-    BOTH Bounds() = default;
+    BOTH Bounds() :mMin(Vector{ std::numeric_limits<float>::max() }), 
+        mMax(Vector{ std::numeric_limits<float>::min() }) {}
     BOTH explicit Bounds(const Point& pos) :mMin(pos), mMax(pos) {}
     BOTH Bounds(const Point& min, const Point& max) : mMin(min), mMax(max) {}
     BOTH Bounds operator|(const Bounds& rhs) const {
@@ -181,6 +191,21 @@ public:
 
     BOTH Point corner(const int id) const {
         return Point{operator[](id & 1).x, operator[](id & 2).y, operator[](id & 4).z};
+    }
+
+    CUDA bool intersect(const Ray& ray,const Vector& invDir,const glm::bvec3& neg) const {
+        const auto& bounds = *this;
+        const auto tMin = max3((bounds[neg.x].x - ray.origin.x) * invDir.x, 
+            (bounds[neg.y].y - ray.origin.y) * invDir.y,
+            (bounds[neg.z].z - ray.origin.z) * invDir.z);
+        const auto tMax = min3((bounds[!neg.x].x - ray.origin.x) * invDir.x,
+            (bounds[!neg.y].y - ray.origin.y) * invDir.y,
+            (bounds[!neg.z].z - ray.origin.z) * invDir.z);
+        return (tMin < tMax) & (tMin < ray.tMax) & (tMax > 0.0f);
+    }
+
+    CUDA bool empty() const {
+        return (mMin.x > mMax.x) | (mMin.y > mMax.y) | (mMin.z > mMax.z);
     }
 };
 
@@ -261,4 +286,11 @@ public:
         const Bounds d(bounds.corner(6), bounds.corner(7));
         return a | b | c | d;
     }
+};
+
+struct VertexDesc final {
+    Point pos;
+    Vector normal;
+    Vector tangent;
+    vec2 uv;
 };

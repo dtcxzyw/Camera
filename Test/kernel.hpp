@@ -11,7 +11,7 @@
 #include <Light/DeltaPositionLight.hpp>
 #include <Rasterizer/SphereRasterizer.hpp>
 
-using VI = StaticMesh::Vertex;
+using VI = VertexDesc;
 
 enum OutInfo {
     Pos,
@@ -102,8 +102,8 @@ struct RenderingContext final {
     }
 };
 
-void kernel(const StaticMesh& model, RenderingContext& mc,
-    const StaticMesh& skybox, RenderingContext& sc,
+void kernel(const StaticMeshData& model, RenderingContext& mc,
+    const StaticMeshData& skybox, RenderingContext& sc,
     const MemorySpan<SphereDesc>& spheres,
     const Span<Uniform>& uniform, FrameBuffer& fbo, float* lum,
     PinholeCamera::RasterPosConverter converter, CommandBuffer& buffer);
