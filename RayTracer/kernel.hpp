@@ -1,6 +1,10 @@
 #pragma once
 #include <Core/DispatchSystem.hpp>
 #include <Core/Builtin.hpp>
+#include <Camera/PinholeCamera.hpp>
+#include <Light/LightWarpper.hpp>
+#include <Light/DeltaPositionLight.hpp>
+#include <RayTracer/BVH.hpp>
 
 struct FrameBufferRef final {
     BuiltinRenderTargetRef<RGBA> color;

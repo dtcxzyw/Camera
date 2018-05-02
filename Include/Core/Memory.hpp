@@ -2,6 +2,7 @@
 #include <memory>
 #include <Core/Common.hpp>
 #include <Math/Math.hpp>
+#include <utility>
 #ifdef CAMERA_DEBUG
 #include <stdexcept>
 #endif
@@ -123,3 +124,12 @@ public:
         return mSize;
     }
 };
+
+template<typename Container>
+auto upload(const Container& data) {
+    using T = typename std::decay<decltype(*std::data(data))>::type;
+    MemorySpan<T> res(std::size(data));
+    checkError(cudaMemcpy(res.begin(), std::data(data), std::size(data) * sizeof(T),
+        cudaMemcpyHostToDevice));
+    return res;
+}

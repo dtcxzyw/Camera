@@ -4,6 +4,7 @@
 #include <Core/CompileBegin.hpp>
 #include <device_functions.h>
 #include <Core/CompileEnd.hpp>
+#include <Spectrum/SpectrumConfig.hpp>
 
 //F
 CUDAINLINE float fresnelSchlick(const float d) {
@@ -21,8 +22,7 @@ CUDAINLINE float fresnelSchlickUE4(const float vdh) {
 Artist Friendly Metallic Fresnel(JCGT, 2014)
 http://jcgt.org/published/0003/04/03/
 */
-template <typename Spectrum>
-CUDAINLINE Spectrum fresnelGulbrandsen(const Spectrum r, const Spectrum g, const float u) {
+CUDAINLINE Spectrum fresnelGulbrandsen(const Spectrum& r, const Spectrum& g, const float u) {
     const auto nMin = (1.0f - r) / (1.0f + r);
     const auto sqrtr = sqrt(r);
     const auto nMax = (1.0f + sqrtr) / (1.0f - sqrtr);
@@ -135,7 +135,6 @@ http://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_di
 The implementation is based on https://github.com/wdas/brdf/blob/master/src/brdfs/disney.brdf,
 which is licensed under the Apache License, Version 2.0.
 */
-template <typename Spectrum>
 struct DisneyBRDFArg final {
     float metallic;
     float subsurface;
@@ -150,9 +149,8 @@ struct DisneyBRDFArg final {
     Spectrum baseColor; //linear color space
 };
 
-template <typename Spectrum>
 CUDAINLINE Spectrum disneyBRDF(const Normal L, const Normal V, const Normal N, const Normal X,
-    const Normal Y, const DisneyBRDFArg<Spectrum>& arg) {
+    const Normal Y, const DisneyBRDFArg& arg) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return Spectrum(0.0f);
@@ -207,7 +205,6 @@ Implementation of UE4 BRDF ,as described in:
 http://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf
 The implementation may be wrong because I couldn't learn more from this paper.
 */
-template <typename Spectrum>
 struct UE4BRDFArg final {
     float metallic;
     float roughness;
@@ -220,9 +217,8 @@ struct UE4BRDFArg final {
 };
 
 //ratio = dis/radius
-template <typename Spectrum>
 CUDAINLINE Spectrum UE4BRDF(const Normal L, const Normal V, const Normal N, const Normal X, const Normal Y,
-    const UE4BRDFArg<Spectrum>& arg, const float ratio) {
+    const UE4BRDFArg& arg, const float ratio) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return Spectrum(0.0f);
@@ -286,7 +282,6 @@ diamond    255 1          0.171
 fv=0.2281399812785982*x^3-0.22673613288218408*x^2+0.20285923208572978*x-0.03326308048214361
 f0=mix(fv,1.0,metallic)
 */
-template <typename Spectrum>
 struct FrostbiteBRDFArg final {
     Spectrum baseColor;
     float metallic;
@@ -300,9 +295,8 @@ CUDAINLINE float calcFv(const float r) {
     return saturate(((a * r + b) * r + c) * r + d);
 }
 
-template <typename Spectrum>
 CUDAINLINE Spectrum frostbiteBRDF(const Normal L, const Normal V, const Normal N,
-    const FrostbiteBRDFArg<Spectrum>& arg) {
+    const FrostbiteBRDFArg& arg) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return Spectrum(0.0f);
@@ -337,7 +331,6 @@ http://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_di
 G:Height-Correlated Smith[Heitz14]
 http://jcgt.org/published/0003/02/03/
 */
-template <typename Spectrum>
 struct MixedBRDFArg final {
     Spectrum baseColor;
     Spectrum edgeTint;
@@ -346,9 +339,8 @@ struct MixedBRDFArg final {
     float anisotropic;
 };
 
-template <typename Spectrum>
 CUDAINLINE Spectrum mixedBRDF(const Normal L, const Normal V, const Normal N, const Normal X, const Normal Y,
-    const MixedBRDFArg<Spectrum>& arg) {
+    const MixedBRDFArg& arg) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
     if (fmin(ndl, ndv) < 0.0f)return Spectrum(0.0f);

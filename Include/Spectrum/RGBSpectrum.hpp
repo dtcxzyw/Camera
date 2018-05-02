@@ -49,6 +49,10 @@ public:
     BOTH RGB toRGB() const {
         return mVal;
     }
+
+    BOTH friend RGBSpectrum sqrt(const RGBSpectrum& col) {
+        return RGBSpectrum{ glm::sqrt(col.mVal) };
+    }
 };
 
 #define OPFLOAT(op) \

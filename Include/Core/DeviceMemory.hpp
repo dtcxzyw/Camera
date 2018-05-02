@@ -241,46 +241,14 @@ public:
     }
 };
 
-template<typename T>
-GLOBAL void constructKernel(T* ptr) {
-    new(ptr) T();
+template<typename T,typename... Args>
+GLOBAL void constructKernel(T* ptr, Args... args) {
+    new(ptr) T(args...);
 }
 
-template<typename T>
-GLOBAL void deconstructKernel(T* ptr) {
-    ptr->~T();
+template<typename T, typename... Args>
+MemorySpan<T> constructOnDevice(CommandBuffer& buffer, Args&&... args){
+    MemorySpan<T> res(1);
+    buffer.callKernel(constructKernel<T,Args...>, buffer.useAllocated(res), std::forward<Args>(args)...);
+    return res;
 }
-
-template<typename T>
-class ObjectHolder final :Uncopyable {
-private:
-    MemorySpan<T> mPtr;
-#ifdef CAMERA_DEBUG
-    bool mConstructed;
-#endif
-public:
-    explicit ObjectHolder(CommandBuffer& buffer) :mPtr(1)
-#ifdef CAMERA_DEBUG
-    ,mConstructed(false)
-#endif
-    {
-        buffer.callKernel(constructKernel<T>, buffer.useAllocated(mPtr));
-#ifdef CAMERA_DEBUG
-        buffer.addCallback([this] {mConstructed = true; });
-#endif
-    }
-    ~ObjectHolder() {
-#ifdef CAMERA_DEBUG
-        if (!mConstructed)
-            throw std::logic_error("Unconstructed object.");
-#endif
-        auto buffer = std::make_unique<CommandBuffer>();
-        buffer->callKernel(deconstructKernel<T>, buffer->useAllocated(mPtr));
-        Environment::get().submit(std::move(buffer)).sync();
-    }
-    ObjectHolder(ObjectHolder&&) = default;
-    ObjectHolder& operator=(ObjectHolder&&) = default;
-    MemorySpan<T> get() const {
-        return mPtr;
-    }
-};

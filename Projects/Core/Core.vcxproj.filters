@@ -7,9 +7,6 @@
     <Filter Include="IO">
       <UniqueIdentifier>{fc4ca51a-fd89-4683-82dd-97a9720a7c13}</UniqueIdentifier>
     </Filter>
-    <Filter Include="PBR">
-      <UniqueIdentifier>{521edfdb-b420-4450-b0d7-80698fe6aedc}</UniqueIdentifier>
-    </Filter>
     <Filter Include="PostProcess">
       <UniqueIdentifier>{1425f13e-a513-43dc-872f-5d1d7e56a655}</UniqueIdentifier>
     </Filter>
@@ -43,6 +40,9 @@
     <Filter Include="Math">
       <UniqueIdentifier>{f71e1dcb-f59d-4b72-8ae7-d1fc906c84ba}</UniqueIdentifier>
     </Filter>
+    <Filter Include="BxDF">
+      <UniqueIdentifier>{521edfdb-b420-4450-b0d7-80698fe6aedc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp">
@@ -57,14 +57,8 @@
     <ClInclude Include="..\..\Include\IO\Video.hpp">
       <Filter>IO</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\PBR\BRDF.hpp">
-      <Filter>PBR</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\PostProcess\ToneMapping.hpp">
       <Filter>PostProcess</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\PBR\DataDrivenBRDF.hpp">
-      <Filter>PBR</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp">
       <Filter>Sampler</Filter>
@@ -186,9 +180,6 @@
     <ClInclude Include="..\..\Include\IO\LZ4Binary.hpp">
       <Filter>IO</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\RayTracer\Primitive.hpp">
-      <Filter>RayTracer</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Math\Math.hpp">
       <Filter>Math</Filter>
     </ClInclude>
@@ -218,6 +209,21 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\Sampler\Samping.hpp">
       <Filter>Sampler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\RayTracer\Scene.hpp">
+      <Filter>RayTracer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Spectrum\SpectrumConfig.hpp">
+      <Filter>Spectrum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Light\LightWarpper.hpp">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\BxDF\BRDF.hpp">
+      <Filter>BxDF</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\BxDF\DataDrivenBRDF.hpp">
+      <Filter>BxDF</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -259,9 +265,6 @@
     <CudaCompile Include="..\..\Src\IO\Image.cu">
       <Filter>IO</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\Src\PBR\DataDrivenBRDF.cu">
-      <Filter>PBR</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\Src\Interaction\SoftwareRenderer.cu">
       <Filter>Interaction</Filter>
     </CudaCompile>
@@ -282,6 +285,15 @@
     </CudaCompile>
     <CudaCompile Include="..\..\Src\Camera\PinholeCamera.cu">
       <Filter>Camera</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\RayTracer\Triangle.cu">
+      <Filter>RayTracer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\RayTracer\Scene.cu">
+      <Filter>RayTracer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\BxDF\DataDrivenBRDF.cu">
+      <Filter>BxDF</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

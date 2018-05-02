@@ -1,18 +1,24 @@
 #include <RayTracer/BVH.hpp>
+#include <algorithm>
+#include <IO/Model.hpp>
 
 CUDA TriangleDesc BvhForTriangleRef::makeTriangleDesc(const unsigned int id) const {
     const auto ref = mIndex[id];
     return {ref.id, mVertex[ref.a], mVertex[ref.b], mVertex[ref.c]};
 }
 
-CUDA bool BvhForTriangleRef::intersectImpl(const Ray& ray) const {
+BvhForTriangleRef::BvhForTriangleRef(const MemorySpan<BvhNode>& nodes, 
+    const MemorySpan<TriangleRef>& index,const MemorySpan<VertexDesc>& vertex)
+    :mNodes(nodes.begin()), mIndex(index.begin()), mVertex(vertex.begin()) {}
+
+CUDA bool BvhForTriangleRef::intersect(const Ray& ray) const {
     unsigned int top = 0, current = 0;
     unsigned int stack[64];
     const auto invDir = 1.0f / ray.dir;
     const glm::bvec3 neg = {invDir.x < 0.0f, invDir.y < 0.0f, invDir.z < 0.0f};
     while (true) {
         const auto& node = mNodes[current];
-        if (node.bounds.intersect(ray, invDir, neg)) {
+        if (node.bounds.intersect(ray, ray.tMax, invDir, neg)) {
             if (node.size) {
                 for (auto i = 0U; i < node.size; ++i)
                     if (makeTriangleDesc(node.offset + i).intersect(ray))
@@ -37,7 +43,7 @@ CUDA bool BvhForTriangleRef::intersectImpl(const Ray& ray) const {
     return false;
 }
 
-CUDA bool BvhForTriangleRef::intersectImpl(const Ray& ray, float& t, Interaction& interaction) const {
+CUDA bool BvhForTriangleRef::intersect(const Ray& ray, float& t, Interaction& interaction) const {
     unsigned int top = 0, current = 0;
     unsigned int stack[64];
     const auto invDir = 1.0f / ray.dir;
@@ -45,7 +51,7 @@ CUDA bool BvhForTriangleRef::intersectImpl(const Ray& ray, float& t, Interaction
     auto res = false;
     while (true) {
         const auto& node = mNodes[current];
-        if (node.bounds.intersect(ray, invDir, neg)) {
+        if (node.bounds.intersect(ray,t, invDir, neg)) {
             if (node.size) {
                 for (auto i = 0U; i < node.size; ++i)
                     res |= makeTriangleDesc(node.offset + i).intersect(ray, t, interaction);
@@ -68,13 +74,6 @@ CUDA bool BvhForTriangleRef::intersectImpl(const Ray& ray, float& t, Interaction
     }
     return res;
 }
-
-CUDA Bounds BvhForTriangleRef::boundsImpl() const {
-    return mBounds;
-}
-
-CUDA BvhForTriangleRef::BvhForTriangleRef(const BvhForTriangleInfo& info)
-    : mNodes(info.nodes), mIndex(info.index), mVertex(info.vertex), mBounds(info.bounds) {}
 
 struct BuildNode final {
     Bounds bounds;
@@ -223,7 +222,6 @@ BvhForTriangle::BvhForTriangle(const StaticMesh& mesh, const size_t maxPrim,Stre
         const auto pa = vertex[idx.x].pos, pb = vertex[idx.y].pos, pc = vertex[idx.z].pos;
         Bounds bounds{min(pa, min(pb, pc)), max(pa, max(pb, pc))};
         primitive.emplace_back(static_cast<unsigned int>(primitive.size()), bounds);
-        mBounds |= bounds;
     }
     std::vector<TriangleRef> ordered;
     ordered.reserve(index.size());
@@ -245,11 +243,6 @@ BvhForTriangle::BvhForTriangle(const StaticMesh& mesh, const size_t maxPrim,Stre
     stream.sync();
 }
 
-BvhForTriangleInfo BvhForTriangle::getBuildInfo() const {
-    BvhForTriangleInfo info;
-    info.nodes = mNodes.begin();
-    info.index = mIndex.begin();
-    info.vertex = mVertex.begin();
-    info.bounds = mBounds;
-    return info;
+BvhForTriangleRef BvhForTriangle::getRef() const {
+    return { mNodes,mIndex,mVertex };
 }

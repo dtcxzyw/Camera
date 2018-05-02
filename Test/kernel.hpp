@@ -78,9 +78,9 @@ struct Uniform final {
     ALIGN Transform modelTransform;
     ALIGN Transform invCameraTransform;
     ALIGN Point cp;
-    ALIGN DisneyBRDFArg<RGBSpectrum> arg;
+    ALIGN DisneyBRDFArg arg;
     ALIGN BuiltinSamplerRef<RGBA> sampler;
-    ALIGN PointLight<RGBSpectrum> light;
+    ALIGN PointLight light;
 };
 
 struct PostUniform final {

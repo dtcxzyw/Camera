@@ -20,7 +20,7 @@ private:
     std::unique_ptr<RenderingContext> mSc;
     std::shared_ptr<BuiltinCubeMap<RGBA>> mEnvMap;
     std::shared_ptr<BuiltinSampler<RGBA>> mEnvMapSampler;
-    DisneyBRDFArg<RGBSpectrum> mArg;
+    DisneyBRDFArg mArg;
     PinholeCamera mCamera;
     Uniform mOld;
     RGB mColor;

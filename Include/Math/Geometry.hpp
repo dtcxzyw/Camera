@@ -188,7 +188,8 @@ public:
         return Point{operator[](id & 1).x, operator[](id & 2).y, operator[](id & 4).z};
     }
 
-    CUDA bool intersect(const Ray& ray,const Vector& invDir,const glm::bvec3& neg) const {
+    CUDA bool intersect(const Ray& ray, const float tHit, const Vector& invDir, 
+        const glm::bvec3& neg) const {
         const auto& bounds = *this;
         const auto tMin = max3((bounds[neg.x].x - ray.origin.x) * invDir.x, 
             (bounds[neg.y].y - ray.origin.y) * invDir.y,
@@ -196,7 +197,7 @@ public:
         const auto tMax = min3((bounds[!neg.x].x - ray.origin.x) * invDir.x,
             (bounds[!neg.y].y - ray.origin.y) * invDir.y,
             (bounds[!neg.z].z - ray.origin.z) * invDir.z);
-        return (tMin < tMax) & (tMin < ray.tMax) & (tMax > 0.0f);
+        return (tMin < tMax) & (tMin < tHit) & (tMax > 0.0f);
     }
 
     CUDA bool empty() const {

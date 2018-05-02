@@ -11,6 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Include\BxDF\BRDF.hpp" />
+    <ClInclude Include="..\..\Include\BxDF\DataDrivenBRDF.hpp" />
     <ClInclude Include="..\..\Include\Camera\BuiltinParameter.hpp" />
     <ClInclude Include="..\..\Include\Camera\CamereSample.hpp" />
     <ClInclude Include="..\..\Include\Camera\PinholeCamera.hpp" />
@@ -39,11 +41,10 @@
     <ClInclude Include="..\..\Include\IO\Video.hpp" />
     <ClInclude Include="..\..\Include\Light\DeltaPositionLight.hpp" />
     <ClInclude Include="..\..\Include\Light\LightingSample.hpp" />
+    <ClInclude Include="..\..\Include\Light\LightWarpper.hpp" />
     <ClInclude Include="..\..\Include\Math\EFloat.hpp" />
     <ClInclude Include="..\..\Include\Math\Geometry.hpp" />
     <ClInclude Include="..\..\Include\Math\Math.hpp" />
-    <ClInclude Include="..\..\Include\PBR\BRDF.hpp" />
-    <ClInclude Include="..\..\Include\PBR\DataDrivenBRDF.hpp" />
     <ClInclude Include="..\..\Include\PostProcess\ToneMapping.hpp" />
     <ClInclude Include="..\..\Include\Rasterizer\Buffer2D.hpp" />
     <ClInclude Include="..\..\Include\Rasterizer\IndexDescriptor.hpp" />
@@ -59,18 +60,20 @@
     <ClInclude Include="..\..\Include\Rasterizer\Vertex.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\BVH.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Interaction.hpp" />
-    <ClInclude Include="..\..\Include\RayTracer\Primitive.hpp" />
+    <ClInclude Include="..\..\Include\RayTracer\Scene.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Triangle.hpp" />
     <ClInclude Include="..\..\Include\Sampler\Samping.hpp" />
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp" />
     <ClInclude Include="..\..\Include\Scene\ECS.hpp" />
     <ClInclude Include="..\..\Include\Spectrum\RGBSpectrum.hpp" />
+    <ClInclude Include="..\..\Include\Spectrum\SpectrumConfig.hpp" />
     <ClInclude Include="..\..\Include\Texture\Filter.hpp" />
     <ClInclude Include="..\..\Include\Texture\Noise.hpp" />
     <ClInclude Include="..\..\Include\Texture\ProceduralTexture.hpp" />
     <ClInclude Include="..\..\Include\Texture\TextureMapping.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="..\..\Src\BxDF\DataDrivenBRDF.cu" />
     <CudaCompile Include="..\..\Src\Camera\PinholeCamera.cu">
       <FileType>Document</FileType>
     </CudaCompile>
@@ -94,10 +97,11 @@
     <CudaCompile Include="..\..\Src\Core\Constant.cu" />
     <CudaCompile Include="..\..\Src\Core\DeviceMemory.cu" />
     <CudaCompile Include="..\..\Src\Interaction\SoftwareRenderer.cu" />
-    <CudaCompile Include="..\..\Src\PBR\DataDrivenBRDF.cu" />
     <CudaCompile Include="..\..\Src\Rasterizer\LineRasterizer.cu" />
     <CudaCompile Include="..\..\Src\Rasterizer\SphereRasterizer.cu" />
     <CudaCompile Include="..\..\Src\RayTracer\BVH.cu" />
+    <CudaCompile Include="..\..\Src\RayTracer\Scene.cu" />
+    <CudaCompile Include="..\..\Src\RayTracer\Triangle.cu" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\IO\Image.cu" />

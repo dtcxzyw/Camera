@@ -58,11 +58,11 @@ CUDAINLINE void setModel(unsigned int, ivec2 uv, float z, const OI&, const OI&, 
 
 CUDAINLINE RGBSpectrum shade(const Point p, const Normal N, const Normal X, const Normal Y,
     const Uniform& uniform) {
-    const auto sample = uniform.light.sample({}, p);
+    const auto sample = uniform.light.sampleLi({}, p);
     const Normal V{ uniform.cp - p };
     const auto F = disneyBRDF(Normal(sample.wi), V, N, X, Y, uniform.arg);
     const auto ref = reflect(-V, N);
-    const auto lc = uniform.light.sample({}, p).illumination +
+    const auto lc = sample.illumination +
         RGBSpectrum(uniform.sampler.getCubeMap(Vector(ref)));
     return lc * F * fabs(dot(N, sample.wi));
 }
