@@ -1,5 +1,4 @@
 #pragma once
-#include <Core/Common.hpp>
 #include <Math/Geometry.hpp>
 #include <Spectrum/SpectrumConfig.hpp>
 
@@ -8,6 +7,6 @@ struct LightingSample final {
     float pdf;
     Spectrum illumination;
     CUDA LightingSample() = default;
-    CUDA LightingSample(const Vector wi, const Spectrum& illumination, const float pdf = 1.0f)
+    CUDA LightingSample(const Vector& wi, const Spectrum& illumination, const float pdf = 1.0f)
         :wi(makeNormalUnsafe(wi)), pdf(pdf), illumination(illumination) {}
 };

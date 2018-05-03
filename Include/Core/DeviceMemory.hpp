@@ -247,8 +247,8 @@ GLOBAL void constructKernel(T* ptr, Args... args) {
 }
 
 template<typename T, typename... Args>
-MemorySpan<T> constructOnDevice(CommandBuffer& buffer, Args&&... args){
+MemorySpan<T> constructOnDevice(Stream& stream, Args&&... args){
     MemorySpan<T> res(1);
-    buffer.callKernel(constructKernel<T,Args...>, buffer.useAllocated(res), std::forward<Args>(args)...);
+    stream.launchDim(constructKernel<T, Args...>, {}, {}, res.begin(), std::forward<Args>(args)...);
     return res;
 }

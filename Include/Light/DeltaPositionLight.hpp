@@ -16,6 +16,9 @@ public:
         const auto invDis2 = 1.0f / length2(delta);
         return { delta*sqrt(invDis2),mIllumination*invDis2 };
     }
+    BOTH LightingSample le(const Ray& ray) const {
+        return { Vector{},Spectrum{} };
+    }
     BOTH Spectrum power() const {
         return mPower;
     }
@@ -46,6 +49,9 @@ public:
         const auto invDis2 = 1.0f / length2(delta);
         const auto wi= delta * sqrt(invDis2);
         return { wi,mIllumination*invDis2*fallOff(mWorldToLight(wi).z) };
+    }
+    BOTH LightingSample le(const Ray& ray) const {
+        return { Vector{},Spectrum{} };
     }
     BOTH Spectrum power() const {
         return mPower;

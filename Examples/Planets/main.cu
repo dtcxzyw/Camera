@@ -192,7 +192,7 @@ public:
 
         mCamera.near = 1.0f;
         mCamera.far = 250.0f;
-        mCamera.filmAperture = {0.980f, 0.735f};
+        mCamera.filmGate = { 24.892f, 18.669f };
         mCamera.mode = PinholeCamera::FitResolutionGate::Overscan;
         mCamera.focalLength = 15.0f;
 

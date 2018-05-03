@@ -43,6 +43,9 @@
     <Filter Include="BxDF">
       <UniqueIdentifier>{521edfdb-b420-4450-b0d7-80698fe6aedc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Material">
+      <UniqueIdentifier>{88dc6eb2-e72e-4b19-ba1c-fa6dad1e35ed}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp">
@@ -219,10 +222,22 @@
     <ClInclude Include="..\..\Include\Light\LightWarpper.hpp">
       <Filter>Light</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\BxDF\BRDF.hpp">
+    <ClInclude Include="..\..\Include\BxDF\DataDrivenBRDF.hpp">
       <Filter>BxDF</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\BxDF\DataDrivenBRDF.hpp">
+    <ClInclude Include="..\..\Include\Material\Material.hpp">
+      <Filter>Material</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\BxDF\BxDF.hpp">
+      <Filter>BxDF</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\BxDF\BRDFOld.hpp">
+      <Filter>BxDF</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\BxDF\Fresnel.hpp">
+      <Filter>BxDF</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\BxDF\Microfact.hpp">
       <Filter>BxDF</Filter>
     </ClInclude>
   </ItemGroup>

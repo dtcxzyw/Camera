@@ -11,8 +11,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Include\BxDF\BRDF.hpp" />
+    <ClInclude Include="..\..\Include\BxDF\Fresnel.hpp" />
+    <ClInclude Include="..\..\Include\BxDF\BRDFOld.hpp" />
+    <ClInclude Include="..\..\Include\BxDF\BxDF.hpp" />
     <ClInclude Include="..\..\Include\BxDF\DataDrivenBRDF.hpp" />
+    <ClInclude Include="..\..\Include\BxDF\Microfact.hpp" />
     <ClInclude Include="..\..\Include\Camera\BuiltinParameter.hpp" />
     <ClInclude Include="..\..\Include\Camera\CamereSample.hpp" />
     <ClInclude Include="..\..\Include\Camera\PinholeCamera.hpp" />
@@ -42,6 +45,7 @@
     <ClInclude Include="..\..\Include\Light\DeltaPositionLight.hpp" />
     <ClInclude Include="..\..\Include\Light\LightingSample.hpp" />
     <ClInclude Include="..\..\Include\Light\LightWarpper.hpp" />
+    <ClInclude Include="..\..\Include\Material\Material.hpp" />
     <ClInclude Include="..\..\Include\Math\EFloat.hpp" />
     <ClInclude Include="..\..\Include\Math\Geometry.hpp" />
     <ClInclude Include="..\..\Include\Math\Math.hpp" />

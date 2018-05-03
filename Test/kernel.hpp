@@ -4,7 +4,7 @@
 #include <Core/Builtin.hpp>
 #include <Rasterizer/Buffer2D.hpp>
 #include <IO/Model.hpp>
-#include <PBR/BRDF.hpp>
+#include <BxDF/BRDFOld.hpp>
 #include <Camera/PinholeCamera.hpp>
 #include <Rasterizer/TriangleRasterizer.hpp>
 #include <Spectrum/RGBSpectrum.hpp>

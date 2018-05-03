@@ -12,7 +12,7 @@ private:
     PinholeCamera mCamera;
     std::unique_ptr<BvhForTriangle> mBvh;
     std::unique_ptr<Constant<BvhForTriangleRef>> mBvhRef;
-    MemorySpan<LightWrapperLi> mLight;
+    MemorySpan<LightWrapper> mLight;
     std::unique_ptr<SceneDesc> mScene;
 public:
     void run() {
@@ -21,19 +21,16 @@ public:
          try {
             {
                 Stream resLoader;
-                auto buffer = std::make_unique<CommandBuffer>();
                 StaticMesh model("Res/dragon.obj");
                 mBvh = std::make_unique<BvhForTriangle>(model, 32U, resLoader);
                 mBvhRef = std::make_unique<Constant<BvhForTriangleRef>>();
                 mBvhRef->set(mBvh->getRef(), resLoader);
-                mLight = makeLightWrapperLi<PointLight>(*buffer, Point{ 0.0f,10.0f,0.0f }, Spectrum{ 1.0f });
+                mLight = makeLightWrapper<PointLight>(resLoader, Point{ 0.0f,10.0f,0.0f }, Spectrum{ 1.0f });
                 std::vector<Primitive> primitives;
                 primitives.emplace_back(Transform{}, mBvhRef->get(), nullptr);
-                std::vector<LightWrapperLi*> li;
-                std::vector<LightWrapperLe*> le;
-                li.emplace_back(mLight.begin());
-                mScene = std::make_unique<SceneDesc>(primitives, li, le);
-                env.get().submit(std::move(buffer)).sync();
+                std::vector<LightWrapper*> lights;
+                lights.emplace_back(mLight.begin());
+                mScene = std::make_unique<SceneDesc>(primitives, lights);
                 resLoader.sync();
             }
 

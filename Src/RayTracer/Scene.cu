@@ -13,7 +13,6 @@ CUDA bool Primitive::intersect(const Ray& ray) const {
 bool Primitive::intersect(const Ray& ray, float& tHit, Interaction& interaction) const {
     if (mGeometry->intersect(mTrans(ray), tHit, interaction)) {
         interaction.material = mMaterial;
-        transform(inverse(mTrans), interaction);
         return true;
     }
     return false;
@@ -37,9 +36,8 @@ bool SceneRef::intersect(const Ray& ray, Interaction& interaction) const {
     return flag;
 }
 
-SceneDesc::SceneDesc(const std::vector<Primitive>& priData, const std::vector<LightWrapperLi*>& liData,
-    const std::vector<LightWrapperLe*>& leData) :mPrimitives(upload(priData)),
-    mLights(upload(liData)), mEnvironmentLights(upload(leData)) {}
+SceneDesc::SceneDesc(const std::vector<Primitive>& priData, const std::vector<LightWrapper*>& light) 
+    :mPrimitives(upload(priData)), mLights(upload(light)) {}
 
 SceneRef SceneDesc::getRef() const {
     return SceneRef(mPrimitives.begin(), mPrimitives.size());

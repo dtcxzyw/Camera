@@ -6,8 +6,7 @@
 class MaterialRef;
 class BvhForTriangleRef;
 struct Interaction;
-struct LightWrapperLi;
-struct LightWrapperLe;
+struct LightWrapper;
 
 //triangles only
 
@@ -35,10 +34,9 @@ public:
 class SceneDesc final {
 private:
     MemorySpan<Primitive> mPrimitives;
-    MemorySpan<LightWrapperLi*> mLights;
-    MemorySpan<LightWrapperLe*> mEnvironmentLights;
+    MemorySpan<LightWrapper*> mLights;
 public:
     explicit SceneDesc(const std::vector<Primitive>& priData, 
-        const std::vector<LightWrapperLi*>& liData,const std::vector<LightWrapperLe*>& leData);
+        const std::vector<LightWrapper*>& lightData);
     SceneRef getRef() const;
 };

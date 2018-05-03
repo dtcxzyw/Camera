@@ -3,6 +3,19 @@
 #include <Math/Math.hpp>
 #include <Math/EFloat.hpp>
 
+BOTH Vector faceForward(const Vector& n,const Vector& v) {
+    return dot(n, v) < 0.0f ? -n : n;
+}
+
+BOTH bool refract(const Vector& in,const Vector& normal,const float eta,Vector& out) {
+    const auto cosThetaI = dot(in, normal);
+    const auto sin2ThetaT = eta * eta*(1.0f - cosThetaI * cosThetaI);
+    if (sin2ThetaT >= 1.0f)return false;
+    const auto cosThetaT = sqrt(1.0f - sin2ThetaT);
+    out = (eta*cosThetaI - cosThetaT) *normal - eta * in;
+    return true;
+}
+
 BOTH int maxDim(const Vector& vec) {
     const auto vecAbs = abs(vec);
     return vecAbs.x > vecAbs.y ? (vecAbs.x > vecAbs.z ? 0 : 2) : (vecAbs.y > vecAbs.z ? 1 : 2);
