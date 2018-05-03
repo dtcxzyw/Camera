@@ -192,9 +192,6 @@
     <ClInclude Include="..\..\Include\Math\Geometry.hpp">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\RayTracer\Interaction.hpp">
-      <Filter>RayTracer</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\RayTracer\Triangle.hpp">
       <Filter>RayTracer</Filter>
     </ClInclude>
@@ -239,6 +236,18 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\BxDF\Microfact.hpp">
       <Filter>BxDF</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\BxDF\BxDFWarpper.hpp">
+      <Filter>BxDF</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Material\Plastic.hpp">
+      <Filter>Material</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\TextureFunction.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Math\Interaction.hpp">
+      <Filter>Math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

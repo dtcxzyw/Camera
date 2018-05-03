@@ -292,4 +292,5 @@ Docs/
 
 # Camera
 ThirdParty/
+*.exe
 

@@ -70,7 +70,7 @@ CUDAINLINE RGBSpectrum marble(const Vector p, const float var, const float omega
         {0.2f, 0.2f, 0.33f},
         {0.58f, 0.58f, 0.6f}
     };
-    constexpr float scale = std::extent_v<decltype(c)>;
+    constexpr float scale = std::extent<decltype(c)>::value;
     const int beg = std::floor(t * scale);
     t = t * scale - beg;
     #define CONSTRUCT(x) Vector(x[0],x[1],x[2])

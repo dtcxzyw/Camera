@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Include\BxDF\BxDFWarpper.hpp" />
     <ClInclude Include="..\..\Include\BxDF\Fresnel.hpp" />
     <ClInclude Include="..\..\Include\BxDF\BRDFOld.hpp" />
     <ClInclude Include="..\..\Include\BxDF\BxDF.hpp" />
@@ -46,8 +47,10 @@
     <ClInclude Include="..\..\Include\Light\LightingSample.hpp" />
     <ClInclude Include="..\..\Include\Light\LightWarpper.hpp" />
     <ClInclude Include="..\..\Include\Material\Material.hpp" />
+    <ClInclude Include="..\..\Include\Material\Plastic.hpp" />
     <ClInclude Include="..\..\Include\Math\EFloat.hpp" />
     <ClInclude Include="..\..\Include\Math\Geometry.hpp" />
+    <ClInclude Include="..\..\Include\Math\Interaction.hpp" />
     <ClInclude Include="..\..\Include\Math\Math.hpp" />
     <ClInclude Include="..\..\Include\PostProcess\ToneMapping.hpp" />
     <ClInclude Include="..\..\Include\Rasterizer\Buffer2D.hpp" />
@@ -63,7 +66,6 @@
     <ClInclude Include="..\..\Include\Rasterizer\TriangleRasterizer.hpp" />
     <ClInclude Include="..\..\Include\Rasterizer\Vertex.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\BVH.hpp" />
-    <ClInclude Include="..\..\Include\RayTracer\Interaction.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Scene.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Triangle.hpp" />
     <ClInclude Include="..\..\Include\Sampler\Samping.hpp" />
@@ -74,6 +76,7 @@
     <ClInclude Include="..\..\Include\Texture\Filter.hpp" />
     <ClInclude Include="..\..\Include\Texture\Noise.hpp" />
     <ClInclude Include="..\..\Include\Texture\ProceduralTexture.hpp" />
+    <ClInclude Include="..\..\Include\Texture\TextureFunction.hpp" />
     <ClInclude Include="..\..\Include\Texture\TextureMapping.hpp" />
   </ItemGroup>
   <ItemGroup>

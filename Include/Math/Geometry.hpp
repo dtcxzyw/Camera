@@ -7,6 +7,10 @@ BOTH Vector faceForward(const Vector& n,const Vector& v) {
     return dot(n, v) < 0.0f ? -n : n;
 }
 
+BOTH Vector halfVector(const Vector& in,const Vector& out) {
+    return glm::normalize(in + out);
+}
+
 BOTH bool refract(const Vector& in,const Vector& normal,const float eta,Vector& out) {
     const auto cosThetaI = dot(in, normal);
     const auto sin2ThetaT = eta * eta*(1.0f - cosThetaI * cosThetaI);

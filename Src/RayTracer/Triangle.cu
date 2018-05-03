@@ -1,5 +1,5 @@
 #include <RayTracer/Triangle.hpp>
-#include <RayTracer/Interaction.hpp>
+#include <Math/Interaction.hpp>
 
 CUDA bool TriangleDesc::interscet(const Ray& ray, Vector& pa, Vector& pb, Vector& pc,
     float& t, float& e0, float& e1, float& e2) const {

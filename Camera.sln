@@ -16,41 +16,45 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracer", "Projects\RayTr
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Planets", "Projects\Planets\Planets.vcxproj", "{8542D21F-FF8D-4FE1-B2F3-4FA2541E71C7}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BxDFWarpperGen", "Tools\BxDFWarpperGen\BxDFWarpperGen.vcxproj", "{61535F1D-A3CA-4FD2-84C6-FC147BC4BD29}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{4947D57E-54FD-466A-883E-C94F3CFAA0B9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{1B56302F-B50B-4C92-A626-26B6B0458E7C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
-		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{5F1E8A1F-D76A-422B-931E-A9A3CB901342}.Debug|x64.ActiveCfg = Debug|x64
 		{5F1E8A1F-D76A-422B-931E-A9A3CB901342}.Debug|x64.Build.0 = Debug|x64
-		{5F1E8A1F-D76A-422B-931E-A9A3CB901342}.Debug|x86.ActiveCfg = Debug|x64
 		{5F1E8A1F-D76A-422B-931E-A9A3CB901342}.Release|x64.ActiveCfg = Release|x64
 		{5F1E8A1F-D76A-422B-931E-A9A3CB901342}.Release|x64.Build.0 = Release|x64
-		{5F1E8A1F-D76A-422B-931E-A9A3CB901342}.Release|x86.ActiveCfg = Release|x64
 		{692621FD-3048-4BE1-AF10-F67EAA053452}.Debug|x64.ActiveCfg = Debug|x64
 		{692621FD-3048-4BE1-AF10-F67EAA053452}.Debug|x64.Build.0 = Debug|x64
-		{692621FD-3048-4BE1-AF10-F67EAA053452}.Debug|x86.ActiveCfg = Debug|x64
 		{692621FD-3048-4BE1-AF10-F67EAA053452}.Release|x64.ActiveCfg = Release|x64
 		{692621FD-3048-4BE1-AF10-F67EAA053452}.Release|x64.Build.0 = Release|x64
-		{692621FD-3048-4BE1-AF10-F67EAA053452}.Release|x86.ActiveCfg = Release|x64
 		{EB6534A3-F165-437C-97BC-7F79E53F7BCC}.Debug|x64.ActiveCfg = Debug|x64
 		{EB6534A3-F165-437C-97BC-7F79E53F7BCC}.Debug|x64.Build.0 = Debug|x64
-		{EB6534A3-F165-437C-97BC-7F79E53F7BCC}.Debug|x86.ActiveCfg = Debug|x64
 		{EB6534A3-F165-437C-97BC-7F79E53F7BCC}.Release|x64.ActiveCfg = Release|x64
 		{EB6534A3-F165-437C-97BC-7F79E53F7BCC}.Release|x64.Build.0 = Release|x64
-		{EB6534A3-F165-437C-97BC-7F79E53F7BCC}.Release|x86.ActiveCfg = Release|x64
 		{8542D21F-FF8D-4FE1-B2F3-4FA2541E71C7}.Debug|x64.ActiveCfg = Debug|x64
 		{8542D21F-FF8D-4FE1-B2F3-4FA2541E71C7}.Debug|x64.Build.0 = Debug|x64
-		{8542D21F-FF8D-4FE1-B2F3-4FA2541E71C7}.Debug|x86.ActiveCfg = Debug|x64
 		{8542D21F-FF8D-4FE1-B2F3-4FA2541E71C7}.Release|x64.ActiveCfg = Release|x64
 		{8542D21F-FF8D-4FE1-B2F3-4FA2541E71C7}.Release|x64.Build.0 = Release|x64
-		{8542D21F-FF8D-4FE1-B2F3-4FA2541E71C7}.Release|x86.ActiveCfg = Release|x64
+		{61535F1D-A3CA-4FD2-84C6-FC147BC4BD29}.Debug|x64.ActiveCfg = Debug|x64
+		{61535F1D-A3CA-4FD2-84C6-FC147BC4BD29}.Debug|x64.Build.0 = Debug|x64
+		{61535F1D-A3CA-4FD2-84C6-FC147BC4BD29}.Release|x64.ActiveCfg = Release|x64
+		{61535F1D-A3CA-4FD2-84C6-FC147BC4BD29}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8542D21F-FF8D-4FE1-B2F3-4FA2541E71C7} = {1B56302F-B50B-4C92-A626-26B6B0458E7C}
+		{61535F1D-A3CA-4FD2-84C6-FC147BC4BD29} = {4947D57E-54FD-466A-883E-C94F3CFAA0B9}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {88C0D554-B937-4C67-A62F-52AE30F72AD3}

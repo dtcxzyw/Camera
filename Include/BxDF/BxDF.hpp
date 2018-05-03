@@ -26,9 +26,9 @@ constexpr BOTH BxDFType operator|(const BxDFType a, const BxDFType b) {
     return static_cast<BxDFType>(static_cast<unsigned int>(a) | static_cast<unsigned int>(b));
 }
 
-template <BxDFType Pattern>
-BOTH bool matchPattern(const BxDFType type) {
-    return (type & Pattern) == type;
+template <BxDFType Type>
+BOTH bool matchPattern(const BxDFType pattern) {
+    return (Type & pattern) == Type;
 }
 
 struct BxDFSample final {
@@ -89,6 +89,11 @@ CUDAINLINE float sin2Phi(const Vector& v) {
 
 template <typename T>
 struct BxDFHelper {
+
+    CUDA bool match(const BxDFType partten) const {
+        return matchPattern<T::type>(partten);
+    }
+
     CUDA Spectrum f(const Vector&, const Vector&) const {
         return Spectrum{};
     }
@@ -205,13 +210,13 @@ public:
     }
 };
 
-class OrenNayarReflection final : public BxDFHelper<OrenNayarReflection> {
+class OrenNayar final : public BxDFHelper<OrenNayar> {
 private:
     Spectrum mReflection;
     float mA, mB;
 public:
     static constexpr auto type = BxDFType::Reflection | BxDFType::Diffuse;
-    CUDA OrenNayarReflection(const Spectrum& reflection, float sigma)
+    CUDA OrenNayar(const Spectrum& reflection, float sigma)
         : mReflection(reflection) {
         sigma = glm::radians(sigma);
         const auto sigma2 = sigma * sigma;

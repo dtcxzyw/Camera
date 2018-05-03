@@ -1,6 +1,6 @@
 #include <RayTracer/Scene.hpp>
 #include <RayTracer/BVH.hpp>
-#include <RayTracer/Interaction.hpp>
+#include <Math/Interaction.hpp>
 #include <Light/LightWarpper.hpp>
 
 Primitive::Primitive(const Transform& trans, BvhForTriangleRef* geometry, MaterialRef* material)
