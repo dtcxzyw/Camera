@@ -11,11 +11,11 @@ private:
     unsigned int* mCnt;
 public:
     QueueRef(T* address,unsigned int* cnt):mAddress(address),mCnt(cnt){}
-    CUDAINLINE void push(T val) {
+    DEVICEINLINE void push(T val) {
         constexpr auto maxv = std::numeric_limits<unsigned int>::max();
         mAddress[atomicInc(mCnt, maxv)] = val;
     }
-    CUDAINLINE void push(T* val,unsigned int cnt) {
+    DEVICEINLINE void push(T* val,unsigned int cnt) {
         const auto base = atomicAdd(mCnt, cnt);
         for (auto i = 0; i < cnt; ++i)
             mAddress[base + i] = val[i];

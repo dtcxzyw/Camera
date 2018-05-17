@@ -1,17 +1,17 @@
 #pragma once
-#include <Core/Common.hpp>
-#include <Math/Math.hpp>
+#include <Math/Geometry.hpp>
+#include <Spectrum/SpectrumConfig.hpp>
 
-CUDAINLINE Vector uv(const vec2 uv) {
-    return { uv.x - floor(uv.x),uv.y - floor(uv.y),0.0f };
+DEVICEINLINE Spectrum uv(const vec2 uv) {
+    return Spectrum{ RGB{ uv.x - floor(uv.x),uv.y - floor(uv.y),0.0f } };
 }
 
-CUDAINLINE bool checkerBoard(const vec2 uv) {
-    return (uv.x - floor(uv.x) > 0.5f) ^ (uv.y - floor(uv.y) < 0.5f);
+//TODO: Anti-aliasing
+DEVICEINLINE Spectrum checkerBoard(const vec2 uv, const Spectrum& a, const Spectrum& b) {
+    return (uv.x - floor(uv.x) > 0.5f) ^ (uv.y - floor(uv.y) < 0.5f) ? a : b;
 }
 
-CUDAINLINE bool checkerBoard3D(const Vector& uvw) {
+DEVICEINLINE Spectrum checkerBoard3D(const Vector& uvw, const Spectrum&a, const Spectrum& b) {
     const int val = floor(uvw.x) + floor(uvw.y) + floor(uvw.z);
-    return val & 1;
+    return val & 1 ? a : b;
 }
-

@@ -243,11 +243,29 @@
     <ClInclude Include="..\..\Include\Material\Plastic.hpp">
       <Filter>Material</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Texture\TextureFunction.hpp">
-      <Filter>Texture</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Math\Interaction.hpp">
       <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\TextureMapping2DWarpper.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\TextureSampler.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\Texture.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\TextureSampler2DFloatWarpper.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\TextureSampler2DSpectrumWarpper.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\TextureSampler3DFloatWarpper.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\TextureSampler3DSpectrumWarpper.hpp">
+      <Filter>Texture</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

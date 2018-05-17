@@ -16,12 +16,12 @@ private:
     READONLY(BvhNode) mNodes;
     READONLY(TriangleRef) mIndex;
     READONLY(VertexDesc) mVertex;
-    CUDA TriangleDesc makeTriangleDesc(unsigned int id) const;
+    DEVICE TriangleDesc makeTriangleDesc(unsigned int id) const;
 public:
     BvhForTriangleRef(const MemorySpan<BvhNode>& nodes, 
         const MemorySpan<TriangleRef>& index, const MemorySpan<VertexDesc>& vertex);
-    CUDA bool intersect(const Ray& ray) const;
-    CUDA bool intersect(const Ray& ray, float& t, Interaction& interaction) const;
+    DEVICE bool intersect(const Ray& ray) const;
+    DEVICE bool intersect(const Ray& ray, float& t, Interaction& interaction) const;
 };
 
 struct StaticMesh;

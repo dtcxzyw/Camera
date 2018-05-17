@@ -132,34 +132,34 @@ template <typename T>
 class BuiltinSamplerRef final {
 public:
     using Type = typename Rename<T>::Type;
-    CUDAINLINE BuiltinSamplerRef(): mTexture(0) {}
+    DEVICEINLINE BuiltinSamplerRef(): mTexture(0) {}
     explicit BuiltinSamplerRef(const cudaTextureObject_t texture): mTexture(texture) {}
-    CUDAINLINE T get(const vec2 p) const {
+    DEVICEINLINE T get(const vec2 p) const {
         T res;
         tex2D<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y);
         return res;
     }
 
-    CUDAINLINE T getGather(const vec2 p, const int comp) const {
+    DEVICEINLINE T getGather(const vec2 p, const int comp) const {
         T res;
         tex2Dgather<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y, comp);
         return res;
     }
 
-    CUDAINLINE T getGrad(const vec2 p, const vec2 ddx, const vec2 ddy) const {
+    DEVICEINLINE T getGrad(const vec2 p, const vec2 ddx, const vec2 ddy) const {
         T res;
         tex2DGrad<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y,
             *reinterpret_cast<const float2*>(&ddx), *reinterpret_cast<const float2*>(&ddy));
         return res;
     }
 
-    CUDAINLINE T getCubeMap(const Vector p) const {
+    DEVICEINLINE T getCubeMap(const Vector p) const {
         T res;
         texCubemap<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y, p.z);
         return res;
     }
 
-    CUDAINLINE T getCubeMapGrad(const Vector p, const vec4 ddx, const vec4 ddy) const {
+    DEVICEINLINE T getCubeMapGrad(const Vector p, const vec4 ddx, const vec4 ddy) const {
         T res;
         texCubemapGrad<Type>(reinterpret_cast<Type*>(&res), mTexture, p.x, p.y, p.z,
             *reinterpret_cast<const float4*>(&ddx), *reinterpret_cast<const float4*>(&ddy));
@@ -218,7 +218,7 @@ public:
         checkError(cudaCreateTextureObject(&mTexture, &RD, &TD, nullptr));
     }
 
-    auto toSampler() const {
+    auto toRef() const {
         return BuiltinSamplerRef<T>{mTexture};
     }
 
@@ -231,14 +231,14 @@ template <typename T>
 class BuiltinRenderTargetRef final {
 public:
     using Type = typename Rename<T>::Type;
-    CUDAINLINE BuiltinRenderTargetRef(): mTarget(0) {};
+    DEVICEINLINE BuiltinRenderTargetRef(): mTarget(0) {};
     explicit BuiltinRenderTargetRef(const cudaSurfaceObject_t target) : mTarget(target) {}
-    CUDAINLINE T get(ivec2 p) const {
+    DEVICEINLINE T get(ivec2 p) const {
         auto res = surf2Dread<Type>(mTarget, p.x * sizeof(Type), p.y, cudaBoundaryModeClamp);
         return *reinterpret_cast<T*>(&res);
     }
 
-    CUDAINLINE void set(ivec2 p, T v) {
+    DEVICEINLINE void set(ivec2 p, T v) {
         auto val = *reinterpret_cast<Type*>(&v);
         surf2Dwrite(val, mTarget, p.x * sizeof(Type), p.y, cudaBoundaryModeZero);
     }
@@ -273,7 +273,7 @@ public:
 
     explicit BuiltinRenderTarget(BuiltinArray<T>& array): BuiltinRenderTarget(array.get(), array.size()) {}
 
-    auto toTarget() const {
+    auto toRef() const {
         return BuiltinRenderTargetRef<T>{mTarget};
     }
 
@@ -282,7 +282,7 @@ public:
             const unsigned int mul = sqrt(stream.getMaxBlockSize());
             dim3 grid(calcBlockSize(mSize.x, mul), calcBlockSize(mSize.y, mul));
             dim3 block(mul, mul);
-            stream.launchDim(Impl::clear<T>, grid, block, toTarget(), val);
+            stream.launchDim(Impl::clear<T>, grid, block, toRef(), val);
         });
     }
 
@@ -334,7 +334,7 @@ public:
         return mArray;
     }
 
-    BuiltinSamplerRef<T> toSampler() const {
+    BuiltinSamplerRef<T> toRef() const {
         return mTexture;
     }
 };
@@ -362,7 +362,7 @@ void downSample(cudaArray_t srcArray, cudaArray_t dstArray, uvec2 size, Stream& 
     const unsigned int mul = sqrt(stream.getMaxBlockSize());
     dim3 grid(calcBlockSize(size.x, mul), calcBlockSize(size.y, mul));
     dim3 block(mul, mul);
-    stream.launchDim(Impl::downSample2<T>, grid, block, src.toTarget(), dst.toTarget());
+    stream.launchDim(Impl::downSample2<T>, grid, block, src.toRef(), dst.toRef());
 }
 
 namespace Impl {
@@ -382,12 +382,5 @@ void scaleArray(const BuiltinArray<T>& srcArray, cudaArray_t dstArray, const uve
     dim3 grid(calcBlockSize(dstSize.x, mul), calcBlockSize(dstSize.y, mul));
     dim3 block(mul, mul);
     const auto invSize = 1.0f / vec2(dstSize);
-    stream.launchDim(Impl::upSample<T>, grid, block, src.toSampler(), dst.toTarget(), invSize);
-}
-
-template<typename T>
-auto makeConstantTexture(const T& val) {
-    auto res = std::make_unique<BuiltinArray<T>>(uvec2{ 1,1 });
-    checkError(cudaMemcpy(res.get(), &val, sizeof(T), cudaMemcpyHostToDevice));
-    return res;
+    stream.launchDim(Impl::upSample<T>, grid, block, src.toRef(), dst.toRef(), invSize);
 }

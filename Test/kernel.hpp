@@ -34,7 +34,7 @@ struct FrameBufferRef final {
         fsize = rhs.fsize;
     }
 
-    CUDAINLINE uvec2 size() const {
+    DEVICEINLINE uvec2 size() const {
         return fsize;
     }
 };
@@ -54,7 +54,7 @@ struct FrameBuffer final {
         colorRT = std::make_unique<BuiltinRenderTarget<RGBA>>(*colorBuffer);
         postBuffer = std::make_unique<BuiltinArray<RGBA8>>(size, cudaArraySurfaceLoadStore);
         postRT = std::make_unique<BuiltinRenderTarget<RGBA8>>(*postBuffer);
-        data.color = colorRT->toTarget();
+        data.color = colorRT->toRef();
         data.fsize = size;
     }
 

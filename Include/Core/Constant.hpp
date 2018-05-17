@@ -16,7 +16,7 @@ private:
 public:
     Constant(): mAddress(static_cast<T*>(Impl::constantAlloc(sizeof(T)))) {
         if (!mAddress)
-            throw std::runtime_error("Failed to allocate CUDA Constant Memory.");
+            throw std::runtime_error("Failed to allocate DEVICE Constant Memory.");
     }
 
     explicit Constant(const T& rhs) : Constant() {

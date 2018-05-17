@@ -17,93 +17,93 @@ private:
 
     union {
         char unused{};
-        SpecularReflection bxdfSpecularReflection;
-        SpecularTransmission bxdfSpecularTransmission;
-        FresnelSpecular bxdfFresnelSpecular;
-        LambertianReflection bxdfLambertianReflection;
-        OrenNayar bxdfOrenNayar;
-        MicrofacetReflection bxdfMicrofacetReflection;
-        MicrofacetTransmission bxdfMicrofacetTransmission;
-        FresnelBlend bxdfFresnelBlend;
+        SpecularReflection dataSpecularReflection;
+        SpecularTransmission dataSpecularTransmission;
+        FresnelSpecular dataFresnelSpecular;
+        LambertianReflection dataLambertianReflection;
+        OrenNayar dataOrenNayar;
+        MicrofacetReflection dataMicrofacetReflection;
+        MicrofacetTransmission dataMicrofacetTransmission;
+        FresnelBlend dataFresnelBlend;
     };
 
     BxDFClassType mType;
 public:
-    CUDA BxDFWarpper(): mType(static_cast<BxDFClassType>(15)) {};
+    DEVICE BxDFWarpper(): mType(static_cast<BxDFClassType>(15)) {};
 
-    CUDA explicit BxDFWarpper(const SpecularReflection& data)
-        : bxdfSpecularReflection(data), mType(BxDFClassType::SpecularReflection) {}
+    DEVICE explicit BxDFWarpper(const SpecularReflection& data)
+        : dataSpecularReflection(data), mType(BxDFClassType::SpecularReflection) {}
 
-    CUDA explicit BxDFWarpper(const SpecularTransmission& data)
-        : bxdfSpecularTransmission(data), mType(BxDFClassType::SpecularTransmission) {}
+    DEVICE explicit BxDFWarpper(const SpecularTransmission& data)
+        : dataSpecularTransmission(data), mType(BxDFClassType::SpecularTransmission) {}
 
-    CUDA explicit BxDFWarpper(const FresnelSpecular& data)
-        : bxdfFresnelSpecular(data), mType(BxDFClassType::FresnelSpecular) {}
+    DEVICE explicit BxDFWarpper(const FresnelSpecular& data)
+        : dataFresnelSpecular(data), mType(BxDFClassType::FresnelSpecular) {}
 
-    CUDA explicit BxDFWarpper(const LambertianReflection& data)
-        : bxdfLambertianReflection(data), mType(BxDFClassType::LambertianReflection) {}
+    DEVICE explicit BxDFWarpper(const LambertianReflection& data)
+        : dataLambertianReflection(data), mType(BxDFClassType::LambertianReflection) {}
 
-    CUDA explicit BxDFWarpper(const OrenNayar& data)
-        : bxdfOrenNayar(data), mType(BxDFClassType::OrenNayar) {}
+    DEVICE explicit BxDFWarpper(const OrenNayar& data)
+        : dataOrenNayar(data), mType(BxDFClassType::OrenNayar) {}
 
-    CUDA explicit BxDFWarpper(const MicrofacetReflection& data)
-        : bxdfMicrofacetReflection(data), mType(BxDFClassType::MicrofacetReflection) {}
+    DEVICE explicit BxDFWarpper(const MicrofacetReflection& data)
+        : dataMicrofacetReflection(data), mType(BxDFClassType::MicrofacetReflection) {}
 
-    CUDA explicit BxDFWarpper(const MicrofacetTransmission& data)
-        : bxdfMicrofacetTransmission(data), mType(BxDFClassType::MicrofacetTransmission) {}
+    DEVICE explicit BxDFWarpper(const MicrofacetTransmission& data)
+        : dataMicrofacetTransmission(data), mType(BxDFClassType::MicrofacetTransmission) {}
 
-    CUDA explicit BxDFWarpper(const FresnelBlend& data)
-        : bxdfFresnelBlend(data), mType(BxDFClassType::FresnelBlend) {}
+    DEVICE explicit BxDFWarpper(const FresnelBlend& data)
+        : dataFresnelBlend(data), mType(BxDFClassType::FresnelBlend) {}
 
-    CUDA float pdf(const Vector& wo, const Vector& wi) const {
+    DEVICE float pdf(const Vector& wo, const Vector& wi) const {
         switch (mType) {
-            case BxDFClassType::SpecularReflection: return bxdfSpecularReflection.pdf(wo, wi);
-            case BxDFClassType::SpecularTransmission: return bxdfSpecularTransmission.pdf(wo, wi);
-            case BxDFClassType::FresnelSpecular: return bxdfFresnelSpecular.pdf(wo, wi);
-            case BxDFClassType::LambertianReflection: return bxdfLambertianReflection.pdf(wo, wi);
-            case BxDFClassType::OrenNayar: return bxdfOrenNayar.pdf(wo, wi);
-            case BxDFClassType::MicrofacetReflection: return bxdfMicrofacetReflection.pdf(wo, wi);
-            case BxDFClassType::MicrofacetTransmission: return bxdfMicrofacetTransmission.pdf(wo, wi);
-            case BxDFClassType::FresnelBlend: return bxdfFresnelBlend.pdf(wo, wi);
+            case BxDFClassType::SpecularReflection: return dataSpecularReflection.pdf(wo, wi);
+            case BxDFClassType::SpecularTransmission: return dataSpecularTransmission.pdf(wo, wi);
+            case BxDFClassType::FresnelSpecular: return dataFresnelSpecular.pdf(wo, wi);
+            case BxDFClassType::LambertianReflection: return dataLambertianReflection.pdf(wo, wi);
+            case BxDFClassType::OrenNayar: return dataOrenNayar.pdf(wo, wi);
+            case BxDFClassType::MicrofacetReflection: return dataMicrofacetReflection.pdf(wo, wi);
+            case BxDFClassType::MicrofacetTransmission: return dataMicrofacetTransmission.pdf(wo, wi);
+            case BxDFClassType::FresnelBlend: return dataFresnelBlend.pdf(wo, wi);
         }
     }
 
-    CUDA Spectrum f(const Vector& wo, const Vector& wi) const {
+    DEVICE Spectrum f(const Vector& wo, const Vector& wi) const {
         switch (mType) {
-            case BxDFClassType::SpecularReflection: return bxdfSpecularReflection.f(wo, wi);
-            case BxDFClassType::SpecularTransmission: return bxdfSpecularTransmission.f(wo, wi);
-            case BxDFClassType::FresnelSpecular: return bxdfFresnelSpecular.f(wo, wi);
-            case BxDFClassType::LambertianReflection: return bxdfLambertianReflection.f(wo, wi);
-            case BxDFClassType::OrenNayar: return bxdfOrenNayar.f(wo, wi);
-            case BxDFClassType::MicrofacetReflection: return bxdfMicrofacetReflection.f(wo, wi);
-            case BxDFClassType::MicrofacetTransmission: return bxdfMicrofacetTransmission.f(wo, wi);
-            case BxDFClassType::FresnelBlend: return bxdfFresnelBlend.f(wo, wi);
+            case BxDFClassType::SpecularReflection: return dataSpecularReflection.f(wo, wi);
+            case BxDFClassType::SpecularTransmission: return dataSpecularTransmission.f(wo, wi);
+            case BxDFClassType::FresnelSpecular: return dataFresnelSpecular.f(wo, wi);
+            case BxDFClassType::LambertianReflection: return dataLambertianReflection.f(wo, wi);
+            case BxDFClassType::OrenNayar: return dataOrenNayar.f(wo, wi);
+            case BxDFClassType::MicrofacetReflection: return dataMicrofacetReflection.f(wo, wi);
+            case BxDFClassType::MicrofacetTransmission: return dataMicrofacetTransmission.f(wo, wi);
+            case BxDFClassType::FresnelBlend: return dataFresnelBlend.f(wo, wi);
         }
     }
 
-    CUDA BxDFSample sampleF(const Vector& wo, const vec2 sample) const {
+    DEVICE BxDFSample sampleF(const Vector& wo, const vec2 sample) const {
         switch (mType) {
-            case BxDFClassType::SpecularReflection: return bxdfSpecularReflection.sampleF(wo, sample);
-            case BxDFClassType::SpecularTransmission: return bxdfSpecularTransmission.sampleF(wo, sample);
-            case BxDFClassType::FresnelSpecular: return bxdfFresnelSpecular.sampleF(wo, sample);
-            case BxDFClassType::LambertianReflection: return bxdfLambertianReflection.sampleF(wo, sample);
-            case BxDFClassType::OrenNayar: return bxdfOrenNayar.sampleF(wo, sample);
-            case BxDFClassType::MicrofacetReflection: return bxdfMicrofacetReflection.sampleF(wo, sample);
-            case BxDFClassType::MicrofacetTransmission: return bxdfMicrofacetTransmission.sampleF(wo, sample);
-            case BxDFClassType::FresnelBlend: return bxdfFresnelBlend.sampleF(wo, sample);
+            case BxDFClassType::SpecularReflection: return dataSpecularReflection.sampleF(wo, sample);
+            case BxDFClassType::SpecularTransmission: return dataSpecularTransmission.sampleF(wo, sample);
+            case BxDFClassType::FresnelSpecular: return dataFresnelSpecular.sampleF(wo, sample);
+            case BxDFClassType::LambertianReflection: return dataLambertianReflection.sampleF(wo, sample);
+            case BxDFClassType::OrenNayar: return dataOrenNayar.sampleF(wo, sample);
+            case BxDFClassType::MicrofacetReflection: return dataMicrofacetReflection.sampleF(wo, sample);
+            case BxDFClassType::MicrofacetTransmission: return dataMicrofacetTransmission.sampleF(wo, sample);
+            case BxDFClassType::FresnelBlend: return dataFresnelBlend.sampleF(wo, sample);
         }
     }
 
-    CUDA bool match(const BxDFType partten) const {
+    DEVICE bool match(const BxDFType pattern) const {
         switch (mType) {
-            case BxDFClassType::SpecularReflection: return bxdfSpecularReflection.match(partten);
-            case BxDFClassType::SpecularTransmission: return bxdfSpecularTransmission.match(partten);
-            case BxDFClassType::FresnelSpecular: return bxdfFresnelSpecular.match(partten);
-            case BxDFClassType::LambertianReflection: return bxdfLambertianReflection.match(partten);
-            case BxDFClassType::OrenNayar: return bxdfOrenNayar.match(partten);
-            case BxDFClassType::MicrofacetReflection: return bxdfMicrofacetReflection.match(partten);
-            case BxDFClassType::MicrofacetTransmission: return bxdfMicrofacetTransmission.match(partten);
-            case BxDFClassType::FresnelBlend: return bxdfFresnelBlend.match(partten);
+            case BxDFClassType::SpecularReflection: return dataSpecularReflection.match(pattern);
+            case BxDFClassType::SpecularTransmission: return dataSpecularTransmission.match(pattern);
+            case BxDFClassType::FresnelSpecular: return dataFresnelSpecular.match(pattern);
+            case BxDFClassType::LambertianReflection: return dataLambertianReflection.match(pattern);
+            case BxDFClassType::OrenNayar: return dataOrenNayar.match(pattern);
+            case BxDFClassType::MicrofacetReflection: return dataMicrofacetReflection.match(pattern);
+            case BxDFClassType::MicrofacetTransmission: return dataMicrofacetTransmission.match(pattern);
+            case BxDFClassType::FresnelBlend: return dataFresnelBlend.match(pattern);
         }
     }
 

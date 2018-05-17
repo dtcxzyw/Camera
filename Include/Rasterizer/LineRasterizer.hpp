@@ -14,7 +14,7 @@ public:
         return vertSize - 1;
     }
 
-    CUDAINLINE uvec2 operator[](const unsigned int off) const {
+    DEVICEINLINE uvec2 operator[](const unsigned int off) const {
         return {off, off + 1};
     }
 };
@@ -29,7 +29,7 @@ public:
         return vertSize;
     }
 
-    CUDAINLINE uvec2 operator[](const unsigned int off) const {
+    DEVICEINLINE uvec2 operator[](const unsigned int off) const {
         const auto next = off + 1;
         return {off, next == mSize ? 0 : next};
     }
@@ -41,7 +41,7 @@ public:
         return vertSize / 2;
     }
 
-    CUDAINLINE uvec2 operator[](const unsigned int off) const {
+    DEVICEINLINE uvec2 operator[](const unsigned int off) const {
         const auto base = off << 1;
         return {base, base + 1};
     }
@@ -53,7 +53,7 @@ public:
         return faceSize * 3;
     }
 
-    CUDAINLINE uvec2 operator[](const unsigned int off) const {
+    DEVICEINLINE uvec2 operator[](const unsigned int off) const {
         const auto tri = off / 3, id = off % 3, base = tri * 3;
         return {base + id, base + (id + 1) % 3};
     }
@@ -69,7 +69,7 @@ public:
         return faceSize * 3;
     }
 
-    CUDAINLINE uvec2 operator[](const unsigned int off) const {
+    DEVICEINLINE uvec2 operator[](const unsigned int off) const {
         const auto tri = off / 3, id = off % 3;
         const auto idx = mPtr[tri];
         return {idx[id], idx[(id + 1) % 3]};
@@ -92,17 +92,17 @@ template <typename Out, typename Uniform, typename FrameBuffer>
 using FSFL = void(*)(unsigned int id, ivec2 uv, float z, const Out& in,
                      const Uniform& uniform, FrameBuffer& frameBuffer);
 
-CUDAINLINE auto calcTileSize(const float len) {
+DEVICEINLINE auto calcTileSize(const float len) {
     return static_cast<unsigned int>(fmin(11.5f, ceil(log2f(len))));
 }
 
-CUDAINLINE vec2 calcRange(const float a, const float b, const float l,const float r) {
+DEVICEINLINE vec2 calcRange(const float a, const float b, const float l,const float r) {
     if (b == a)return (l <= a & a <= r) ? vec2{ 0.0f, 1.0f } : vec2{ 0.0f, 0.0f };
     const auto invx = 1.0f / (b - a), lax = (l - a) * invx, rax = (r - a) * invx;
     return {fmin(lax, rax), fmax(lax, rax)};
 }
 
-CUDAINLINE vec2 calcLineRange(const vec2 a, const vec2 b, const vec4 scissor) {
+DEVICEINLINE vec2 calcLineRange(const vec2 a, const vec2 b, const vec4 scissor) {
     const auto rangeX = calcRange(a.x, b.x, scissor.x,scissor.y);
     const auto rangeY = calcRange(a.y, b.y, scissor.z,scissor.w);
     const auto begin = max3(0.0f, rangeX.x, rangeY.x);
@@ -171,7 +171,7 @@ GLOBAL void drawMicroL(READONLY(LineInfo<Out>) info, READONLY(LineRef) idx,
 
 template <typename Out, typename Uniform, typename FrameBuffer,
     FSFL<Out, Uniform, FrameBuffer> first, FSFL<Out, Uniform, FrameBuffer>... then>
-CUDAINLINE void applyLFS(unsigned int* offset, LineInfo<Out>* tri, LineRef* idx, Uniform* uniform,
+DEVICEINLINE void applyLFS(unsigned int* offset, LineInfo<Out>* tri, LineRef* idx, Uniform* uniform,
                          FrameBuffer* frameBuffer, const float near, const float invnf, const vec4 scissor) {
     #pragma unroll
     for (auto i = 0; i < 11; ++i) {
@@ -190,7 +190,7 @@ CUDAINLINE void applyLFS(unsigned int* offset, LineInfo<Out>* tri, LineRef* idx,
 }
 
 template <typename Out, typename Uniform, typename FrameBuffer>
-CUDAINLINE void applyLFS(unsigned int*, LineInfo<Out>*, LineRef*, Uniform*, FrameBuffer*,
+DEVICEINLINE void applyLFS(unsigned int*, LineInfo<Out>*, LineRef*, Uniform*, FrameBuffer*,
                          const float, const float, const vec4) {}
 
 template <typename Out, typename Uniform, typename FrameBuffer,

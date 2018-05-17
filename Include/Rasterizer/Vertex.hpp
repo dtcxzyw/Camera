@@ -14,7 +14,7 @@ struct STRUCT_ALIGN VertexInfo {
 };
 
 template<typename Out>
-CUDAINLINE VertexInfo<Out> lerpZ(VertexInfo<Out> a, VertexInfo<Out> b, float z) {
+DEVICEINLINE VertexInfo<Out> lerpZ(VertexInfo<Out> a, VertexInfo<Out> b, float z) {
     auto u = (z - b.pos.z) / (a.pos.z - b.pos.z), v = 1.0f - u;
     VertexInfo<Out> res;
     res.pos = { a.pos.x*u + b.pos.x*v,a.pos.y*u + b.pos.y*v,z };

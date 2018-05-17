@@ -1,6 +1,6 @@
 #include <Rasterizer/LineRasterizer.hpp>
 
-CUDAINLINE void cutLine(LineRef ref, unsigned int* cnt, LineRef* out) {
+DEVICEINLINE void cutLine(LineRef ref, unsigned int* cnt, LineRef* out) {
     const auto offset = ref.range.x;
     const auto invdis = 1.0f / ref.len;
     const auto mul = ref.range.y *invdis;

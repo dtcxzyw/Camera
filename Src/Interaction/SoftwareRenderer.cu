@@ -23,11 +23,11 @@ struct VertInfo final {
 
 constexpr auto int2Float = 1.0f / 255.0f;
 
-CUDAINLINE vec4 toRGBA(const unsigned int col) {
+DEVICEINLINE vec4 toRGBA(const unsigned int col) {
     return vec4{col & 0xff, (col >> 8) & 0xff, (col >> 16) & 0xff, col >> 24} * int2Float;
 }
 
-CUDAINLINE void vertShader(VertInfo in, const Empty&, Point& cpos, VertOut& out) {
+DEVICEINLINE void vertShader(VertInfo in, const Empty&, Point& cpos, VertOut& out) {
     cpos = {in.pos.x, in.pos.y, 1.0f};
     out.get<VertOutAttr::TexCoord>() = {in.uv.x, in.uv.y};
     out.get<VertOutAttr::Color>() = toRGBA(in.col);
@@ -37,12 +37,12 @@ struct FrameBufferInfo {
     BuiltinRenderTargetRef<RGBA8> color;
 };
 
-CUDAINLINE bool clipShader(unsigned int, Point&, Point&, Point&,
+DEVICEINLINE bool clipShader(unsigned int, Point&, Point&, Point&,
     const BuiltinSamplerRef<float>&) {
     return true;
 }
 
-CUDAINLINE void fragShader(unsigned int, ivec2 uv, float, const VertOut& in, const VertOut&, const VertOut&,
+DEVICEINLINE void fragShader(unsigned int, ivec2 uv, float, const VertOut& in, const VertOut&, const VertOut&,
     const BuiltinSamplerRef<float>& texture, FrameBufferInfo& fbo) {
     const auto texAlpha = texture.get(in.get<VertOutAttr::TexCoord>());
     auto src = in.get<VertOutAttr::Color>();
@@ -101,12 +101,12 @@ void SoftwareRenderer::render(CommandBuffer& buffer, BuiltinRenderTarget<RGBA8>&
 
     const auto uni = buffer.allocConstant<BuiltinSamplerRef<float>>();
     buffer.memcpy(uni, [this](auto&& call) {
-        const auto data = mSampler->toSampler();
+        const auto data = mSampler->toRef();
         call(&data);
     });
 
     const auto frameBuffer = buffer.allocConstant<FrameBufferInfo>();
-    buffer.memcpy(frameBuffer, [rt = renderTarget.toTarget()](auto&& call) {
+    buffer.memcpy(frameBuffer, [rt = renderTarget.toRef()](auto&& call) {
         FrameBufferInfo info;
         info.color = rt;
         call(&info);

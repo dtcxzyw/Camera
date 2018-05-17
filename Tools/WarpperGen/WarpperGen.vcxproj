@@ -11,13 +11,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BxDFWarpperGen.cpp" />
+    <ClCompile Include="WarpperGen.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{61535F1D-A3CA-4FD2-84C6-FC147BC4BD29}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>BxDFWarpperGen</RootNamespace>
+    <RootNamespace>WarpperGen</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

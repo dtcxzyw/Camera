@@ -76,8 +76,14 @@
     <ClInclude Include="..\..\Include\Texture\Filter.hpp" />
     <ClInclude Include="..\..\Include\Texture\Noise.hpp" />
     <ClInclude Include="..\..\Include\Texture\ProceduralTexture.hpp" />
-    <ClInclude Include="..\..\Include\Texture\TextureFunction.hpp" />
+    <ClInclude Include="..\..\Include\Texture\Texture.hpp" />
     <ClInclude Include="..\..\Include\Texture\TextureMapping.hpp" />
+    <ClInclude Include="..\..\Include\Texture\TextureMapping2DWarpper.hpp" />
+    <ClInclude Include="..\..\Include\Texture\TextureSampler.hpp" />
+    <ClInclude Include="..\..\Include\Texture\TextureSampler2DFloatWarpper.hpp" />
+    <ClInclude Include="..\..\Include\Texture\TextureSampler2DSpectrumWarpper.hpp" />
+    <ClInclude Include="..\..\Include\Texture\TextureSampler3DFloatWarpper.hpp" />
+    <ClInclude Include="..\..\Include\Texture\TextureSampler3DSpectrumWarpper.hpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\BxDF\DataDrivenBRDF.cu" />

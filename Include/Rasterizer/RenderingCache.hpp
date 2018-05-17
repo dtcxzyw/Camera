@@ -19,12 +19,12 @@ private:
 public:
     RenderingCacheBlockRef(T* address, T* begin, T* end)
         :mAddress(address), mBegin(begin), mEnd(end) {}
-    CUDAINLINE RenderingCacheBlockRef(){}
-    CUDAINLINE bool query(const unsigned int id) const {
+    DEVICEINLINE RenderingCacheBlockRef(){}
+    DEVICEINLINE bool query(const unsigned int id) const {
         auto ptr = mAddress + id;
         return (mBegin <= ptr & ptr < mEnd) | (*ptr);
     }
-    CUDAINLINE void record(const unsigned int id) const {
+    DEVICEINLINE void record(const unsigned int id) const {
         mAddress[id] =std::numeric_limits<T>::max();
     }
 };

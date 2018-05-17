@@ -14,12 +14,12 @@ struct TileRef final {
 template<typename Uniform,typename RefData>
 using TileClipShader = bool(*)(const TileRef& ref,const Uniform& uniform,READONLY(RefData) data);
 
-CUDAINLINE bool emptyTileClipShader(const TileRef&,const Empty&,const unsigned char*) {
+DEVICEINLINE bool emptyTileClipShader(const TileRef&,const Empty&,const unsigned char*) {
     return true;
 }
 
 template<typename Uniform, typename RefData, TileClipShader<Uniform,RefData> Func>
-CUDAINLINE void cutTile(TileRef ref, unsigned int* cnt, TileRef* out, const unsigned int maxSize,
+DEVICEINLINE void cutTile(TileRef ref, unsigned int* cnt, TileRef* out, const unsigned int maxSize,
     const Uniform* uni, READONLY(RefData) data) {
     constexpr auto step = 32U;
     const auto by = ref.rect.z;

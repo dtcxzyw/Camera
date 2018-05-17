@@ -3,9 +3,9 @@
 #include <Core/DeviceMemory.hpp>
 
 struct LightWrapper {
-    CUDA virtual ~LightWrapper() = default;
-    CUDA virtual LightingSample sampleLi(vec2 sample,Point pos) const = 0;
-    CUDA virtual LightingSample le(const Ray& ray) const = 0;
+    DEVICE virtual ~LightWrapper() = default;
+    DEVICE virtual LightingSample sampleLi(vec2 sample,Point pos) const = 0;
+    DEVICE virtual LightingSample le(const Ray& ray) const = 0;
 };
 
 namespace Impl {
@@ -15,11 +15,11 @@ namespace Impl {
         Light mLight;
     public:
         template<typename... Args>
-        CUDA explicit LightWrapperImpl(Args... args) :mLight(args...) {}
-        CUDA LightingSample sampleLi(const vec2 sample, const Point pos) const override {
+        DEVICE explicit LightWrapperImpl(Args... args) :mLight(args...) {}
+        DEVICE LightingSample sampleLi(const vec2 sample, const Point pos) const override {
             return mLight.sampleLi(sample, pos);
         }
-        CUDA LightingSample le(const Ray& ray) const override {
+        DEVICE LightingSample le(const Ray& ray) const override {
             return mLight.le(ray);
         }
     };

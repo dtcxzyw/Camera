@@ -13,7 +13,7 @@ struct SphereDesc final {
 template <typename Uniform>
 using SphereVertShader = SphereDesc(*)(SphereDesc sp, const Uniform& uniform);
 
-CUDAINLINE SphereDesc calcCameraSphere(const Transform& transform, const SphereDesc& sp) {
+DEVICEINLINE SphereDesc calcCameraSphere(const Transform& transform, const SphereDesc& sp) {
     return {transform(sp.pos), sp.radius};
 }
 
@@ -34,20 +34,20 @@ GLOBAL void calcCameraSpheres(const unsigned int size, READONLY(SphereDesc) in,
  *v=theta/pi
  */
 
-CUDAINLINE Normal calcSphereNormal(const Normal& normal, const bool inSphere) {
+DEVICEINLINE Normal calcSphereNormal(const Normal& normal, const bool inSphere) {
     return inSphere ? -normal : normal;
 }
 
-CUDAINLINE Normal calcSphereBiTangent(const Normal& normal) {
+DEVICEINLINE Normal calcSphereBiTangent(const Normal& normal) {
     const auto left = cross(makeNormalUnsafe({0.0f, 1.0f, 0.0f}), normal);
     return cross(left, normal);
 }
 
-CUDAINLINE Normal calcSphereTangent(const Normal& normal, const Normal& biTangent) {
+DEVICEINLINE Normal calcSphereTangent(const Normal& normal, const Normal& biTangent) {
     return crossUnsafe(biTangent, normal);
 }
 
-CUDAINLINE vec2 calcSphereTexCoord(const Normal normal) {
+DEVICEINLINE vec2 calcSphereTexCoord(const Normal normal) {
     const Vector dir{normal};
     const auto theta = std::acos(dir.y);
     const auto phi = std::atan2(dir.z, dir.x) + pi<float>();
@@ -56,7 +56,7 @@ CUDAINLINE vec2 calcSphereTexCoord(const Normal normal) {
 
 //dt.x/dx=dn.x/dx*dt.x/dn.x=dn.x/dx*1/(1+n.x*n.x)*(1/2pi)
 //dt.y/dx=dn.y/dx*dt.y/dn.y=dn.y/dx*-sqrt(1-n.y^2)*(1/pi)
-CUDAINLINE vec2 calcSphereTextureDerivative(const Normal& normal, const Vector& dndx) {
+DEVICEINLINE vec2 calcSphereTextureDerivative(const Normal& normal, const Vector& dndx) {
     const Vector dir{normal};
     return {
         dndx.x / (1 + dir.x * dir.x) * one_over_two_pi<float>(),
@@ -95,7 +95,7 @@ SphereProcessingResult processSphereInfo(CommandBuffer& buffer,
  * solve at^2+bt+c=0
  */
 
-CUDAINLINE vec2 raster2NDC(const vec2 p, const float ihx, const float ihy) {
+DEVICEINLINE vec2 raster2NDC(const vec2 p, const float ihx, const float ihy) {
     return {p.x * ihx - 1.0f, 1.0f - p.y * ihy};
 }
 
@@ -143,7 +143,7 @@ GLOBAL void drawMicroS(READONLY(SphereInfo) info, READONLY(TileRef) idx,
 template <typename Uniform, typename FrameBuffer,
     SphereFragmentShader<Uniform, FrameBuffer> Func,
     SphereFragmentShader<Uniform, FrameBuffer>... Then>
-CUDAINLINE void applySFS(unsigned int* offset, SphereInfo* info, TileRef* idx, Uniform* uniform,
+DEVICEINLINE void applySFS(unsigned int* offset, SphereInfo* info, TileRef* idx, Uniform* uniform,
     FrameBuffer* frameBuffer, const float near, const float far, const float invnf,
     const vec2 invMul, const vec2 invHsiz) {
     #pragma unroll
@@ -165,7 +165,7 @@ CUDAINLINE void applySFS(unsigned int* offset, SphereInfo* info, TileRef* idx, U
 }
 
 template <typename Uniform, typename FrameBuffer>
-CUDAINLINE void applySFS(unsigned int*, SphereInfo*, TileRef*, Uniform*, FrameBuffer*,
+DEVICEINLINE void applySFS(unsigned int*, SphereInfo*, TileRef*, Uniform*, FrameBuffer*,
     const float, const float, const float, const vec2, const vec2) {}
 
 template <typename Uniform, typename FrameBuffer,

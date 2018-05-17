@@ -36,73 +36,73 @@ struct BxDFSample final {
     float pdf;
     Spectrum f;
     BxDFType type;
-    CUDA BxDFSample() : pdf(0.0f), type(static_cast<BxDFType>(0)) {}
-    CUDA BxDFSample(const Vector& wi, const Spectrum& f, const BxDFType type, const float pdf = 1.0f)
+    DEVICE BxDFSample() : pdf(0.0f), type(static_cast<BxDFType>(0)) {}
+    DEVICE BxDFSample(const Vector& wi, const Spectrum& f, const BxDFType type, const float pdf = 1.0f)
         : wi(makeNormalUnsafe(wi)), pdf(pdf), f(f), type(type) {}
 };
 
-CUDAINLINE float cosTheta(const Vector& v) {
+DEVICEINLINE float cosTheta(const Vector& v) {
     return v.z;
 }
 
-CUDAINLINE float absCosTheta(const Vector& v) {
+DEVICEINLINE float absCosTheta(const Vector& v) {
     return fabs(v.z);
 }
 
-CUDAINLINE float cos2Theta(const Vector& v) {
+DEVICEINLINE float cos2Theta(const Vector& v) {
     return v.z * v.z;
 }
 
-CUDAINLINE float sin2Theta(const Vector& v) {
+DEVICEINLINE float sin2Theta(const Vector& v) {
     return 1.0f - cos2Theta(v);
 }
 
-CUDAINLINE float sinTheta(const Vector& v) {
+DEVICEINLINE float sinTheta(const Vector& v) {
     return sqrt(sin2Theta(v));
 }
 
-CUDAINLINE float tan2Theta(const Vector& v) {
+DEVICEINLINE float tan2Theta(const Vector& v) {
     return sin2Theta(v) / cos2Theta(v);
 }
 
-CUDAINLINE float tanTheta(const Vector& v) {
+DEVICEINLINE float tanTheta(const Vector& v) {
     return sinTheta(v) / cosTheta(v);
 }
 
-CUDAINLINE float cosPhi(const Vector& v) {
+DEVICEINLINE float cosPhi(const Vector& v) {
     const auto sinThetaV = sinTheta(v);
     return sinThetaV == 0.0f ? 1.0f : v.x / sinThetaV;
 }
 
-CUDAINLINE float cos2Phi(const Vector& v) {
+DEVICEINLINE float cos2Phi(const Vector& v) {
     return cosPhi(v)*cosPhi(v);
 }
 
-CUDAINLINE float sinPhi(const Vector& v) {
+DEVICEINLINE float sinPhi(const Vector& v) {
     const auto sinThetaV = sinTheta(v);
     return sinThetaV == 0.0f ? 0.0f : v.y / sinThetaV;
 }
 
-CUDAINLINE float sin2Phi(const Vector& v) {
+DEVICEINLINE float sin2Phi(const Vector& v) {
     return sinPhi(v)*sinPhi(v);
 }
 
 template <typename T>
 struct BxDFHelper {
 
-    CUDA bool match(const BxDFType partten) const {
-        return matchPattern<T::type>(partten);
+    DEVICE bool match(const BxDFType pattern) const {
+        return matchPattern<T::type>(pattern);
     }
 
-    CUDA Spectrum f(const Vector&, const Vector&) const {
+    DEVICE Spectrum f(const Vector&, const Vector&) const {
         return Spectrum{};
     }
 
-    CUDA float pdf(const Vector& wo, const Vector& wi) const {
+    DEVICE float pdf(const Vector& wo, const Vector& wi) const {
         return wo.z * wi.z > 0.0f ? absCosTheta(wi) * one_over_pi<float>() : 0.0f;
     }
 
-    CUDA BxDFSample sampleF(const Vector& wo, const vec2 sample) const {
+    DEVICE BxDFSample sampleF(const Vector& wo, const vec2 sample) const {
         auto&& self = *static_cast<const T*>(this);
         auto wi = cosineSampleHemisphere(sample);
         if (wo.z < 0.0f)wi.z = -wi.z;
@@ -116,14 +116,14 @@ private:
     FresnelWarpper mFresnel;
 public:
     static constexpr auto type = BxDFType::Reflection | BxDFType::Specular;
-    CUDA SpecularReflection(const Spectrum& reflection, const FresnelWarpper& fresnel)
+    DEVICE SpecularReflection(const Spectrum& reflection, const FresnelWarpper& fresnel)
         : mReflection(reflection), mFresnel(fresnel) {}
 
-    CUDA float pdf(const Vector&, const Vector&) const {
+    DEVICE float pdf(const Vector&, const Vector&) const {
         return 0.0f;
     }
 
-    CUDA BxDFSample sampleF(const Vector& wo, const vec2) const {
+    DEVICE BxDFSample sampleF(const Vector& wo, const vec2) const {
         const Vector wi = {-wo.x, -wo.y, wo.z};
         return {wi, mFresnel.f(cosTheta(wi)) * mReflection / absCosTheta(wi), type};
     }
@@ -137,15 +137,15 @@ private:
     float mEtaA, mEtaB;
 public:
     static constexpr auto type = BxDFType::Transmission | BxDFType::Specular;
-    CUDA SpecularTransmission(const Spectrum& transmission, const float etaA, const float etaB,
+    DEVICE SpecularTransmission(const Spectrum& transmission, const float etaA, const float etaB,
         const TransportMode mode) : mTransmission(transmission), mFresnel(etaA, etaB),
         mMode(mode), mEtaA(etaA), mEtaB(etaB) {}
 
-    CUDA float pdf(const Vector&, const Vector&) const {
+    DEVICE float pdf(const Vector&, const Vector&) const {
         return 0.0f;
     }
 
-    CUDA BxDFSample sampleF(const Vector& wo, const vec2) const {
+    DEVICE BxDFSample sampleF(const Vector& wo, const vec2) const {
         const auto entering = wo.z > 0.0f;
         const auto etaI = entering ? mEtaA : mEtaB;
         const auto eatT = entering ? mEtaB : mEtaA;
@@ -166,16 +166,16 @@ private:
     float mEtaA, mEtaB;
 public:
     static constexpr auto type = BxDFType::Reflection | BxDFType::Transmission | BxDFType::Specular;
-    CUDA FresnelSpecular(const Spectrum& reflection, const Spectrum& transmission,
+    DEVICE FresnelSpecular(const Spectrum& reflection, const Spectrum& transmission,
         const float etaA, const float etaB, const TransportMode mode)
         : mReflection(reflection), mTransmission(transmission), mFresnel(etaA, etaB),
         mMode(mode), mEtaA(etaA), mEtaB(etaB) {}
 
-    CUDA float pdf(const Vector&, const Vector&) const {
+    DEVICE float pdf(const Vector&, const Vector&) const {
         return 0.0f;
     }
 
-    CUDA BxDFSample sampleF(const Vector& wo, const vec2 sample) const {
+    DEVICE BxDFSample sampleF(const Vector& wo, const vec2 sample) const {
         const auto f = mFresnel.f(cosTheta(wo));
         if (sample.x < f) {
             const Vector wi = {-wo.x, -wo.y, wo.z};
@@ -204,8 +204,8 @@ private:
     Spectrum mReflection;
 public:
     static constexpr auto type = BxDFType::Reflection | BxDFType::Diffuse;
-    CUDA explicit LambertianReflection(const Spectrum& reflection): mReflection(reflection) {}
-    CUDA Spectrum f(const Vector&, const Vector&) const {
+    DEVICE explicit LambertianReflection(const Spectrum& reflection): mReflection(reflection) {}
+    DEVICE Spectrum f(const Vector&, const Vector&) const {
         return mReflection * one_over_pi<float>();
     }
 };
@@ -216,7 +216,7 @@ private:
     float mA, mB;
 public:
     static constexpr auto type = BxDFType::Reflection | BxDFType::Diffuse;
-    CUDA OrenNayar(const Spectrum& reflection, float sigma)
+    DEVICE OrenNayar(const Spectrum& reflection, float sigma)
         : mReflection(reflection) {
         sigma = glm::radians(sigma);
         const auto sigma2 = sigma * sigma;
@@ -224,7 +224,7 @@ public:
         mB = 0.45f + sigma2 / (sigma2 + 0.09f);
     }
 
-    CUDA Spectrum f(const Vector& wo, const Vector& wi) const {
+    DEVICE Spectrum f(const Vector& wo, const Vector& wi) const {
         const auto sinThetaO = sinTheta(wo);
         const auto sinThetaI = sinTheta(wi);
         auto maxCos = 0.0f;

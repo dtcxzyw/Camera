@@ -3,7 +3,7 @@
 #include <Math/Math.hpp>
 #include <curand.h>
 
-CUDAINLINE float scaleToFloat(const unsigned int val) {
+DEVICEINLINE float scaleToFloat(const unsigned int val) {
     union Result {
         unsigned u;
         float f;
@@ -12,7 +12,7 @@ CUDAINLINE float scaleToFloat(const unsigned int val) {
     return result.f - 1.0f;
 }
 
-CUDAINLINE float radicalInverse(unsigned int index) {
+DEVICEINLINE float radicalInverse(unsigned int index) {
     index = (index << 16u) | (index >> 16u);
     index = ((index & 0x55555555u) << 1u) | ((index & 0xAAAAAAAAu) >> 1u);
     index = ((index & 0x33333333u) << 2u) | ((index & 0xCCCCCCCCu) >> 2u);
@@ -26,7 +26,7 @@ Hammersley Sequence
 by Holger Dammertz
 http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
 */
-CUDAINLINE vec2 hammersley2D(const unsigned int index, const unsigned int n) {
+DEVICEINLINE vec2 hammersley2D(const unsigned int index, const unsigned int n) {
     return vec2(static_cast<float>(index) / static_cast<float>(n), radicalInverse(index));
 }
 
@@ -35,7 +35,7 @@ Scrambled Halton Sequence
 by Leonhard
 http://gruenschloss.org/
  */
-CUDAINLINE float halton3(const unsigned int index) {
+DEVICEINLINE float halton3(const unsigned int index) {
     constexpr unsigned int perm3[243] = {
         0, 81, 162, 27, 108, 189, 54, 135, 216, 9, 90, 171, 36, 117, 198, 63, 144, 225, 18, 99, 180, 45, 126, 207, 72,
         153, 234, 3, 84, 165, 30, 111, 192, 57, 138, 219, 12, 93, 174, 39, 120, 201, 66, 147, 228, 21, 102, 183, 48,
@@ -55,13 +55,13 @@ CUDAINLINE float halton3(const unsigned int index) {
         perm3[(index / 14348907u) % 243u]) * 2.8679716489035376e-10f; // Results in [0,1).
 }
 
-CUDAINLINE vec2 halton2D(const unsigned int index) {
+DEVICEINLINE vec2 halton2D(const unsigned int index) {
     return {radicalInverse(index), halton3(index)};
 }
 
 //Generator matrix from pbrt-v3
 //https://github.com/mmp/pbrt-v3/blob/master/src/core/sobolmatrices.cpp
-CUDAINLINE float scrambledSobol(const unsigned int index, const unsigned int dim,
+DEVICEINLINE float scrambledSobol(const unsigned int index, const unsigned int dim,
     const unsigned int scramble) {
     constexpr unsigned int mat[2][32] = {
         {
@@ -89,6 +89,6 @@ CUDAINLINE float scrambledSobol(const unsigned int index, const unsigned int dim
     return scaleToFloat(res);
 }
 
-CUDAINLINE vec2 scrambledSobol2D(const unsigned int index, const unsigned int scramble) {
+DEVICEINLINE vec2 scrambledSobol2D(const unsigned int index, const unsigned int scramble) {
     return {scrambledSobol(index, 0, scramble), scrambledSobol(index, 1, scramble)};
 }

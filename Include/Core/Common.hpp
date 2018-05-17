@@ -5,10 +5,10 @@
 #include <device_launch_parameters.h>
 #include <Core/CompileEnd.hpp>
 
-#define CUDA __device__
-#define CUDAINLINE inline CUDA
+#define DEVICE __device__
+#define DEVICEINLINE inline DEVICE
 #define HOST __host__
-#define BOTH CUDAINLINE HOST
+#define BOTH DEVICEINLINE HOST
 #define GLOBAL __global__
 #define ALIGN __align__(TRANSFER_ALIGN)
 #define STRUCT_ALIGN __align__(CACHE_ALIGN)
@@ -48,12 +48,12 @@ BOTH auto calcBlockSize(const T a,const T b) {
     return (a + b - 1) / b;
 }
 
-CUDAINLINE unsigned int getId() {
+DEVICEINLINE unsigned int getId() {
     return blockIdx.x * blockDim.x + threadIdx.x;
 }
 
 template <typename T>
-CUDAINLINE void cudaSwap(T& a, T& b) {
+DEVICEINLINE void cudaSwap(T& a, T& b) {
     auto c = a;
     a = b;
     b = c;

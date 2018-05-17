@@ -17,8 +17,8 @@ private:
     MaterialRef* mMaterial;
 public:
     Primitive(const Transform& trans, BvhForTriangleRef* geometry, MaterialRef* material);
-    CUDA bool intersect(const Ray& ray) const;
-    CUDA bool intersect(const Ray& ray, float& tHit, Interaction& interaction) const;
+    DEVICE bool intersect(const Ray& ray) const;
+    DEVICE bool intersect(const Ray& ray, float& tHit, Interaction& interaction) const;
 };
 
 class SceneRef final {
@@ -27,8 +27,8 @@ private:
     unsigned int mPrimitiveSize;
 public:
     SceneRef(Primitive* primitives, unsigned int priSize);
-    CUDA bool intersect(const Ray& ray) const;
-    CUDA bool intersect(const Ray& ray, Interaction& interaction) const;
+    DEVICE bool intersect(const Ray& ray) const;
+    DEVICE bool intersect(const Ray& ray, Interaction& interaction) const;
 };
 
 class SceneDesc final {

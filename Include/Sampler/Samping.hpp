@@ -1,7 +1,7 @@
 #pragma once
 #include <Math/Math.hpp>
 
-CUDAINLINE vec2 concentricSampleDisk(vec2 p) {
+DEVICEINLINE vec2 concentricSampleDisk(vec2 p) {
     p = 2.0f*p - 1.0f;
     if (p.x == 0.0f & p.y == 0.0f)return { 0.0f,0.0f };
     float r, theta;
@@ -16,7 +16,7 @@ CUDAINLINE vec2 concentricSampleDisk(vec2 p) {
     return r * vec2{ cos(theta),sin(theta) };
 }
 
-CUDAINLINE Vector cosineSampleHemisphere(const vec2 p) {
+DEVICEINLINE Vector cosineSampleHemisphere(const vec2 p) {
     const auto d = concentricSampleDisk(p);
     return { d.x,d.y ,sqrt(1.0f - d.x*d.x - d.y*d.y) };
 }

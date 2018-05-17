@@ -33,7 +33,7 @@ constexpr auto rfac = 1.0f / 1500.0f,gfac = 1.15f / 1500.0f,bfac=1.66f / 1500.0f
 namespace Impl {
 
     // rotate vector along one axis
-    CUDAINLINE Vector rotateVector(Vector vector, Vector axis, float angle) {
+    DEVICEINLINE Vector rotateVector(Vector vector, Vector axis, float angle) {
         const auto cosAng = cos(angle);
         const auto sinAng = sin(angle);
         auto out = vector * cosAng;
@@ -43,7 +43,7 @@ namespace Impl {
     }
 
     // convert standard coordinates to half vector/difference vector coordinates
-    CUDAINLINE void std2half(vec3 in, vec3 out, vec3 half, vec3 normal,vec3 bin,
+    DEVICEINLINE void std2half(vec3 in, vec3 out, vec3 half, vec3 normal,vec3 bin,
         float& thalf, float& phalf, float& tdiff, float& pdiff) {
 
         // compute  theta_half, fi_half
@@ -63,7 +63,7 @@ namespace Impl {
     // This is a non-linear mapping!
     // In:  [0 .. pi/2]
     // Out: [0 .. 89]
-    CUDAINLINE int thid(float thalf) {
+    DEVICEINLINE int thid(float thalf) {
         const int res =rth*sqrt(fmax(thalf,0.0f) / half_pi<float>());
         return clamp(res,0,rth-1);
     }
@@ -71,14 +71,14 @@ namespace Impl {
     // Lookup theta_diff index
     // In:  [0 .. pi/2]
     // Out: [0 .. 89]
-    CUDAINLINE int tdid(float tdiff) {
+    DEVICEINLINE int tdid(float tdiff) {
         return clamp(static_cast<int>(tdiff / half_pi<float>() * rtd),0,rtd-1);
     }
 
     // Lookup phi_diff index
     // In: phi_diff in [0 .. pi]
     // Out: tmp in [0 .. 179]
-    CUDAINLINE int pdid(float pdiff) {
+    DEVICEINLINE int pdid(float pdiff) {
         // Because of reciprocity, the BRDF is unchanged under
         // phi_diff -> phi_diff + M_PI
         if (pdiff < 0.0f)pdiff += pi<float>();
@@ -86,7 +86,7 @@ namespace Impl {
     }
 
     // Given a pair of incoming/outgoing angles, look up the BRDF.
-    CUDAINLINE int lookupBRDF(vec3 in, vec3 out, vec3 half, vec3 normal,vec3 bin) {
+    DEVICEINLINE int lookupBRDF(vec3 in, vec3 out, vec3 half, vec3 normal,vec3 bin) {
         // Convert to halfangle / difference angle coordinates
         float thalf, phalf, tdiff, pdiff;
 
@@ -104,7 +104,7 @@ private:
 public:
     BRDFSampler() = default;
     BRDFSampler(READONLY(vec3) data);
-    CUDAINLINE RGB get(vec3 in, vec3 out,vec3 half,vec3 normal,vec3 bin) const {
+    DEVICEINLINE RGB get(vec3 in, vec3 out,vec3 half,vec3 normal,vec3 bin) const {
         return mData[Impl::lookupBRDF(in, out, half, normal,bin)];
     }
 };

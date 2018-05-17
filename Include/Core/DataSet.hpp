@@ -21,35 +21,35 @@ namespace Impl {
         using Enum = decltype(First::name);
         T mData;
     protected:
-        CUDA auto& getImpl(Tag<Enum, First::name>) {
+        DEVICE auto& getImpl(Tag<Enum, First::name>) {
             return mData;
         }
         template<Enum name>
-        CUDA auto& getImpl(Tag<Enum, name>) {
+        DEVICE auto& getImpl(Tag<Enum, name>) {
             return DataSet<Others...>::getImpl(Tag<Enum, name>{});
         }
-        CUDA const auto& getImpl(Tag<Enum, First::name>) const{
+        DEVICE const auto& getImpl(Tag<Enum, First::name>) const{
             return mData;
         }
         template<Enum name>
-        CUDA const auto& getImpl(Tag<Enum, name>) const{
+        DEVICE const auto& getImpl(Tag<Enum, name>) const{
             return DataSet<Others...>::getImpl(Tag<Enum, name>{});
         }
     public:
-        CUDA DataSet() {};
-        CUDA DataSet(T first,DataSet<Others...> others):DataSet<Others...>(others),mData(first){}
+        DEVICE DataSet() {};
+        DEVICE DataSet(T first,DataSet<Others...> others):DataSet<Others...>(others),mData(first){}
         template<Enum Name>
-        CUDA auto& get() {
+        DEVICE auto& get() {
             return getImpl(Tag<Enum, Name>{});
         }
         template<Enum Name>
-        CUDA auto get() const{
+        DEVICE auto get() const{
             return getImpl(Tag<Enum, Name>{});
         }
-        CUDA DataSet operator*(float rhs) const {
+        DEVICE DataSet operator*(float rhs) const {
             return DataSet{ static_cast<T>(mData*rhs),DataSet<Others...>::operator*(rhs) };
         }
-        CUDA DataSet operator+(DataSet rhs) const {
+        DEVICE DataSet operator+(DataSet rhs) const {
             return DataSet{ static_cast<T>(mData+rhs.mData),DataSet<Others...>::operator+(rhs) };
         }
     };
@@ -57,10 +57,10 @@ namespace Impl {
     template<>
     class DataSet<void> {
     public:
-        CUDA DataSet operator*(float) const {
+        DEVICE DataSet operator*(float) const {
             return *this;
         }
-        CUDA DataSet operator+(DataSet) const {
+        DEVICE DataSet operator+(DataSet) const {
             return *this;
         }
     };

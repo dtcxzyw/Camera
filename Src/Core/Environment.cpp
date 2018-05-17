@@ -65,7 +65,7 @@ void Environment::init(const AppType app, const GraphicsInteroperability interop
     }
 
     if (choosed.empty())
-        throw std::runtime_error("Failed to initialize the CUDA environment.");
+        throw std::runtime_error("Failed to initialize the DEVICE environment.");
 
     mMemInfo.resize(choosed.size());
 

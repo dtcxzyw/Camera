@@ -4,20 +4,20 @@
 template <typename T>
 class MicrofactDistributionHelper {
 private:
-    CUDA const T& self() const {
+    DEVICE const T& self() const {
         return *static_cast<const T*>(this);
     }
 
 public:
-    CUDA float calcG1(const Vector& w) const {
+    DEVICE float calcG1(const Vector& w) const {
         return 1.0f / (1.0f + self().calcLambda(w));
     }
 
-    CUDA float calcG(const Vector& wo, const Vector& wi) const {
+    DEVICE float calcG(const Vector& wo, const Vector& wi) const {
         return 1.0f / (1.0f + self().calcLambda(wo) + self().calcLambda(wi));
     }
 
-    CUDA float pdf(const Vector& wo, const Vector& wh) const {
+    DEVICE float pdf(const Vector& wo, const Vector& wh) const {
         return self().calcD(wh) * calcG1(wo) * fabs(dot(wo, wh)) / absCosTheta(wo);
     }
 };
@@ -25,12 +25,12 @@ public:
 class TrowbridgeReitzDistribution final : public MicrofactDistributionHelper<TrowbridgeReitzDistribution> {
 private:
     float mAlphaX, mAlphaY;
-    CUDA static float toAlpha(const float roughness) {
+    DEVICE static float toAlpha(const float roughness) {
         const auto x = std::log(fmax(roughness, 1e-3f));
         return (((0.000640711f * x + 0.0171201f) * x + 0.1734f) * x + 0.819955f) * x + 1.62142f;
     }
 
-    CUDA static vec2 sample11(const float cosTheta, const vec2 sample) {
+    DEVICE static vec2 sample11(const float cosTheta, const vec2 sample) {
         // special case (normal incidence)
         if (cosTheta > 0.9999f) {
             const auto r = sqrt(sample.x / (1.0f - sample.x));
@@ -61,10 +61,10 @@ private:
     }
 
 public:
-    CUDA TrowbridgeReitzDistribution(const float rx, const float ry)
+    DEVICE TrowbridgeReitzDistribution(const float rx, const float ry)
         : mAlphaX(toAlpha(rx)), mAlphaY(toAlpha(ry)) {}
 
-    CUDA float calcD(const Vector& wh) const {
+    DEVICE float calcD(const Vector& wh) const {
         const auto tan2ThetaH = tan2Theta(wh);
         if (std::isinf(tan2ThetaH)) return 0.0f;
         const auto cos4Theta = cos2Theta(wh) * cos2Theta(wh);
@@ -73,13 +73,13 @@ public:
         return one_over_pi<float>() / (mAlphaX * mAlphaY * cos4Theta * (1 + e) * (1 + e));
     }
 
-    CUDA float calcLambda(const Vector& w) const {
+    DEVICE float calcLambda(const Vector& w) const {
         const auto alpha2 = cosPhi(w) * mAlphaX * mAlphaX + sinPhi(w) * mAlphaY * mAlphaY;
         const auto tan2ThetaH = tan2Theta(w);
         return 0.5f * (-1.0f + sqrt(1.0f + alpha2 * tan2ThetaH));
     }
 
-    CUDA Vector sampleWh(const Vector& wo, const vec2 sample) const {
+    DEVICE Vector sampleWh(const Vector& wo, const vec2 sample) const {
         const auto filp = wo.z < 0.0f;
         const auto wi = filp ? -wo : wo;
         // 1. stretch wi
@@ -110,20 +110,20 @@ private:
     };
 
 public:
-    CUDA explicit MicrofactDistributionWarpper(const TrowbridgeReitzDistribution& tr) : tr(tr) {}
-    CUDA float calcG(const Vector& wo, const Vector& wi) const {
+    DEVICE explicit MicrofactDistributionWarpper(const TrowbridgeReitzDistribution& tr) : tr(tr) {}
+    DEVICE float calcG(const Vector& wo, const Vector& wi) const {
         return tr.calcG(wo, wi);
     }
 
-    CUDA float pdf(const Vector& wo, const Vector& wh) const {
+    DEVICE float pdf(const Vector& wo, const Vector& wh) const {
         return tr.pdf(wo, wh);
     }
 
-    CUDA float calcD(const Vector& wh) const {
+    DEVICE float calcD(const Vector& wh) const {
         return tr.calcD(wh);
     }
 
-    CUDA Vector sampleWh(const Vector& wo, const vec2 sample) const {
+    DEVICE Vector sampleWh(const Vector& wo, const vec2 sample) const {
         return tr.sampleWh(wo, sample);
     }
 };
@@ -135,17 +135,17 @@ private:
     MicrofactDistributionWarpper mDistribution;
 public:
     static constexpr auto type = BxDFType::Reflection | BxDFType::Glossy;
-    CUDA MicrofacetReflection(const Spectrum& reflection, const FresnelWarpper& fresnel,
+    DEVICE MicrofacetReflection(const Spectrum& reflection, const FresnelWarpper& fresnel,
         const MicrofactDistributionWarpper& distribution)
         : mReflection(reflection), mFresnel(fresnel), mDistribution(distribution) {}
 
-    CUDA float pdf(const Vector& wo, const Vector& wi) const {
+    DEVICE float pdf(const Vector& wo, const Vector& wi) const {
         if (wo.z * wi.z < 0.0f)return 0.0f;
         const auto wh = halfVector(wi, wo);
         return mDistribution.pdf(wo, wh) / (4.0f * dot(wo, wh));
     }
 
-    CUDA Spectrum f(const Vector& wo, const Vector& wi) const {
+    DEVICE Spectrum f(const Vector& wo, const Vector& wi) const {
         const auto cosThetaO = absCosTheta(wo), cosThetaI = absCosTheta(wi);
         if (cosThetaO == 0.0f | cosThetaI == 0.0f | wi == -wo)return Spectrum{};
         const auto wh = halfVector(wi, wo);
@@ -154,7 +154,7 @@ public:
         return mReflection * mFresnel.f(dot(wi, wh)) * fac;
     }
 
-    CUDA BxDFSample sampleF(const Vector& wo, const vec2 sample) const {
+    DEVICE BxDFSample sampleF(const Vector& wo, const vec2 sample) const {
         const auto wh = mDistribution.sampleWh(wo, sample);
         const auto wi = glm::reflect(wo, wh);
         if (wi.z * wo.z <= 0.0f)return BxDFSample{};
@@ -171,12 +171,12 @@ private:
     TransportMode mMode;
 public:
     static constexpr auto type = BxDFType::Transmission | BxDFType::Glossy;
-    CUDA MicrofacetTransmission(const Spectrum& transmission, const float etaA, const float etaB,
+    DEVICE MicrofacetTransmission(const Spectrum& transmission, const float etaA, const float etaB,
         const MicrofactDistributionWarpper& distribution, const TransportMode mode)
         : mTransmission(transmission), mFresnel(etaA, etaB), mDistribution(distribution),
         mEtaA(etaA), mEtaB(etaB), mMode(mode) {}
 
-    CUDA float pdf(const Vector& wo, const Vector& wi) const {
+    DEVICE float pdf(const Vector& wo, const Vector& wi) const {
         if (wo.z * wi.z > 0.0f)return 0.0f;
         const auto eta = cosTheta(wo) > 0.0f ? (mEtaB / mEtaA) : (mEtaA / mEtaB);
         const auto wh = glm::normalize(wo + wi * eta);
@@ -186,7 +186,7 @@ public:
         return mDistribution.pdf(wo, wh) * dwhdwi;
     }
 
-    CUDA Spectrum f(const Vector& wo, const Vector& wi) const {
+    DEVICE Spectrum f(const Vector& wo, const Vector& wi) const {
         const auto cosThetaO = cosTheta(wo), cosThetaI = cosTheta(wi);
         if (cosThetaO * cosThetaI >= 0.0f) return Spectrum{};
 
@@ -205,7 +205,7 @@ public:
                 / (cosThetaI * cosThetaO));
     }
 
-    CUDA BxDFSample sampleF(const Vector& wo, const vec2 sample) const {
+    DEVICE BxDFSample sampleF(const Vector& wo, const vec2 sample) const {
         const auto wh = mDistribution.sampleWh(wo, sample);
         const auto eta = cosTheta(wo) > 0.0f ? (mEtaB / mEtaA) : (mEtaA / mEtaB);
         Vector wi;
@@ -219,29 +219,29 @@ private:
     Spectrum mRd, mRs;
     MicrofactDistributionWarpper mDistribution;
 
-    static CUDA float pow5(const float d) {
+    static DEVICE float pow5(const float d) {
         const auto d2 = d * d;
         return d * d2 * d2;
     }
 
-    CUDA Spectrum fresnelSchlick(const float cosTheta) const {
+    DEVICE Spectrum fresnelSchlick(const float cosTheta) const {
         return mRs + pow5(1.0f - cosTheta) * (1.0f - mRs);
     }
 
 public:
     static constexpr auto type = BxDFType::Reflection | BxDFType::Glossy;
-    CUDA FresnelBlend(const Spectrum& rd, const Spectrum& rs,
+    DEVICE FresnelBlend(const Spectrum& rd, const Spectrum& rs,
         const MicrofactDistributionWarpper& distribution)
         : mRd(rd), mRs(rs), mDistribution(distribution) {}
 
-    CUDA float pdf(const Vector& wo, const Vector& wi) const {
+    DEVICE float pdf(const Vector& wo, const Vector& wi) const {
         if (wo.z * wi.z < 0.0f)return 0.0f;
         const auto wh = halfVector(wi, wo);
         return 0.5f * (absCosTheta(wi) * one_over_pi<float>() +
             mDistribution.pdf(wo, wh) / (4.0f * dot(wo, wh)));
     }
 
-    CUDA Spectrum f(const Vector& wo, const Vector& wi) const {
+    DEVICE Spectrum f(const Vector& wo, const Vector& wi) const {
         if (wo == -wi)return Spectrum{};
         const auto diffuse = (28.f / (23.f * pi<float>())) * mRd * (Spectrum(1.f) - mRs) *
             (1.0f - pow5(1.0f - 0.5f * absCosTheta(wi))) *
@@ -254,7 +254,7 @@ public:
         return diffuse + specular;
     }
 
-    CUDA BxDFSample sampleF(const Vector& wo, const vec2 sample) const {
+    DEVICE BxDFSample sampleF(const Vector& wo, const vec2 sample) const {
         auto u = sample;
         Vector wi;
         if (u[0] < 0.5f) {

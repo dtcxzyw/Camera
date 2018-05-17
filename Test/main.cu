@@ -99,7 +99,7 @@ private:
         u.arg.baseColor = RGBSpectrum(mColor);
         u.cp = Point(cp);
         u.light = { u.cp + Vector{ 0.0f,4.0f,0.0f },RGBSpectrum{ mLight} };
-        u.sampler = mEnvMapSampler->toSampler();
+        u.sampler = mEnvMapSampler->toRef();
         return u;
     }
 

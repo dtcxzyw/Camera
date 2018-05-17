@@ -5,16 +5,16 @@ struct Interaction;
 
 class TriangleDesc final {
 private:
-    CUDA bool interscet(const Ray& ray, Vector& pa, Vector& pb, Vector& pc,
+    DEVICE bool interscet(const Ray& ray, Vector& pa, Vector& pb, Vector& pc,
         float& t, float& e0, float& e1, float& e2) const;
 public:
     unsigned int id;
     VertexDesc a, b, c;
 
-    CUDA TriangleDesc(unsigned int id, const VertexDesc& a, const VertexDesc& b,
+    DEVICE TriangleDesc(unsigned int id, const VertexDesc& a, const VertexDesc& b,
         const VertexDesc& c);
-    CUDA bool intersect(const Ray& ray, float& tHit, Interaction& interaction) const;
-    CUDA bool intersect(const Ray& ray) const;
+    DEVICE bool intersect(const Ray& ray, float& tHit, Interaction& interaction) const;
+    DEVICE bool intersect(const Ray& ray) const;
 };
 
 struct TriangleRef final {

@@ -3,16 +3,16 @@
 #include <device_atomic_functions.h>
 #include <Core/CompileEnd.hpp>
 
-CUDAINLINE bool cmpMin(const float a, const float b) {
+DEVICEINLINE bool cmpMin(const float a, const float b) {
     return a < b;
 }
 
-CUDAINLINE bool cmpMax(const float a, const float b) {
+DEVICEINLINE bool cmpMax(const float a, const float b) {
     return a > b;
 }
 
 template <typename Func,typename Cmp>
-CUDAINLINE float calcValue(const Func& func, const Cmp& cmp, float l, float r) {
+DEVICEINLINE float calcValue(const Func& func, const Cmp& cmp, float l, float r) {
     constexpr auto eps = 1e-3f;
     while (r - l >= eps) {
         const auto lm = (l * 2.0f + r) / 3.0f;
@@ -23,7 +23,7 @@ CUDAINLINE float calcValue(const Func& func, const Cmp& cmp, float l, float r) {
     return func(l);
 }
 
-CUDAINLINE bool calcSphereRange(const vec4& sphere, const float near, const float far, vec4& res) {
+DEVICEINLINE bool calcSphereRange(const vec4& sphere, const float near, const float far, vec4& res) {
     const auto r2 = sphere.w * sphere.w;
     const auto begin = fmax(-far, sphere.z - sphere.w), end = fmin(-near, sphere.z + sphere.w);
     if (begin >= end)return false;

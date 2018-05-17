@@ -5,28 +5,28 @@
 #include <Rasterizer/IndexDescriptor.hpp>
 #include <Texture/Noise.hpp>
 
-CUDAINLINE Point toPos(const Point pos, const Uniform& u) {
+DEVICEINLINE Point toPos(const Point pos, const Uniform& u) {
     const Vector p{ pos };
     return {p.x * u.mul.x, p.y * u.mul.y, -p.z};
 }
 
-CUDAINLINE void setDepth(unsigned int& data, const unsigned int val) {
+DEVICEINLINE void setDepth(unsigned int& data, const unsigned int val) {
     atomicMin(&data, val);
 }
 
-CUDAINLINE bool CS(unsigned int, Point& pa, Point& pb, Point& pc, const Uniform& u) {
+DEVICEINLINE bool CS(unsigned int, Point& pa, Point& pb, Point& pc, const Uniform& u) {
     pa = toPos(pa, u);
     pb = toPos(pb, u);
     pc = toPos(pc, u);
     return true;
 }
 
-CUDAINLINE void VS(VI in, const Uniform& uniform, Point& cpos, OI& out) {
+DEVICEINLINE void VS(VI in, const Uniform& uniform, Point& cpos, OI& out) {
     out.get<Pos>() = in.pos;
     cpos = uniform.skyTransform(in.pos);
 }
 
-CUDAINLINE void drawSky(unsigned int, ivec2 uv, float, const OI& out, const OI&, const OI&,
+DEVICEINLINE void drawSky(unsigned int, ivec2 uv, float, const OI& out, const OI&, const OI&,
     const Uniform& uniform, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == 0xffffffff) {
         const auto p = out.get<Pos>();
@@ -34,7 +34,7 @@ CUDAINLINE void drawSky(unsigned int, ivec2 uv, float, const OI& out, const OI&,
     }
 }
 
-CUDAINLINE void VSM(VI in, const Uniform& uniform, Point& cpos, OI& out) {
+DEVICEINLINE void VSM(VI in, const Uniform& uniform, Point& cpos, OI& out) {
     const auto wp = uniform.modelTransform(in.pos);
     out.get<Pos>() = wp;
     out.get<Nor>() = Vector(uniform.modelTransform(makeNormalUnsafe(in.normal)));
@@ -42,7 +42,7 @@ CUDAINLINE void VSM(VI in, const Uniform& uniform, Point& cpos, OI& out) {
     cpos = uniform.cameraTransform(wp);
 }
 
-CUDAINLINE bool CSM(unsigned int, Point& pa, Point& pb, Point& pc, const Uniform& u) {
+DEVICEINLINE bool CSM(unsigned int, Point& pa, Point& pb, Point& pc, const Uniform& u) {
     pa = toPos(pa, u);
     pb = toPos(pb, u);
     pc = toPos(pc, u);
@@ -51,12 +51,12 @@ CUDAINLINE bool CSM(unsigned int, Point& pa, Point& pb, Point& pc, const Uniform
 
 constexpr float maxdu = std::numeric_limits<unsigned int>::max();
 
-CUDAINLINE void setModel(unsigned int, ivec2 uv, float z, const OI&, const OI&, const OI&,
+DEVICEINLINE void setModel(unsigned int, ivec2 uv, float z, const OI&, const OI&, const OI&,
     const Uniform&, FrameBufferRef& fbo) {
     setDepth(fbo.depth.get(uv), z * maxdu);
 }
 
-CUDAINLINE RGBSpectrum shade(const Point p, const Normal N, const Normal X, const Normal Y,
+DEVICEINLINE RGBSpectrum shade(const Point p, const Normal N, const Normal X, const Normal Y,
     const Uniform& uniform) {
     const auto sample = uniform.light.sampleLi({}, p);
     const Normal V{ uniform.cp - p };
@@ -67,7 +67,7 @@ CUDAINLINE RGBSpectrum shade(const Point p, const Normal N, const Normal X, cons
     return lc * F * fabs(dot(N, sample.wi));
 }
 
-CUDAINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, const OI& ddx,
+DEVICEINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, const OI& ddx,
     const OI& ddy, const Uniform& uniform, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
         const Point p = out.get<Pos>();
@@ -81,18 +81,18 @@ CUDAINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, const 
     }
 }
 
-CUDAINLINE void setPoint(unsigned int, ivec2 uv, float z, const OI&,
+DEVICEINLINE void setPoint(unsigned int, ivec2 uv, float z, const OI&,
     const Uniform&, FrameBufferRef& fbo) {
     setDepth(fbo.depth.get(uv), z * maxdu);
 }
 
-CUDAINLINE void drawPoint(unsigned int, ivec2 uv, float z, const OI&,
+DEVICEINLINE void drawPoint(unsigned int, ivec2 uv, float z, const OI&,
     const Uniform&, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu))
         fbo.color.set(uv, {1.0f, 1.0f, 1.0f, 1.0f});
 }
 
-CUDAINLINE void post(ivec2 NDC, const PostUniform& uni, BuiltinRenderTargetRef<RGBA8> out) {
+DEVICEINLINE void post(ivec2 NDC, const PostUniform& uni, BuiltinRenderTargetRef<RGBA8> out) {
     RGBSpectrum c(uni.in.color.get(NDC));
     if (uni.in.depth.get(NDC) < 0xffffffff) {
         const auto lum = c.lum();
@@ -127,16 +127,16 @@ void renderMesh(const StaticMeshData& model, const Span<Uniform>& uniform,
             context.vertCounter.get(), mode);
 }
 
-CUDAINLINE SphereDesc vsSphere(SphereDesc sp, const Uniform& uniform) {
+DEVICEINLINE SphereDesc vsSphere(SphereDesc sp, const Uniform& uniform) {
     return calcCameraSphere(uniform.cameraTransform, sp);
 }
 
-CUDAINLINE void setSpherePoint(unsigned int, ivec2 uv, float z, Point, Vector, float, bool,
+DEVICEINLINE void setSpherePoint(unsigned int, ivec2 uv, float z, Point, Vector, float, bool,
     Vector, Vector, const Uniform&, FrameBufferRef& fbo) {
     setDepth(fbo.depth.get(uv), z * maxdu);
 }
 
-CUDAINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, Point p, Vector dir, float invr,
+DEVICEINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, Point p, Vector dir, float invr,
     bool inSphere, Vector dpdx, Vector dpdy, const Uniform& u, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
         const auto pos = u.invCameraTransform(p);
@@ -183,6 +183,6 @@ void kernel(const StaticMeshData& model, RenderingContext& mc,
         call(&data);
     });
     renderFullScreen<PostUniform, BuiltinRenderTargetRef<RGBA8>, post>(buffer, puni,
-        fbo.postRT->toTarget(), fbo.size);
+        fbo.postRT->toRef(), fbo.size);
     buffer.callKernel(updateLum, punidata);
 }

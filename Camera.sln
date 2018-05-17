@@ -16,11 +16,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracer", "Projects\RayTr
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Planets", "Projects\Planets\Planets.vcxproj", "{8542D21F-FF8D-4FE1-B2F3-4FA2541E71C7}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BxDFWarpperGen", "Tools\BxDFWarpperGen\BxDFWarpperGen.vcxproj", "{61535F1D-A3CA-4FD2-84C6-FC147BC4BD29}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{4947D57E-54FD-466A-883E-C94F3CFAA0B9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{1B56302F-B50B-4C92-A626-26B6B0458E7C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WarpperGen", "Tools\WarpperGen\WarpperGen.vcxproj", "{61535F1D-A3CA-4FD2-84C6-FC147BC4BD29}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

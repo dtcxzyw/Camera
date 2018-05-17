@@ -4,6 +4,7 @@
 class MaterialRef;
 
 struct Interaction final {
+    Transform toWorld;
     Point pos;
     Normal dir;
     Normal normal;
@@ -12,14 +13,7 @@ struct Interaction final {
     Normal dpdu, dpdv;
     Vector dndu, dndv;
     MaterialRef* material;
-};
 
-CUDAINLINE void transform(const Transform& transform, Interaction& interaction) {
-    interaction.pos = transform(interaction.pos);
-    interaction.dir = transform(interaction.dir);
-    interaction.normal = transform(interaction.normal);
-    interaction.dpdu = transform(interaction.dpdu);
-    interaction.dpdu = transform(interaction.dpdu);
-    interaction.dndu = transform(interaction.dndu);
-    interaction.dndv = transform(interaction.dndv);
-}
+    Vector dpdx, dpdy;
+    vec2 duvdx, duvdy;
+};

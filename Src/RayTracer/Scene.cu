@@ -6,12 +6,13 @@
 Primitive::Primitive(const Transform& trans, BvhForTriangleRef* geometry, MaterialRef* material)
     : mTrans(trans), mGeometry(geometry), mMaterial(material) {}
 
-CUDA bool Primitive::intersect(const Ray& ray) const {
+DEVICE bool Primitive::intersect(const Ray& ray) const {
     return mGeometry->intersect(mTrans(ray));
 }
 
 bool Primitive::intersect(const Ray& ray, float& tHit, Interaction& interaction) const {
     if (mGeometry->intersect(mTrans(ray), tHit, interaction)) {
+        interaction.toWorld = inverse(mTrans);
         interaction.material = mMaterial;
         return true;
     }

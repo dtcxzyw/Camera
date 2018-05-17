@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <IO/Model.hpp>
 
-CUDA TriangleDesc BvhForTriangleRef::makeTriangleDesc(const unsigned int id) const {
+DEVICE TriangleDesc BvhForTriangleRef::makeTriangleDesc(const unsigned int id) const {
     const auto ref = mIndex[id];
     return {ref.id, mVertex[ref.a], mVertex[ref.b], mVertex[ref.c]};
 }
@@ -11,7 +11,7 @@ BvhForTriangleRef::BvhForTriangleRef(const MemorySpan<BvhNode>& nodes,
     const MemorySpan<TriangleRef>& index,const MemorySpan<VertexDesc>& vertex)
     :mNodes(nodes.begin()), mIndex(index.begin()), mVertex(vertex.begin()) {}
 
-CUDA bool BvhForTriangleRef::intersect(const Ray& ray) const {
+DEVICE bool BvhForTriangleRef::intersect(const Ray& ray) const {
     unsigned int top = 0, current = 0;
     unsigned int stack[64];
     const auto invDir = 1.0f / ray.dir;
@@ -43,7 +43,7 @@ CUDA bool BvhForTriangleRef::intersect(const Ray& ray) const {
     return false;
 }
 
-CUDA bool BvhForTriangleRef::intersect(const Ray& ray, float& t, Interaction& interaction) const {
+DEVICE bool BvhForTriangleRef::intersect(const Ray& ray, float& t, Interaction& interaction) const {
     unsigned int top = 0, current = 0;
     unsigned int stack[64];
     const auto invDir = 1.0f / ray.dir;

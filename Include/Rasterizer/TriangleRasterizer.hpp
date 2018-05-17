@@ -14,7 +14,7 @@ public:
         return vertSize - 2;
     }
 
-    CUDAINLINE uvec3 operator[](const unsigned int off) const {
+    DEVICEINLINE uvec3 operator[](const unsigned int off) const {
         return {off, off + 1, off + 2};
     }
 };
@@ -25,7 +25,7 @@ public:
         return vertSize - 2;
     }
 
-    CUDAINLINE uvec3 operator[](const unsigned int off) const {
+    DEVICEINLINE uvec3 operator[](const unsigned int off) const {
         return {0, off + 1, off + 2};
     }
 };
@@ -36,7 +36,7 @@ public:
         return faceSize;
     }
 
-    CUDAINLINE uvec3 operator[](const unsigned int off) const {
+    DEVICEINLINE uvec3 operator[](const unsigned int off) const {
         const auto base = off * 3;
         return {base, base + 1, base + 2};
     }
@@ -52,7 +52,7 @@ public:
         return faceSize;
     }
 
-    CUDAINLINE auto operator[](const unsigned int off) const {
+    DEVICEINLINE auto operator[](const unsigned int off) const {
         return mPtr[off];
     }
 };
@@ -63,11 +63,11 @@ struct STRUCT_ALIGN TriangleVert final {
     VertexInfo<Out> vert[3];
 };
 
-CUDAINLINE float edgeFunction(const Vector a, const Vector b, const Vector c) {
+DEVICEINLINE float edgeFunction(const Vector a, const Vector b, const Vector c) {
     return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
 
-CUDAINLINE Vector calcCore(const Vector a, const Vector b) {
+DEVICEINLINE Vector calcCore(const Vector a, const Vector b) {
     Vector w;
     w.x = b.y - a.y, w.y = a.x - b.x;
     w.z = -(a.x * w.x + a.y * w.y);
@@ -104,7 +104,7 @@ struct TriangleProcessingArgs final {
 };
 
 template <typename Out>
-CUDAINLINE void calcTriangleInfo(const TriangleVert<Out>& tri, const TriangleProcessingArgs<Out>& args) {
+DEVICEINLINE void calcTriangleInfo(const TriangleVert<Out>& tri, const TriangleProcessingArgs<Out>& args) {
     const auto a = toRaster(tri.vert[0].pos, args.hsiz),
         b = toRaster(tri.vert[1].pos, args.hsiz),
         c = toRaster(tri.vert[2].pos, args.hsiz);
@@ -141,16 +141,16 @@ CUDAINLINE void calcTriangleInfo(const TriangleVert<Out>& tri, const TrianglePro
 }
 
 using CompareZ = bool(*)(float, float);
-CUDAINLINE bool compareZNear(const float z, const float base) {
+DEVICEINLINE bool compareZNear(const float z, const float base) {
     return z < base;
 }
 
-CUDAINLINE bool compareZFar(const float z, const float base) {
+DEVICEINLINE bool compareZFar(const float z, const float base) {
     return z > base;
 }
 
 template <typename Out, CompareZ Func>
-CUDAINLINE int calcTriangleType(const TriangleVert<Out>& tri, const float z) {
+DEVICEINLINE int calcTriangleType(const TriangleVert<Out>& tri, const float z) {
     auto type = 0;
     for (auto i = 0; i < 3; ++i)
         type += Func(tri.vert[i].pos.z, z);
@@ -158,14 +158,14 @@ CUDAINLINE int calcTriangleType(const TriangleVert<Out>& tri, const float z) {
 }
 
 template <typename Out, CompareZ Func>
-CUDAINLINE void sortIndex(const TriangleVert<Out>& tri, uvec3& idx) {
+DEVICEINLINE void sortIndex(const TriangleVert<Out>& tri, uvec3& idx) {
     if (Func(tri.vert[idx[1]].pos.z, tri.vert[idx[0]].pos.z))cudaSwap(idx[1], idx[0]);
     if (Func(tri.vert[idx[2]].pos.z, tri.vert[idx[1]].pos.z))cudaSwap(idx[2], idx[1]);
     if (Func(tri.vert[idx[1]].pos.z, tri.vert[idx[0]].pos.z))cudaSwap(idx[1], idx[0]);
 }
 
 template <typename Out, CompareZ Func, typename Callable>
-CUDAINLINE void clipVertT1(const TriangleVert<Out>& tri, const float z, const Callable& emit) {
+DEVICEINLINE void clipVertT1(const TriangleVert<Out>& tri, const float z, const Callable& emit) {
     uvec3 idx{0, 1, 2};
     sortIndex<Out, Func>(tri, idx);
     const auto a = tri.vert[idx[0]], b = tri.vert[idx[1]], c = tri.vert[idx[2]];
@@ -188,7 +188,7 @@ CUDAINLINE void clipVertT1(const TriangleVert<Out>& tri, const float z, const Ca
 }
 
 template <typename Out, CompareZ Func, typename Callable>
-CUDAINLINE void clipVertT2(const TriangleVert<Out>& tri, const float z, const Callable& emit) {
+DEVICEINLINE void clipVertT2(const TriangleVert<Out>& tri, const float z, const Callable& emit) {
     uvec3 idx{0, 1, 2};
     sortIndex<Out, Func>(tri, idx);
     const auto a = tri.vert[idx[0]], b = tri.vert[idx[1]], c = tri.vert[idx[2]];
@@ -204,7 +204,7 @@ CUDAINLINE void clipVertT2(const TriangleVert<Out>& tri, const float z, const Ca
 }
 
 template <typename Out, CompareZ Func, typename Callable>
-CUDAINLINE void clipTriangle(const TriangleVert<Out>& tri, const float z, const Callable& emit) {
+DEVICEINLINE void clipTriangle(const TriangleVert<Out>& tri, const float z, const Callable& emit) {
     const auto type = calcTriangleType<Out, Func>(tri, z);
     switch (type) {
         case 0: emit(tri);
@@ -240,7 +240,7 @@ GLOBAL void processTrianglesKernel(const unsigned int size,READONLY(VertexInfo<O
     }
 }
 
-CUDAINLINE bool calcWeight(const mat3 w0, const int type, const vec2 p, const Vector invz,
+DEVICEINLINE bool calcWeight(const mat3 w0, const int type, const vec2 p, const Vector invz,
     const float near, const float invnf, Vector& w, float& nz) {
     #pragma unroll
     for (auto i = 0; i < 3; ++i)
@@ -285,7 +285,7 @@ GLOBAL void drawMicroT(READONLY(Triangle<Out>) info,READONLY(TileRef) idx,
 
 template <typename Out, typename Uniform, typename FrameBuffer,
     FragmentShader<Out, Uniform, FrameBuffer> Func, FragmentShader<Out, Uniform, FrameBuffer>... Then>
-CUDAINLINE void applyTFS(unsigned int* offset, Triangle<Out>* tri, TileRef* idx, Uniform* uniform,
+DEVICEINLINE void applyTFS(unsigned int* offset, Triangle<Out>* tri, TileRef* idx, Uniform* uniform,
     FrameBuffer* frameBuffer, const float near, const float invnf, const vec2 samplePoint) {
     #pragma unroll
     for (auto i = 0; i < 5; ++i) {
@@ -305,7 +305,7 @@ CUDAINLINE void applyTFS(unsigned int* offset, Triangle<Out>* tri, TileRef* idx,
 }
 
 template <typename Out, typename Uniform, typename FrameBuffer>
-CUDAINLINE void applyTFS(unsigned int*, Triangle<Out>*, TileRef*, Uniform*, FrameBuffer*,
+DEVICEINLINE void applyTFS(unsigned int*, Triangle<Out>*, TileRef*, Uniform*, FrameBuffer*,
     float, float, vec2) {}
 
 template <typename Out, typename Uniform, typename FrameBuffer,
@@ -321,11 +321,11 @@ template<typename Uniform>
 using TriangleTileClipShader = bool(*)(const uvec4& rect, const Uniform& uniform);
 
 template<typename Uniform>
-CUDAINLINE bool emptyTriangleTileClipShader(const uvec4&, const Uniform&) {
+DEVICEINLINE bool emptyTriangleTileClipShader(const uvec4&, const Uniform&) {
     return true;
 }
 
-CUDAINLINE bool intersect(const mat3& w0,const vec4& rect) {
+DEVICEINLINE bool intersect(const mat3& w0,const vec4& rect) {
     const auto test = [&rect](const Vector w) {
         return fmax(rect.x*w.x, rect.y*w.x) + fmax(rect.z*w.y, rect.w*w.y) + w.z >= 0.0;
     };
@@ -333,7 +333,7 @@ CUDAINLINE bool intersect(const mat3& w0,const vec4& rect) {
 }
 
 template<typename Out,typename Uniform,TriangleTileClipShader<Uniform> Func>
-CUDAINLINE bool triangleTileClipShader(const TileRef& ref,const Uniform& uni,
+DEVICEINLINE bool triangleTileClipShader(const TileRef& ref,const Uniform& uni,
     READONLY(Triangle<Out>) data) {
     return intersect(data[ref.id].w,ref.rect) && Func(ref.rect,uni);
 }

@@ -10,17 +10,17 @@ class Buffer2DRef final {
 private:
     T* mPtr;
     int mOffset;
-    CUDAINLINE int toPos(const ivec2 p) const {
+    DEVICEINLINE int toPos(const ivec2 p) const {
         const auto bx=p.x>>5,ox = p.x & 0b11111,by=p.y>>5,oy = p.y & 0b11111;
         return (bx*mOffset + by) << 10 | ox<<5 | oy;
     }
 public:
     Buffer2DRef() = default;
     Buffer2DRef(T* buf, const int offset):mPtr(buf), mOffset(offset){}
-    CUDAINLINE T& get(const ivec2 uv) {
+    DEVICEINLINE T& get(const ivec2 uv) {
         return mPtr[toPos(uv)];
     }
-    CUDAINLINE T get(const ivec2 uv) const{
+    DEVICEINLINE T get(const ivec2 uv) const{
         return mPtr[toPos(uv)];
     }
 };

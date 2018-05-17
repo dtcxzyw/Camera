@@ -6,8 +6,8 @@ class FresnelDielectric final {
 private:
     float mEtaI, mEtaT;
 public:
-    CUDA FresnelDielectric(const float etaI, const float etaT) : mEtaI(etaI), mEtaT(etaT) {}
-    CUDA float f(float cosThetaI) const {
+    DEVICE FresnelDielectric(const float etaI, const float etaT) : mEtaI(etaI), mEtaT(etaT) {}
+    DEVICE float f(float cosThetaI) const {
         const auto etaI = mEtaI, etaT = mEtaT;
         if (cosThetaI < 0.0f) {
             cosThetaI = -cosThetaI;
@@ -28,10 +28,10 @@ class FresnelConductor final {
 private:
     Spectrum mEtaI, mEtaT, mK;
 public:
-    CUDA FresnelConductor(const Spectrum& etaI,
+    DEVICE FresnelConductor(const Spectrum& etaI,
         const Spectrum& etaT, const Spectrum& k) : mEtaI(etaI), mEtaT(etaT), mK(k) {}
 
-    CUDA Spectrum f(const float cosThetaI) const {
+    DEVICE Spectrum f(const float cosThetaI) const {
         const auto eta = mEtaT / mEtaI;
         const auto etak = mK / mEtaI;
 
@@ -64,13 +64,13 @@ private:
 
     bool mIsDielectric;
 public:
-    CUDA explicit FresnelWarpper(const FresnelDielectric& dielectric)
+    DEVICE explicit FresnelWarpper(const FresnelDielectric& dielectric)
         : dielectric(dielectric), mIsDielectric(true) {}
 
-    CUDA explicit FresnelWarpper(const FresnelConductor& conductor)
+    DEVICE explicit FresnelWarpper(const FresnelConductor& conductor)
         : conductor(conductor), mIsDielectric(true) {}
 
-    CUDA Spectrum f(const float cosThetaI) const {
+    DEVICE Spectrum f(const float cosThetaI) const {
         return mIsDielectric ? Spectrum(dielectric.f(cosThetaI)) : conductor.f(cosThetaI);
     }
 };

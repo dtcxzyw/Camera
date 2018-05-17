@@ -4,7 +4,7 @@
 #include <Math/Math.hpp>
 
 template<typename Func, typename... Args>
-CUDAINLINE void launchLinear(Func func,unsigned int block, unsigned int size, Args... args) {
+DEVICEINLINE void launchLinear(Func func,unsigned int block, unsigned int size, Args... args) {
     if (size)func << <calcBlockSize(size, block), min(block, size)>> > (size, args...);
 }
 

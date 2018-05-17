@@ -2,16 +2,16 @@
 #include "kernel.hpp"
 #include <Rasterizer/SphereRasterizer.hpp>
 
-CUDAINLINE SphereDesc vsSphere(SphereDesc sp, const Uniform& uniform) {
+DEVICEINLINE SphereDesc vsSphere(SphereDesc sp, const Uniform& uniform) {
     return calcCameraSphere(uniform.V, sp);
 }
 
-CUDAINLINE void drawSpherePoint(unsigned int id, ivec2 uv, float, Point, Vector, float,
+DEVICEINLINE void drawSpherePoint(unsigned int id, ivec2 uv, float, Point, Vector, float,
     bool, Vector, Vector, const Uniform&, FrameBufferRef& fbo) {
     fbo.color.set(uv, {(id + 1) / 10.0f, 1.0f, 1.0f, 1.0f});
 }
 
-CUDAINLINE void post(ivec2 NDC, const FrameBufferRef& uni, BuiltinRenderTargetRef<RGBA8> out) {
+DEVICEINLINE void post(ivec2 NDC, const FrameBufferRef& uni, BuiltinRenderTargetRef<RGBA8> out) {
     const RGB c = uni.color.get(NDC);
     const RGBA8 color = {c * 255.0f, 255};
     out.set(NDC, color);
@@ -26,5 +26,5 @@ void kernel(const Span<vec4>& spheres,
     renderSpheres<Uniform, FrameBufferRef, vsSphere, drawSpherePoint>(buffer,
         spheres, uniform, frameBuffer, fbo.size, converter.near, converter.far, converter.mul, scissor);
     renderFullScreen<FrameBufferRef, BuiltinRenderTargetRef<RGBA8>, post>(buffer, frameBuffer,
-        fbo.postRT->toTarget(), fbo.size);
+        fbo.postRT->toRef(), fbo.size);
 }

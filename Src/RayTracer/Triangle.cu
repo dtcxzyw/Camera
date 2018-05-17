@@ -1,7 +1,7 @@
 #include <RayTracer/Triangle.hpp>
 #include <Math/Interaction.hpp>
 
-CUDA bool TriangleDesc::interscet(const Ray& ray, Vector& pa, Vector& pb, Vector& pc,
+DEVICE bool TriangleDesc::interscet(const Ray& ray, Vector& pa, Vector& pb, Vector& pc,
     float& t, float& e0, float& e1, float& e2) const {
     pa = a.pos - ray.origin;
     pb = b.pos - ray.origin;
@@ -37,7 +37,7 @@ CUDA bool TriangleDesc::interscet(const Ray& ray, Vector& pa, Vector& pb, Vector
     return true;
 }
 
-CUDA TriangleDesc::TriangleDesc(const unsigned id, const VertexDesc& a, const VertexDesc& b,
+DEVICE TriangleDesc::TriangleDesc(const unsigned id, const VertexDesc& a, const VertexDesc& b,
     const VertexDesc& c): id(id), a(a), b(b), c(c) {}
 
 bool TriangleDesc::intersect(const Ray& ray, float& tHit, Interaction& interaction) const {
@@ -67,7 +67,7 @@ bool TriangleDesc::intersect(const Ray& ray, float& tHit, Interaction& interacti
     return false;
 }
 
-CUDA bool TriangleDesc::intersect(const Ray& ray) const {
+DEVICE bool TriangleDesc::intersect(const Ray& ray) const {
     Vector pa, pb, pc;
     float t, e0, e1, e2;
     return interscet(ray, pa, pb, pc, t, e0, e1, e2);

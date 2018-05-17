@@ -24,7 +24,7 @@ public:
         float lensRadius, focalLength;
         vec2 scale,offset;
         //offset=2.0f*scale/screenSize
-        CUDA Ray generateRay(const CameraSample& sample) const {
+        DEVICE Ray generateRay(const CameraSample& sample) const {
             const auto pRaster = sample.pFilm*2.0f - 1.0f;
             const Point pCamera = { pRaster.x*scale.x,pRaster.y*scale.y,-1.0f };
             Ray ray{ {},Vector(pCamera) };

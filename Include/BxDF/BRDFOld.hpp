@@ -7,14 +7,14 @@
 #include <Spectrum/SpectrumConfig.hpp>
 
 //F
-CUDAINLINE float fresnelSchlick(const float d) {
+DEVICEINLINE float fresnelSchlick(const float d) {
     auto x = saturate(1.0f - d);
     auto x2 = x * x;
     return x * x2 * x2;
 }
 
 //Real Shading in Unreal Engine 4
-CUDAINLINE float fresnelSchlickUE4(const float vdh) {
+DEVICEINLINE float fresnelSchlickUE4(const float vdh) {
     return powf(2.0f, (-5.55473f * vdh - 6.98316f) * vdh);
 }
 
@@ -22,7 +22,7 @@ CUDAINLINE float fresnelSchlickUE4(const float vdh) {
 Artist Friendly Metallic Fresnel(JCGT, 2014)
 http://jcgt.org/published/0003/04/03/
 */
-CUDAINLINE Spectrum fresnelGulbrandsen(const Spectrum& r, const Spectrum& g, const float u) {
+DEVICEINLINE Spectrum fresnelGulbrandsen(const Spectrum& r, const Spectrum& g, const float u) {
     const auto nMin = (1.0f - r) / (1.0f + r);
     const auto sqrtr = sqrt(r);
     const auto nMax = (1.0f + sqrtr) / (1.0f - sqrtr);
@@ -41,13 +41,13 @@ CUDAINLINE Spectrum fresnelGulbrandsen(const Spectrum& r, const Spectrum& g, con
 }
 
 //D
-CUDAINLINE float GGXD(const float ndh, const float roughness) {
+DEVICEINLINE float GGXD(const float ndh, const float roughness) {
     const auto a = roughness * roughness;
     const auto root = a / ((a * a - 1.0f) * ndh * ndh + 1.0f);
     return one_over_pi<float>() * root * root;
 }
 
-CUDAINLINE float DGTR2Aniso(const float ndh, const float ax, const float ay,
+DEVICEINLINE float DGTR2Aniso(const float ndh, const float ax, const float ay,
     const float xdh, const float ydh) {
     const auto d1 = xdh / ax;
     const auto d2 = ydh / ay;
@@ -56,7 +56,7 @@ CUDAINLINE float DGTR2Aniso(const float ndh, const float ax, const float ay,
     return one_over_pi<float>() / div;
 }
 
-CUDAINLINE float DGTR1(const float ndh, const float alpha) {
+DEVICEINLINE float DGTR1(const float ndh, const float alpha) {
     if (alpha >= 1.0f)return one_over_pi<float>();
     const auto sqra = alpha * alpha;
     const auto k = sqra - 1.0f;
@@ -65,47 +65,47 @@ CUDAINLINE float DGTR1(const float ndh, const float alpha) {
 }
 
 //G
-CUDAINLINE float GGXG(const float ndv, const float k) {
+DEVICEINLINE float GGXG(const float ndv, const float k) {
     const auto div = ndv * (1.0f - k) + k;
     return ndv / div;
 }
 
-CUDAINLINE float smithGUE4(const float ndl, const float ndv, const float roughness) {
+DEVICEINLINE float smithGUE4(const float ndl, const float ndv, const float roughness) {
     const auto alpha = roughness + 1.0f;
     const auto k = alpha * alpha / 8.0f;
     return GGXG(ndl, k) * GGXG(ndv, k);
 }
 
-CUDAINLINE float smithGGGX(const float ndv, const float alpha2) {
+DEVICEINLINE float smithGGGX(const float ndv, const float alpha2) {
     const auto ndv2 = ndv * ndv;
     return 1.0f / (ndv + sqrt(ndv2 + alpha2 - ndv2 * alpha2));
 }
 
-CUDAINLINE float smithGAniso(const float ndv, const float vdx, const float vdy,
+DEVICEINLINE float smithGAniso(const float ndv, const float vdx, const float vdy,
     const float ax, const float ay) {
     const auto mx = vdx * ax;
     const auto my = vdy * ay;
     return 1.0f / (ndv + sqrt(mx * mx + my * my + ndv * ndv));
 }
 
-CUDAINLINE float GLambda(const float u, const float alpha2) {
+DEVICEINLINE float GLambda(const float u, const float alpha2) {
     const auto cosu2 = u * u;
     const auto sinu2 = 1.0f - cosu2;
     return (-1.0f + sqrt(1.0f + alpha2 * sinu2 / cosu2)) * 0.5f;
 }
 
-CUDAINLINE float smithGHeightCorrelated(const float ndl, const float ndv, const float ldh,
+DEVICEINLINE float smithGHeightCorrelated(const float ndl, const float ndv, const float ldh,
     const float vdh, const float alpha2) {
     return fmin(ldh, vdh) > 0.0f ? 1.0f / (1.0f + GLambda(ndl, alpha2) + GLambda(ndv, alpha2)) : 0.0f;
 }
 
 //Diffuse
-CUDAINLINE float lambertian() {
+DEVICEINLINE float lambertian() {
     return one_over_pi<float>();
 }
 
 //https://disney-animation.s3.amazonaws.com/library/s2012_pbs_disney_brdf_notes_v2.pdf
-CUDAINLINE float disneyDiffuse(const float ndl, const float ndv, const float ldh, const float roughness) {
+DEVICEINLINE float disneyDiffuse(const float ndl, const float ndv, const float ldh, const float roughness) {
     const auto cosi = 1.0f - ndl;
     const auto cosi2 = cosi * cosi;
     const auto coso = 1.0f - ndv;
@@ -115,7 +115,7 @@ CUDAINLINE float disneyDiffuse(const float ndl, const float ndv, const float ldh
         * (1.0f + fd90Sub1 * coso * coso2 * coso2);
 }
 
-CUDAINLINE float disneyDiffuse2015(const float ndl, const float ndv, const float ldh, const float roughness) {
+DEVICEINLINE float disneyDiffuse2015(const float ndl, const float ndv, const float ldh, const float roughness) {
     const auto cosi = 1.0f - ndl;
     const auto cosi2 = cosi * cosi;
     const auto coso = 1.0f - ndv;
@@ -149,7 +149,7 @@ struct DisneyBRDFArg final {
     Spectrum baseColor; //linear color space
 };
 
-CUDAINLINE Spectrum disneyBRDF(const Normal L, const Normal V, const Normal N, const Normal X,
+DEVICEINLINE Spectrum disneyBRDF(const Normal L, const Normal V, const Normal N, const Normal X,
     const Normal Y, const DisneyBRDFArg& arg) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
@@ -217,7 +217,7 @@ struct UE4BRDFArg final {
 };
 
 //ratio = dis/radius
-CUDAINLINE Spectrum UE4BRDF(const Normal L, const Normal V, const Normal N, const Normal X, const Normal Y,
+DEVICEINLINE Spectrum UE4BRDF(const Normal L, const Normal V, const Normal N, const Normal X, const Normal Y,
     const UE4BRDFArg& arg, const float ratio) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
@@ -289,13 +289,13 @@ struct FrostbiteBRDFArg final {
     float reflectance;
 };
 
-CUDAINLINE float calcFv(const float r) {
+DEVICEINLINE float calcFv(const float r) {
     constexpr auto a = 0.2281399812785982f, b = -0.22673613288218408f
         , c = 0.20285923208572978f, d = -0.03326308048214361f;
     return saturate(((a * r + b) * r + c) * r + d);
 }
 
-CUDAINLINE Spectrum frostbiteBRDF(const Normal L, const Normal V, const Normal N,
+DEVICEINLINE Spectrum frostbiteBRDF(const Normal L, const Normal V, const Normal N,
     const FrostbiteBRDFArg& arg) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
@@ -339,7 +339,7 @@ struct MixedBRDFArg final {
     float anisotropic;
 };
 
-CUDAINLINE Spectrum mixedBRDF(const Normal L, const Normal V, const Normal N, const Normal X, const Normal Y,
+DEVICEINLINE Spectrum mixedBRDF(const Normal L, const Normal V, const Normal N, const Normal X, const Normal Y,
     const MixedBRDFArg& arg) {
     const auto ndl = dot(L, N);
     const auto ndv = dot(V, N);
