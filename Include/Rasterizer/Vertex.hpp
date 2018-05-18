@@ -1,7 +1,7 @@
 #pragma once
 #include <Core/Common.hpp>
 #include <Math/Geometry.hpp>
-#include <Core/DispatchSystem.hpp>
+#include <Core/CommandBuffer.hpp>
 #include <Core/Cache.hpp>
 
 template<typename Vert, typename Out, typename Uniform>

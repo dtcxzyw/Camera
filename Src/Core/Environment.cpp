@@ -1,4 +1,5 @@
 #include <Core/Environment.hpp>
+#include <Core/CommandBuffer.hpp>
 #include <Core/DispatchSystem.hpp>
 #include <stdexcept>
 #ifdef CAMERA_D3D11_SUPPORT

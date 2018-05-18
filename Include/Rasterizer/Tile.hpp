@@ -1,5 +1,5 @@
 #pragma once
-#include <Core/DispatchSystem.hpp>
+#include <Core/CommandBuffer.hpp>
 #include <Core/DataSet.hpp>
 #include <Core/CompileBegin.hpp>
 #include <device_atomic_functions.h>

@@ -4,6 +4,9 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include <Core/CompileEnd.hpp>
+#include <chrono>
+
+using Clock = std::chrono::high_resolution_clock;
 
 #define DEVICE __device__
 #define DEVICEINLINE inline DEVICE

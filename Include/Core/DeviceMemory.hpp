@@ -53,8 +53,7 @@ public:
     DEVICE UniquePtr(const UniquePtr&) = delete;
     DEVICE UniquePtr& operator=(const UniquePtr&) = delete;
     DEVICE UniquePtr& operator=(UniquePtr&& rhs) noexcept {
-        mPtr = rhs.mPtr;
-        rhs.mPtr = nullptr;
+        cudaSwap(mPtr, rhs.mPtr);
         return *this;
     }
 
@@ -112,18 +111,19 @@ public:
     }
 
     DEVICE SharedPtr(const SharedPtr& rhs) : mPtr(rhs.mPtr) {
-        atomicInc(&count(), maxv);
+        if (this != &rhs)atomicInc(&count(), maxv);
     }
 
     DEVICE SharedPtr& operator=(const SharedPtr& rhs) {
-        mPtr = rhs.mPtr;
-        atomicInc(&count(), maxv);
+        if (this != &rhs) {
+            mPtr = rhs.mPtr;
+            atomicInc(&count(), maxv);
+        }
         return *this;
     }
 
     DEVICE SharedPtr& operator=(SharedPtr&& rhs) noexcept {
-        mPtr = rhs.mPtr;
-        rhs.mPtr = nullptr;
+        cudaSwap(mPtr, rhs.mPtr);
         return *this;
     }
 

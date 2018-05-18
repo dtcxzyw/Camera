@@ -1,6 +1,6 @@
 #pragma once
 #include <Rasterizer/Shared.hpp>
-#include <Core/DispatchSystem.hpp>
+#include <Core/CommandBuffer.hpp>
 #include <Rasterizer/Tile.hpp>
 
 struct SphereDesc final {

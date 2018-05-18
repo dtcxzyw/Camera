@@ -7,7 +7,7 @@
 #include <cuda_surface_types.h>
 #include <surface_indirect_functions.h>
 #include <Core/CompileEnd.hpp>
-#include <Core/DispatchSystem.hpp>
+#include <Core/CommandBuffer.hpp>
 #include <Core/CompileBegin.hpp>
 #include <glm/gtc/round.hpp>
 #include <Core/CompileEnd.hpp>

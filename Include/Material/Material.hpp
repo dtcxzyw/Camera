@@ -1,13 +1,13 @@
 #pragma once
 #include <BxDF/BxDFWarpper.hpp>
 #include <Math/Interaction.hpp>
-#include <Core/DispatchSystem.hpp>
 
 class Bsdf final {
 private:
     Vector mNormal;
     Vector mTangent;
     Vector mBiTangent;
+    Interaction mInteraction;
     static constexpr auto maxSize = 4;
     BxDFWarpper mBxDF[maxSize];
     unsigned int mCount;
@@ -48,14 +48,15 @@ private:
 public:
     DEVICE explicit Bsdf(const Interaction& interaction, const float eta)
         : mNormal(interaction.normal), mTangent(interaction.dpdu),
-        mBiTangent(interaction.dpdv), mCount(0), mEta(eta) {}
+        mBiTangent(interaction.dpdv), mInteraction(interaction), mCount(0), mEta(eta) {}
 
     DEVICE float getEta() const {
         return mEta;
     }
 
-    DEVICE void add(const BxDFWarpper& bxDF) {
-        mBxDF[mCount++] = bxDF;
+    template<typename BxDF>
+    DEVICE void add(const BxDF& bxDF) {
+        mBxDF[mCount++] = BxDFWarpper{ bxDF };
     }
 
     DEVICE unsigned int match(const BxDFType type) const {
@@ -73,7 +74,7 @@ public:
         return fImpl(toLocal(worldWo), worldWo, toLocal(worldWi), worldWi, pattern);
     }
 
-    BxDFSample sampleF(const Vector& worldWo, const vec2 sample, const BxDFType pattern) const {
+    DEVICE BxDFSample sampleF(const Vector& worldWo, const vec2 sample, const BxDFType pattern) const {
         const auto count = match(pattern);
         if (count == 0) return {};
         const auto nth = min(static_cast<unsigned int>(sample.x * count), count - 1U);
@@ -98,17 +99,9 @@ public:
             pdfImpl(wo, Vector(res.wi), pattern) / count
         };
     }
+    DEVICE const Interaction& getInteraction() const {
+        return mInteraction;
+    }
 };
 
-class MaterialRef {
-public:
-    virtual ~MaterialRef() = default;
-    virtual void computeScatteringFunctions(Bsdf& bsdf, 
-        TransportMode mode = TransportMode::Radiance) const = 0;
-};
-
-class Material {
-public:
-    virtual ~Material() = default;
-    virtual MemorySpan<MaterialRef> toRef(CommandBuffer& buffer) const = 0;
-};
+struct Material {};

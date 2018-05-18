@@ -1,5 +1,5 @@
 #pragma once
-#include <Core/DispatchSystem.hpp>
+#include <Core/CommandBuffer.hpp>
 #include <Math/Math.hpp>
 
 template<typename Uniform, typename FrameBuffer>

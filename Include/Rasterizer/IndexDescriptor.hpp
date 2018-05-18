@@ -1,5 +1,5 @@
 #pragma once
-#include <Core/DispatchSystem.hpp>
+#include <Core/CommandBuffer.hpp>
 
 template<typename Index,typename... Args>
 class IndexDescriptor final {

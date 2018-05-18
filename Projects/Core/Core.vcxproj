@@ -22,6 +22,7 @@
     <ClInclude Include="..\..\Include\Camera\PinholeCamera.hpp" />
     <ClInclude Include="..\..\Include\Core\Builtin.hpp" />
     <ClInclude Include="..\..\Include\Core\Cache.hpp" />
+    <ClInclude Include="..\..\Include\Core\CommandBuffer.hpp" />
     <ClInclude Include="..\..\Include\Core\Common.hpp" />
     <ClInclude Include="..\..\Include\Core\CompileBegin.hpp" />
     <ClInclude Include="..\..\Include\Core\CompileEnd.hpp" />
@@ -90,6 +91,7 @@
     <CudaCompile Include="..\..\Src\Camera\PinholeCamera.cu">
       <FileType>Document</FileType>
     </CudaCompile>
+    <ClCompile Include="..\..\Src\Core\CommandBuffer.cpp" />
     <ClCompile Include="..\..\Src\Core\Common.cpp" />
     <ClCompile Include="..\..\Src\Core\DispatchSystem.cpp" />
     <ClCompile Include="..\..\Src\Core\Environment.cpp" />
