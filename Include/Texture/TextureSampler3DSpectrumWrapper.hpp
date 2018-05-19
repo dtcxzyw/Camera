@@ -3,7 +3,7 @@
 #include <Spectrum/SpectrumConfig.hpp>
 #include <Texture/TextureSampler.hpp>
 
-class TextureSampler3DSpectrumWarpper final {
+class TextureSampler3DSpectrumWrapper final {
 private:
     enum class TextureSampler3DSpectrumClassType {
         ConstantSampler3DSpectrum,
@@ -20,15 +20,15 @@ private:
 
     TextureSampler3DSpectrumClassType mType;
 public:
-    TextureSampler3DSpectrumWarpper(): mType(static_cast<TextureSampler3DSpectrumClassType>(15)) {};
+    TextureSampler3DSpectrumWrapper(): mType(static_cast<TextureSampler3DSpectrumClassType>(15)) {};
 
-    explicit TextureSampler3DSpectrumWarpper(const ConstantSampler3DSpectrum& data)
+    explicit TextureSampler3DSpectrumWrapper(const ConstantSampler3DSpectrum& data)
         : dataConstantSampler3DSpectrum(data), mType(TextureSampler3DSpectrumClassType::ConstantSampler3DSpectrum) {}
 
-    explicit TextureSampler3DSpectrumWarpper(const CheckBoard3DSampler& data)
+    explicit TextureSampler3DSpectrumWrapper(const CheckBoard3DSampler& data)
         : dataCheckBoard3DSampler(data), mType(TextureSampler3DSpectrumClassType::CheckBoard3DSampler) {}
 
-    explicit TextureSampler3DSpectrumWarpper(const MarbleSampler& data)
+    explicit TextureSampler3DSpectrumWrapper(const MarbleSampler& data)
         : dataMarbleSampler(data), mType(TextureSampler3DSpectrumClassType::MarbleSampler) {}
 
     DEVICE Spectrum sample(const TextureMapping3DInfo& info) const {

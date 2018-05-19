@@ -1,7 +1,7 @@
 #pragma once
 #include <Math/Geometry.hpp>
 
-class MaterialRef;
+class MaterialWrapper;
 
 struct Interaction final {
     Transform toWorld;
@@ -12,7 +12,7 @@ struct Interaction final {
     unsigned int id;//for ptex
     Normal dpdu, dpdv;
     Vector dndu, dndv;
-    MaterialRef* material;
+    MaterialWrapper* material;
 
     Vector dpdx, dpdy;
     vec2 duvdx, duvdy;

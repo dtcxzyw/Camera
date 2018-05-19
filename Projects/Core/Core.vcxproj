@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Include\BxDF\BxDFWarpper.hpp" />
+    <ClInclude Include="..\..\Include\BxDF\BxDFWrapper.hpp" />
     <ClInclude Include="..\..\Include\BxDF\Fresnel.hpp" />
     <ClInclude Include="..\..\Include\BxDF\BRDFOld.hpp" />
     <ClInclude Include="..\..\Include\BxDF\BxDF.hpp" />
@@ -46,8 +46,11 @@
     <ClInclude Include="..\..\Include\IO\Video.hpp" />
     <ClInclude Include="..\..\Include\Light\DeltaPositionLight.hpp" />
     <ClInclude Include="..\..\Include\Light\LightingSample.hpp" />
-    <ClInclude Include="..\..\Include\Light\LightWarpper.hpp" />
+    <ClInclude Include="..\..\Include\Light\LightWrapper.hpp" />
+    <ClInclude Include="..\..\Include\Material\Glass.hpp" />
     <ClInclude Include="..\..\Include\Material\Material.hpp" />
+    <ClInclude Include="..\..\Include\Material\MaterialWrapper.hpp" />
+    <ClInclude Include="..\..\Include\Material\Metal.hpp" />
     <ClInclude Include="..\..\Include\Material\Plastic.hpp" />
     <ClInclude Include="..\..\Include\Math\EFloat.hpp" />
     <ClInclude Include="..\..\Include\Math\Geometry.hpp" />
@@ -79,12 +82,12 @@
     <ClInclude Include="..\..\Include\Texture\ProceduralTexture.hpp" />
     <ClInclude Include="..\..\Include\Texture\Texture.hpp" />
     <ClInclude Include="..\..\Include\Texture\TextureMapping.hpp" />
-    <ClInclude Include="..\..\Include\Texture\TextureMapping2DWarpper.hpp" />
+    <ClInclude Include="..\..\Include\Texture\TextureMapping2DWrapper.hpp" />
     <ClInclude Include="..\..\Include\Texture\TextureSampler.hpp" />
-    <ClInclude Include="..\..\Include\Texture\TextureSampler2DFloatWarpper.hpp" />
-    <ClInclude Include="..\..\Include\Texture\TextureSampler2DSpectrumWarpper.hpp" />
-    <ClInclude Include="..\..\Include\Texture\TextureSampler3DFloatWarpper.hpp" />
-    <ClInclude Include="..\..\Include\Texture\TextureSampler3DSpectrumWarpper.hpp" />
+    <ClInclude Include="..\..\Include\Texture\TextureSampler2DFloatWrapper.hpp" />
+    <ClInclude Include="..\..\Include\Texture\TextureSampler2DSpectrumWrapper.hpp" />
+    <ClInclude Include="..\..\Include\Texture\TextureSampler3DFloatWrapper.hpp" />
+    <ClInclude Include="..\..\Include\Texture\TextureSampler3DSpectrumWrapper.hpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\BxDF\DataDrivenBRDF.cu" />

@@ -3,7 +3,7 @@
 #include <Spectrum/SpectrumConfig.hpp>
 #include <Texture/TextureSampler.hpp>
 
-class TextureSampler2DSpectrumWarpper final {
+class TextureSampler2DSpectrumWrapper final {
 private:
     enum class TextureSampler2DSpectrumClassType {
         ConstantSampler2DSpectrum,
@@ -24,21 +24,21 @@ private:
 
     TextureSampler2DSpectrumClassType mType;
 public:
-    TextureSampler2DSpectrumWarpper(): mType(static_cast<TextureSampler2DSpectrumClassType>(15)) {};
+    TextureSampler2DSpectrumWrapper(): mType(static_cast<TextureSampler2DSpectrumClassType>(15)) {};
 
-    explicit TextureSampler2DSpectrumWarpper(const ConstantSampler2DSpectrum& data)
+    explicit TextureSampler2DSpectrumWrapper(const ConstantSampler2DSpectrum& data)
         : dataConstantSampler2DSpectrum(data), mType(TextureSampler2DSpectrumClassType::ConstantSampler2DSpectrum) {}
 
-    explicit TextureSampler2DSpectrumWarpper(const TextureMapSpectrumSampler& data)
+    explicit TextureSampler2DSpectrumWrapper(const TextureMapSpectrumSampler& data)
         : dataTextureMapSpectrumSampler(data), mType(TextureSampler2DSpectrumClassType::TextureMapSpectrumSampler) {}
 
-    explicit TextureSampler2DSpectrumWarpper(const UVSampler& data)
+    explicit TextureSampler2DSpectrumWrapper(const UVSampler& data)
         : dataUVSampler(data), mType(TextureSampler2DSpectrumClassType::UVSampler) {}
 
-    explicit TextureSampler2DSpectrumWarpper(const CheckBoardSampler& data)
+    explicit TextureSampler2DSpectrumWrapper(const CheckBoardSampler& data)
         : dataCheckBoardSampler(data), mType(TextureSampler2DSpectrumClassType::CheckBoardSampler) {}
 
-    explicit TextureSampler2DSpectrumWarpper(const PolkaDotsSampler& data)
+    explicit TextureSampler2DSpectrumWrapper(const PolkaDotsSampler& data)
         : dataPolkaDotsSampler(data), mType(TextureSampler2DSpectrumClassType::PolkaDotsSampler) {}
 
     DEVICE Spectrum sample(const TextureMapping2DInfo& info) const {

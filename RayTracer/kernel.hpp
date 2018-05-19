@@ -2,7 +2,7 @@
 #include <Core/CommandBuffer.hpp>
 #include <Core/Builtin.hpp>
 #include <Camera/PinholeCamera.hpp>
-#include <Light/LightWarpper.hpp>
+#include <Light/LightWrapper.hpp>
 #include <Light/DeltaPositionLight.hpp>
 #include <RayTracer/BVH.hpp>
 

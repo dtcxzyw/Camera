@@ -2,7 +2,7 @@
 #include <Texture/TextureMapping.hpp>
 #include <Texture/TextureSampler.hpp>
 
-class TextureSampler3DFloatWarpper final {
+class TextureSampler3DFloatWrapper final {
 private:
     enum class TextureSampler3DFloatClassType {
         ConstantSampler3DFloat,
@@ -21,18 +21,18 @@ private:
 
     TextureSampler3DFloatClassType mType;
 public:
-    TextureSampler3DFloatWarpper(): mType(static_cast<TextureSampler3DFloatClassType>(15)) {};
+    TextureSampler3DFloatWrapper(): mType(static_cast<TextureSampler3DFloatClassType>(15)) {};
 
-    explicit TextureSampler3DFloatWarpper(const ConstantSampler3DFloat& data)
+    explicit TextureSampler3DFloatWrapper(const ConstantSampler3DFloat& data)
         : dataConstantSampler3DFloat(data), mType(TextureSampler3DFloatClassType::ConstantSampler3DFloat) {}
 
-    explicit TextureSampler3DFloatWarpper(const FbmSampler& data)
+    explicit TextureSampler3DFloatWrapper(const FbmSampler& data)
         : dataFbmSampler(data), mType(TextureSampler3DFloatClassType::FbmSampler) {}
 
-    explicit TextureSampler3DFloatWarpper(const TurbulenceSampler& data)
+    explicit TextureSampler3DFloatWrapper(const TurbulenceSampler& data)
         : dataTurbulenceSampler(data), mType(TextureSampler3DFloatClassType::TurbulenceSampler) {}
 
-    explicit TextureSampler3DFloatWarpper(const WindyWavesSampler& data)
+    explicit TextureSampler3DFloatWrapper(const WindyWavesSampler& data)
         : dataWindyWavesSampler(data), mType(TextureSampler3DFloatClassType::WindyWavesSampler) {}
 
     DEVICE float sample(const TextureMapping3DInfo& info) const {

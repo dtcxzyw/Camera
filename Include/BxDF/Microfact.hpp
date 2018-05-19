@@ -103,14 +103,14 @@ public:
     }
 };
 
-class MicrofactDistributionWarpper final {
+class MicrofactDistributionWrapper final {
 private:
     union {
         TrowbridgeReitzDistribution tr;
     };
 
 public:
-    DEVICE explicit MicrofactDistributionWarpper(const TrowbridgeReitzDistribution& tr) : tr(tr) {}
+    DEVICE explicit MicrofactDistributionWrapper(const TrowbridgeReitzDistribution& tr) : tr(tr) {}
     DEVICE float calcG(const Vector& wo, const Vector& wi) const {
         return tr.calcG(wo, wi);
     }
@@ -131,12 +131,12 @@ public:
 class MicrofacetReflection final : public BxDFHelper<MicrofacetReflection> {
 private:
     Spectrum mReflection;
-    FresnelWarpper mFresnel;
-    MicrofactDistributionWarpper mDistribution;
+    FresnelWrapper mFresnel;
+    MicrofactDistributionWrapper mDistribution;
 public:
     static constexpr auto type = BxDFType::Reflection | BxDFType::Glossy;
-    DEVICE MicrofacetReflection(const Spectrum& reflection, const FresnelWarpper& fresnel,
-        const MicrofactDistributionWarpper& distribution)
+    DEVICE MicrofacetReflection(const Spectrum& reflection, const FresnelWrapper& fresnel,
+        const MicrofactDistributionWrapper& distribution)
         : mReflection(reflection), mFresnel(fresnel), mDistribution(distribution) {}
 
     DEVICE float pdf(const Vector& wo, const Vector& wi) const {
@@ -166,13 +166,13 @@ class MicrofacetTransmission final : public BxDFHelper<MicrofacetTransmission> {
 private:
     Spectrum mTransmission;
     FresnelDielectric mFresnel;
-    MicrofactDistributionWarpper mDistribution;
+    MicrofactDistributionWrapper mDistribution;
     float mEtaA, mEtaB;
     TransportMode mMode;
 public:
     static constexpr auto type = BxDFType::Transmission | BxDFType::Glossy;
     DEVICE MicrofacetTransmission(const Spectrum& transmission, const float etaA, const float etaB,
-        const MicrofactDistributionWarpper& distribution, const TransportMode mode)
+        const MicrofactDistributionWrapper& distribution, const TransportMode mode)
         : mTransmission(transmission), mFresnel(etaA, etaB), mDistribution(distribution),
         mEtaA(etaA), mEtaB(etaB), mMode(mode) {}
 
@@ -217,7 +217,7 @@ public:
 class FresnelBlend final : public BxDFHelper<FresnelBlend> {
 private:
     Spectrum mRd, mRs;
-    MicrofactDistributionWarpper mDistribution;
+    MicrofactDistributionWrapper mDistribution;
 
     static DEVICE float pow5(const float d) {
         const auto d2 = d * d;
@@ -231,7 +231,7 @@ private:
 public:
     static constexpr auto type = BxDFType::Reflection | BxDFType::Glossy;
     DEVICE FresnelBlend(const Spectrum& rd, const Spectrum& rs,
-        const MicrofactDistributionWarpper& distribution)
+        const MicrofactDistributionWrapper& distribution)
         : mRd(rd), mRs(rs), mDistribution(distribution) {}
 
     DEVICE float pdf(const Vector& wo, const Vector& wi) const {

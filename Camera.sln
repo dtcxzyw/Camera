@@ -20,7 +20,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{4947D57E
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{1B56302F-B50B-4C92-A626-26B6B0458E7C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WarpperGen", "Tools\WarpperGen\WarpperGen.vcxproj", "{61535F1D-A3CA-4FD2-84C6-FC147BC4BD29}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WrapperGen", "Tools\WrapperGen\WrapperGen.vcxproj", "{61535F1D-A3CA-4FD2-84C6-FC147BC4BD29}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

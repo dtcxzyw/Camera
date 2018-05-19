@@ -2,7 +2,7 @@
 #include <BxDF/BxDF.hpp>
 #include <BxDF/Microfact.hpp>
 
-class BxDFWarpper final {
+class BxDFWrapper final {
 private:
     enum class BxDFClassType {
         SpecularReflection,
@@ -29,30 +29,30 @@ private:
 
     BxDFClassType mType;
 public:
-    DEVICE BxDFWarpper(): mType(static_cast<BxDFClassType>(15)) {};
+    DEVICE BxDFWrapper(): mType(static_cast<BxDFClassType>(15)) {};
 
-    DEVICE explicit BxDFWarpper(const SpecularReflection& data)
+    DEVICE explicit BxDFWrapper(const SpecularReflection& data)
         : dataSpecularReflection(data), mType(BxDFClassType::SpecularReflection) {}
 
-    DEVICE explicit BxDFWarpper(const SpecularTransmission& data)
+    DEVICE explicit BxDFWrapper(const SpecularTransmission& data)
         : dataSpecularTransmission(data), mType(BxDFClassType::SpecularTransmission) {}
 
-    DEVICE explicit BxDFWarpper(const FresnelSpecular& data)
+    DEVICE explicit BxDFWrapper(const FresnelSpecular& data)
         : dataFresnelSpecular(data), mType(BxDFClassType::FresnelSpecular) {}
 
-    DEVICE explicit BxDFWarpper(const LambertianReflection& data)
+    DEVICE explicit BxDFWrapper(const LambertianReflection& data)
         : dataLambertianReflection(data), mType(BxDFClassType::LambertianReflection) {}
 
-    DEVICE explicit BxDFWarpper(const OrenNayar& data)
+    DEVICE explicit BxDFWrapper(const OrenNayar& data)
         : dataOrenNayar(data), mType(BxDFClassType::OrenNayar) {}
 
-    DEVICE explicit BxDFWarpper(const MicrofacetReflection& data)
+    DEVICE explicit BxDFWrapper(const MicrofacetReflection& data)
         : dataMicrofacetReflection(data), mType(BxDFClassType::MicrofacetReflection) {}
 
-    DEVICE explicit BxDFWarpper(const MicrofacetTransmission& data)
+    DEVICE explicit BxDFWrapper(const MicrofacetTransmission& data)
         : dataMicrofacetTransmission(data), mType(BxDFClassType::MicrofacetTransmission) {}
 
-    DEVICE explicit BxDFWarpper(const FresnelBlend& data)
+    DEVICE explicit BxDFWrapper(const FresnelBlend& data)
         : dataFresnelBlend(data), mType(BxDFClassType::FresnelBlend) {}
 
     DEVICE float pdf(const Vector& wo, const Vector& wi) const {

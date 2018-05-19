@@ -2,7 +2,7 @@
 #include <Texture/TextureMapping.hpp>
 #include <Texture/TextureSampler.hpp>
 
-class TextureSampler2DFloatWarpper final {
+class TextureSampler2DFloatWrapper final {
 private:
     enum class TextureSampler2DFloatClassType {
         ConstantSampler2DFloat,
@@ -17,12 +17,12 @@ private:
 
     TextureSampler2DFloatClassType mType;
 public:
-    TextureSampler2DFloatWarpper(): mType(static_cast<TextureSampler2DFloatClassType>(15)) {};
+    TextureSampler2DFloatWrapper(): mType(static_cast<TextureSampler2DFloatClassType>(15)) {};
 
-    explicit TextureSampler2DFloatWarpper(const ConstantSampler2DFloat& data)
+    explicit TextureSampler2DFloatWrapper(const ConstantSampler2DFloat& data)
         : dataConstantSampler2DFloat(data), mType(TextureSampler2DFloatClassType::ConstantSampler2DFloat) {}
 
-    explicit TextureSampler2DFloatWarpper(const TextureMapFloatSampler& data)
+    explicit TextureSampler2DFloatWrapper(const TextureMapFloatSampler& data)
         : dataTextureMapFloatSampler(data), mType(TextureSampler2DFloatClassType::TextureMapFloatSampler) {}
 
     DEVICE float sample(const TextureMapping2DInfo& info) const {

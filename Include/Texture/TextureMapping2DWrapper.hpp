@@ -1,7 +1,7 @@
 #pragma once
 #include <Texture/TextureMapping.hpp>
 
-class TextureMapping2DWarpper final {
+class TextureMapping2DWrapper final {
 private:
     enum class TextureMapping2DClassType {
         UVMapping,
@@ -20,18 +20,18 @@ private:
 
     TextureMapping2DClassType mType;
 public:
-    TextureMapping2DWarpper(): mType(static_cast<TextureMapping2DClassType>(15)) {};
+    TextureMapping2DWrapper(): mType(static_cast<TextureMapping2DClassType>(15)) {};
 
-    explicit TextureMapping2DWarpper(const UVMapping& data)
+    explicit TextureMapping2DWrapper(const UVMapping& data)
         : dataUVMapping(data), mType(TextureMapping2DClassType::UVMapping) {}
 
-    explicit TextureMapping2DWarpper(const SphericalMapping& data)
+    explicit TextureMapping2DWrapper(const SphericalMapping& data)
         : dataSphericalMapping(data), mType(TextureMapping2DClassType::SphericalMapping) {}
 
-    explicit TextureMapping2DWarpper(const CylindricalMapping& data)
+    explicit TextureMapping2DWrapper(const CylindricalMapping& data)
         : dataCylindricalMapping(data), mType(TextureMapping2DClassType::CylindricalMapping) {}
 
-    explicit TextureMapping2DWarpper(const PlanarMapping& data)
+    explicit TextureMapping2DWrapper(const PlanarMapping& data)
         : dataPlanarMapping(data), mType(TextureMapping2DClassType::PlanarMapping) {}
 
     DEVICE TextureMapping2DInfo map(const Interaction& interaction) const {

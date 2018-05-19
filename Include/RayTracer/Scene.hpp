@@ -3,7 +3,7 @@
 #include <Core/Memory.hpp>
 #include <vector>
 
-class MaterialRef;
+class MaterialWrapper;
 class BvhForTriangleRef;
 struct Interaction;
 struct LightWrapper;
@@ -14,9 +14,9 @@ class Primitive final {
 private:
     Transform mTrans;
     BvhForTriangleRef* mGeometry;
-    MaterialRef* mMaterial;
+    MaterialWrapper* mMaterial;
 public:
-    Primitive(const Transform& trans, BvhForTriangleRef* geometry, MaterialRef* material);
+    Primitive(const Transform& trans, BvhForTriangleRef* geometry, MaterialWrapper* material);
     DEVICE bool intersect(const Ray& ray) const;
     DEVICE bool intersect(const Ray& ray, float& tHit, Interaction& interaction) const;
 };

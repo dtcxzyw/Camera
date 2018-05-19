@@ -1,9 +1,9 @@
 #include <RayTracer/Scene.hpp>
 #include <RayTracer/BVH.hpp>
 #include <Math/Interaction.hpp>
-#include <Light/LightWarpper.hpp>
+#include <Light/LightWrapper.hpp>
 
-Primitive::Primitive(const Transform& trans, BvhForTriangleRef* geometry, MaterialRef* material)
+Primitive::Primitive(const Transform& trans, BvhForTriangleRef* geometry, MaterialWrapper* material)
     : mTrans(trans), mGeometry(geometry), mMaterial(material) {}
 
 DEVICE bool Primitive::intersect(const Ray& ray) const {

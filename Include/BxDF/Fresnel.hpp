@@ -55,7 +55,7 @@ public:
     }
 };
 
-class FresnelWarpper final {
+class FresnelWrapper final {
 private:
     union {
         FresnelDielectric dielectric;
@@ -64,10 +64,10 @@ private:
 
     bool mIsDielectric;
 public:
-    DEVICE explicit FresnelWarpper(const FresnelDielectric& dielectric)
+    DEVICE explicit FresnelWrapper(const FresnelDielectric& dielectric)
         : dielectric(dielectric), mIsDielectric(true) {}
 
-    DEVICE explicit FresnelWarpper(const FresnelConductor& conductor)
+    DEVICE explicit FresnelWrapper(const FresnelConductor& conductor)
         : conductor(conductor), mIsDielectric(true) {}
 
     DEVICE Spectrum f(const float cosThetaI) const {

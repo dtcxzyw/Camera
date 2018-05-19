@@ -1,5 +1,5 @@
 #pragma once
-#include <BxDF/BxDFWarpper.hpp>
+#include <BxDF/BxDFWrapper.hpp>
 #include <Math/Interaction.hpp>
 
 class Bsdf final {
@@ -9,7 +9,7 @@ private:
     Vector mBiTangent;
     Interaction mInteraction;
     static constexpr auto maxSize = 4;
-    BxDFWarpper mBxDF[maxSize];
+    BxDFWrapper mBxDF[maxSize];
     unsigned int mCount;
     float mEta;
     DEVICE Vector toLocal(const Vector& vec) const {
@@ -46,17 +46,21 @@ private:
     }
 
 public:
-    DEVICE explicit Bsdf(const Interaction& interaction, const float eta)
+    DEVICE explicit Bsdf(const Interaction& interaction)
         : mNormal(interaction.normal), mTangent(interaction.dpdu),
-        mBiTangent(interaction.dpdv), mInteraction(interaction), mCount(0), mEta(eta) {}
+        mBiTangent(interaction.dpdv), mInteraction(interaction), mCount(0), mEta(1.0f) {}
 
     DEVICE float getEta() const {
         return mEta;
     }
 
+    DEVICE void setEta(const float eta) {
+        mEta = eta;
+    }
+
     template<typename BxDF>
     DEVICE void add(const BxDF& bxDF) {
-        mBxDF[mCount++] = BxDFWarpper{ bxDF };
+        mBxDF[mCount++] = BxDFWrapper{ bxDF };
     }
 
     DEVICE unsigned int match(const BxDFType type) const {
@@ -99,6 +103,7 @@ public:
             pdfImpl(wo, Vector(res.wi), pattern) / count
         };
     }
+
     DEVICE const Interaction& getInteraction() const {
         return mInteraction;
     }

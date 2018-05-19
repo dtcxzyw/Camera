@@ -113,10 +113,10 @@ struct BxDFHelper {
 class SpecularReflection final : public BxDFHelper<SpecularReflection> {
 private:
     Spectrum mReflection;
-    FresnelWarpper mFresnel;
+    FresnelWrapper mFresnel;
 public:
     static constexpr auto type = BxDFType::Reflection | BxDFType::Specular;
-    DEVICE SpecularReflection(const Spectrum& reflection, const FresnelWarpper& fresnel)
+    DEVICE SpecularReflection(const Spectrum& reflection, const FresnelWrapper& fresnel)
         : mReflection(reflection), mFresnel(fresnel) {}
 
     DEVICE float pdf(const Vector&, const Vector&) const {

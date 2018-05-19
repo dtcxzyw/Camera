@@ -216,9 +216,6 @@
     <ClInclude Include="..\..\Include\Spectrum\SpectrumConfig.hpp">
       <Filter>Spectrum</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Light\LightWarpper.hpp">
-      <Filter>Light</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\BxDF\DataDrivenBRDF.hpp">
       <Filter>BxDF</Filter>
     </ClInclude>
@@ -237,17 +234,11 @@
     <ClInclude Include="..\..\Include\BxDF\Microfact.hpp">
       <Filter>BxDF</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\BxDF\BxDFWarpper.hpp">
-      <Filter>BxDF</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Material\Plastic.hpp">
       <Filter>Material</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Math\Interaction.hpp">
       <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Texture\TextureMapping2DWarpper.hpp">
-      <Filter>Texture</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Texture\TextureSampler.hpp">
       <Filter>Texture</Filter>
@@ -255,20 +246,38 @@
     <ClInclude Include="..\..\Include\Texture\Texture.hpp">
       <Filter>Texture</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Texture\TextureSampler2DFloatWarpper.hpp">
-      <Filter>Texture</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Texture\TextureSampler2DSpectrumWarpper.hpp">
-      <Filter>Texture</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Texture\TextureSampler3DFloatWarpper.hpp">
-      <Filter>Texture</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Texture\TextureSampler3DSpectrumWarpper.hpp">
-      <Filter>Texture</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Core\CommandBuffer.hpp">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Material\Metal.hpp">
+      <Filter>Material</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Material\Glass.hpp">
+      <Filter>Material</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Light\LightWrapper.hpp">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Material\MaterialWrapper.hpp">
+      <Filter>Material</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\BxDF\BxDFWrapper.hpp">
+      <Filter>BxDF</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\TextureMapping2DWrapper.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\TextureSampler2DFloatWrapper.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\TextureSampler2DSpectrumWrapper.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\TextureSampler3DFloatWrapper.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\TextureSampler3DSpectrumWrapper.hpp">
+      <Filter>Texture</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
