@@ -35,6 +35,15 @@ public:
     explicit TextureSampler3DFloatWrapper(const WindyWavesSampler& data)
         : dataWindyWavesSampler(data), mType(TextureSampler3DFloatClassType::WindyWavesSampler) {}
 
+    TextureSampler3DFloatWrapper(const TextureSampler3DFloatWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(TextureSampler3DFloatWrapper));
+    }
+
+    TextureSampler3DFloatWrapper& operator=(const TextureSampler3DFloatWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(TextureSampler3DFloatWrapper));
+    return *this;
+    }
+
     DEVICE float sample(const TextureMapping3DInfo& info) const {
         switch (mType) {
             case TextureSampler3DFloatClassType::ConstantSampler3DFloat: return dataConstantSampler3DFloat.sample(info);

@@ -74,11 +74,13 @@ public:
         return pdfImpl(toLocal(worldWo), toLocal(worldWi), pattern);
     }
 
-    DEVICE Spectrum f(const Vector& worldWo, const Vector& worldWi, const BxDFType pattern) const {
+    DEVICE Spectrum f(const Vector& worldWo, const Vector& worldWi, const BxDFType pattern
+        = BxDFType::All) const {
         return fImpl(toLocal(worldWo), worldWo, toLocal(worldWi), worldWi, pattern);
     }
 
-    DEVICE BxDFSample sampleF(const Vector& worldWo, const vec2 sample, const BxDFType pattern) const {
+    DEVICE BxDFSample sampleF(const Vector& worldWo, const vec2 sample,
+        const BxDFType pattern = BxDFType::All) const {
         const auto count = match(pattern);
         if (count == 0) return {};
         const auto nth = min(static_cast<unsigned int>(sample.x * count), count - 1U);

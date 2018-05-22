@@ -4,7 +4,7 @@
 #include <Math/EFloat.hpp>
 
 BOTH Vector faceForward(const Vector& n,const Vector& v) {
-    return dot(n, v) < 0.0f ? -n : n;
+    return glm::dot(n, v) < 0.0f ? -n : n;
 }
 
 BOTH Vector halfVector(const Vector& in,const Vector& out) {
@@ -12,7 +12,7 @@ BOTH Vector halfVector(const Vector& in,const Vector& out) {
 }
 
 BOTH bool refract(const Vector& in,const Vector& normal,const float eta,Vector& out) {
-    const auto cosThetaI = dot(in, normal);
+    const auto cosThetaI = glm::dot(in, normal);
     const auto sin2ThetaT = eta * eta*(1.0f - cosThetaI * cosThetaI);
     if (sin2ThetaT >= 1.0f)return false;
     const auto cosThetaT = sqrt(1.0f - sin2ThetaT);
@@ -116,6 +116,9 @@ public:
         return mNormal * rhs;
     }
     BOTH Normal operator-() const;
+    BOTH float operator[](const int i) const {
+        return mNormal[i];
+    }
 };
 
 BOTH Normal makeNormalUnsafe(const Vector& dir) {

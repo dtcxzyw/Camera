@@ -49,13 +49,13 @@ private:
     uintmax_t mTick;
     DeviceMonitor();
     void update();
-    friend DeviceMonitor& getDeviceMonitor();
 public:
+    DeviceMonitor(DeviceMonitor&&) = delete;
+    DeviceMonitor& operator=(DeviceMonitor&&) = delete;
     uintmax_t tick();
     int getId() const;
     const cudaDeviceProp& getProp() const;
     size_t getMemoryFreeSize() const;
     size_t getMemoryTotalSize() const;
+    static DeviceMonitor& get();
 };
-
-DeviceMonitor& getDeviceMonitor();

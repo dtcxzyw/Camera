@@ -25,6 +25,15 @@ public:
     explicit TextureSampler2DFloatWrapper(const TextureMapFloatSampler& data)
         : dataTextureMapFloatSampler(data), mType(TextureSampler2DFloatClassType::TextureMapFloatSampler) {}
 
+    TextureSampler2DFloatWrapper(const TextureSampler2DFloatWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(TextureSampler2DFloatWrapper));
+    }
+
+    TextureSampler2DFloatWrapper& operator=(const TextureSampler2DFloatWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(TextureSampler2DFloatWrapper));
+    return *this;
+    }
+
     DEVICE float sample(const TextureMapping2DInfo& info) const {
         switch (mType) {
             case TextureSampler2DFloatClassType::ConstantSampler2DFloat: return dataConstantSampler2DFloat.sample(info);

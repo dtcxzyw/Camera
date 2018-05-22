@@ -25,10 +25,14 @@ class SceneRef final {
 private:
     READONLY(Primitive) mPrimitives;
     unsigned int mPrimitiveSize;
+    LightWrapper** mLights;
+    unsigned int mLightSize;
 public:
-    SceneRef(Primitive* primitives, unsigned int priSize);
+    SceneRef(Primitive* primitives, unsigned int priSize, LightWrapper** light, unsigned int lightSize);
     DEVICE bool intersect(const Ray& ray) const;
     DEVICE bool intersect(const Ray& ray, Interaction& interaction) const;
+    DEVICE LightWrapper** begin() const;
+    DEVICE LightWrapper** end() const;
 };
 
 class SceneDesc final {
@@ -38,5 +42,5 @@ private:
 public:
     explicit SceneDesc(const std::vector<Primitive>& priData, 
         const std::vector<LightWrapper*>& lightData);
-    SceneRef getRef() const;
+    SceneRef toRef() const;
 };

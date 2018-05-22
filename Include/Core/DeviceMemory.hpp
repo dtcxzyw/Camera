@@ -21,6 +21,7 @@ struct DeviceMemoryDesc final {
 DEVICE DeviceMemoryDesc alloc(unsigned int size);
 DEVICE void free(DeviceMemoryDesc desc);
 
+/*
 template <class T>
 DEVICEINLINE T&& forward(typename std::remove_reference<T>::type& arg) noexcept {
     // forward an lvalue as either an lvalue or an rvalue
@@ -240,6 +241,7 @@ public:
         free(mData);
     }
 };
+*/
 
 template<typename T,typename... Args>
 GLOBAL void constructKernel(T* ptr, Args... args) {

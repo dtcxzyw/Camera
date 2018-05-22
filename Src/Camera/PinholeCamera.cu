@@ -14,13 +14,9 @@ float PinholeCamera::toFov() const {
     return 2.0f * atan((filmGate.x * 0.5f) / focalLength);
 }
 
-PinholeCamera::RayGenerator PinholeCamera::getRayGenerator(const vec2 imageSize) const {
-    RayGenerator res;
-    res.scale = vec2{ 1.0f,-1.0f } / calcScale(imageSize);
-    res.focalLength = focalLength;
-    res.lensRadius = lensRadius;
-    res.offset = 2.0f * res.scale / imageSize;
-    return res;
+PinholeCameraRayGenerator PinholeCamera::getRayGenerator(const vec2 imageSize) const {
+    const auto scale = vec2{1.0f, -1.0f} / calcScale(imageSize);
+    return {focalLength, lensRadius, scale, 2.0f * scale / imageSize};
 }
 
 vec2 PinholeCamera::calcScale(const vec2 imageSize) const {
@@ -32,15 +28,15 @@ vec2 PinholeCamera::calcScale(const vec2 imageSize) const {
     auto top = filmGate.y * fac;
 
     switch (mode) {
-    case FitResolutionGate::Fill:
-        if (fratio > iratio)right *= iratio / fratio;
-        else top *= fratio / iratio;
-        break;
-    case FitResolutionGate::Overscan:
-        if (fratio > iratio)top *= fratio / iratio;
-        else right *= iratio / fratio;
-        break;
+        case FitResolutionGate::Fill:
+            if (fratio > iratio)right *= iratio / fratio;
+            else top *= fratio / iratio;
+            break;
+        case FitResolutionGate::Overscan:
+            if (fratio > iratio)top *= fratio / iratio;
+            else right *= iratio / fratio;
+            break;
     }
 
-    return { near / right, near / top };
+    return {near / right, near / top};
 }

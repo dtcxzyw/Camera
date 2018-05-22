@@ -31,6 +31,15 @@ public:
     explicit TextureSampler3DSpectrumWrapper(const MarbleSampler& data)
         : dataMarbleSampler(data), mType(TextureSampler3DSpectrumClassType::MarbleSampler) {}
 
+    TextureSampler3DSpectrumWrapper(const TextureSampler3DSpectrumWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(TextureSampler3DSpectrumWrapper));
+    }
+
+    TextureSampler3DSpectrumWrapper& operator=(const TextureSampler3DSpectrumWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(TextureSampler3DSpectrumWrapper));
+    return *this;
+    }
+
     DEVICE Spectrum sample(const TextureMapping3DInfo& info) const {
         switch (mType) {
             case TextureSampler3DSpectrumClassType::ConstantSampler3DSpectrum: return dataConstantSampler3DSpectrum.sample(info);

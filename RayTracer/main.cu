@@ -1,7 +1,6 @@
 #include "kernel.hpp"
 #include <cstdio>
 #include <IO/Model.hpp>
-#include <Core/CommandBuffer.hpp>
 #include <Core/Environment.hpp>
 #include <RayTracer/Scene.hpp>
 #include <Core/Constant.hpp>

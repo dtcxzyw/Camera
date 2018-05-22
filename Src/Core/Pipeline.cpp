@@ -3,7 +3,7 @@
 
 Stream::Stream() {
     checkError(cudaStreamCreateWithFlags(&mStream,cudaStreamNonBlocking));
-    mMaxThread = getDeviceMonitor().getProp().maxThreadsPerBlock;
+    mMaxThread = DeviceMonitor::get().getProp().maxThreadsPerBlock;
 }
 
 Stream::~Stream() {

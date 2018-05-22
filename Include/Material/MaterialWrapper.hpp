@@ -31,6 +31,15 @@ public:
     explicit MaterialWrapper(const Plastic& data)
         : dataPlastic(data), mType(MaterialClassType::Plastic) {}
 
+    MaterialWrapper(const MaterialWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(MaterialWrapper));
+    }
+
+    MaterialWrapper& operator=(const MaterialWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(MaterialWrapper));
+    return *this;
+    }
+
     DEVICE void computeScatteringFunctions(Bsdf& bsdf, const TransportMode mode = TransportMode::Radiance) const {
         switch (mType) {
             case MaterialClassType::Glass: return dataGlass.computeScatteringFunctions(bsdf, mode);

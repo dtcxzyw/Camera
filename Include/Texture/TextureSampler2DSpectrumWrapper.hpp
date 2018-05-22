@@ -41,6 +41,15 @@ public:
     explicit TextureSampler2DSpectrumWrapper(const PolkaDotsSampler& data)
         : dataPolkaDotsSampler(data), mType(TextureSampler2DSpectrumClassType::PolkaDotsSampler) {}
 
+    TextureSampler2DSpectrumWrapper(const TextureSampler2DSpectrumWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(TextureSampler2DSpectrumWrapper));
+    }
+
+    TextureSampler2DSpectrumWrapper& operator=(const TextureSampler2DSpectrumWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(TextureSampler2DSpectrumWrapper));
+    return *this;
+    }
+
     DEVICE Spectrum sample(const TextureMapping2DInfo& info) const {
         switch (mType) {
             case TextureSampler2DSpectrumClassType::ConstantSampler2DSpectrum: return dataConstantSampler2DSpectrum.sample(info);

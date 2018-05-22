@@ -106,7 +106,7 @@ struct BxDFHelper {
         auto&& self = *static_cast<const T*>(this);
         auto wi = cosineSampleHemisphere(sample);
         if (wo.z < 0.0f)wi.z = -wi.z;
-        return {wi, self.f(wo, wi), self.pdf(wo, wi)};
+        return { wi, self.f(wo, wi),T::type, self.pdf(wo, wi) };
     }
 };
 

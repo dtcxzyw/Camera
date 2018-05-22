@@ -14,10 +14,10 @@ public:
     BOTH LightingSample sampleLi(const vec2,const Point pos) const {
         const auto delta = mPos - pos;
         const auto invDis2 = 1.0f / length2(delta);
-        return { delta*sqrt(invDis2),mIllumination*invDis2 };
+        return { delta*sqrt(invDis2),mIllumination*invDis2,mPos };
     }
-    BOTH LightingSample le(const Ray& ray) const {
-        return { Vector{},Spectrum{} };
+    BOTH Spectrum le(const Ray& ray) const {
+        return Spectrum{};
     }
     BOTH Spectrum power() const {
         return mPower;
@@ -48,10 +48,10 @@ public:
         const auto delta = mPos - pos;
         const auto invDis2 = 1.0f / length2(delta);
         const auto wi= delta * sqrt(invDis2);
-        return { wi,mIllumination*invDis2*fallOff(mWorldToLight(wi).z) };
+        return { wi,mIllumination*invDis2*fallOff(mWorldToLight(wi).z),mPos };
     }
-    BOTH LightingSample le(const Ray& ray) const {
-        return { Vector{},Spectrum{} };
+    BOTH Spectrum le(const Ray& ray) const {
+        return Spectrum{};
     }
     BOTH Spectrum power() const {
         return mPower;

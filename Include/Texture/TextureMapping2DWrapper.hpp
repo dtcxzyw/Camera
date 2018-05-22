@@ -34,6 +34,15 @@ public:
     explicit TextureMapping2DWrapper(const PlanarMapping& data)
         : dataPlanarMapping(data), mType(TextureMapping2DClassType::PlanarMapping) {}
 
+    TextureMapping2DWrapper(const TextureMapping2DWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(TextureMapping2DWrapper));
+    }
+
+    TextureMapping2DWrapper& operator=(const TextureMapping2DWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(TextureMapping2DWrapper));
+    return *this;
+    }
+
     DEVICE TextureMapping2DInfo map(const Interaction& interaction) const {
         switch (mType) {
             case TextureMapping2DClassType::UVMapping: return dataUVMapping.map(interaction);

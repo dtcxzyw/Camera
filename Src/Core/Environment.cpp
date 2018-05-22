@@ -87,7 +87,7 @@ void Environment::init(const AppType app, const GraphicsInteroperability interop
                 while (!mRunning)std::this_thread::yield();
 
                 {
-                    auto&& monitor = getDeviceMonitor();
+                    auto&& monitor = DeviceMonitor::get();
                     DispatchSystem system(mQueue, idx, yield);
                     while (mRunning) {
                         system.update();
@@ -131,7 +131,7 @@ std::pair<size_t, size_t> Environment::getMemInfo() const {
 void Environment::yield() {
     if (isMainThread()) {
         mMainDispatchSystem->update();
-        auto&& monitor = getDeviceMonitor();
+        auto&& monitor = DeviceMonitor::get();
         monitor.tick();
         mMemInfo[mMainDispatchSystem->getId()] =
             {monitor.getMemoryFreeSize(), monitor.getMemoryTotalSize()};
@@ -188,7 +188,7 @@ size_t DeviceMonitor::getMemoryTotalSize() const {
     return mTotal;
 }
 
-DeviceMonitor& getDeviceMonitor() {
+DeviceMonitor& DeviceMonitor::get() {
     thread_local static DeviceMonitor monitor;
     return monitor;
 }

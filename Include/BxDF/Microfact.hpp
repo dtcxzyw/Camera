@@ -111,6 +111,7 @@ private:
 
 public:
     DEVICE explicit MicrofactDistributionWrapper(const TrowbridgeReitzDistribution& tr) : tr(tr) {}
+    DEVICE MicrofactDistributionWrapper(const MicrofactDistributionWrapper& rhs) : tr(rhs.tr) {}
     DEVICE float calcG(const Vector& wo, const Vector& wi) const {
         return tr.calcG(wo, wi);
     }

@@ -16,7 +16,7 @@ namespace Impl {
         #ifdef CAMERA_SINGLE_STREAM
         return 1;
         #else
-        return std::max(1, getDeviceMonitor().getProp().asyncEngineCount);
+        return std::max(1, DeviceMonitor::get().getProp().asyncEngineCount);
         #endif
     }
 }

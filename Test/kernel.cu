@@ -56,14 +56,14 @@ DEVICEINLINE void setModel(unsigned int, ivec2 uv, float z, const OI&, const OI&
     setDepth(fbo.depth.get(uv), z * maxdu);
 }
 
-DEVICEINLINE RGBSpectrum shade(const Point p, const Normal N, const Normal X, const Normal Y,
+DEVICEINLINE Spectrum shade(const Point p, const Normal N, const Normal X, const Normal Y,
     const Uniform& uniform) {
     const auto sample = uniform.light.sampleLi({}, p);
     const Normal V{ uniform.cp - p };
     const auto F = disneyBRDF(Normal(sample.wi), V, N, X, Y, uniform.arg);
     const auto ref = reflect(-V, N);
     const auto lc = sample.illumination +
-        RGBSpectrum(uniform.sampler.getCubeMap(Vector(ref)));
+        Spectrum(uniform.sampler.getCubeMap(Vector(ref)));
     return lc * F * fabs(dot(N, sample.wi));
 }
 
@@ -76,7 +76,7 @@ DEVICEINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, cons
         const auto Y = cross(X, N);
         X = cross(Y, N);
         const auto octaves = calcOctavesAntiAliased(Vector(ddx.get<Pos>()), Vector(ddy.get<Pos>()));
-        const auto col = marble(Vector(N)*30.0f, 1.0f, 0.8f, octaves) + RGBSpectrum(0.5f);
+        const auto col = marble(Vector(N)*30.0f, 1.0f, 0.8f, octaves) + Spectrum(0.5f);
         fbo.color.set(uv, { (shade(p,N,X,Y,uniform)*col).toRGB(), 1.0f });
     }
 }
@@ -93,14 +93,14 @@ DEVICEINLINE void drawPoint(unsigned int, ivec2 uv, float z, const OI&,
 }
 
 DEVICEINLINE void post(ivec2 NDC, const PostUniform& uni, BuiltinRenderTargetRef<RGBA8> out) {
-    RGBSpectrum c(uni.in.color.get(NDC));
+    Spectrum c(uni.in.color.get(NDC));
     if (uni.in.depth.get(NDC) < 0xffffffff) {
         const auto lum = c.lum();
         if (lum > 0.0f) {
             atomicAdd(&uni.sum->first, log(lum));
             atomicInc(&uni.sum->second, maxv);
         }
-        c = RGBSpectrum(ACES(c.toRGB(), *uni.lum));
+        c = Spectrum(ACES(c.toRGB(), *uni.lum));
     }
     const RGBA8 color = { clamp(pow(c.toRGB(),RGB(1.0f / 2.2f)), 0.0f, 1.0f) * 255.0f, 255 };
     out.set(NDC, color);
@@ -148,7 +148,7 @@ DEVICEINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, Point p, Vect
         auto res = shade(pos, N, X, Y, u);
         const auto octaves = calcOctavesAntiAliased(u.invCameraTransform(dpdx),
             u.invCameraTransform(dpdy));
-        res *= marble(modelDir, 1.0f, 0.5f, octaves) + RGBSpectrum(0.5f);
+        res *= marble(modelDir, 1.0f, 0.5f, octaves) + Spectrum(0.5f);
         fbo.color.set(uv, { res.toRGB(), 1.0f });
     }
 }

@@ -12,15 +12,16 @@ DEVICE bool Primitive::intersect(const Ray& ray) const {
 
 bool Primitive::intersect(const Ray& ray, float& tHit, Interaction& interaction) const {
     if (mGeometry->intersect(mTrans(ray), tHit, interaction)) {
-        interaction.toWorld = inverse(mTrans);
+        interaction.toWorld = inverse(mTrans)*interaction.toWorld;
         interaction.material = mMaterial;
         return true;
     }
     return false;
 }
 
-SceneRef::SceneRef(Primitive* primitives, const unsigned int priSize)
-    : mPrimitives(primitives), mPrimitiveSize(priSize) {}
+SceneRef::SceneRef(Primitive* primitives, const unsigned int priSize, 
+    LightWrapper** light, const unsigned int lightSize)
+    : mPrimitives(primitives), mPrimitiveSize(priSize), mLights(light), mLightSize(lightSize) {}
 
 bool SceneRef::intersect(const Ray& ray) const {
     for (auto i = 0U; i < mPrimitiveSize; ++i)
@@ -37,9 +38,17 @@ bool SceneRef::intersect(const Ray& ray, Interaction& interaction) const {
     return flag;
 }
 
+LightWrapper** SceneRef::begin() const {
+    return mLights;
+}
+
+LightWrapper** SceneRef::end() const {
+    return mLights + mLightSize;
+}
+
 SceneDesc::SceneDesc(const std::vector<Primitive>& priData, const std::vector<LightWrapper*>& light) 
     :mPrimitives(upload(priData)), mLights(upload(light)) {}
 
-SceneRef SceneDesc::getRef() const {
-    return SceneRef(mPrimitives.begin(), mPrimitives.size());
+SceneRef SceneDesc::toRef() const {
+    return SceneRef(mPrimitives.begin(), mPrimitives.size(), mLights.begin(), mLights.size());
 }

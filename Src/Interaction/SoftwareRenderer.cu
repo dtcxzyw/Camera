@@ -6,7 +6,7 @@
 #include <Rasterizer/TriangleRasterizer.hpp>
 #include <Core/DataSet.hpp>
 #include <Rasterizer/IndexDescriptor.hpp>
-#include <Rasterizer/Buffer2D.hpp>
+#include <Core/Buffer2D.hpp>
 
 enum class VertOutAttr {
     TexCoord,

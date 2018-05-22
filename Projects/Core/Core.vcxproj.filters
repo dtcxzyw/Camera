@@ -46,6 +46,9 @@
     <Filter Include="Material">
       <UniqueIdentifier>{88dc6eb2-e72e-4b19-ba1c-fa6dad1e35ed}</UniqueIdentifier>
     </Filter>
+    <Filter Include="RayTracer\Integrators">
+      <UniqueIdentifier>{5b9e57d7-3477-4202-9e53-c5bdc5383552}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp">
@@ -80,9 +83,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\Interaction\D3D11.hpp">
       <Filter>Interaction</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Rasterizer\Buffer2D.hpp">
-      <Filter>Rasterizer</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Rasterizer\IndexDescriptor.hpp">
       <Filter>Rasterizer</Filter>
@@ -279,6 +279,30 @@
     <ClInclude Include="..\..\Include\Texture\TextureSampler3DSpectrumWrapper.hpp">
       <Filter>Texture</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\RayTracer\Integrator.hpp">
+      <Filter>RayTracer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\RayTracer\Integrators\Whitted.hpp">
+      <Filter>RayTracer\Integrators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Camera\RayGeneratorWrapper.hpp">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Sampler\SequenceGenerator1DWrapper.hpp">
+      <Filter>Sampler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Sampler\SequenceGenerator2DWrapper.hpp">
+      <Filter>Sampler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\Buffer2D.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\RayTracer\Film.hpp">
+      <Filter>RayTracer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Texture\FilterWrapper.hpp">
+      <Filter>Texture</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\IO\Model.cpp">
@@ -316,6 +340,12 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Core\CommandBuffer.cpp">
       <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RayTracer\Integrators\Whitted.cu">
+      <Filter>RayTracer\Integrators</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RayTracer\Film.cu">
+      <Filter>RayTracer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

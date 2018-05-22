@@ -16,6 +16,7 @@ using Clock = std::chrono::high_resolution_clock;
 #define ALIGN __align__(TRANSFER_ALIGN)
 #define STRUCT_ALIGN __align__(CACHE_ALIGN)
 #define READONLY(type) const type* __restrict__ const
+#define NOT_IMPLEMENTED() throw
 
 struct Uncopyable {
     Uncopyable() = default;

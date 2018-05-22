@@ -29,15 +29,15 @@ private:
         ImGui::StyleColorsDark();
         auto& style = ImGui::GetStyle();
         style.Alpha = 0.8f;
-        style.ChildBorderSize=0.0f;
-        style.ChildRounding=0.0f;
-        style.FrameBorderSize=0.0f;
-        style.FrameRounding=0.0f;
-        style.GrabRounding=0.0f;
-        style.PopupBorderSize=0.0f;
-        style.PopupRounding=0.0f;
-        style.ScrollbarRounding=0.0f;
-        style.WindowRounding=0.0f;
+        style.ChildBorderSize = 0.0f;
+        style.ChildRounding = 0.0f;
+        style.FrameBorderSize = 0.0f;
+        style.FrameRounding = 0.0f;
+        style.GrabRounding = 0.0f;
+        style.PopupBorderSize = 0.0f;
+        style.PopupRounding = 0.0f;
+        style.ScrollbarRounding = 0.0f;
+        style.WindowRounding = 0.0f;
         style.WindowBorderSize = 0.0f;
         style.AntiAliasedFill = true;
         style.AntiAliasedLines = true;
@@ -47,18 +47,20 @@ private:
         window.newFrame();
         ImGui::Begin("Debug");
         ImGui::SetWindowPos({0, 0});
-        ImGui::SetWindowSize({500, 550});
+        ImGui::SetWindowSize({500, 580});
         ImGui::SetWindowFontScale(1.5f);
         ImGui::Text("vertices: %d, triangles: %d\n", static_cast<int>(mModel->vert.size()),
-                    static_cast<int>(mModel->index.size()));
+            static_cast<int>(mModel->index.size()));
         ImGui::Text("triNum: %u\n", *mMc->triContext.triNum);
         ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
+        auto&& monitor = DeviceMonitor::get();
+        ImGui::Text("Memory %.1f%", monitor.getMemoryFreeSize()*100.0f / monitor.getMemoryTotalSize());
         ImGui::Text("FOV %.1f ", glm::degrees(mCamera.toFov()));
         ImGui::SliderFloat("focal length", &mCamera.focalLength, 1.0f, 500.0f, "%.1f");
         ImGui::SliderFloat("light", &mLight, 0.0f, 100.0f);
         ImGui::SliderFloat("lightRadius", &mR, 0.0f, 40.0f);
-        mColor = clamp(mColor, RGB(0.01f), RGB(0.999f)); \
-        ImGui::ColorEdit3("baseColor",&mColor[0],ImGuiColorEditFlags_Float);
+        mColor = clamp(mColor, RGB(0.01f), RGB(0.999f));
+        ImGui::ColorEdit3("baseColor", &mColor[0], ImGuiColorEditFlags_Float);
 
         #define ARG(name)\
  mArg.##name=clamp(mArg.##name,0.01f,0.999f);\
@@ -79,8 +81,8 @@ private:
     }
 
     Uniform getUniform(float, const vec2 mul) const {
-        static Vector cp = { 10.0f, 0.0f, 0.0f }, mid = { -100000.0f, 0.0f, 0.0f };
-        const auto V =glm::lookAt(cp, mid, {0.0f, 1.0f, 0.0f});
+        static Vector cp = {10.0f, 0.0f, 0.0f}, mid = {-100000.0f, 0.0f, 0.0f};
+        const auto V = glm::lookAt(cp, mid, {0.0f, 1.0f, 0.0f});
         auto M = glm::scale(glm::mat4{}, Vector(5.0f));
         M = glm::rotate(M, half_pi<float>(), {0.0f, 1.0f, 0.0f});
         constexpr auto step = 50.0f;
@@ -96,14 +98,14 @@ private:
         u.invCameraTransform = inverse(u.cameraTransform);
         u.modelTransform = Transform(M);
         u.arg = mArg;
-        u.arg.baseColor = RGBSpectrum(mColor);
+        u.arg.baseColor = Spectrum(mColor);
         u.cp = Point(cp);
-        u.light = { u.cp + Vector{ 0.0f,4.0f,0.0f },RGBSpectrum{ mLight} };
+        u.light = {u.cp + Vector{0.0f, 4.0f, 0.0f}, Spectrum{mLight}};
         u.sampler = mEnvMapSampler->toRef();
         return u;
     }
 
-    using SharedFrame= std::shared_ptr<FrameBuffer>;
+    using SharedFrame = std::shared_ptr<FrameBuffer>;
 
     struct RenderingTask {
         Future future;
@@ -151,7 +153,7 @@ private:
     }
 
     void uploadSpheres() {
-        SphereDesc sphere[] = { {{0.0f, 3.0f, 10.0f}, 5.0f}, {{0.0f, 0.0f, 13.0f}, 3.0f} };
+        SphereDesc sphere[] = {{{0.0f, 3.0f, 10.0f}, 5.0f}, {{0.0f, 0.0f, 13.0f}, 3.0f}};
         mSpheres = MemorySpan<SphereDesc>(std::size(sphere));
         checkError(cudaMemcpy(mSpheres.begin(), sphere, sizeof(sphere), cudaMemcpyHostToDevice));
     }
@@ -164,7 +166,7 @@ public:
         ImGui::GetIO().WantCaptureKeyboard = true;
 
         auto&& env = Environment::get();
-        env.init(AppType::Online,GraphicsInteroperability::D3D11);
+        env.init(AppType::Online, GraphicsInteroperability::D3D11);
         mCamera.near = 1.0f;
         mCamera.far = 200.0f;
 
@@ -192,7 +194,7 @@ public:
             mEnvMapSampler = std::make_shared<BuiltinSampler<RGBA>>(mEnvMap->get());
         }
 
-        mColor = RGB{ 220.0f, 223.0f, 227.0f } / 255.0f;
+        mColor = RGB{220.0f, 223.0f, 227.0f} / 255.0f;
 
         std::queue<RenderingTask> tasks;
 
@@ -234,7 +236,7 @@ public:
                 tasks.push(addTask(std::move(frame), size, lum.begin()));
                 const auto te = Clock::now();
                 const auto delta = (te - tb).count() * 1e-6f;
-                printf("build time:%.3f ms\n",delta);
+                printf("build time:%.3f ms\n", delta);
             }
             window.unbindBackBuffer();
         }

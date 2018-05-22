@@ -55,6 +55,15 @@ public:
     DEVICE explicit BxDFWrapper(const FresnelBlend& data)
         : dataFresnelBlend(data), mType(BxDFClassType::FresnelBlend) {}
 
+    DEVICE BxDFWrapper(const BxDFWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(BxDFWrapper));
+    }
+
+    DEVICE BxDFWrapper& operator=(const BxDFWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(BxDFWrapper));
+    return *this;
+    }
+
     DEVICE float pdf(const Vector& wo, const Vector& wi) const {
         switch (mType) {
             case BxDFClassType::SpecularReflection: return dataSpecularReflection.pdf(wo, wi);

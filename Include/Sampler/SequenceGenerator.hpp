@@ -1,7 +1,9 @@
 #pragma once
 #include <Core/Common.hpp>
 #include <Math/Math.hpp>
-#include <curand.h>
+
+struct SequenceGenerator1DTag {};
+struct SequenceGenerator2DTag {};
 
 DEVICEINLINE float scaleToFloat(const unsigned int val) {
     union Result {
@@ -21,14 +23,28 @@ DEVICEINLINE float radicalInverse(unsigned int index) {
     return scaleToFloat(index);
 }
 
+class RadicalInverse final : SequenceGenerator1DTag {
+public:
+    DEVICE float sample(const unsigned int index) const {
+        return radicalInverse(index);
+    }
+};
+
 /*
 Hammersley Sequence
 by Holger Dammertz
 http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
 */
-DEVICEINLINE vec2 hammersley2D(const unsigned int index, const unsigned int n) {
-    return vec2(static_cast<float>(index) / static_cast<float>(n), radicalInverse(index));
-}
+
+class Hammersley2D final /*: SequenceGenerator2DTag*/ {
+private:
+    float mInvSize;
+public:
+    explicit Hammersley2D(const unsigned int size) :mInvSize(1.0f / size) {}
+    DEVICE vec2 sample(const unsigned int index) const {
+        return { static_cast<float>(index) * mInvSize, radicalInverse(index) };
+    }
+};
 
 /*
 Scrambled Halton Sequence
@@ -55,9 +71,12 @@ DEVICEINLINE float halton3(const unsigned int index) {
         perm3[(index / 14348907u) % 243u]) * 2.8679716489035376e-10f; // Results in [0,1).
 }
 
-DEVICEINLINE vec2 halton2D(const unsigned int index) {
-    return {radicalInverse(index), halton3(index)};
-}
+class Halton2D final : SequenceGenerator2DTag {
+public:
+    DEVICE vec2 sample(const unsigned int index) const {
+        return { radicalInverse(index), halton3(index) };
+    }
+};
 
 //Generator matrix from pbrt-v3
 //https://github.com/mmp/pbrt-v3/blob/master/src/core/sobolmatrices.cpp
@@ -89,6 +108,22 @@ DEVICEINLINE float scrambledSobol(const unsigned int index, const unsigned int d
     return scaleToFloat(res);
 }
 
-DEVICEINLINE vec2 scrambledSobol2D(const unsigned int index, const unsigned int scramble) {
-    return {scrambledSobol(index, 0, scramble), scrambledSobol(index, 1, scramble)};
-}
+class Sobol1D final : SequenceGenerator1DTag {
+private:
+    const unsigned int mScramble;
+public:
+    explicit Sobol1D(const unsigned int scramble) :mScramble(scramble) {}
+    DEVICE float sample(const unsigned int index) const {
+        return scrambledSobol(index,0,mScramble);
+    }
+};
+
+class Sobol2D final : SequenceGenerator2DTag {
+private:
+    const unsigned int mScramble;
+public:
+    explicit Sobol2D(const unsigned int scramble) :mScramble(scramble) {}
+    DEVICE vec2 sample(const unsigned int index) const {
+        return { scrambledSobol(index, 0, mScramble), scrambledSobol(index, 1, mScramble) };
+    }
+};

@@ -8,7 +8,7 @@ private:
 public:
     DEVICE FresnelDielectric(const float etaI, const float etaT) : mEtaI(etaI), mEtaT(etaT) {}
     DEVICE float f(float cosThetaI) const {
-        const auto etaI = mEtaI, etaT = mEtaT;
+        auto etaI = mEtaI, etaT = mEtaT;
         if (cosThetaI < 0.0f) {
             cosThetaI = -cosThetaI;
             cudaSwap(etaI, etaT);
@@ -69,6 +69,10 @@ public:
 
     DEVICE explicit FresnelWrapper(const FresnelConductor& conductor)
         : conductor(conductor), mIsDielectric(true) {}
+
+    DEVICE FresnelWrapper(const FresnelWrapper& rhs) {
+        memcpy(this, &rhs, sizeof(FresnelWrapper));
+    }
 
     DEVICE Spectrum f(const float cosThetaI) const {
         return mIsDielectric ? Spectrum(dielectric.f(cosThetaI)) : conductor.f(cosThetaI);
