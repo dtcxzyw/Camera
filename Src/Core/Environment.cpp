@@ -65,6 +65,10 @@ void Environment::init(const AppType app, const GraphicsInteroperability interop
         #endif
     }
 
+    //Multiple Devices are unsupported.
+    choosed.resize(1);
+    //TODO:Multiple Devices Support
+
     if (choosed.empty())
         throw std::runtime_error("Failed to initialize the DEVICE environment.");
 

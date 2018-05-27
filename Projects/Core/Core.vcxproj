@@ -74,6 +74,7 @@
     <ClInclude Include="..\..\Include\RayTracer\Film.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Integrator.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Integrators\Whitted.hpp" />
+    <ClInclude Include="..\..\Include\RayTracer\RenderingAPI.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Scene.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Triangle.hpp" />
     <ClInclude Include="..\..\Include\Sampler\Samping.hpp" />
@@ -131,11 +132,17 @@
     <CudaCompile Include="..\..\Src\Rasterizer\LineRasterizer.cu" />
     <CudaCompile Include="..\..\Src\Rasterizer\SphereRasterizer.cu" />
     <CudaCompile Include="..\..\Src\RayTracer\BVH.cu" />
+    <CudaCompile Include="..\..\Src\RayTracer\RenderingAPI.cu" />
     <CudaCompile Include="..\..\Src\RayTracer\Scene.cu" />
     <CudaCompile Include="..\..\Src\RayTracer\Triangle.cu" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\IO\Image.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Tools\WrapperGen\WrapperGen.vcxproj">
+      <Project>{61535f1d-a3ca-4fd2-84c6-fc147bc4bd29}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5F1E8A1F-D76A-422B-931E-A9A3CB901342}</ProjectGuid>
@@ -147,7 +154,7 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -155,7 +162,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -205,6 +212,7 @@
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <ControlFlowGuard>Guard</ControlFlowGuard>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -222,22 +230,22 @@
       <CodeGeneration>compute_35,sm_35</CodeGeneration>
       <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda</AdditionalOptions>
       <FastMath>true</FastMath>
-      <Optimization>O2</Optimization>
+      <Optimization>Od</Optimization>
       <RuntimeChecks>Default</RuntimeChecks>
       <TypeInfo>false</TypeInfo>
       <Warning>W0</Warning>
       <Keep>false</Keep>
       <MaxRegCount>64</MaxRegCount>
-      <GPUDebugInfo>false</GPUDebugInfo>
-      <GenerateLineInfo>false</GenerateLineInfo>
+      <GPUDebugInfo>true</GPUDebugInfo>
+      <GenerateLineInfo>true</GenerateLineInfo>
       <Emulation>false</Emulation>
       <HostDebugInfo>false</HostDebugInfo>
       <Runtime>MDd</Runtime>
     </CudaCompile>
     <CudaLink>
       <PerformDeviceLink>false</PerformDeviceLink>
-      <GPUDebugInfo>false</GPUDebugInfo>
-      <Optimization>O2</Optimization>
+      <GPUDebugInfo>true</GPUDebugInfo>
+      <Optimization>Od</Optimization>
       <AdditionalLibraryDirectories>$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>cudart.lib;cudadevrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </CudaLink>
@@ -267,6 +275,7 @@
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
       <StructMemberAlignment>Default</StructMemberAlignment>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

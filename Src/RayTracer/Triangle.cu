@@ -45,7 +45,7 @@ bool TriangleDesc::intersect(const Ray& ray, float& tHit, Interaction& interacti
     float t, e0, e1, e2;
     if (interscet(ray, pa, pb, pc, t, e0, e1, e2) && t < tHit) {
         interaction.pos = a.pos * e0 + b.pos * e1 + c.pos * e2;
-        interaction.dir = Normal(-ray.dir);
+        interaction.wo = Normal(-ray.dir);
         const auto dpac = a.pos - c.pos, dpbc = b.pos - c.pos;
         interaction.uv = a.uv * e0 + b.uv * e1 + c.uv * e2;
         interaction.id = id;

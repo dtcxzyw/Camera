@@ -109,13 +109,13 @@ BuildNode* buildTriangleRecursive(std::vector<BuildNode>& nodePool, const std::v
     std::vector<PrimitiveInfo>& info, const size_t begin, const size_t end,
     std::vector<TriangleRef>& ordered, const size_t maxPrim) {
     nodePool.emplace_back();
-    auto node = &nodePool.back();
+    auto&& node = nodePool.back();
     Bounds bounds;
     for (auto i = begin; i < end; ++i)
         bounds |= info[i].bounds;
     const auto size = end - begin;
     const auto initLeaf = [&]() {
-        node->setLeaf(ordered.size(), size, bounds);
+        node.setLeaf(ordered.size(), size, bounds);
         for (auto i = begin; i < end; ++i) {
             const auto idx = index[info[i].id];
             ordered.emplace_back(info[i].id, idx.x, idx.y, idx.z);
@@ -125,11 +125,11 @@ BuildNode* buildTriangleRecursive(std::vector<BuildNode>& nodePool, const std::v
     else {
         Bounds centroidBounds;
         for (auto i = begin; i < end; ++i)
-            centroidBounds |= Bounds(info[i].bounds);
+            centroidBounds |= Bounds(info[i].centroid);
         const auto axis = maxDim(centroidBounds[1] - centroidBounds[0]);
         if (centroidBounds[0][axis] == centroidBounds[1][axis])initLeaf();
         else {
-            auto mid = (begin + end) / 2;
+            auto mid = (begin + end) >> 1;
             //SAH
             if (size <= 4) {
                 std::nth_element(info.begin() + begin, info.begin() + mid, info.begin() + end,
@@ -142,6 +142,7 @@ BuildNode* buildTriangleRecursive(std::vector<BuildNode>& nodePool, const std::v
                 struct Bucket final {
                     unsigned int count;
                     Bounds bounds;
+                    Bucket() :count(0) {}
                 } buckets[bucketSize];
                 const auto offset = centroidBounds[0];
                 const auto inv = 1.0f / (centroidBounds[1] - centroidBounds[0]);
@@ -179,16 +180,16 @@ BuildNode* buildTriangleRecursive(std::vector<BuildNode>& nodePool, const std::v
                 }
                 else {
                     initLeaf();
-                    return node;
+                    return &node;
                 }
             }
 
-            node->setInterior(axis,
+            node.setInterior(axis,
                 buildTriangleRecursive(nodePool, index, info, begin, mid, ordered, maxPrim),
                 buildTriangleRecursive(nodePool, index, info, mid, end, ordered, maxPrim));
         }
     }
-    return node;
+    return &node;
 }
 
 size_t flattenTree(const BuildNode* node, size_t& offset,
@@ -238,7 +239,7 @@ BvhForTriangle::BvhForTriangle(const StaticMesh& mesh, const size_t maxPrim,Stre
     size_t offset = 0U;
     flattenTree(root, offset, nodes);
     mNodes = MemorySpan<BvhNode>(nodes.size());
-    checkError(cudaMemcpyAsync(mNodes.begin(), nodes.get(), sizeof(BvhNode) * mNodes.size(),
+    checkError(cudaMemcpyAsync(mNodes.begin(), nodes.begin(), sizeof(BvhNode) * mNodes.size(),
         cudaMemcpyHostToDevice, stream.get()));
     stream.sync();
 }

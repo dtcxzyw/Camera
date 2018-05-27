@@ -66,7 +66,7 @@ public:
 
     DEVICE float calcD(const Vector& wh) const {
         const auto tan2ThetaH = tan2Theta(wh);
-        if (std::isinf(tan2ThetaH)) return 0.0f;
+        if (isinf(tan2ThetaH)) return 0.0f;
         const auto cos4Theta = cos2Theta(wh) * cos2Theta(wh);
         const auto e = (cos2Phi(wh) / (mAlphaX * mAlphaX) + sin2Phi(wh) / (mAlphaY * mAlphaY)) *
             tan2ThetaH;

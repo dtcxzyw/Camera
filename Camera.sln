@@ -4,17 +4,20 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 15.0.27130.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core", "Projects\Core\Core.vcxproj", "{5F1E8A1F-D76A-422B-931E-A9A3CB901342}"
+	ProjectSection(ProjectDependencies) = postProject
+		{61535F1D-A3CA-4FD2-84C6-FC147BC4BD29} = {61535F1D-A3CA-4FD2-84C6-FC147BC4BD29}
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test", "Projects\Test\Test.vcxproj", "{692621FD-3048-4BE1-AF10-F67EAA053452}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Rasterizer", "Projects\Examples\Rasterizer\Rasterizer.vcxproj", "{692621FD-3048-4BE1-AF10-F67EAA053452}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6C3FB335-3B76-4DFC-9B28-FC6C182B05C8}"
 	ProjectSection(SolutionItems) = preProject
 		Projects\ProfileCuda.nvact = Projects\ProfileCuda.nvact
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracer", "Projects\RayTracer\RayTracer.vcxproj", "{EB6534A3-F165-437C-97BC-7F79E53F7BCC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracer", "Projects\Examples\RayTracer\RayTracer.vcxproj", "{EB6534A3-F165-437C-97BC-7F79E53F7BCC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Planets", "Projects\Planets\Planets.vcxproj", "{8542D21F-FF8D-4FE1-B2F3-4FA2541E71C7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Planets", "Projects\Examples\Planets\Planets.vcxproj", "{8542D21F-FF8D-4FE1-B2F3-4FA2541E71C7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{4947D57E-54FD-466A-883E-C94F3CFAA0B9}"
 EndProject
@@ -53,6 +56,8 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{692621FD-3048-4BE1-AF10-F67EAA053452} = {1B56302F-B50B-4C92-A626-26B6B0458E7C}
+		{EB6534A3-F165-437C-97BC-7F79E53F7BCC} = {1B56302F-B50B-4C92-A626-26B6B0458E7C}
 		{8542D21F-FF8D-4FE1-B2F3-4FA2541E71C7} = {1B56302F-B50B-4C92-A626-26B6B0458E7C}
 		{61535F1D-A3CA-4FD2-84C6-FC147BC4BD29} = {4947D57E-54FD-466A-883E-C94F3CFAA0B9}
 	EndGlobalSection

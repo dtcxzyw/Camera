@@ -53,6 +53,12 @@ public:
     BOTH friend RGBSpectrum sqrt(const RGBSpectrum& col) {
         return RGBSpectrum{ glm::sqrt(col.mVal) };
     }
+
+    DEVICE RGBSpectrum atomicAdd(const RGBSpectrum& rhs) {
+        ::atomicAdd(&mVal.x, rhs.mVal.x);
+        ::atomicAdd(&mVal.y, rhs.mVal.y);
+        ::atomicAdd(&mVal.z, rhs.mVal.z);
+    }
 };
 
 #define OPFLOAT(op) \

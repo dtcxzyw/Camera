@@ -8,7 +8,7 @@ struct Interaction final {
     Transform toWorld;
 
     Point pos;
-    Normal dir;
+    Normal wo;
     Vector pError;
 
     Normal normal;
@@ -50,7 +50,7 @@ struct Interaction final {
         duvdy.t = (a[0][0] * by[1] - a[1][0] * by[0]) / det;
     }
 
-    Point calcOffsetOrigin(const Vector& w) const {
+    DEVICE Point calcOffsetOrigin(const Vector& w) const {
         const Vector n{ normal };
         const auto d = dot(abs(n), pError);
         auto offset = d * n;
@@ -66,8 +66,12 @@ struct Interaction final {
         return po;
     }
 
-    Ray spawnTo(const Point& dst) const {
+    DEVICE Ray spawnTo(const Point& dst) const {
         const auto d = dst - pos;
         return Ray{ calcOffsetOrigin(d),d,1.0f };
+    }
+
+    DEVICE Ray spawnRay(const Vector& w) const {
+        return Ray{ calcOffsetOrigin(w),w };
     }
 };

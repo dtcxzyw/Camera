@@ -11,16 +11,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Core\Core.vcxproj">
+    <CudaCompile Include="..\..\..\Examples\RayTracer\main.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Core.vcxproj">
       <Project>{5f1e8a1f-d76a-422b-931e-a9a3cb901342}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="..\..\RayTracer\kernel.cu" />
-    <CudaCompile Include="..\..\RayTracer\main.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\RayTracer\kernel.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{eb6534a3-f165-437c-97bc-7f79e53f7bcc}</ProjectGuid>
@@ -32,7 +28,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -40,7 +36,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -95,12 +91,12 @@
       <AdditionalOptions>--expt-relaxed-constexpr --expt-extended-lambda </AdditionalOptions>
       <FastMath>true</FastMath>
       <MaxRegCount>64</MaxRegCount>
-      <Optimization>O2</Optimization>
+      <Optimization>Od</Optimization>
       <RuntimeChecks>Default</RuntimeChecks>
       <TypeInfo>false</TypeInfo>
       <Warning>W0</Warning>
-      <GenerateLineInfo>false</GenerateLineInfo>
-      <GPUDebugInfo>false</GPUDebugInfo>
+      <GenerateLineInfo>true</GenerateLineInfo>
+      <GPUDebugInfo>true</GPUDebugInfo>
       <HostDebugInfo>false</HostDebugInfo>
       <Defines>CAMERA_DEBUG</Defines>
       <Runtime>MDd</Runtime>
@@ -109,8 +105,8 @@
       <AdditionalDependencies>
       </AdditionalDependencies>
       <PerformDeviceLink>true</PerformDeviceLink>
-      <GPUDebugInfo>false</GPUDebugInfo>
-      <Optimization>O2</Optimization>
+      <GPUDebugInfo>true</GPUDebugInfo>
+      <Optimization>Od</Optimization>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </CudaLink>
   </ItemDefinitionGroup>

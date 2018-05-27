@@ -84,6 +84,10 @@ public:
         else res.mEnd = mBegin + end;
         return res;
     }
+
+    void memset(const int mask = 0) {
+        cudaMemset(begin(), mask, (mEnd - mBegin) * sizeof(T));
+    }
 };
 
 class PinnedMemory final : Uncopyable {
@@ -104,20 +108,24 @@ private:
 public:
     explicit PinnedBuffer(const size_t size) :mMemory(size * sizeof(T)), mSize(size) {}
 
-    T* get() const noexcept {
+    T* begin() const noexcept {
         return reinterpret_cast<T*>(mMemory.get());
     }
 
+    T* end() const noexcept {
+        return begin() + mSize;
+    }
+
     T& operator[](const size_t idx) {
-        return get()[idx];
+        return begin()[idx];
+    }
+
+    const T& operator*() const {
+        return *begin();
     }
 
     T& operator*() {
-        return *get();
-    }
-
-    T operator*() const {
-        return *get();
+        return *begin();
     }
 
     size_t size() const {

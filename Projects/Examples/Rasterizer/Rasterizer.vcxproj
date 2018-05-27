@@ -11,18 +11,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\Test\kernel.cu" />
+    <CudaCompile Include="..\..\..\Examples\Rasterizer\kernel.cu" />
+    <CudaCompile Include="..\..\..\Examples\Rasterizer\main.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Test\kernel.hpp" />
+    <ClInclude Include="..\..\..\Examples\Rasterizer\kernel.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\Test\main.cu">
-      <FileType>Document</FileType>
-    </CudaCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Core\Core.vcxproj">
+    <ProjectReference Include="..\..\Core\Core.vcxproj">
       <Project>{5f1e8a1f-d76a-422b-931e-a9a3cb901342}</Project>
     </ProjectReference>
   </ItemGroup>
@@ -36,7 +32,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -44,7 +40,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">

@@ -303,6 +303,9 @@
     <ClInclude Include="..\..\Include\Texture\FilterWrapper.hpp">
       <Filter>Texture</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\RayTracer\RenderingAPI.hpp">
+      <Filter>RayTracer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\IO\Model.cpp">
@@ -341,12 +344,6 @@
     <ClCompile Include="..\..\Src\Core\CommandBuffer.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\RayTracer\Integrators\Whitted.cu">
-      <Filter>RayTracer\Integrators</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\RayTracer\Film.cu">
-      <Filter>RayTracer</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\IO\Image.cu">
@@ -381,6 +378,15 @@
     </CudaCompile>
     <CudaCompile Include="..\..\Src\BxDF\DataDrivenBRDF.cu">
       <Filter>BxDF</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\RayTracer\Film.cu">
+      <Filter>RayTracer</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\RayTracer\Integrators\Whitted.cu">
+      <Filter>RayTracer\Integrators</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\RayTracer\RenderingAPI.cu">
+      <Filter>RayTracer</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

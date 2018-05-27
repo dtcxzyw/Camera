@@ -153,7 +153,7 @@ private:
     }
 
     void uploadSpheres() {
-        SphereDesc sphere[] = {{{0.0f, 3.0f, 10.0f}, 5.0f}, {{0.0f, 0.0f, 13.0f}, 3.0f}};
+        const SphereDesc sphere[] = {{{0.0f, 3.0f, 10.0f}, 5.0f}, {{0.0f, 0.0f, 13.0f}, 3.0f}};
         mSpheres = MemorySpan<SphereDesc>(std::size(sphere));
         checkError(cudaMemcpy(mSpheres.begin(), sphere, sizeof(sphere), cudaMemcpyHostToDevice));
     }

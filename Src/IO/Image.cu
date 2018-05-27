@@ -3,6 +3,8 @@
 #include <Core/CompileBegin.hpp>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
 #include <Core/CompileEnd.hpp>
 
 struct ImageDeleter final {
@@ -52,4 +54,9 @@ std::shared_ptr<BuiltinCubeMap<RGBA>> loadCubeMap(const std::function<std::strin
     }
     stream.sync();
     return res;
+}
+
+void saveHdr(const std::string& path, const float* pixel, const uvec2 size) {
+    const auto res = stbi_write_hdr(path.c_str(), size.x, size.y, 3, pixel);
+    if (res == 0)throw std::runtime_error("Failed to save.");
 }

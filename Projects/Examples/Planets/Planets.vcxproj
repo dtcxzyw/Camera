@@ -11,16 +11,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Core\Core.vcxproj">
+    <CudaCompile Include="..\..\..\Examples\Planets\kernel.cu" />
+    <CudaCompile Include="..\..\..\Examples\Planets\main.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Examples\Planets\kernel.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Core.vcxproj">
       <Project>{5f1e8a1f-d76a-422b-931e-a9a3cb901342}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="..\..\Examples\Planets\kernel.cu" />
-    <CudaCompile Include="..\..\Examples\Planets\main.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\Examples\Planets\kernel.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8542d21f-ff8d-4fe1-b2f3-4fa2541e71c7}</ProjectGuid>
@@ -32,7 +32,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -40,7 +40,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">

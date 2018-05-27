@@ -5,7 +5,7 @@ template <typename TexCoord>
 struct TextureMappingInfo final {
     TexCoord pos, dpdx, dpdy;
 
-    TextureMappingInfo(const TexCoord pos, const TexCoord dpdx, const TexCoord dpdy)
+    DEVICE TextureMappingInfo(const TexCoord pos, const TexCoord dpdx, const TexCoord dpdy)
         : pos(pos), dpdx(dpdx), dpdy(dpdy) {}
 };
 

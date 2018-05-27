@@ -24,7 +24,7 @@ public:
     DEVICE bool intersect(const Ray& ray, float& t, Interaction& interaction) const;
 };
 
-struct StaticMesh;
+class StaticMesh;
 class Stream;
 
 class BvhForTriangle final {

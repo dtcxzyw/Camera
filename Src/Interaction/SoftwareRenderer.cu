@@ -204,7 +204,7 @@ void SoftwareRenderer::init(Stream& resLoader) {
     PinnedBuffer<float> floatPixels(size);
     for (auto i = 0; i < size; ++i)
         floatPixels[i] = pixels[i] * int2Float;
-    checkError(cudaMemcpyToArrayAsync(mTexture->get(), 0, 0, floatPixels.get(),
+    checkError(cudaMemcpyToArrayAsync(mTexture->get(), 0, 0, floatPixels.begin(),
         size * sizeof(float), cudaMemcpyHostToDevice, resLoader.get()));
     mSampler = std::make_unique<BuiltinSampler<float>>(mTexture->get());
     ImGui::GetIO().Fonts->SetTexID(mSampler.get());
