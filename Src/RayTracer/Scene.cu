@@ -12,14 +12,14 @@ DEVICE bool Primitive::intersect(const Ray& ray) const {
 
 bool Primitive::intersect(const Ray& ray, float& tHit, Interaction& interaction) const {
     if (mGeometry->intersect(mTrans(ray), tHit, interaction)) {
-        interaction.toWorld = inverse(mTrans)*interaction.toWorld;
+        interaction.toWorld = inverse(mTrans) * interaction.toWorld;
         interaction.material = mMaterial;
         return true;
     }
     return false;
 }
 
-SceneRef::SceneRef(Primitive* primitives, const unsigned int priSize, 
+SceneRef::SceneRef(Primitive* primitives, const unsigned int priSize,
     LightWrapper** light, const unsigned int lightSize)
     : mPrimitives(primitives), mPrimitiveSize(priSize), mLights(light), mLightSize(lightSize) {}
 
@@ -46,8 +46,8 @@ LightWrapper** SceneRef::end() const {
     return mLights + mLightSize;
 }
 
-SceneDesc::SceneDesc(const std::vector<Primitive>& priData, const std::vector<LightWrapper*>& light) 
-    :mPrimitives(upload(priData)), mLights(upload(light)) {}
+SceneDesc::SceneDesc(const std::vector<Primitive>& priData, const std::vector<LightWrapper*>& light)
+    : mPrimitives(upload(priData)), mLights(upload(light)) {}
 
 SceneRef SceneDesc::toRef() const {
     return SceneRef(mPrimitives.begin(), mPrimitives.size(), mLights.begin(), mLights.size());

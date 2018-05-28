@@ -24,7 +24,7 @@ public:
             const MicrofactDistributionWrapper distribution{
                 TrowbridgeReitzDistribution{roughness, roughness}
             };
-            bsdf.add(MicrofacetReflection{ ks, fresnel, distribution });
+            bsdf.add(MicrofacetReflection{ks, fresnel, distribution});
         }
     }
 };

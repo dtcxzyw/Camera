@@ -17,6 +17,7 @@ using Clock = std::chrono::high_resolution_clock;
 #define STRUCT_ALIGN __align__(CACHE_ALIGN)
 #define READONLY(type) const type* __restrict__ const
 #define NOT_IMPLEMENTED() throw std::logic_error("Not implemented.")
+#define LAUNCH_BOUND __launch_bounds__
 
 struct Uncopyable {
     Uncopyable() = default;
@@ -27,7 +28,7 @@ struct Uncopyable {
     Uncopyable& operator=(Uncopyable&&) = default;
 };
 
-template<typename T>
+template <typename T>
 class Singletion {
 protected:
     Singletion() = default;
@@ -37,6 +38,7 @@ public:
     Singletion& operator=(const Singletion&) = delete;
     Singletion& operator=(Singletion&&) = delete;
     ~Singletion() = default;
+
     static T& get() {
         static T singletion;
         return singletion;
@@ -48,7 +50,7 @@ void checkError(cudaError_t error);
 void checkError();
 
 template <typename T>
-BOTH auto calcBlockSize(const T a,const T b) {
+BOTH auto calcBlockSize(const T a, const T b) {
     return (a + b - 1) / b;
 }
 

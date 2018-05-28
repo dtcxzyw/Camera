@@ -6,15 +6,15 @@
 class TextureSampler2DSpectrumWrapper final {
 private:
     enum class TextureSampler2DSpectrumClassType {
-        ConstantSampler2DSpectrum,
-        TextureMapSpectrumSampler,
-        UVSampler,
-        CheckBoardSampler,
-        PolkaDotsSampler
+        ConstantSampler2DSpectrum = 0,
+        TextureMapSpectrumSampler = 1,
+        UVSampler = 2,
+        CheckBoardSampler = 3,
+        PolkaDotsSampler = 4
     };
 
     union {
-        char unused{};
+        unsigned char unused{};
         ConstantSampler2DSpectrum dataConstantSampler2DSpectrum;
         TextureMapSpectrumSampler dataTextureMapSpectrumSampler;
         UVSampler dataUVSampler;
@@ -24,7 +24,7 @@ private:
 
     TextureSampler2DSpectrumClassType mType;
 public:
-    TextureSampler2DSpectrumWrapper(): mType(static_cast<TextureSampler2DSpectrumClassType>(15)) {};
+    TextureSampler2DSpectrumWrapper(): mType(static_cast<TextureSampler2DSpectrumClassType>(0xff)) {};
 
     explicit TextureSampler2DSpectrumWrapper(const ConstantSampler2DSpectrum& data)
         : dataConstantSampler2DSpectrum(data), mType(TextureSampler2DSpectrumClassType::ConstantSampler2DSpectrum) {}
@@ -41,13 +41,13 @@ public:
     explicit TextureSampler2DSpectrumWrapper(const PolkaDotsSampler& data)
         : dataPolkaDotsSampler(data), mType(TextureSampler2DSpectrumClassType::PolkaDotsSampler) {}
 
-    TextureSampler2DSpectrumWrapper(const TextureSampler2DSpectrumWrapper& rhs) {
+    BOTH TextureSampler2DSpectrumWrapper(const TextureSampler2DSpectrumWrapper& rhs) {
         memcpy(this, &rhs, sizeof(TextureSampler2DSpectrumWrapper));
     }
 
-    TextureSampler2DSpectrumWrapper& operator=(const TextureSampler2DSpectrumWrapper& rhs) {
+    BOTH TextureSampler2DSpectrumWrapper& operator=(const TextureSampler2DSpectrumWrapper& rhs) {
         memcpy(this, &rhs, sizeof(TextureSampler2DSpectrumWrapper));
-    return *this;
+        return *this;
     }
 
     DEVICE Spectrum sample(const TextureMapping2DInfo& info) const {

@@ -3,9 +3,9 @@
 #include <stdexcept>
 
 void debugBreak() {
-#if defined CAMERA_DEBUG && defined _WIN32
+    #if defined CAMERA_DEBUG && defined _WIN32
     __debugbreak();
-#endif
+    #endif
 }
 
 void checkError(const cudaError_t error) {

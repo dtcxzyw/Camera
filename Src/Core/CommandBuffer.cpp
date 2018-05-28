@@ -1,6 +1,7 @@
 #include <Core/CommandBuffer.hpp>
 #include <Core/DispatchSystem.hpp>
 #include <Core/Constant.hpp>
+#include <Core/Environment.hpp>
 
 namespace Impl {
 
@@ -11,8 +12,11 @@ namespace Impl {
         void gc(uint64_t id) override {
             for (auto&& p : mPool)
                 p.erase(std::remove_if(p.begin(), p.end(),
-                    [id](auto&& mem) {return mem.first == id; }), p.end());
+                    [id](auto&& mem) {
+                        return mem.first == id;
+                    }), p.end());
         }
+
         UniqueMemory alloc(const size_t size) {
             if (size == 0)return nullptr;
             const auto level = calcSizeLevel(size);
@@ -140,6 +144,10 @@ namespace Impl {
         });
     }
 
+    void setCallStackSize(const size_t size) {
+        DeviceMonitor::get().setCallStackSize(size);
+    }
+
     void KernelLaunchDim::emit(Stream& stream) {
         mClosure(stream);
     }
@@ -199,9 +207,9 @@ namespace Impl {
 }
 
 void ResourceManager::registerResource(Id id, std::unique_ptr<ResourceInstance>&& instance) {
-#ifdef CAMERA_RESOURCE_CHECK
+    #ifdef CAMERA_RESOURCE_CHECK
     mUnknownResource.erase(id);
-#endif
+    #endif
     mResources.emplace(id, std::make_pair(mOperatorCount, std::move(instance)));
 }
 
@@ -260,10 +268,10 @@ ResourceInstance& ResourceManager::getResource(const Id id) {
 }
 
 void ResourceManager::bindStream(StreamContext& stream) {
-#ifdef CAMERA_RESOUREC_CHECK
+    #ifdef CAMERA_RESOUREC_CHECK
     if (mResourceCount != mResources.size())
         throw std::logic_error("Some resources haven't been registered yet.");
-#endif
+    #endif
     for (auto&& res : mResources)
         res.second.second->bindStream(stream);
     mStream = stream.getStream().get();
@@ -284,9 +292,9 @@ void ResourceManager::gc(const Id time) {
 
 Id ResourceManager::allocResource() {
     ++mResourceCount;
-#ifdef CAMERA_RESOURCE_CHECK
+    #ifdef CAMERA_RESOURCE_CHECK
     mUnknownResource.emplace(mResourceCount);
-#endif
+    #endif
     return mResourceCount;
 }
 
@@ -318,8 +326,10 @@ void CommandBuffer::memcpy(const Span<unsigned char>& dst,
     });
 }
 
-ResourceRecycler::ResourceRecycler() :mCurrent(0) {}
+ResourceRecycler::ResourceRecycler() : mCurrent(0) {}
 
 void ResourceRecycler::gc(uint64_t) {}
-void ResourceRecycler::setCurrent(const uint64_t id) { mCurrent = id; }
 
+void ResourceRecycler::setCurrent(const uint64_t id) {
+    mCurrent = id;
+}

@@ -16,7 +16,7 @@ float PinholeCamera::toFov() const {
 
 PinholeCameraRayGenerator PinholeCamera::getRayGenerator(const vec2 imageSize) const {
     const auto scale = vec2{1.0f, -1.0f} / calcScale(imageSize);
-    return {focalLength, lensRadius, scale, 2.0f * scale / imageSize};
+    return { lensRadius,focalLength, scale, 2.0f * scale / imageSize };
 }
 
 vec2 PinholeCamera::calcScale(const vec2 imageSize) const {

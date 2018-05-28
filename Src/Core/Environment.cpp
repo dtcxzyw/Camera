@@ -161,9 +161,10 @@ Environment::~Environment() {
     resetDevice();
 }
 
-DeviceMonitor::DeviceMonitor(): mId(0), mFree(0), mTotal(1), mTick(0) {
+DeviceMonitor::DeviceMonitor() : mId(0), mFree(0), mTotal(1), mCallStackSize(1024), mTick(0) {
     checkError(cudaGetDevice(&mId));
     checkError(cudaGetDeviceProperties(&mProp, mId));
+    checkError(cudaDeviceGetLimit(&mCallStackSize, cudaLimitStackSize));
 }
 
 void DeviceMonitor::update() {
@@ -190,6 +191,13 @@ size_t DeviceMonitor::getMemoryFreeSize() const {
 
 size_t DeviceMonitor::getMemoryTotalSize() const {
     return mTotal;
+}
+
+void DeviceMonitor::setCallStackSize(const size_t size) {
+    if(mCallStackSize!=size) {
+        checkError(cudaDeviceSetLimit(cudaLimitStackSize, size));
+        mCallStackSize = size;
+    }
 }
 
 DeviceMonitor& DeviceMonitor::get() {

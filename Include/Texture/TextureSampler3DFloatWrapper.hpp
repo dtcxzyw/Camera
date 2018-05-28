@@ -5,14 +5,14 @@
 class TextureSampler3DFloatWrapper final {
 private:
     enum class TextureSampler3DFloatClassType {
-        ConstantSampler3DFloat,
-        FbmSampler,
-        TurbulenceSampler,
-        WindyWavesSampler
+        ConstantSampler3DFloat = 0,
+        FbmSampler = 1,
+        TurbulenceSampler = 2,
+        WindyWavesSampler = 3
     };
 
     union {
-        char unused{};
+        unsigned char unused{};
         ConstantSampler3DFloat dataConstantSampler3DFloat;
         FbmSampler dataFbmSampler;
         TurbulenceSampler dataTurbulenceSampler;
@@ -21,7 +21,7 @@ private:
 
     TextureSampler3DFloatClassType mType;
 public:
-    TextureSampler3DFloatWrapper(): mType(static_cast<TextureSampler3DFloatClassType>(15)) {};
+    TextureSampler3DFloatWrapper(): mType(static_cast<TextureSampler3DFloatClassType>(0xff)) {};
 
     explicit TextureSampler3DFloatWrapper(const ConstantSampler3DFloat& data)
         : dataConstantSampler3DFloat(data), mType(TextureSampler3DFloatClassType::ConstantSampler3DFloat) {}
@@ -35,13 +35,13 @@ public:
     explicit TextureSampler3DFloatWrapper(const WindyWavesSampler& data)
         : dataWindyWavesSampler(data), mType(TextureSampler3DFloatClassType::WindyWavesSampler) {}
 
-    TextureSampler3DFloatWrapper(const TextureSampler3DFloatWrapper& rhs) {
+    BOTH TextureSampler3DFloatWrapper(const TextureSampler3DFloatWrapper& rhs) {
         memcpy(this, &rhs, sizeof(TextureSampler3DFloatWrapper));
     }
 
-    TextureSampler3DFloatWrapper& operator=(const TextureSampler3DFloatWrapper& rhs) {
+    BOTH TextureSampler3DFloatWrapper& operator=(const TextureSampler3DFloatWrapper& rhs) {
         memcpy(this, &rhs, sizeof(TextureSampler3DFloatWrapper));
-    return *this;
+        return *this;
     }
 
     DEVICE float sample(const TextureMapping3DInfo& info) const {

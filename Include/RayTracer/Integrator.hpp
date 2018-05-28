@@ -8,9 +8,9 @@ class RayGeneratorWrapper;
 class FilmTile;
 class CommandBuffer;
 
-class Integrator :Uncopyable {
+class Integrator : Uncopyable {
 public:
-    virtual void render(CommandBuffer& buffer,const SceneDesc& scene, const Transform& cameraTransform,
+    virtual void render(CommandBuffer& buffer, const SceneDesc& scene, const Transform& cameraTransform,
         const RayGeneratorWrapper& rayGenerator, FilmTile& filmTile, const uvec2& offset) const = 0;
     virtual ~Integrator() = default;
 };

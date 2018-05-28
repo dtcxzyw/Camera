@@ -46,4 +46,3 @@ DEVICEINLINE float max3(const float a, const float b, const float c) {
 DEVICEINLINE float min3(const float a, const float b, const float c) {
     return fmin(a, fmin(b, c));
 }
-

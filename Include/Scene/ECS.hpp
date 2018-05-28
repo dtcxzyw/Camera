@@ -22,10 +22,11 @@ public:
         return dynamic_cast<T&>(mComponents[T::getTypeID()]);
     }
 
-    template<typename T>
+    template <typename T>
     bool hasComponent() const {
         return mComponents.count(T::getTypeID());
     }
+
     bool hasTuple(const std::vector<size_t>& tuple) const;
 };
 

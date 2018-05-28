@@ -3,20 +3,20 @@
 #include <Math/Math.hpp>
 #include <Math/EFloat.hpp>
 
-BOTH Vector faceForward(const Vector& n,const Vector& v) {
+BOTH Vector faceForward(const Vector& n, const Vector& v) {
     return glm::dot(n, v) < 0.0f ? -n : n;
 }
 
-BOTH Vector halfVector(const Vector& in,const Vector& out) {
+BOTH Vector halfVector(const Vector& in, const Vector& out) {
     return glm::normalize(in + out);
 }
 
-BOTH bool refract(const Vector& in,const Vector& normal,const float eta,Vector& out) {
+BOTH bool refract(const Vector& in, const Vector& normal, const float eta, Vector& out) {
     const auto cosThetaI = glm::dot(in, normal);
-    const auto sin2ThetaT = eta * eta*(1.0f - cosThetaI * cosThetaI);
+    const auto sin2ThetaT = eta * eta * (1.0f - cosThetaI * cosThetaI);
     if (sin2ThetaT >= 1.0f)return false;
     const auto cosThetaT = sqrt(1.0f - sin2ThetaT);
-    out = (eta*cosThetaI - cosThetaT) *normal - eta * in;
+    out = (eta * cosThetaI - cosThetaT) * normal - eta * in;
     return true;
 }
 
@@ -25,8 +25,8 @@ BOTH int maxDim(const Vector& vec) {
     return vecAbs.x > vecAbs.y ? (vecAbs.x > vecAbs.z ? 0 : 2) : (vecAbs.y > vecAbs.z ? 1 : 2);
 }
 
-BOTH Vector permute(const Vector& vec,const int x,const int y,const int z) {
-    return { vec[x],vec[y],vec[z] };
+BOTH Vector permute(const Vector& vec, const int x, const int y, const int z) {
+    return {vec[x], vec[y], vec[z]};
 }
 
 struct Point final {
@@ -112,9 +112,11 @@ public:
     BOTH explicit operator Vector() const {
         return mNormal;
     }
+
     BOTH Vector operator*(const float rhs) const {
         return mNormal * rhs;
     }
+
     BOTH Normal operator-() const;
     BOTH float operator[](const int i) const {
         return mNormal[i];
@@ -175,9 +177,10 @@ private:
     Point mMin;
     Point mMax;
 public:
-    BOTH Bounds() :mMin(Vector{ std::numeric_limits<float>::max() }), 
-        mMax(Vector{ -std::numeric_limits<float>::max() }) {}
-    BOTH explicit Bounds(const Point& pos) :mMin(pos), mMax(pos) {}
+    BOTH Bounds() : mMin(Vector{std::numeric_limits<float>::max()}),
+        mMax(Vector{-std::numeric_limits<float>::max()}) {}
+
+    BOTH explicit Bounds(const Point& pos) : mMin(pos), mMax(pos) {}
     BOTH Bounds(const Point& min, const Point& max) : mMin(min), mMax(max) {}
     BOTH Bounds operator|(const Bounds& rhs) const {
         return {min(mMin, rhs.mMin), max(mMax, rhs.mMax)};
@@ -208,10 +211,10 @@ public:
         return Point{operator[](id & 1).x, operator[](id & 2).y, operator[](id & 4).z};
     }
 
-    DEVICE bool intersect(const Ray& ray, const float tHit, const Vector& invDir, 
+    DEVICE bool intersect(const Ray& ray, const float tHit, const Vector& invDir,
         const glm::bvec3& neg) const {
         const auto& bounds = *this;
-        const auto tMin = max3((bounds[neg.x].x - ray.origin.x) * invDir.x, 
+        const auto tMin = max3((bounds[neg.x].x - ray.origin.x) * invDir.x,
             (bounds[neg.y].y - ray.origin.y) * invDir.y,
             (bounds[neg.z].z - ray.origin.z) * invDir.z);
         const auto tMax = min3((bounds[!neg.x].x - ray.origin.x) * invDir.x,

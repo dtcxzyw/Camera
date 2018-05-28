@@ -6,9 +6,9 @@
 #include <Interaction/Counter.hpp>
 
 class HWND__;
-using HWND = HWND__ * ;
+using HWND = HWND__ *;
 class HINSTANCE__;
-using HINSTANCE = HINSTANCE__ * ;
+using HINSTANCE = HINSTANCE__ *;
 
 class IDXGISwapChain;
 class ID3D11Device;
@@ -16,7 +16,7 @@ class ID3D11DeviceContext;
 class ID3D11RenderTargetView;
 class ID3D11Resource;
 
-class D3D11Window final:public Singletion<D3D11Window> {
+class D3D11Window final : public Singletion<D3D11Window> {
 private:
     HWND mHwnd;
     HINSTANCE mInstance;
@@ -42,7 +42,7 @@ private:
     cudaArray_t getBackBuffer();
 public:
     void reset(uvec2 fsiz);
-    void enumDevices(int* buf,unsigned int* count) const;
+    void enumDevices(int* buf, unsigned int* count) const;
 
     void bindBackBuffer(cudaStream_t stream);
     void unbindBackBuffer();

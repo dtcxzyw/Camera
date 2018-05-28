@@ -14,8 +14,8 @@ WhittedIntegrator::WhittedIntegrator(const SequenceGenerator2DWrapper& sequenceG
     : mSequenceGenerator(sequenceGenerator), mMaxDepth(maxDepth), mSpp(spp) {}
 
 struct RenderingContext {
-    const SequenceGenerator2DWrapper& sequenceGenerator;
-    const SceneRef& scene;
+    const SequenceGenerator2DWrapper sequenceGenerator;
+    const SceneRef scene;
     unsigned int offset;
 
     DEVICE RenderingContext(const SequenceGenerator2DWrapper& sequenceGenerator,
@@ -63,7 +63,7 @@ DEVICE Spectrum specularReflect(RenderingContext& context, const Ray& ray,
 
         return sampleF.f * Li(context, newRay, depth) * fabs(idn) / sampleF.pdf;
     }
-    return Spectrum{0.0f};
+    return Spectrum{};
 }
 
 DEVICE Spectrum specularTransmit(RenderingContext& context, const Ray& ray,
@@ -107,14 +107,12 @@ DEVICE Spectrum specularTransmit(RenderingContext& context, const Ray& ray,
 
         return sampleF.f * Li(context, newRay, depth) * fabs(idn) / sampleF.pdf;
     }
-    return Spectrum{0.0f};
+    return Spectrum{};
 }
 
 DEVICE Spectrum Li(RenderingContext& context, const Ray& ray, const unsigned int depth) {
     Interaction interaction;
     if (context.scene.intersect(ray, interaction)) {
-        printf("pixel C\n");
-        return Spectrum{};
         interaction.prepare(ray);
         Bsdf bsdf(interaction);
         interaction.material->computeScatteringFunctions(bsdf);
@@ -135,18 +133,16 @@ DEVICE Spectrum Li(RenderingContext& context, const Ray& ray, const unsigned int
         }
         return L;
     }
-    printf("pixel D\n");
-    return Spectrum{};
     Spectrum L{};
     for (auto&& light : context.scene)
         L += light->le(ray);
     return L;
 }
 
-GLOBAL void renderKernel(const RayGeneratorWrapper& rayGenerator,
-    const Transform& toWorld, const vec2 offset,
-    const SequenceGenerator2DWrapper& sequenceGenerator, const unsigned int seqOffset,
-    FilmTileRef& dst, const unsigned int maxDepth, const SceneRef& scene) {
+GLOBAL void renderKernel(const RayGeneratorWrapper rayGenerator,
+    const Transform toWorld, const vec2 offset,
+    const SequenceGenerator2DWrapper sequenceGenerator, const unsigned int seqOffset,
+    FilmTileRef& dst, const unsigned int maxDepth, const SceneRef scene) {
     const auto id = ((blockIdx.x * gridDim.y + blockIdx.y) * gridDim.z + blockIdx.z) * blockDim.x
         + threadIdx.x;
     RenderingContext context{sequenceGenerator, scene, seqOffset + (id << 5)};
@@ -156,9 +152,9 @@ GLOBAL void renderKernel(const RayGeneratorWrapper& rayGenerator,
     const auto ray = rayGenerator.sample(sample, weight);
     if (weight > 0.0f) {
         const auto L = Li(context, toWorld(ray), maxDepth);
-        return;
-        //bug
-        dst.add(tilePos, L * weight);
+        const auto rgb = L.toRGB();
+        printf("%f %f %f\n", rgb.r, rgb.g, rgb.b);
+        //dst.add(tilePos, L * weight);
     }
 }
 
@@ -166,7 +162,9 @@ void WhittedIntegrator::render(CommandBuffer& buffer, const SceneDesc& scene, co
     const RayGeneratorWrapper& rayGenerator, FilmTile& filmTile, const uvec2& offset) const {
     const unsigned int blockSize = DeviceMonitor::get().getProp().maxThreadsPerBlock;
     const auto size = filmTile.size();
-    buffer.launchKernelDim(renderKernel, dim3{size.x, size.y, calcBlockSize(mSpp, blockSize)},
-        dim3{ std::min(blockSize,mSpp) }, rayGenerator, cameraTransform, static_cast<vec2>(offset),
+    buffer.launchKernelDim(makeKernelDesc(renderKernel, 
+        (sizeof(Interaction) + sizeof(Bsdf) + sizeof(Ray)) *(mMaxDepth + 1)),
+        dim3{ size.x, size.y, calcBlockSize(mSpp, blockSize) },
+        dim3{std::min(blockSize, mSpp)}, rayGenerator, cameraTransform, static_cast<vec2>(offset),
         mSequenceGenerator, offset.x << 16 | offset.y, filmTile.toRef(), mMaxDepth, scene.toRef());
 }

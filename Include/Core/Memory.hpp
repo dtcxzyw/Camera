@@ -106,7 +106,7 @@ private:
     PinnedMemory mMemory;
     size_t mSize;
 public:
-    explicit PinnedBuffer(const size_t size) :mMemory(size * sizeof(T)), mSize(size) {}
+    explicit PinnedBuffer(const size_t size) : mMemory(size * sizeof(T)), mSize(size) {}
 
     T* begin() const noexcept {
         return reinterpret_cast<T*>(mMemory.get());
@@ -133,7 +133,7 @@ public:
     }
 };
 
-template<typename Container>
+template <typename Container>
 auto upload(const Container& data) {
     using T = typename std::decay<decltype(*std::data(data))>::type;
     MemorySpan<T> res(std::size(data));

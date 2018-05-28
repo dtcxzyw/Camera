@@ -75,7 +75,7 @@ DEVICEINLINE float cosPhi(const Vector& v) {
 }
 
 DEVICEINLINE float cos2Phi(const Vector& v) {
-    return cosPhi(v)*cosPhi(v);
+    return cosPhi(v) * cosPhi(v);
 }
 
 DEVICEINLINE float sinPhi(const Vector& v) {
@@ -84,7 +84,7 @@ DEVICEINLINE float sinPhi(const Vector& v) {
 }
 
 DEVICEINLINE float sin2Phi(const Vector& v) {
-    return sinPhi(v)*sinPhi(v);
+    return sinPhi(v) * sinPhi(v);
 }
 
 template <typename T>
@@ -106,7 +106,7 @@ struct BxDFHelper {
         auto&& self = *static_cast<const T*>(this);
         auto wi = cosineSampleHemisphere(sample);
         if (wo.z < 0.0f)wi.z = -wi.z;
-        return { wi, self.f(wo, wi),T::type, self.pdf(wo, wi) };
+        return {wi, self.f(wo, wi), T::type, self.pdf(wo, wi)};
     }
 };
 

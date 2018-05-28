@@ -1,7 +1,7 @@
 #pragma once
 #include <Core/Builtin.hpp>
 
-class SoftwareRenderer final :public Singletion<SoftwareRenderer> {
+class SoftwareRenderer final : public Singletion<SoftwareRenderer> {
     friend class Singletion<SoftwareRenderer>;
     SoftwareRenderer() = default;
     std::unique_ptr<BuiltinArray<float>> mTexture;

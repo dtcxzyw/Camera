@@ -6,15 +6,15 @@ GLOBAL void cookKernel(const unsigned int size, BuiltinRenderTargetRef<float> ds
     FilterWrapper filter, const unsigned int width) {
     const auto id = getId();
     if (id >= size)return;
-    const ivec2 pos = { id / width ,id%width };
-    dst.set(pos, filter.evaluate(static_cast<vec2>(pos) / vec2{ width,width }));
+    const ivec2 pos = {id / width, id % width};
+    dst.set(pos, filter.evaluate(static_cast<vec2>(pos) / vec2{width, width}));
 }
 
 void SampleWeightLUT::cookTable(const FilterWrapper& filter) {
     BuiltinRenderTarget<float> rt(*mArray);
     const auto size = mArray->size().x;
     auto buffer = std::make_unique<CommandBuffer>();
-    buffer->launchKernelLinear(cookKernel, size*size, rt.toRef(), filter, size);
+    buffer->launchKernelLinear(makeKernelDesc(cookKernel), size * size, rt.toRef(), filter, size);
     Environment::get().submit(std::move(buffer)).sync();
 }
 
@@ -28,7 +28,7 @@ BuiltinSamplerRef<float> SampleWeightLUT::toRef() const {
     return mSampler->toRef();
 }
 
-DEVICE FilmTileRef::FilmTileRef(Spectrum* pixel, float* weightSum, const uvec2 size,
+FilmTileRef::FilmTileRef(Spectrum* pixel, float* weightSum, const uvec2 size,
     const BuiltinSamplerRef<float>& weightLUT) : mPixel(pixel), mWeightSum(weightSum),
     mWidth(size.x + 2), mWeightLUT(weightLUT) {}
 
@@ -36,9 +36,9 @@ DEVICE void FilmTileRef::add(const vec2 pos, const Spectrum& spectrum) {
     const vec2 p = {pos.x - 0.5f, pos.y - 0.5f};
     const int x[2] = {floor(p.x), ceil(p.x)};
     const int y[2] = {floor(p.y), ceil(p.y)};
-#pragma unroll
+    #pragma unroll
     for (auto px : x)
-#pragma unroll
+    #pragma unroll
         for (auto py : y) {
             const auto weight = mWeightLUT.get({px - pos.x, py - pos.y});
             const auto id = (py + 1) * mWidth + (px + 1);
@@ -57,7 +57,7 @@ FilmTile::FilmTile(CommandBuffer& buffer, const uvec2 size, const SampleWeightLU
 
 GLOBAL void mergeTile(READONLY(Spectrum) ip, READONLY(float) iw, Spectrum* op, float* ow,
     const unsigned int widthSrc, const unsigned int widthDst, const uvec2 offset, const uvec2 size) {
-    const ivec2 p = { offset.x + threadIdx.x - 1, offset.y + threadIdx.y - 1 };
+    const ivec2 p = {offset.x + threadIdx.x - 1, offset.y + threadIdx.y - 1};
     if (0 <= p.x & p.x < size.x & 0 <= p.y & p.y <= size.y) {
         const auto idSrc = threadIdx.y * widthSrc + threadIdx.x;
         const auto idDst = p.y * widthDst + p.x;
@@ -68,7 +68,7 @@ GLOBAL void mergeTile(READONLY(Spectrum) ip, READONLY(float) iw, Spectrum* op, f
 
 void FilmTile::merge(const MemorySpan<Spectrum>& pixel, const MemorySpan<float>& weight,
     const uvec2 dstSize, const uvec2 offset) const {
-    mBuffer.launchKernelDim(mergeTile, {}, {mSize.x + 2, mSize.y + 2}, mPixel, mWeight,
+    mBuffer.launchKernelDim(makeKernelDesc(mergeTile), {}, {mSize.x + 2, mSize.y + 2}, mPixel, mWeight,
         mBuffer.useAllocated(pixel), mBuffer.useAllocated(weight), mSize.x, dstSize.x,
         offset, dstSize);
 }

@@ -73,7 +73,7 @@ inline auto calcMaxMipmapLevel(const uvec2 size) {
 template <typename T>
 void downSample(cudaArray_t src, cudaArray_t dst, uvec2 size, Stream& stream);
 
-template<typename T>
+template <typename T>
 void scaleArray(const BuiltinArray<T>& src, cudaArray_t dstArray, uvec2 dstSize,
     Stream& stream);
 
@@ -102,14 +102,14 @@ private:
 
 public:
     BuiltinMipmapedArray(const BuiltinArray<T>& src, Stream& stream,
-        const int flags = cudaArrayDefault, const unsigned int level = 0) :mLevel(level) {
+        const int flags = cudaArrayDefault, const unsigned int level = 0) : mLevel(level) {
         const auto desc = cudaCreateChannelDesc<Type>();
         const auto size = src.size();
         const auto maxLevel = calcMaxMipmapLevel(size);
         if (mLevel == 0)mLevel = maxLevel;
         else mLevel = std::min(mLevel, maxLevel);
         const auto length = glm::ceilPowerOfTwo(std::max(size.x, size.y));
-        mSize = uvec2{ length };
+        mSize = uvec2{length};
         checkError(cudaMallocMipmappedArray(&mArray, &desc,
             make_cudaExtent(length, length, 0), level, flags));
         genMipmaps(src, stream);
@@ -263,7 +263,7 @@ private:
     cudaSurfaceObject_t mTarget;
     uvec2 mSize;
 public:
-    BuiltinRenderTarget(const cudaArray_t array, const uvec2 size) : mArray(array), mTarget(0), 
+    BuiltinRenderTarget(const cudaArray_t array, const uvec2 size) : mArray(array), mTarget(0),
         mSize(size) {
         cudaResourceDesc desc;
         desc.res.array.array = mArray;
@@ -349,7 +349,7 @@ namespace Impl {
         for (auto i = 0; i < 2; ++i) {
             #pragma unroll
             for (auto j = 0; j < 2; ++j)
-                val += src.get(base + uvec2{ i, j });
+                val += src.get(base + uvec2{i, j});
         }
         rt.set(p, val * 0.25f);
     }
@@ -368,12 +368,12 @@ void downSample(cudaArray_t srcArray, cudaArray_t dstArray, uvec2 size, Stream& 
 namespace Impl {
     template <typename T>
     GLOBAL void upSample(BuiltinSamplerRef<T> src, BuiltinRenderTargetRef<T> rt, vec2 mul) {
-        uvec2 p{ blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y };
-        rt.set(p, src.get(vec2(p)*mul));
+        uvec2 p{blockIdx.x * blockDim.x + threadIdx.x, blockIdx.y * blockDim.y + threadIdx.y};
+        rt.set(p, src.get(vec2(p) * mul));
     }
 }
 
-template<typename T>
+template <typename T>
 void scaleArray(const BuiltinArray<T>& srcArray, cudaArray_t dstArray, const uvec2 dstSize,
     Stream& stream) {
     BuiltinSampler<T> src(srcArray.get());

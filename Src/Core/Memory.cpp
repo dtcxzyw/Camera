@@ -107,7 +107,7 @@ public:
     void gc() {
         auto x = 0;
         for (auto i = 1; i <= 40; ++i)
-            if (!mPool[i].empty() && 
+            if (!mPool[i].empty() &&
                 (mPool[x].empty() || mLastRequireTimeStamp[i] < mLastRequireTimeStamp[x]))
                 x = i;
         if (!mPool[x].empty() && mTimeCount - mLastRequireTimeStamp[x] > timeBlock)
@@ -145,7 +145,7 @@ static MemoryPool<Api>& getMemoryPool() {
     return pool;
 }
 
-void gc(){
+void gc() {
     getMemoryPool<GlobalMemoryApi>().gc();
     getMemoryPool<PinnedMemoryApi>().gc();
 }

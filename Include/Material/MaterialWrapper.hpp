@@ -6,13 +6,13 @@
 class MaterialWrapper final {
 private:
     enum class MaterialClassType {
-        Glass,
-        Metal,
-        Plastic
+        Glass = 0,
+        Metal = 1,
+        Plastic = 2
     };
 
     union {
-        char unused{};
+        unsigned char unused{};
         Glass dataGlass;
         Metal dataMetal;
         Plastic dataPlastic;
@@ -20,7 +20,7 @@ private:
 
     MaterialClassType mType;
 public:
-    MaterialWrapper(): mType(static_cast<MaterialClassType>(15)) {};
+    MaterialWrapper(): mType(static_cast<MaterialClassType>(0xff)) {};
 
     explicit MaterialWrapper(const Glass& data)
         : dataGlass(data), mType(MaterialClassType::Glass) {}
@@ -31,13 +31,13 @@ public:
     explicit MaterialWrapper(const Plastic& data)
         : dataPlastic(data), mType(MaterialClassType::Plastic) {}
 
-    MaterialWrapper(const MaterialWrapper& rhs) {
+    BOTH MaterialWrapper(const MaterialWrapper& rhs) {
         memcpy(this, &rhs, sizeof(MaterialWrapper));
     }
 
-    MaterialWrapper& operator=(const MaterialWrapper& rhs) {
+    BOTH MaterialWrapper& operator=(const MaterialWrapper& rhs) {
         memcpy(this, &rhs, sizeof(MaterialWrapper));
-    return *this;
+        return *this;
     }
 
     DEVICE void computeScatteringFunctions(Bsdf& bsdf, const TransportMode mode = TransportMode::Radiance) const {

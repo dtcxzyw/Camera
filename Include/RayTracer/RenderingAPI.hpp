@@ -10,5 +10,5 @@ class RayGeneratorWrapper;
 class SampleWeightLUT;
 
 MemorySpan<Spectrum> renderFrame(Integrator& integrator,
-    const SceneDesc& scene,const Transform& cameraTransform,
+    const SceneDesc& scene, const Transform& cameraTransform,
     const RayGeneratorWrapper& rayGenerator, const SampleWeightLUT& weightLUT, uvec2 size);

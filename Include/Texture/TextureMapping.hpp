@@ -18,7 +18,8 @@ class UVMapping final : TextureMapping2D {
 private:
     vec2 mScale, mOffset;
 public:
-    UVMapping(const vec2 scale, const vec2 offset) : mScale(scale), mOffset(offset) {}
+    explicit UVMapping(const vec2 scale = { 1.0f,1.0f }, const vec2 offset = { 0.0f,0.0f })
+        : mScale(scale), mOffset(offset) {}
     DEVICE TextureMapping2DInfo map(const Interaction& interaction) const {
         return {interaction.uv * mScale + mOffset, interaction.duvdx * mScale, interaction.duvdy * mScale};
     }
@@ -94,7 +95,7 @@ public:
     }
 };
 
-class TextureMapping3D{
+class TextureMapping3D {
 private:
     Transform mTransform;
 public:

@@ -20,7 +20,7 @@ DEVICEINLINE bool polkaDots(const vec2 uv, const float radius) {
 }
 
 DEVICEINLINE float calcOctavesAntiAliased(const Vector dpdx, const Vector dpdy) {
-    return fmax(0.0f, -1.0f - 0.5f*log2(fmax(length2(dpdx), length2(dpdy))));
+    return fmax(0.0f, -1.0f - 0.5f * log2(fmax(length2(dpdx), length2(dpdy))));
 }
 
 DEVICEINLINE float fbm(const Vector p, const float omega, const float octaves) {
@@ -53,7 +53,7 @@ DEVICEINLINE float turbulence(const Vector p, const float omega, const float oct
 
 DEVICEINLINE float windyWaves(const Vector p, float octaves) {
     octaves = fmin(6.0f, octaves);
-    return fabs(fbm(0.1f * p, 0.5f, 0.5f*octaves)) * fbm(p, 0.5f, octaves);
+    return fabs(fbm(0.1f * p, 0.5f, 0.5f * octaves)) * fbm(p, 0.5f, octaves);
 }
 
 DEVICEINLINE RGBSpectrum marble(const Vector p, const float var, const float omega, const float octaves) {
@@ -74,7 +74,9 @@ DEVICEINLINE RGBSpectrum marble(const Vector p, const float var, const float ome
     const int beg = std::floor(t * scale);
     t = t * scale - beg;
     #define CONSTRUCT(x) Vector(x[0],x[1],x[2])
-    return RGBSpectrum{ glm::catmullRom(CONSTRUCT(c[beg]), CONSTRUCT(c[beg + 1]),
-        CONSTRUCT(c[beg + 2]), CONSTRUCT(c[beg + 3]), t) };
+    return RGBSpectrum{
+        glm::catmullRom(CONSTRUCT(c[beg]), CONSTRUCT(c[beg + 1]),
+            CONSTRUCT(c[beg + 2]), CONSTRUCT(c[beg + 3]), t)
+    };
     #undef CONSTRUCT
 }

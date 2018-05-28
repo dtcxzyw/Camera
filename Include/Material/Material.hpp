@@ -58,9 +58,9 @@ public:
         mEta = eta;
     }
 
-    template<typename BxDF>
+    template <typename BxDF>
     DEVICE void add(const BxDF& bxDF) {
-        mBxDF[mCount++] = BxDFWrapper{ bxDF };
+        mBxDF[mCount++] = BxDFWrapper{bxDF};
     }
 
     DEVICE unsigned int match(const BxDFType type) const {

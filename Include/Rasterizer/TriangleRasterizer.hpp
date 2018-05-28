@@ -317,28 +317,28 @@ GLOBAL void renderTrianglesKernel(unsigned int* offset, Triangle<Out>* tri, Tile
         samplePoint);
 }
 
-template<typename Uniform>
+template <typename Uniform>
 using TriangleTileClipShader = bool(*)(const uvec4& rect, const Uniform& uniform);
 
-template<typename Uniform>
+template <typename Uniform>
 DEVICEINLINE bool emptyTriangleTileClipShader(const uvec4&, const Uniform&) {
     return true;
 }
 
-DEVICEINLINE bool intersect(const mat3& w0,const vec4& rect) {
+DEVICEINLINE bool intersect(const mat3& w0, const vec4& rect) {
     const auto test = [&rect](const Vector w) {
-        return fmax(rect.x*w.x, rect.y*w.x) + fmax(rect.z*w.y, rect.w*w.y) + w.z >= 0.0;
+        return fmax(rect.x * w.x, rect.y * w.x) + fmax(rect.z * w.y, rect.w * w.y) + w.z >= 0.0;
     };
     return test(w0[0]) & test(w0[1]) & test(w0[2]);
 }
 
-template<typename Out,typename Uniform,TriangleTileClipShader<Uniform> Func>
-DEVICEINLINE bool triangleTileClipShader(const TileRef& ref,const Uniform& uni,
+template <typename Out, typename Uniform, TriangleTileClipShader<Uniform> Func>
+DEVICEINLINE bool triangleTileClipShader(const TileRef& ref, const Uniform& uni,
     READONLY(Triangle<Out>) data) {
-    return intersect(data[ref.id].w,ref.rect) && Func(ref.rect,uni);
+    return intersect(data[ref.id].w, ref.rect) && Func(ref.rect, uni);
 }
 
-template<typename Out>
+template <typename Out>
 struct CachedTriangleProcessingResult final {
     MemorySpan<unsigned int> cnt;
     MemorySpan<Triangle<Out>> info;
@@ -346,19 +346,20 @@ struct CachedTriangleProcessingResult final {
     unsigned int maxSize;
 };
 
-template<typename Out>
+template <typename Out>
 struct TriangleProcessingResult final {
     Span<unsigned int> cnt;
     Span<Triangle<Out>> info;
     Span<TileRef> idx;
     unsigned int maxSize;
     bool useCache;
+
     TriangleProcessingResult(const Span<unsigned int>& cnt, const Span<Triangle<Out>>& info,
-        const Span<TileRef>& idx, const unsigned int maxSize,const bool useCache) 
+        const Span<TileRef>& idx, const unsigned int maxSize, const bool useCache)
         : cnt(cnt), info(info), idx(idx), maxSize(maxSize), useCache(useCache) {}
 };
 
-template<typename Out, typename Judge = EmptyJudge>
+template <typename Out, typename Judge = EmptyJudge>
 struct TriangleRenderingContext final : Uncopyable {
     unsigned int baseSize, renderCount;
     PinnedBuffer<unsigned int> triNum;
@@ -366,7 +367,7 @@ struct TriangleRenderingContext final : Uncopyable {
 
     using JudgeType = And<EqualComparer<vec4>, Judge>;
     SharedCacheHolder<std::shared_ptr<CachedTriangleProcessingResult<Out>>, JudgeType>
-        processCache;
+    processCache;
     bool enableCache;
 
     TriangleRenderingContext() : baseSize(0), renderCount(0), triNum(1),
@@ -393,13 +394,13 @@ auto processTriangles(CommandBuffer& buffer,
     const vec4& scissor, const CullFace mode, TriangleRenderingContext<Out, Judge>& context,
     const Judge& judge, const size_t psiz) {
     using namespace std::chrono_literals;
-    using Result= TriangleProcessingResult<Out>;
+    using Result = TriangleProcessingResult<Out>;
     using CacheType = CachedTriangleProcessingResult<Out>;
     using JudgeType = typename TriangleRenderingContext<Out, Judge>::JudgeType;
     using CacheRefType = CacheRef<std::shared_ptr<CacheType>, JudgeType>;
     const auto mergedJudge = makeEqualComparer(scissor) && judge;
     CacheRefType ref;
-    if (context.enableCache)ref = CacheRefType{ context.processCache, mergedJudge };
+    if (context.enableCache)ref = CacheRefType{context.processCache, mergedJudge};
     else context.processCache.reset();
     if (ref && ref.vaild()) {
         auto val = ref.getValue();
@@ -410,14 +411,14 @@ auto processTriangles(CommandBuffer& buffer,
     if (context.enableCache) {
         newCache = std::shared_ptr<CacheType>(new CacheType, [&context, mergedJudge]
         (CacheType* ptr) {
-            context.processCache = std::make_shared<CachedValueHolder<std::shared_ptr<CacheType>,
-                JudgeType>>(std::shared_ptr<CacheType>(ptr), mergedJudge);
-        });
+                context.processCache = std::make_shared<CachedValueHolder<std::shared_ptr<CacheType>,
+                    JudgeType>>(std::shared_ptr<CacheType>(ptr), mergedJudge);
+            });
     }
     MemoryReleaseFunction func;
     if (context.enableCache) {
         func = [=](UniqueMemory memory, size_t memSize) {
-            newCache->cnt = MemorySpan<unsigned int>{ std::move(memory), memSize };
+            newCache->cnt = MemorySpan<unsigned int>{std::move(memory), memSize};
         };
     }
     //5+ext+cnt=7
@@ -425,20 +426,21 @@ auto processTriangles(CommandBuffer& buffer,
     buffer.memset(cnt);
     if (context.enableCache) {
         func = [=](UniqueMemory memory, size_t memSize) {
-            newCache->info = MemorySpan<Triangle<Out>>{ std::move(memory), memSize };
+            newCache->info = MemorySpan<Triangle<Out>>{std::move(memory), memSize};
         };
     }
     auto info = buffer.allocBuffer<Triangle<Out>>(psiz, std::move(func));
     if (context.enableCache) {
         func = [=](UniqueMemory memory, size_t memSize) {
-            newCache->idx = MemorySpan<TileRef>{ std::move(memory), memSize };
+            newCache->idx = MemorySpan<TileRef>{std::move(memory), memSize};
         };
     }
     auto idx = buffer.allocBuffer<TileRef>(psiz, std::move(func));
     const auto hfsize = static_cast<vec2>(size) * 0.5f;
     const unsigned int maxSize = std::min(info.maxSize(), idx.maxSize());
     if (context.enableCache)newCache->maxSize = maxSize;
-    buffer.launchKernelLinear(processTrianglesKernel<IndexDesc::IndexType, Out, Uniform, ClipShader>,
+    buffer.launchKernelLinear(
+        makeKernelDesc(processTrianglesKernel<IndexDesc::IndexType, Out, Uniform, ClipShader>),
         index.size(), vert, index.get(), uniform, near, far,
         buffer.makeLazyConstructor<TriangleProcessingArgs<Out>>(cnt, info, idx, scissor, hfsize,
             static_cast<int>(mode), maxSize));
@@ -446,11 +448,11 @@ auto processTriangles(CommandBuffer& buffer,
 }
 
 template <typename IndexDesc, typename Out, typename Uniform, typename FrameBuffer,
-    TriangleClipShader<Uniform> ClipShader,TriangleTileClipShader<Uniform> TileClipShader, 
+    TriangleClipShader<Uniform> ClipShader, TriangleTileClipShader<Uniform> TileClipShader,
     typename Judge, FragmentShader<Out, Uniform, FrameBuffer>... FragShader>
 void renderTriangles(CommandBuffer& buffer, const Span<VertexInfo<Out>>& vert,
     const IndexDesc& index, const Span<Uniform>& uniform, const Span<FrameBuffer>& frameBuffer,
-    const uvec2 size, const float near, const float far,vec4 scissor,
+    const uvec2 size, const float near, const float far, vec4 scissor,
     TriangleRenderingContext<Out, Judge>& context, const Judge& judge = {},
     const CullFace mode = CullFace::Back, const vec2 samplePoint = {0.5f, 0.5f}) {
     ++context.renderCount;
@@ -465,10 +467,10 @@ void renderTriangles(CommandBuffer& buffer, const Span<VertexInfo<Out>>& vert,
     auto res = processTriangles<IndexDesc, Out, Uniform, ClipShader, Judge>(buffer, vert, index,
         uniform, size, near, far, scissor, mode, context, judge, psiz);
     //pass 2:sort triangles
-    auto sortedTri = sortTiles<Uniform, Triangle<Out>, 
-        triangleTileClipShader<Out, Uniform, TileClipShader>>(buffer, res.cnt, res.idx, 
-            res.maxSize * 2, res.maxSize, uniform, res.info);
-    if ((context.renderCount & 31) == 0 && !res.useCache && 
+    auto sortedTri = sortTiles<Uniform, Triangle<Out>,
+        triangleTileClipShader<Out, Uniform, TileClipShader>>(buffer, res.cnt, res.idx,
+        res.maxSize * 2, res.maxSize, uniform, res.info);
+    if ((context.renderCount & 31) == 0 && !res.useCache &&
         context.enableSelfAdaptiveAllocation) {
         const LaunchSize triNumData(res.cnt.subSpan(6));
         triNumData.download(*context.triNum, buffer);
@@ -476,7 +478,8 @@ void renderTriangles(CommandBuffer& buffer, const Span<VertexInfo<Out>>& vert,
 
     //pass 3:render triangles
     const auto invnf = 1.0f / (far - near);
-    buffer.callKernel(renderTrianglesKernel<Out, Uniform, FrameBuffer, FragShader...>, 
-        sortedTri.cnt, res.info, sortedTri.array, uniform, frameBuffer, near, invnf, 
+    buffer.callKernel(
+        makeKernelDesc(renderTrianglesKernel<Out, Uniform, FrameBuffer, FragShader...>),
+        sortedTri.cnt, res.info, sortedTri.array, uniform, frameBuffer, near, invnf,
         samplePoint);
 }

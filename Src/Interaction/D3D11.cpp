@@ -10,92 +10,90 @@
 #include <Core/CompileEnd.hpp>
 #include <stdexcept>
 
-static LRESULT setEvent(HWND hwnd, const UINT msg, const WPARAM wParam, 
+static LRESULT setEvent(HWND hwnd, const UINT msg, const WPARAM wParam,
     const LPARAM lParam) {
     auto&& io = ImGui::GetIO();
 
-    const auto isAnyMouseButtonDown=[&io]{
+    const auto isAnyMouseButtonDown = [&io] {
         for (auto&& x : io.MouseDown)
             if (x)return true;
         return false;
     };
 
     switch (msg) {
-    case WM_LBUTTONDOWN:
-    case WM_RBUTTONDOWN:
-    case WM_MBUTTONDOWN:
-    {
-        auto button = 0;
-        if (msg == WM_LBUTTONDOWN) button = 0;
-        if (msg == WM_RBUTTONDOWN) button = 1;
-        if (msg == WM_MBUTTONDOWN) button = 2;
-        if (!isAnyMouseButtonDown() && GetCapture() == nullptr)SetCapture(hwnd);
-        io.MouseDown[button] = true;
-        return 0;
-    }
-    case WM_LBUTTONUP:
-    case WM_RBUTTONUP:
-    case WM_MBUTTONUP:
-    {
-        auto button = 0;
-        if (msg == WM_LBUTTONUP) button = 0;
-        if (msg == WM_RBUTTONUP) button = 1;
-        if (msg == WM_MBUTTONUP) button = 2;
-        io.MouseDown[button] = false;
-        if (!isAnyMouseButtonDown() && GetCapture() == hwnd)
-            ReleaseCapture();
-        break;
-    }
-    case WM_MOUSEWHEEL:
-        io.MouseWheel += GET_WHEEL_DELTA_WPARAM(wParam) > 0 ? +1.0f : -1.0f;
-        break;
-    case WM_MOUSEMOVE:
-        io.MousePos.x = static_cast<signed short>(lParam);
-        io.MousePos.y = static_cast<signed short>(lParam >> 16);
-        break;
-    case WM_KEYDOWN:
-    case WM_SYSKEYDOWN:
-        if (wParam < 256)
-            io.KeysDown[wParam] = true;
-        break;
-    case WM_KEYUP:
-    case WM_SYSKEYUP:
-        if (wParam < 256)
-            io.KeysDown[wParam] = false;
-        break;
-    case WM_CHAR:
-        if (wParam > 0 && wParam < 0x10000)
-            io.AddInputCharacter(static_cast<unsigned short>(wParam));
-        break;
+        case WM_LBUTTONDOWN:
+        case WM_RBUTTONDOWN:
+        case WM_MBUTTONDOWN: {
+            auto button = 0;
+            if (msg == WM_LBUTTONDOWN) button = 0;
+            if (msg == WM_RBUTTONDOWN) button = 1;
+            if (msg == WM_MBUTTONDOWN) button = 2;
+            if (!isAnyMouseButtonDown() && GetCapture() == nullptr)SetCapture(hwnd);
+            io.MouseDown[button] = true;
+            return 0;
+        }
+        case WM_LBUTTONUP:
+        case WM_RBUTTONUP:
+        case WM_MBUTTONUP: {
+            auto button = 0;
+            if (msg == WM_LBUTTONUP) button = 0;
+            if (msg == WM_RBUTTONUP) button = 1;
+            if (msg == WM_MBUTTONUP) button = 2;
+            io.MouseDown[button] = false;
+            if (!isAnyMouseButtonDown() && GetCapture() == hwnd)
+                ReleaseCapture();
+            break;
+        }
+        case WM_MOUSEWHEEL:
+            io.MouseWheel += GET_WHEEL_DELTA_WPARAM(wParam) > 0 ? +1.0f : -1.0f;
+            break;
+        case WM_MOUSEMOVE:
+            io.MousePos.x = static_cast<signed short>(lParam);
+            io.MousePos.y = static_cast<signed short>(lParam >> 16);
+            break;
+        case WM_KEYDOWN:
+        case WM_SYSKEYDOWN:
+            if (wParam < 256)
+                io.KeysDown[wParam] = true;
+            break;
+        case WM_KEYUP:
+        case WM_SYSKEYUP:
+            if (wParam < 256)
+                io.KeysDown[wParam] = false;
+            break;
+        case WM_CHAR:
+            if (wParam > 0 && wParam < 0x10000)
+                io.AddInputCharacter(static_cast<unsigned short>(wParam));
+            break;
         default: break;
     }
     return 0;
 }
 
-static LRESULT WINAPI wndProc(HWND hwnd, const UINT msg, const WPARAM wParam, 
+static LRESULT WINAPI wndProc(HWND hwnd, const UINT msg, const WPARAM wParam,
     const LPARAM lParam) {
     if (setEvent(hwnd, msg, wParam, lParam))return true;
 
     switch (msg) {
-    case WM_SIZE:
-        if (wParam != SIZE_MINIMIZED) {
-            D3D11Window::get().reset({LOWORD(lParam),HIWORD(lParam)});
-        }
-        return 0;
-    case WM_SYSCOMMAND:
-        if ((wParam & 0xfff0) == SC_KEYMENU)
+        case WM_SIZE:
+            if (wParam != SIZE_MINIMIZED) {
+                D3D11Window::get().reset({LOWORD(lParam),HIWORD(lParam)});
+            }
             return 0;
-        break;
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        return 0;
-    default: ;
+        case WM_SYSCOMMAND:
+            if ((wParam & 0xfff0) == SC_KEYMENU)
+                return 0;
+            break;
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            return 0;
+        default: ;
     }
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
 static void checkResult(const HRESULT res) {
-    if (res != S_OK){
+    if (res != S_OK) {
         char buf[1024];
         FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM,
             nullptr,
@@ -137,19 +135,19 @@ D3D11Window::D3D11Window() : mHwnd(nullptr), mInstance(nullptr), mSwapChain(null
     sd.Windowed = true;
     sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
-#ifdef CAMERA_D3D11_ENABLE_DEBUG_LAYER
+    #ifdef CAMERA_D3D11_ENABLE_DEBUG_LAYER
     constexpr auto flag = D3D11_CREATE_DEVICE_DEBUG;
-#else
+    #else
     constexpr auto flag = 0;
-#endif
+    #endif
 
     D3D_FEATURE_LEVEL level;
     const D3D_FEATURE_LEVEL featureLevelArray[] = {D3D_FEATURE_LEVEL_11_1};
     checkResult(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flag,
-                                      featureLevelArray,std::extent_v<decltype(featureLevelArray)>, 
-                                      D3D11_SDK_VERSION, &sd, &mSwapChain, &mDevice,
-                                      &level, &mDeviceContext));
-    
+        featureLevelArray, std::extent_v<decltype(featureLevelArray)>,
+        D3D11_SDK_VERSION, &sd, &mSwapChain, &mDevice,
+        &level, &mDeviceContext));
+
     mDevice->SetExceptionMode(D3D11_RAISE_FLAG_DRIVER_INTERNAL_ERROR);
 
     createRTV();
@@ -184,7 +182,7 @@ void D3D11Window::createRTV() {
 
     ID3D11Texture2D* texture;
     checkResult(mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D),
-                                      reinterpret_cast<void**>(&texture)));
+        reinterpret_cast<void**>(&texture)));
     D3D11_RENDER_TARGET_VIEW_DESC RTVD;
     ZeroMemory(&RTVD, sizeof(RTVD));
     RTVD.Format = sd.BufferDesc.Format;
@@ -200,7 +198,7 @@ void D3D11Window::cleanRTV() {
         if (mFrameBuffer) {
             if (mRes) {
                 mArray = nullptr;
-                if(mStream)checkError(cudaGraphicsUnmapResources(1, &mRes, mStream));
+                if (mStream)checkError(cudaGraphicsUnmapResources(1, &mRes, mStream));
                 checkError(cudaGraphicsUnregisterResource(mRes));
                 mRes = nullptr;
             }
@@ -220,7 +218,7 @@ void D3D11Window::reset(const uvec2 fsiz) {
     }
 }
 
-void D3D11Window::enumDevices(int* buf,unsigned int* count) const {
+void D3D11Window::enumDevices(int* buf, unsigned int* count) const {
     checkError(cudaD3D11GetDevices(count, buf, 256,
         mDevice, cudaD3D11DeviceListAll));
 }
@@ -263,17 +261,17 @@ void D3D11Window::present(cudaArray_t image) {
 }
 
 cudaArray_t D3D11Window::getBackBuffer() {
-    if(mRes==nullptr) {
+    if (mRes == nullptr) {
         checkError(cudaGraphicsD3D11RegisterResource(&mRes,
-                mFrameBuffer, cudaGraphicsRegisterFlagsNone));
-        checkError(cudaGraphicsResourceSetMapFlags(mRes,cudaGraphicsMapFlagsWriteDiscard));
+            mFrameBuffer, cudaGraphicsRegisterFlagsNone));
+        checkError(cudaGraphicsResourceSetMapFlags(mRes, cudaGraphicsMapFlagsWriteDiscard));
         checkError(cudaGraphicsMapResources(1, &mRes, mStream));
     }
-    if (mArray == nullptr) 
-        checkError(cudaGraphicsSubResourceGetMappedArray(&mArray,mRes, 0, 0));
+    if (mArray == nullptr)
+        checkError(cudaGraphicsSubResourceGetMappedArray(&mArray, mRes, 0, 0));
     return mArray;
 }
- 
+
 void D3D11Window::setVSync(const bool enable) {
     mEnableVSync = enable;
 }
@@ -322,7 +320,7 @@ void D3D11Window::newFrame() {
     io.KeySuper = false;
 
     if (io.WantMoveMouse) {
-        POINT pos = {static_cast<LONG>(io.MousePos.x),static_cast<LONG>(io.MousePos.y) };
+        POINT pos = {static_cast<LONG>(io.MousePos.x), static_cast<LONG>(io.MousePos.y)};
         ClientToScreen(mHwnd, &pos);
         SetCursorPos(pos.x, pos.y);
     }

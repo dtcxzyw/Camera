@@ -20,4 +20,3 @@ struct StaticMeshData final {
     MemorySpan<uvec3> index;
     StaticMeshData(const StaticMesh& data, Stream& loader);
 };
-

@@ -184,5 +184,5 @@ void kernel(const StaticMeshData& model, RenderingContext& mc,
     });
     renderFullScreen<PostUniform, BuiltinRenderTargetRef<RGBA8>, post>(buffer, puni,
         fbo.postRT->toRef(), fbo.size);
-    buffer.callKernel(updateLum, punidata);
+    buffer.callKernel(makeKernelDesc(updateLum), punidata);
 }

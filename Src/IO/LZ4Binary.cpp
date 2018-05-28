@@ -8,7 +8,7 @@ std::vector<char> loadLZ4(const std::string& path) {
     std::ifstream in(path, std::ios::binary);
     if (in) {
         in.seekg(0, std::ios::end);
-        const auto siz =static_cast<uint64_t>(in.tellg()) - sizeof(uint64_t);
+        const auto siz = static_cast<uint64_t>(in.tellg()) - sizeof(uint64_t);
         in.seekg(0);
         std::vector<char> data(siz);
         uint64_t srcSize;
@@ -22,12 +22,12 @@ std::vector<char> loadLZ4(const std::string& path) {
 }
 
 void saveLZ4(const std::string& path, const std::vector<char>& data) {
-    std::ofstream out(path,std::ios::binary);
-    if(out) {
+    std::ofstream out(path, std::ios::binary);
+    if (out) {
         const uint64_t srcSize = data.size();
-        out.write(reinterpret_cast<const char*>(&srcSize),sizeof(uint64_t));
+        out.write(reinterpret_cast<const char*>(&srcSize), sizeof(uint64_t));
         std::vector<char> res(LZ4_compressBound(static_cast<int>(data.size())));
-        const auto dstSize = LZ4_compress_default(data.data(), res.data(), 
+        const auto dstSize = LZ4_compress_default(data.data(), res.data(),
             static_cast<int>(srcSize), static_cast<int>(res.size()));
         out.write(res.data(), dstSize);
     }

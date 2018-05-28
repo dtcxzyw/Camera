@@ -4,14 +4,14 @@
 class TextureMapping2DWrapper final {
 private:
     enum class TextureMapping2DClassType {
-        UVMapping,
-        SphericalMapping,
-        CylindricalMapping,
-        PlanarMapping
+        UVMapping = 0,
+        SphericalMapping = 1,
+        CylindricalMapping = 2,
+        PlanarMapping = 3
     };
 
     union {
-        char unused{};
+        unsigned char unused{};
         UVMapping dataUVMapping;
         SphericalMapping dataSphericalMapping;
         CylindricalMapping dataCylindricalMapping;
@@ -20,7 +20,7 @@ private:
 
     TextureMapping2DClassType mType;
 public:
-    TextureMapping2DWrapper(): mType(static_cast<TextureMapping2DClassType>(15)) {};
+    TextureMapping2DWrapper(): mType(static_cast<TextureMapping2DClassType>(0xff)) {};
 
     explicit TextureMapping2DWrapper(const UVMapping& data)
         : dataUVMapping(data), mType(TextureMapping2DClassType::UVMapping) {}
@@ -34,13 +34,13 @@ public:
     explicit TextureMapping2DWrapper(const PlanarMapping& data)
         : dataPlanarMapping(data), mType(TextureMapping2DClassType::PlanarMapping) {}
 
-    TextureMapping2DWrapper(const TextureMapping2DWrapper& rhs) {
+    BOTH TextureMapping2DWrapper(const TextureMapping2DWrapper& rhs) {
         memcpy(this, &rhs, sizeof(TextureMapping2DWrapper));
     }
 
-    TextureMapping2DWrapper& operator=(const TextureMapping2DWrapper& rhs) {
+    BOTH TextureMapping2DWrapper& operator=(const TextureMapping2DWrapper& rhs) {
         memcpy(this, &rhs, sizeof(TextureMapping2DWrapper));
-    return *this;
+        return *this;
     }
 
     DEVICE TextureMapping2DInfo map(const Interaction& interaction) const {

@@ -10,4 +10,3 @@ public:
     //return time elapsed, in seconds
     float record();
 };
-

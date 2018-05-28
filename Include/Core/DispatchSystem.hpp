@@ -8,6 +8,7 @@ class CommandBuffer;
 class ResourceRecycler;
 class ResourceManager;
 class StreamContext;
+
 namespace Impl {
     class Operator;
 }
@@ -46,7 +47,7 @@ public:
 
 namespace moodycamel {
     struct ConcurrentQueueDefaultTraits;
-    template<typename T, typename Traits = ConcurrentQueueDefaultTraits>
+    template <typename T, typename Traits = ConcurrentQueueDefaultTraits>
     class ConcurrentQueue;
 }
 
@@ -68,7 +69,7 @@ class StreamContext final : Uncopyable {
 private:
     Stream mStream;
     std::unique_ptr<Task> mTask;
-    std::vector<std::pair<uint64_t,std::unique_ptr<Task>>> mPool;
+    std::vector<std::pair<uint64_t, std::unique_ptr<Task>>> mPool;
     std::map<size_t, std::unique_ptr<ResourceRecycler>> mRecyclers;
     Clock::time_point mLast;
     uint64_t mTaskCount;
@@ -76,6 +77,7 @@ private:
 public:
     StreamContext();
     ~StreamContext();
+
     template <typename Recycler>
     Recycler& getRecycler() {
         const auto tid = typeid(Recycler).hash_code();
@@ -87,6 +89,7 @@ public:
         }
         return dynamic_cast<Recycler&>(*it->second);
     }
+
     bool free() const;
     void set(CommandBufferQueue::UnboundTask&& task);
     Stream& getStream();

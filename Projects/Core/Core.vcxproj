@@ -115,6 +115,8 @@
     <ClCompile Include="..\..\Src\IO\Model.cpp" />
     <CudaCompile Include="..\..\Src\RayTracer\Integrators\Whitted.cu">
       <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>
     </CudaCompile>
     <CudaCompile Include="..\..\Src\RayTracer\Film.cu">
       <FileType>Document</FileType>
@@ -137,12 +139,10 @@
     <CudaCompile Include="..\..\Src\RayTracer\Triangle.cu" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\Src\IO\Image.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Tools\WrapperGen\WrapperGen.vcxproj">
-      <Project>{61535f1d-a3ca-4fd2-84c6-fc147bc4bd29}</Project>
-    </ProjectReference>
+    <CudaCompile Include="..\..\Src\IO\Image.cu">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>
+    </CudaCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5F1E8A1F-D76A-422B-931E-A9A3CB901342}</ProjectGuid>
@@ -181,12 +181,22 @@
     <OutDir>$(SolutionDir)Bin\</OutDir>
     <TargetName>$(ProjectName)</TargetName>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
+    <CustomBuildBeforeTargets>
+    </CustomBuildBeforeTargets>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)Include;$(SolutionDir)ThirdParty;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)Bin\</OutDir>
     <TargetName>$(ProjectName)</TargetName>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
+    <CustomBuildBeforeTargets>
+    </CustomBuildBeforeTargets>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -239,7 +249,7 @@
       <GPUDebugInfo>true</GPUDebugInfo>
       <GenerateLineInfo>true</GenerateLineInfo>
       <Emulation>false</Emulation>
-      <HostDebugInfo>false</HostDebugInfo>
+      <HostDebugInfo>true</HostDebugInfo>
       <Runtime>MDd</Runtime>
     </CudaCompile>
     <CudaLink>
@@ -253,6 +263,24 @@
       <AdditionalLibraryDirectories>$(SolutionDir)Bin;$(CUDA_PATH)\lib\x64;$(SolutionDir)ThirdParty\Libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>assimp.lib;glfw3.lib;opengl32.lib;glew32.lib;cudart.lib;cudadevrt.lib;d3d11.lib;imgui.lib;lz4.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+    </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>
+      </Message>
+      <Outputs>%(Outputs)</Outputs>
+      <TreatOutputAsContent>false</TreatOutputAsContent>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -320,6 +348,24 @@
     <Lib>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin;$(CUDA_PATH)\lib\x64;$(SolutionDir)ThirdParty\Libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+    </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>
+      </Message>
+      <Outputs>%(Outputs)</Outputs>
+      <TreatOutputAsContent>false</TreatOutputAsContent>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

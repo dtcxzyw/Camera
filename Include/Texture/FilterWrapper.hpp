@@ -4,14 +4,14 @@
 class FilterWrapper final {
 private:
     enum class FilterClassType {
-        BoxFilter,
-        TriangleFilter,
-        GaussianFilter,
-        LanczosSincFilter
+        BoxFilter = 0,
+        TriangleFilter = 1,
+        GaussianFilter = 2,
+        LanczosSincFilter = 3
     };
 
     union {
-        char unused{};
+        unsigned char unused{};
         BoxFilter dataBoxFilter;
         TriangleFilter dataTriangleFilter;
         GaussianFilter dataGaussianFilter;
@@ -20,7 +20,7 @@ private:
 
     FilterClassType mType;
 public:
-    FilterWrapper(): mType(static_cast<FilterClassType>(15)) {};
+    FilterWrapper(): mType(static_cast<FilterClassType>(0xff)) {};
 
     explicit FilterWrapper(const BoxFilter& data)
         : dataBoxFilter(data), mType(FilterClassType::BoxFilter) {}
@@ -34,13 +34,13 @@ public:
     explicit FilterWrapper(const LanczosSincFilter& data)
         : dataLanczosSincFilter(data), mType(FilterClassType::LanczosSincFilter) {}
 
-    FilterWrapper(const FilterWrapper& rhs) {
+    BOTH FilterWrapper(const FilterWrapper& rhs) {
         memcpy(this, &rhs, sizeof(FilterWrapper));
     }
 
-    FilterWrapper& operator=(const FilterWrapper& rhs) {
+    BOTH FilterWrapper& operator=(const FilterWrapper& rhs) {
         memcpy(this, &rhs, sizeof(FilterWrapper));
-    return *this;
+        return *this;
     }
 
     DEVICE float evaluate(const vec2 pos) const {

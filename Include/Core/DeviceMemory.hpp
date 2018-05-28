@@ -2,18 +2,20 @@
 #include <Core/Common.hpp>
 #include <type_traits>
 #include <Core/Memory.hpp>
-#include <Core/Environment.hpp>
+#include <Core/Pipeline.hpp>
 
 struct DeviceMemoryDesc final {
     void* ptr;
     unsigned int size;
-    DEVICE DeviceMemoryDesc() :ptr(nullptr), size(0) {}
-    template<typename T>
+    DEVICE DeviceMemoryDesc() : ptr(nullptr), size(0) {}
+
+    template <typename T>
     DEVICE T* viewAs() {
         return static_cast<T*>(ptr);
     }
-    template<typename T>
-    DEVICE  const T* viewAs() const {
+
+    template <typename T>
+    DEVICE const T* viewAs() const {
         return static_cast<const T*>(ptr);
     }
 };
@@ -243,13 +245,13 @@ public:
 };
 */
 
-template<typename T,typename... Args>
-GLOBAL void constructKernel(T* ptr, Args... args) {
+template <typename T, typename... Args>
+GLOBAL void constructKernel(T* ptr, Args ... args) {
     new(ptr) T(args...);
 }
 
-template<typename T, typename... Args>
-MemorySpan<T> constructOnDevice(Stream& stream, Args&&... args){
+template <typename T, typename... Args>
+MemorySpan<T> constructOnDevice(Stream& stream, Args&&... args) {
     MemorySpan<T> res(1);
     stream.launchDim(constructKernel<T, Args...>, {}, {}, res.begin(), std::forward<Args>(args)...);
     return res;

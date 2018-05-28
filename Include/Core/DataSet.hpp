@@ -1,7 +1,7 @@
 #pragma once
 #include <Core/Common.hpp>
 
-template<typename Enum, Enum Name, typename T>
+template <typename Enum, Enum Name, typename T>
 struct UnitInfo {
     static constexpr auto name = Name;
     using Type = T;
@@ -11,11 +11,11 @@ struct UnitInfo {
 
 namespace Impl {
 
-    template<typename Enum, Enum Name>
+    template <typename Enum, Enum Name>
     struct Tag final {};
 
-    template<typename First, typename... Others>
-    class DataSet :DataSet<Others...> {
+    template <typename First, typename... Others>
+    class DataSet : DataSet<Others...> {
     private:
         using T = typename First::Type;
         using Enum = decltype(First::name);
@@ -24,42 +24,51 @@ namespace Impl {
         DEVICE auto& getImpl(Tag<Enum, First::name>) {
             return mData;
         }
-        template<Enum name>
+
+        template <Enum name>
         DEVICE auto& getImpl(Tag<Enum, name>) {
             return DataSet<Others...>::getImpl(Tag<Enum, name>{});
         }
-        DEVICE const auto& getImpl(Tag<Enum, First::name>) const{
+
+        DEVICE const auto& getImpl(Tag<Enum, First::name>) const {
             return mData;
         }
-        template<Enum name>
-        DEVICE const auto& getImpl(Tag<Enum, name>) const{
+
+        template <Enum name>
+        DEVICE const auto& getImpl(Tag<Enum, name>) const {
             return DataSet<Others...>::getImpl(Tag<Enum, name>{});
         }
+
     public:
         DEVICE DataSet() {};
-        DEVICE DataSet(T first,DataSet<Others...> others):DataSet<Others...>(others),mData(first){}
-        template<Enum Name>
+        DEVICE DataSet(T first, DataSet<Others...> others): DataSet<Others...>(others), mData(first) {}
+
+        template <Enum Name>
         DEVICE auto& get() {
             return getImpl(Tag<Enum, Name>{});
         }
-        template<Enum Name>
-        DEVICE auto get() const{
+
+        template <Enum Name>
+        DEVICE auto get() const {
             return getImpl(Tag<Enum, Name>{});
         }
+
         DEVICE DataSet operator*(float rhs) const {
-            return DataSet{ static_cast<T>(mData*rhs),DataSet<Others...>::operator*(rhs) };
+            return DataSet{static_cast<T>(mData * rhs), DataSet<Others...>::operator*(rhs)};
         }
+
         DEVICE DataSet operator+(DataSet rhs) const {
-            return DataSet{ static_cast<T>(mData+rhs.mData),DataSet<Others...>::operator+(rhs) };
+            return DataSet{static_cast<T>(mData + rhs.mData), DataSet<Others...>::operator+(rhs)};
         }
     };
 
-    template<>
+    template <>
     class DataSet<void> {
     public:
         DEVICE DataSet operator*(float) const {
             return *this;
         }
+
         DEVICE DataSet operator+(DataSet) const {
             return *this;
         }
@@ -67,7 +76,7 @@ namespace Impl {
 
 }
 
-template<typename... Units>
+template <typename... Units>
 using Args = Impl::DataSet<Units..., void>;
 
 using EmptyArg = Args<>;

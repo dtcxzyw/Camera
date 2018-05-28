@@ -7,9 +7,9 @@ DEVICE TriangleDesc BvhForTriangleRef::makeTriangleDesc(const unsigned int id) c
     return {ref.id, mVertex[ref.a], mVertex[ref.b], mVertex[ref.c]};
 }
 
-BvhForTriangleRef::BvhForTriangleRef(const MemorySpan<BvhNode>& nodes, 
-    const MemorySpan<TriangleRef>& index,const MemorySpan<VertexDesc>& vertex)
-    :mNodes(nodes.begin()), mIndex(index.begin()), mVertex(vertex.begin()) {}
+BvhForTriangleRef::BvhForTriangleRef(const MemorySpan<BvhNode>& nodes,
+    const MemorySpan<TriangleRef>& index, const MemorySpan<VertexDesc>& vertex)
+    : mNodes(nodes.begin()), mIndex(index.begin()), mVertex(vertex.begin()) {}
 
 DEVICE bool BvhForTriangleRef::intersect(const Ray& ray) const {
     unsigned int top = 0, current = 0;
@@ -51,7 +51,7 @@ DEVICE bool BvhForTriangleRef::intersect(const Ray& ray, float& t, Interaction& 
     auto res = false;
     while (true) {
         const auto& node = mNodes[current];
-        if (node.bounds.intersect(ray,t, invDir, neg)) {
+        if (node.bounds.intersect(ray, t, invDir, neg)) {
             if (node.size) {
                 for (auto i = 0U; i < node.size; ++i)
                     res |= makeTriangleDesc(node.offset + i).intersect(ray, t, interaction);
@@ -142,7 +142,7 @@ BuildNode* buildTriangleRecursive(std::vector<BuildNode>& nodePool, const std::v
                 struct Bucket final {
                     unsigned int count;
                     Bounds bounds;
-                    Bucket() :count(0) {}
+                    Bucket() : count(0) {}
                 } buckets[bucketSize];
                 const auto offset = centroidBounds[0];
                 const auto inv = 1.0f / (centroidBounds[1] - centroidBounds[0]);
@@ -210,11 +210,11 @@ size_t flattenTree(const BuildNode* node, size_t& offset,
     return off;
 }
 
-BvhForTriangle::BvhForTriangle(const StaticMesh& mesh, const size_t maxPrim,Stream& stream) {
+BvhForTriangle::BvhForTriangle(const StaticMesh& mesh, const size_t maxPrim, Stream& stream) {
     auto&& vertex = mesh.vert;
     auto&& index = mesh.index;
     mVertex = MemorySpan<VertexDesc>(vertex.size());
-    checkError(cudaMemcpyAsync(mVertex.begin(), vertex.data(), sizeof(VertexDesc)*vertex.size(),
+    checkError(cudaMemcpyAsync(mVertex.begin(), vertex.data(), sizeof(VertexDesc) * vertex.size(),
         cudaMemcpyHostToDevice, stream.get()));
 
     std::vector<PrimitiveInfo> primitive;
@@ -245,5 +245,5 @@ BvhForTriangle::BvhForTriangle(const StaticMesh& mesh, const size_t maxPrim,Stre
 }
 
 BvhForTriangleRef BvhForTriangle::getRef() const {
-    return { mNodes,mIndex,mVertex };
+    return {mNodes, mIndex, mVertex};
 }

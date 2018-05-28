@@ -40,7 +40,7 @@ private:
     MemorySpan<Primitive> mPrimitives;
     MemorySpan<LightWrapper*> mLights;
 public:
-    explicit SceneDesc(const std::vector<Primitive>& priData, 
+    explicit SceneDesc(const std::vector<Primitive>& priData,
         const std::vector<LightWrapper*>& lightData);
     SceneRef toRef() const;
 };

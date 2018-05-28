@@ -1,4 +1,3 @@
-#include <cstdio>
 #include <IO/Model.hpp>
 #include <Core/Environment.hpp>
 #include <RayTracer/Scene.hpp>
@@ -16,6 +15,7 @@
 #include <RayTracer/Film.hpp>
 #include <Camera/RayGeneratorWrapper.hpp>
 #include <IO/Image.hpp>
+#include <Material/MaterialWrapper.hpp>
 
 using namespace std::chrono_literals;
 
@@ -27,7 +27,7 @@ private:
     MemorySpan<LightWrapper> mLight;
     std::unique_ptr<SceneDesc> mScene;
     std::unique_ptr<WhittedIntegrator> mIntegrator;
-
+    MemorySpan<MaterialWrapper> mMaterial;
 public:
     void run() {
         auto&& env = Environment::get();
@@ -38,9 +38,18 @@ public:
             mBvh = std::make_unique<BvhForTriangle>(model, 32U, resLoader);
             mBvhRef = std::make_unique<Constant<BvhForTriangleRef>>();
             mBvhRef->set(mBvh->getRef(), resLoader);
-            mLight = makeLightWrapper<PointLight>(resLoader, Point{0.0f, 10.0f, 0.0f}, Spectrum{1.0f});
+            mLight = makeLightWrapper<PointLight>(resLoader, Point{ 0.0f, 10.0f, 0.0f }, Spectrum{ 1.0f });
+            mMaterial = MemorySpan<MaterialWrapper>(1);
+            const TextureMapping2DWrapper mapping{ UVMapping{} };
+            const TextureSampler2DSpectrumWrapper samplerS{ ConstantSampler2DSpectrum{Spectrum{0.5f}} };
+            const TextureSampler2DFloatWrapper samplerF{ ConstantSampler2DFloat{0.0f} };
+            const Texture2DSpectrum textureS{ mapping,samplerS };
+            const Texture2DFloat textureF{ mapping ,samplerF };
+            MaterialWrapper material{ Plastic{textureS,textureS,textureF} };
+            checkError(cudaMemcpyAsync(mMaterial.begin(), &material, sizeof(MaterialWrapper),
+                cudaMemcpyHostToDevice, resLoader.get()));
             std::vector<Primitive> primitives;
-            primitives.emplace_back(Transform{}, mBvhRef->get(), nullptr);
+            primitives.emplace_back(Transform{}, mBvhRef->get(), mMaterial.begin());
             std::vector<LightWrapper*> lights;
             lights.emplace_back(mLight.begin());
             mScene = std::make_unique<SceneDesc>(primitives, lights);
@@ -49,7 +58,7 @@ public:
         SequenceGenerator2DWrapper sequenceGenerator{Halton2D{}};
         const SampleWeightLUT lut(256U, FilterWrapper{TriangleFilter{}});
         const uvec2 imageSize{2U, 2U};
-        mIntegrator = std::make_unique<WhittedIntegrator>(sequenceGenerator, 10U, 1U);
+        mIntegrator = std::make_unique<WhittedIntegrator>(sequenceGenerator, 1U, 1U);
         auto res = renderFrame(*mIntegrator, *mScene,
             Transform(glm::lookAt(Vector{}, Vector{0.0f, 0.0f, -1.0f}, Vector{0.0f, 1.0f, 0.0f})),
             RayGeneratorWrapper(mCamera.getRayGenerator(imageSize)), lut, imageSize);

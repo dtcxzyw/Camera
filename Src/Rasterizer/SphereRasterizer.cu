@@ -11,7 +11,7 @@ DEVICEINLINE bool cmpMax(const float a, const float b) {
     return a > b;
 }
 
-template <typename Func,typename Cmp>
+template <typename Func, typename Cmp>
 DEVICEINLINE float calcValue(const Func& func, const Cmp& cmp, float l, float r) {
     constexpr auto eps = 1e-3f;
     while (r - l >= eps) {
@@ -47,8 +47,8 @@ DEVICEINLINE bool calcSphereRange(const vec4& sphere, const float near, const fl
 }
 
 GLOBAL void processSphereInfoKernel(const unsigned int size, READONLY(SphereDesc) in, SphereInfo* info,
-                                 TileRef* ref, unsigned int* cnt, const vec4 scissor, const vec2 hsiz,
-                                 const float near, const float far, const vec2 mul) {
+    TileRef* ref, unsigned int* cnt, const vec4 scissor, const vec2 hsiz,
+    const float near, const float far, const vec2 mul) {
     const auto id = getId();
     if (id >= size)return;
     const auto sphere = in[id];
@@ -69,21 +69,21 @@ GLOBAL void processSphereInfoKernel(const unsigned int size, READONLY(SphereDesc
         ref[wpos].rect = rect;
         info[wpos].id = id;
         const auto pos = sphere.pos;
-        info[wpos].info = { pos, 1.0f / sphere.radius };
-        info[wpos].c = length2(Vector{ pos }) - sphere.radius * sphere.radius;
+        info[wpos].info = {pos, 1.0f / sphere.radius};
+        info[wpos].c = length2(Vector{pos}) - sphere.radius * sphere.radius;
     }
 }
 
 SphereProcessingResult processSphereInfo(CommandBuffer& buffer, const Span<SphereDesc>& spheres,
-                                      const vec4 scissor, const vec2 hsiz, const float near, const float far,
-                                      const vec2 mul) {
+    const vec4 scissor, const vec2 hsiz, const float near, const float far,
+    const vec2 mul) {
     auto cnt = buffer.allocBuffer<unsigned int>(7);
     buffer.memset(cnt);
     const auto info = buffer.allocBuffer<SphereInfo>(spheres.size());
     auto ref = buffer.allocBuffer<TileRef>(spheres.size());
-    buffer.launchKernelLinear(processSphereInfoKernel, spheres.size(), spheres, info, ref, cnt,
-                           scissor, hsiz, near, far, mul);
-    const auto sortedSphere = sortTiles<Empty,unsigned char,emptyTileClipShader>
+    buffer.launchKernelLinear(makeKernelDesc(processSphereInfoKernel), spheres.size(), spheres, info, ref, cnt,
+        scissor, hsiz, near, far, mul);
+    const auto sortedSphere = sortTiles<Empty, unsigned char, emptyTileClipShader>
         (buffer, cnt, ref, spheres.size() * 2U + 2048U, spheres.size(), {}, {});
     cnt.reset();
     ref.reset();

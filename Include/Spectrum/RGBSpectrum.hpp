@@ -18,15 +18,14 @@ public:
     BOTH RGBSpectrum operator##op(const RGBSpectrum& rhs) const {\
         auto res = *this;\
         return res op##= rhs;\
-    }\
-
+    }
     OPVEC(+)
     OPVEC(-)
     OPVEC(*)
     OPVEC(/)
     #undef OPVEC
 
-#define OPFLOAT(op) \
+    #define OPFLOAT(op) \
     BOTH RGBSpectrum& operator##op##=(const float rhs) {\
         mVal op##= rhs;\
         return *this;\
@@ -34,13 +33,12 @@ public:
     BOTH RGBSpectrum operator##op(const float rhs) const {\
         auto res = *this;\
         return res op##= rhs;\
-    }\
-
-        OPFLOAT(+)
-        OPFLOAT(-)
-        OPFLOAT(*)
-        OPFLOAT(/ )
-#undef OPFLOAT
+    }
+    OPFLOAT(+)
+    OPFLOAT(-)
+    OPFLOAT(*)
+    OPFLOAT(/ )
+    #undef OPFLOAT
 
     BOTH float lum() const {
         return glm::luminosity(mVal);
@@ -51,10 +49,10 @@ public:
     }
 
     BOTH friend RGBSpectrum sqrt(const RGBSpectrum& col) {
-        return RGBSpectrum{ glm::sqrt(col.mVal) };
+        return RGBSpectrum{glm::sqrt(col.mVal)};
     }
 
-    DEVICE RGBSpectrum atomicAdd(const RGBSpectrum& rhs) {
+    DEVICE void atomicAdd(const RGBSpectrum& rhs) {
         ::atomicAdd(&mVal.x, rhs.mVal.x);
         ::atomicAdd(&mVal.y, rhs.mVal.y);
         ::atomicAdd(&mVal.z, rhs.mVal.z);
@@ -64,14 +62,13 @@ public:
 #define OPFLOAT(op) \
     BOTH RGBSpectrum operator##op(const float lhs,const RGBSpectrum& rhs) {\
         return RGBSpectrum(lhs)##op##rhs;\
-    }\
-
+    }
 OPFLOAT(+)
 OPFLOAT(-)
 OPFLOAT(*)
 OPFLOAT(/ )
 #undef OPFLOAT
 
-BOTH RGBSpectrum mix(const RGBSpectrum& a,const RGBSpectrum& b,const float w) {
-    return a + (b - a)*w;
+BOTH RGBSpectrum mix(const RGBSpectrum& a, const RGBSpectrum& b, const float w) {
+    return a + (b - a) * w;
 }

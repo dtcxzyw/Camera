@@ -8,6 +8,6 @@ struct LightingSample final {
     float pdf;
     Spectrum illumination;
     DEVICE LightingSample() = default;
-    DEVICE LightingSample(const Vector& wi, const Spectrum& illumination, const Point& src, 
-        const float pdf = 1.0f) :src(src),wi(makeNormalUnsafe(wi)), pdf(pdf), illumination(illumination) {}
+    DEVICE LightingSample(const Vector& wi, const Spectrum& illumination, const Point& src,
+        const float pdf = 1.0f) : src(src), wi(makeNormalUnsafe(wi)), pdf(pdf), illumination(illumination) {}
 };

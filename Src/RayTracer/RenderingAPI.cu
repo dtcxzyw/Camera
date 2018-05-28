@@ -15,19 +15,19 @@ constexpr auto tileSize = 30U;
 
 MemorySpan<Spectrum> renderFrame(Integrator& integrator,
     const SceneDesc& scene, const Transform& cameraTransform,
-    const RayGeneratorWrapper& rayGenerator, const SampleWeightLUT& weightLUT, 
+    const RayGeneratorWrapper& rayGenerator, const SampleWeightLUT& weightLUT,
     const uvec2 size) {
-    MemorySpan<Spectrum> pixel(size.x*size.y);
+    MemorySpan<Spectrum> pixel(size.x * size.y);
     pixel.memset();
-    MemorySpan<float> weight(size.x*size.y);
+    MemorySpan<float> weight(size.x * size.y);
     weight.memset();
     std::vector<Future> tasks;
     const auto sx = calcBlockSize(size.x, tileSize);
     const auto sy = calcBlockSize(size.y, tileSize);
     for (auto x = 0; x < sx; ++x)
         for (auto y = 0; y < sy; ++y) {
-            const uvec2 lt = { x*tileSize ,y*tileSize };
-            const auto rb = min(size, uvec2{ (x + 1)*tileSize,(y + 1)*tileSize });
+            const uvec2 lt = {x * tileSize, y * tileSize};
+            const auto rb = min(size, uvec2{(x + 1) * tileSize, (y + 1) * tileSize});
             const auto currentTileSize = rb - lt;
             auto buffer = std::make_unique<CommandBuffer>();
             {
@@ -41,7 +41,7 @@ MemorySpan<Spectrum> renderFrame(Integrator& integrator,
         task.sync();
     {
         auto buffer = std::make_unique<CommandBuffer>();
-        buffer->launchKernelLinear(divWeight, pixel.size(), buffer->useAllocated(pixel),
+        buffer->launchKernelLinear(makeKernelDesc(divWeight), pixel.size(), buffer->useAllocated(pixel),
             buffer->useAllocated(weight));
         Environment::get().submit(std::move(buffer)).sync();
     }

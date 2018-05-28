@@ -8,27 +8,27 @@ struct TextureSampler2DFloatTag {};
 
 struct TextureSampler2DSpectrumTag {};
 
-class ConstantSampler2DFloat final :TextureSampler2DFloatTag {
+class ConstantSampler2DFloat final : TextureSampler2DFloatTag {
 private:
     float mValue;
 public:
-    explicit ConstantSampler2DFloat(const float val) :mValue(val) {}
+    explicit ConstantSampler2DFloat(const float val) : mValue(val) {}
     DEVICE float sample(const TextureMapping2DInfo&) const {
         return mValue;
     }
 };
 
-class ConstantSampler2DSpectrum final :TextureSampler2DSpectrumTag {
+class ConstantSampler2DSpectrum final : TextureSampler2DSpectrumTag {
 private:
     Spectrum mValue;
 public:
-    explicit ConstantSampler2DSpectrum(const Spectrum val) :mValue(val) {}
+    explicit ConstantSampler2DSpectrum(const Spectrum val) : mValue(val) {}
     DEVICE Spectrum sample(const TextureMapping2DInfo&) const {
         return mValue;
     }
 };
 
-class TextureMapFloatSampler final :TextureSampler2DFloatTag {
+class TextureMapFloatSampler final : TextureSampler2DFloatTag {
 private:
     BuiltinSamplerRef<float> mSampler;
 public:
@@ -89,21 +89,21 @@ struct TextureSampler3DFloatTag {};
 
 struct TextureSampler3DSpectrumTag {};
 
-class ConstantSampler3DFloat final :TextureSampler3DFloatTag {
+class ConstantSampler3DFloat final : TextureSampler3DFloatTag {
 private:
     float mValue;
 public:
-    explicit ConstantSampler3DFloat(const float val) :mValue(val) {}
+    explicit ConstantSampler3DFloat(const float val) : mValue(val) {}
     DEVICE float sample(const TextureMapping3DInfo&) const {
         return mValue;
     }
 };
 
-class ConstantSampler3DSpectrum final :TextureSampler3DSpectrumTag {
+class ConstantSampler3DSpectrum final : TextureSampler3DSpectrumTag {
 private:
     Spectrum mValue;
 public:
-    explicit ConstantSampler3DSpectrum(const Spectrum val) :mValue(val) {}
+    explicit ConstantSampler3DSpectrum(const Spectrum val) : mValue(val) {}
     DEVICE Spectrum sample(const TextureMapping3DInfo&) const {
         return mValue;
     }

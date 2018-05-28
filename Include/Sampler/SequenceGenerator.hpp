@@ -3,6 +3,7 @@
 #include <Math/Math.hpp>
 
 struct SequenceGenerator1DTag {};
+
 struct SequenceGenerator2DTag {};
 
 DEVICEINLINE float scaleToFloat(const unsigned int val) {
@@ -40,9 +41,9 @@ class Hammersley2D final /*: SequenceGenerator2DTag*/ {
 private:
     float mInvSize;
 public:
-    explicit Hammersley2D(const unsigned int size) :mInvSize(1.0f / size) {}
+    explicit Hammersley2D(const unsigned int size) : mInvSize(1.0f / size) {}
     DEVICE vec2 sample(const unsigned int index) const {
-        return { static_cast<float>(index) * mInvSize, radicalInverse(index) };
+        return {static_cast<float>(index) * mInvSize, radicalInverse(index)};
     }
 };
 
@@ -74,7 +75,7 @@ DEVICEINLINE float halton3(const unsigned int index) {
 class Halton2D final : SequenceGenerator2DTag {
 public:
     DEVICE vec2 sample(const unsigned int index) const {
-        return { radicalInverse(index), halton3(index) };
+        return {radicalInverse(index), halton3(index)};
     }
 };
 
@@ -102,9 +103,9 @@ DEVICEINLINE float scrambledSobol(const unsigned int index, const unsigned int d
     };
 
     auto res = scramble;
-#pragma unroll
+    #pragma unroll
     for (auto i = 0; i < 32; ++i)
-        res ^= (index&(1U << i) ? 0xffffffff : 0)&mat[dim][i];
+        res ^= (index & (1U << i) ? 0xffffffff : 0) & mat[dim][i];
     return scaleToFloat(res);
 }
 
@@ -112,9 +113,9 @@ class Sobol1D final : SequenceGenerator1DTag {
 private:
     const unsigned int mScramble;
 public:
-    explicit Sobol1D(const unsigned int scramble) :mScramble(scramble) {}
+    explicit Sobol1D(const unsigned int scramble) : mScramble(scramble) {}
     DEVICE float sample(const unsigned int index) const {
-        return scrambledSobol(index,0,mScramble);
+        return scrambledSobol(index, 0, mScramble);
     }
 };
 
@@ -122,8 +123,8 @@ class Sobol2D final : SequenceGenerator2DTag {
 private:
     const unsigned int mScramble;
 public:
-    explicit Sobol2D(const unsigned int scramble) :mScramble(scramble) {}
+    explicit Sobol2D(const unsigned int scramble) : mScramble(scramble) {}
     DEVICE vec2 sample(const unsigned int index) const {
-        return { scrambledSobol(index, 0, mScramble), scrambledSobol(index, 1, mScramble) };
+        return {scrambledSobol(index, 0, mScramble), scrambledSobol(index, 1, mScramble)};
     }
 };

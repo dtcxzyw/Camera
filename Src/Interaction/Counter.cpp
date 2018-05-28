@@ -1,6 +1,6 @@
 #include <Interaction/Counter.hpp>
 
-Counter::Counter():mTime(Clock::now()) {}
+Counter::Counter(): mTime(Clock::now()) {}
 
 float Counter::record() {
     const auto now = Clock::now();

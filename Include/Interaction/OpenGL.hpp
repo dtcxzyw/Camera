@@ -7,7 +7,7 @@
 
 class GLFWwindow;
 
-class GLWindow final:public Singletion<GLWindow> {
+class GLWindow final : public Singletion<GLWindow> {
 private:
     GLFWwindow* mWindow;
     unsigned int mFBO;

@@ -92,7 +92,7 @@ Stream& StreamContext::getStream() {
 void StreamContext::update(const Clock::time_point point) {
     mPool.erase(std::remove_if(mPool.begin(), mPool.end(),
         [this](auto&& task) {
-            if(task.second->isDone()) {
+            if (task.second->isDone()) {
                 for (auto&& recycler : mRecyclers)
                     recycler.second->gc(task.first);
                 return true;

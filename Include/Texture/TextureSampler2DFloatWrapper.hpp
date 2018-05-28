@@ -5,19 +5,19 @@
 class TextureSampler2DFloatWrapper final {
 private:
     enum class TextureSampler2DFloatClassType {
-        ConstantSampler2DFloat,
-        TextureMapFloatSampler
+        ConstantSampler2DFloat = 0,
+        TextureMapFloatSampler = 1
     };
 
     union {
-        char unused{};
+        unsigned char unused{};
         ConstantSampler2DFloat dataConstantSampler2DFloat;
         TextureMapFloatSampler dataTextureMapFloatSampler;
     };
 
     TextureSampler2DFloatClassType mType;
 public:
-    TextureSampler2DFloatWrapper(): mType(static_cast<TextureSampler2DFloatClassType>(15)) {};
+    TextureSampler2DFloatWrapper(): mType(static_cast<TextureSampler2DFloatClassType>(0xff)) {};
 
     explicit TextureSampler2DFloatWrapper(const ConstantSampler2DFloat& data)
         : dataConstantSampler2DFloat(data), mType(TextureSampler2DFloatClassType::ConstantSampler2DFloat) {}
@@ -25,13 +25,13 @@ public:
     explicit TextureSampler2DFloatWrapper(const TextureMapFloatSampler& data)
         : dataTextureMapFloatSampler(data), mType(TextureSampler2DFloatClassType::TextureMapFloatSampler) {}
 
-    TextureSampler2DFloatWrapper(const TextureSampler2DFloatWrapper& rhs) {
+    BOTH TextureSampler2DFloatWrapper(const TextureSampler2DFloatWrapper& rhs) {
         memcpy(this, &rhs, sizeof(TextureSampler2DFloatWrapper));
     }
 
-    TextureSampler2DFloatWrapper& operator=(const TextureSampler2DFloatWrapper& rhs) {
+    BOTH TextureSampler2DFloatWrapper& operator=(const TextureSampler2DFloatWrapper& rhs) {
         memcpy(this, &rhs, sizeof(TextureSampler2DFloatWrapper));
-    return *this;
+        return *this;
     }
 
     DEVICE float sample(const TextureMapping2DInfo& info) const {

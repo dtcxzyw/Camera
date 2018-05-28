@@ -13,7 +13,7 @@ namespace FocalLength {
 
 ///@see <a href="https://en.wikipedia.org/wiki/List_of_motion_picture_film_formats">Common Film Formats</a>
 namespace FileGate {
-    constexpr float fullAperture[2] = { 36.0f,24.0f };
-    constexpr float apsH[2] = { 28.7f,17.8f };
-    constexpr float apsC[2] = { 22.7f,15.5f };
+    constexpr float fullAperture[2] = {36.0f, 24.0f};
+    constexpr float apsH[2] = {28.7f, 17.8f};
+    constexpr float apsC[2] = {22.7f, 15.5f};
 }

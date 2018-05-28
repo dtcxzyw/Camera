@@ -179,12 +179,12 @@ GLOBAL void renderSpheresKernel(unsigned int* offset, SphereInfo* tri, TileRef* 
 
 template <typename Uniform, typename FrameBuffer,
     SphereVertShader<Uniform> VertShader, SphereFragmentShader<Uniform, FrameBuffer>... FragShader>
-    void renderSpheres(CommandBuffer& buffer, const Span<SphereDesc>& spheres,
+void renderSpheres(CommandBuffer& buffer, const Span<SphereDesc>& spheres,
     const Span<Uniform>& uniform, const Span<FrameBuffer>& frameBuffer,
     const uvec2 size, const float near, const float far, const vec2 mul, vec4 scissor) {
     auto cameraSpheres = buffer.allocBuffer<SphereDesc>(spheres.size());
-    buffer.launchKernelLinear(calcCameraSpheres<Uniform, VertShader>, spheres.size(), spheres,
-        cameraSpheres, uniform);
+    buffer.launchKernelLinear(makeKernelDesc(calcCameraSpheres<Uniform, VertShader>),
+        spheres.size(), spheres, cameraSpheres, uniform);
     scissor = {
         fmax(0.5f, scissor.x),
         fmin(size.x - 0.5f, scissor.y),
@@ -194,7 +194,7 @@ template <typename Uniform, typename FrameBuffer,
     const auto hfsize = static_cast<vec2>(size) * 0.5f;
     auto processRes = processSphereInfo(buffer, cameraSpheres, scissor, hfsize, near, far, mul);
     const auto invnf = 1.0f / (far - near);
-    buffer.callKernel(renderSpheresKernel<Uniform, FrameBuffer, FragShader...>, processRes.offset,
-        processRes.info, processRes.ref, uniform, frameBuffer, near, far, invnf,
+    buffer.callKernel(makeKernelDesc(renderSpheresKernel<Uniform, FrameBuffer, FragShader...>),
+        processRes.offset, processRes.info, processRes.ref, uniform, frameBuffer, near, far, invnf,
         1.0f / mul, 1.0f / hfsize);
 }

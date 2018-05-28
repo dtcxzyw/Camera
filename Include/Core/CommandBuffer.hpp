@@ -13,6 +13,7 @@ class CommandBuffer;
 class ResourceManager;
 class StreamContext;
 class Task;
+
 namespace Impl {
     struct TaskState;
 }
@@ -33,7 +34,7 @@ class Resource : Uncopyable {
 private:
     const Id mId;
 protected:
-    ResourceManager & mManager;
+    ResourceManager& mManager;
     void addInstance(std::unique_ptr<ResourceInstance> instance) const;
 public:
     explicit Resource(ResourceManager& manager);
@@ -65,6 +66,18 @@ public:
 };
 
 using MemoryReleaseFunction = std::function<void(UniqueMemory, size_t)>;
+
+template<typename Func>
+struct KernelDesc final {
+    Func func;
+    size_t stackSize;
+    KernelDesc(const Func func, const size_t stackSize) :func(func), stackSize(stackSize) {}
+};
+
+template<typename Func>
+auto makeKernelDesc(const Func func, const size_t stackSize = 1024U) {
+    return KernelDesc<Func>(func, stackSize);
+}
 
 namespace Impl {
     class DeviceMemoryDesc : public Resource<void*> {
@@ -173,7 +186,8 @@ namespace Impl {
         Id mId;
         size_t mBegin, mEnd;
     public:
-        SpanHelper() :mId(0), mBegin(0), mEnd(0) {}
+        SpanHelper() : mId(0), mBegin(0), mEnd(0) {}
+
         SpanHelper(const Id id, const size_t begin, const size_t end)
             : mId(id), mBegin(begin), mEnd(end) {}
 
@@ -216,16 +230,16 @@ namespace Impl {
         template <typename U>
         Span(const Span<U>& rhs) : mRef(rhs.mRef), mBegin(rhs.mBegin * sizeof(U) / sizeof(T)),
             mEnd(rhs.mEnd * sizeof(U) / sizeof(T)) {
-#ifdef CAMERA_DEBUG
+            #ifdef CAMERA_DEBUG
             if (rhs.mBegin % sizeof(T) != 0 || rhs.mEnd % sizeof(T) != 0)
                 throw std::logic_error("bad cast");
-#endif
+            #endif
         }
 
         Span subSpan(const size_t begin, const size_t end = std::numeric_limits<size_t>::max()) const {
-#ifdef CAMERA_DEBUG
+            #ifdef CAMERA_DEBUG
             if (mBegin + begin > mEnd)throw std::logic_error("bad cast");
-#endif
+            #endif
             Span res;
             res.mRef = mRef;
             res.mBegin = mBegin + begin;
@@ -243,7 +257,7 @@ namespace Impl {
         }
 
         operator SpanHelper<T>() const {
-            if (mRef)return { mRef->getId(), mBegin, mEnd };
+            if (mRef)return {mRef->getId(), mBegin, mEnd};
             return {};
         }
 
@@ -285,7 +299,7 @@ namespace Impl {
 
         template <size_t... I>
         auto constructImpl(ResourceManager& manager, std::index_sequence<I...>) const {
-            return T{ cast(std::get<I>(mArgs), manager)... };
+            return T{cast(std::get<I>(mArgs), manager)...};
         }
 
     public:
@@ -314,8 +328,8 @@ namespace Impl {
         template <typename U>
         explicit ValueHelper(const U& val) : mClosure(
             [rval = castId(val)](ResourceManager& manager) {
-            return cast(rval, manager);
-        }) {}
+                return cast(rval, manager);
+            }) {}
 
         T get(ResourceManager& manager) {
             return mClosure(manager);
@@ -339,7 +353,7 @@ namespace Impl {
 
     class Operator : Uncopyable {
     protected:
-        ResourceManager & mManager;
+        ResourceManager& mManager;
         Id mId;
         DeviceMemoryInstance& getMemory(Id id) const;
     public:
@@ -377,15 +391,18 @@ namespace Impl {
         void emit(Stream& stream) override;
     };
 
+    void setCallStackSize(size_t size);
+
     class KernelLaunchDim final : public Operator {
     private:
         std::function<void(Stream&)> mClosure;
     public:
         template <typename Func, typename... Args>
-        KernelLaunchDim(ResourceManager& manager, Func func, const dim3 grid, const dim3 block,
-            Args ... args) : Operator(manager) {
+        KernelLaunchDim(ResourceManager& manager, const KernelDesc<Func> func, const dim3 grid,
+            const dim3 block, Args ... args) : Operator(manager) {
             mClosure = [=, &manager](Stream& stream) {
-                stream.launchDim(func, grid, block, cast(args, manager)...);
+                setCallStackSize(func.stackSize);
+                stream.launchDim(func.func, grid, block, cast(args, manager)...);
             };
         }
 
@@ -397,10 +414,11 @@ namespace Impl {
         std::function<void(Stream&)> mClosure;
     public:
         template <typename Func, typename... Args>
-        KernelLaunchLinear(ResourceManager& manager, Func func, const size_t size, Args ... args)
-            : Operator(manager) {
+        KernelLaunchLinear(ResourceManager& manager, const KernelDesc<Func> func, 
+            const size_t size, Args ... args) : Operator(manager) {
             mClosure = [=, &manager](Stream& stream) {
-                stream.launchLinear(func, size, cast(args, manager)...);
+                setCallStackSize(func.stackSize);
+                stream.launchLinear(func.func, size, cast(args, manager)...);
             };
         }
 
@@ -428,9 +446,9 @@ private:
     std::map<Id, std::pair<Id, std::unique_ptr<ResourceInstance>>> mResources;
     cudaStream_t mStream = nullptr;
     Id mResourceCount = 0, mOperatorCount = 0, mSyncPoint = 0;
-#ifdef CAMERA_RESOURCE_CHECK
+    #ifdef CAMERA_RESOURCE_CHECK
     std::set<Id> mUnknownResource;
-#endif
+    #endif
 public:
     void registerResource(Id id, std::unique_ptr<ResourceInstance>&& instance);
     ResourceInstance& getResource(Id id);
@@ -491,18 +509,18 @@ public:
     }
 
     template <typename Func, typename... Args>
-    void launchKernelDim(Func func, const dim3 grid, const dim3 block, Args ... args) {
+    void launchKernelDim(const KernelDesc<Func> func, const dim3 grid, const dim3 block, Args ... args) {
         mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchDim>(*mResourceManager,
             func, grid, block, Impl::castId(args)...));
     }
 
     template <typename Func, typename... Args>
-    void callKernel(Func func, Args ... args) {
+    void callKernel(const KernelDesc<Func> func, Args ... args) {
         launchKernelDim(func, dim3{}, dim3{}, args...);
     }
 
     template <typename Func, typename... Args>
-    void launchKernelLinear(Func func, const size_t size, Args ... args) {
+    void launchKernelLinear(const KernelDesc<Func> func, const size_t size, Args ... args) {
         mCommandQueue.emplace(std::make_unique<Impl::KernelLaunchLinear>(*mResourceManager,
             func, size, Impl::castId(args)...));
     }

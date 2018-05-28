@@ -6,13 +6,13 @@
 class TextureSampler3DSpectrumWrapper final {
 private:
     enum class TextureSampler3DSpectrumClassType {
-        ConstantSampler3DSpectrum,
-        CheckBoard3DSampler,
-        MarbleSampler
+        ConstantSampler3DSpectrum = 0,
+        CheckBoard3DSampler = 1,
+        MarbleSampler = 2
     };
 
     union {
-        char unused{};
+        unsigned char unused{};
         ConstantSampler3DSpectrum dataConstantSampler3DSpectrum;
         CheckBoard3DSampler dataCheckBoard3DSampler;
         MarbleSampler dataMarbleSampler;
@@ -20,7 +20,7 @@ private:
 
     TextureSampler3DSpectrumClassType mType;
 public:
-    TextureSampler3DSpectrumWrapper(): mType(static_cast<TextureSampler3DSpectrumClassType>(15)) {};
+    TextureSampler3DSpectrumWrapper(): mType(static_cast<TextureSampler3DSpectrumClassType>(0xff)) {};
 
     explicit TextureSampler3DSpectrumWrapper(const ConstantSampler3DSpectrum& data)
         : dataConstantSampler3DSpectrum(data), mType(TextureSampler3DSpectrumClassType::ConstantSampler3DSpectrum) {}
@@ -31,13 +31,13 @@ public:
     explicit TextureSampler3DSpectrumWrapper(const MarbleSampler& data)
         : dataMarbleSampler(data), mType(TextureSampler3DSpectrumClassType::MarbleSampler) {}
 
-    TextureSampler3DSpectrumWrapper(const TextureSampler3DSpectrumWrapper& rhs) {
+    BOTH TextureSampler3DSpectrumWrapper(const TextureSampler3DSpectrumWrapper& rhs) {
         memcpy(this, &rhs, sizeof(TextureSampler3DSpectrumWrapper));
     }
 
-    TextureSampler3DSpectrumWrapper& operator=(const TextureSampler3DSpectrumWrapper& rhs) {
+    BOTH TextureSampler3DSpectrumWrapper& operator=(const TextureSampler3DSpectrumWrapper& rhs) {
         memcpy(this, &rhs, sizeof(TextureSampler3DSpectrumWrapper));
-    return *this;
+        return *this;
     }
 
     DEVICE Spectrum sample(const TextureMapping3DInfo& info) const {

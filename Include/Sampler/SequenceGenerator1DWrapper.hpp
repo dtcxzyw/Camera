@@ -4,19 +4,19 @@
 class SequenceGenerator1DWrapper final {
 private:
     enum class SequenceGenerator1DClassType {
-        RadicalInverse,
-        Sobol1D
+        RadicalInverse = 0,
+        Sobol1D = 1
     };
 
     union {
-        char unused{};
+        unsigned char unused{};
         RadicalInverse dataRadicalInverse;
         Sobol1D dataSobol1D;
     };
 
     SequenceGenerator1DClassType mType;
 public:
-    SequenceGenerator1DWrapper(): mType(static_cast<SequenceGenerator1DClassType>(15)) {};
+    SequenceGenerator1DWrapper(): mType(static_cast<SequenceGenerator1DClassType>(0xff)) {};
 
     explicit SequenceGenerator1DWrapper(const RadicalInverse& data)
         : dataRadicalInverse(data), mType(SequenceGenerator1DClassType::RadicalInverse) {}
@@ -24,13 +24,13 @@ public:
     explicit SequenceGenerator1DWrapper(const Sobol1D& data)
         : dataSobol1D(data), mType(SequenceGenerator1DClassType::Sobol1D) {}
 
-    SequenceGenerator1DWrapper(const SequenceGenerator1DWrapper& rhs) {
+    BOTH SequenceGenerator1DWrapper(const SequenceGenerator1DWrapper& rhs) {
         memcpy(this, &rhs, sizeof(SequenceGenerator1DWrapper));
     }
 
-    SequenceGenerator1DWrapper& operator=(const SequenceGenerator1DWrapper& rhs) {
+    BOTH SequenceGenerator1DWrapper& operator=(const SequenceGenerator1DWrapper& rhs) {
         memcpy(this, &rhs, sizeof(SequenceGenerator1DWrapper));
-    return *this;
+        return *this;
     }
 
     DEVICE float sample(const unsigned int index) const {

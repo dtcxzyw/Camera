@@ -97,9 +97,10 @@
       <Warning>W0</Warning>
       <GenerateLineInfo>true</GenerateLineInfo>
       <GPUDebugInfo>true</GPUDebugInfo>
-      <HostDebugInfo>false</HostDebugInfo>
+      <HostDebugInfo>true</HostDebugInfo>
       <Defines>CAMERA_DEBUG</Defines>
       <Runtime>MDd</Runtime>
+      <Emulation>false</Emulation>
     </CudaCompile>
     <CudaLink>
       <AdditionalDependencies>

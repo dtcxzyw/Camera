@@ -90,21 +90,21 @@ struct LineRef final {
 
 template <typename Out, typename Uniform, typename FrameBuffer>
 using FSFL = void(*)(unsigned int id, ivec2 uv, float z, const Out& in,
-                     const Uniform& uniform, FrameBuffer& frameBuffer);
+    const Uniform& uniform, FrameBuffer& frameBuffer);
 
 DEVICEINLINE auto calcTileSize(const float len) {
     return static_cast<unsigned int>(fmin(11.5f, ceil(log2f(len))));
 }
 
-DEVICEINLINE vec2 calcRange(const float a, const float b, const float l,const float r) {
-    if (b == a)return (l <= a & a <= r) ? vec2{ 0.0f, 1.0f } : vec2{ 0.0f, 0.0f };
+DEVICEINLINE vec2 calcRange(const float a, const float b, const float l, const float r) {
+    if (b == a)return (l <= a & a <= r) ? vec2{0.0f, 1.0f} : vec2{0.0f, 0.0f};
     const auto invx = 1.0f / (b - a), lax = (l - a) * invx, rax = (r - a) * invx;
     return {fmin(lax, rax), fmax(lax, rax)};
 }
 
 DEVICEINLINE vec2 calcLineRange(const vec2 a, const vec2 b, const vec4 scissor) {
-    const auto rangeX = calcRange(a.x, b.x, scissor.x,scissor.y);
-    const auto rangeY = calcRange(a.y, b.y, scissor.z,scissor.w);
+    const auto rangeX = calcRange(a.x, b.x, scissor.x, scissor.y);
+    const auto rangeY = calcRange(a.y, b.y, scissor.z, scissor.w);
     const auto begin = max3(0.0f, rangeX.x, rangeY.x);
     const auto end = min3(1.0f, rangeX.y, rangeY.y);
     return {begin, end - begin};
@@ -112,8 +112,8 @@ DEVICEINLINE vec2 calcLineRange(const vec2 a, const vec2 b, const vec4 scissor) 
 
 template <typename Index, typename Out, typename Uniform, PosConverter<Uniform> toPos>
 GLOBAL void processLines(const unsigned int size,READONLY(VertexInfo<Out>) in, Index index,
-                         LineInfo<Out>* info, LineRef* ref, unsigned int* cnt, const vec4 scissor, const vec2 hsiz,
-                         const float near, const float far,READONLY(Uniform) uniform) {
+    LineInfo<Out>* info, LineRef* ref, unsigned int* cnt, const vec4 scissor, const vec2 hsiz,
+    const float near, const float far,READONLY(Uniform) uniform) {
     const auto id = getId();
     if (id >= size)return;
     auto idx = index[id];
@@ -147,15 +147,15 @@ GLOBAL void processLines(const unsigned int size,READONLY(VertexInfo<Out>) in, I
 }
 
 std::pair<Span<unsigned int>, Span<LineRef>> sortLines(CommandBuffer& buffer,
-                                                                 const Span<unsigned int>& cnt,
-                                                                 const Span<LineRef>& ref);
+    const Span<unsigned int>& cnt,
+    const Span<LineRef>& ref);
 
 //1...1024
 template <typename Out, typename Uniform, typename FrameBuffer,
     FSFL<Out, Uniform, FrameBuffer> fs>
 GLOBAL void drawMicroL(READONLY(LineInfo<Out>) info, READONLY(LineRef) idx,
-                       READONLY(Uniform) uniform, FrameBuffer* frameBuffer,
-                       const float near, const float invnf,
+    READONLY(Uniform) uniform, FrameBuffer* frameBuffer,
+    const float near, const float invnf,
     const float bx, const float ex, const float by, const float ey) {
     const auto ref = idx[blockIdx.x];
     const auto line = info[ref.id];
@@ -172,7 +172,7 @@ GLOBAL void drawMicroL(READONLY(LineInfo<Out>) info, READONLY(LineRef) idx,
 template <typename Out, typename Uniform, typename FrameBuffer,
     FSFL<Out, Uniform, FrameBuffer> first, FSFL<Out, Uniform, FrameBuffer>... then>
 DEVICEINLINE void applyLFS(unsigned int* offset, LineInfo<Out>* tri, LineRef* idx, Uniform* uniform,
-                         FrameBuffer* frameBuffer, const float near, const float invnf, const vec4 scissor) {
+    FrameBuffer* frameBuffer, const float near, const float invnf, const vec4 scissor) {
     #pragma unroll
     for (auto i = 0; i < 11; ++i) {
         const auto size = offset[i + 1] - offset[i];
@@ -191,35 +191,37 @@ DEVICEINLINE void applyLFS(unsigned int* offset, LineInfo<Out>* tri, LineRef* id
 
 template <typename Out, typename Uniform, typename FrameBuffer>
 DEVICEINLINE void applyLFS(unsigned int*, LineInfo<Out>*, LineRef*, Uniform*, FrameBuffer*,
-                         const float, const float, const vec4) {}
+    const float, const float, const vec4) {}
 
 template <typename Out, typename Uniform, typename FrameBuffer,
     FSFL<Out, Uniform, FrameBuffer>... fs>
 GLOBAL void renderLinesKernel(unsigned int* offset, LineInfo<Out>* tri, LineRef* idx,
-                           Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float invnf,
-                           const vec4 scissor) {
+    Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float invnf,
+    const vec4 scissor) {
     applyLFS<Out, Uniform, FrameBuffer, fs...>(offset, tri, idx, uniform, frameBuffer, near, invnf, scissor);
 }
 
 template <typename IndexDesc, typename Out, typename Uniform, typename FrameBuffer,
     PosConverter<Uniform> toPos, FSFL<Out, Uniform, FrameBuffer>... fs>
-void renderLines(CommandBuffer& buffer, const Span<VertexInfo<Out>>& vert,const IndexDesc& index,
-                 const Span<Uniform>& uniform, const Span<FrameBuffer>& frameBuffer,
-                 const uvec2 size, const float near, const float far,vec4 scissor) {
+void renderLines(CommandBuffer& buffer, const Span<VertexInfo<Out>>& vert, const IndexDesc& index,
+    const Span<Uniform>& uniform, const Span<FrameBuffer>& frameBuffer,
+    const uvec2 size, const float near, const float far, vec4 scissor) {
     auto cnt = buffer.allocBuffer<unsigned int>(13);
     buffer.memset(cnt);
     const auto lsiz = index.size();
     auto info = buffer.allocBuffer<LineInfo<Out>>(lsiz);
     auto ref = buffer.allocBuffer<LineRef>(lsiz);
-    scissor = { fmax(0.5f,scissor.x),fmin(size.x - 0.5f,scissor.y),
-        fmax(0.5f,scissor.z),fmin(size.y - 0.5f,scissor.w) };
+    scissor = {
+        fmax(0.5f, scissor.x), fmin(size.x - 0.5f, scissor.y),
+        fmax(0.5f, scissor.z), fmin(size.y - 0.5f, scissor.w)
+    };
     const auto hsiz = static_cast<vec2>(size) * 0.5f;
-    buffer.launchKernelLinear(processLines<IndexDesc::IndexType, Out, Uniform, toPos>, lsiz, vert.get(),
+    buffer.launchKernelLinear(makeKernelDesc(processLines<IndexDesc::IndexType, Out, Uniform, toPos>), lsiz, vert.get(),
         index.get(), info, ref, cnt, scissor, hsiz, near, far, uniform.get());
     auto sortedLines = sortLines(buffer, cnt, ref);
     cnt.reset();
     ref.reset();
     const auto invnf = 1.0f / (far - near);
-    buffer.callKernel(renderLinesKernel<Out, Uniform, FrameBuffer, fs...>, sortedLines.first, info,
-                      sortedLines.second, uniform.get(), frameBuffer.get(), near, invnf, scissor);
+    buffer.callKernel(makeKernelDesc(renderLinesKernel<Out, Uniform, FrameBuffer, fs...>), 
+        sortedLines.first, info, sortedLines.second, uniform.get(), frameBuffer.get(), near, invnf, scissor);
 }

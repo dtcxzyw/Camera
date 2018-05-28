@@ -7,17 +7,17 @@
 #include <IO/LZ4Binary.hpp>
 #include <filesystem>
 
-template<typename T>
+template <typename T>
 void read(const std::vector<char>& stream, uint64_t& offset, T* ptr, const size_t size = 1) {
-    const auto rsiz= sizeof(T)*size;
+    const auto rsiz = sizeof(T) * size;
     memcpy(static_cast<void*>(ptr), stream.data() + offset, rsiz);
-    offset+=rsiz;
+    offset += rsiz;
 }
 
-template<typename T>
+template <typename T>
 void write(std::vector<char>& stream, const T* ptr, const size_t size = 1) {
     const auto begin = reinterpret_cast<const char*>(ptr);
-    stream.insert(stream.end(), begin, begin + sizeof(T)*size);
+    stream.insert(stream.end(), begin, begin + sizeof(T) * size);
 }
 
 StaticMesh::StaticMesh(const std::string& path) {
@@ -26,21 +26,21 @@ StaticMesh::StaticMesh(const std::string& path) {
     loadBinary(path + ".bin");
 }
 
-void StaticMesh::convertToBinary(const std::string & path) {
+void StaticMesh::convertToBinary(const std::string& path) {
     Assimp::Importer importer;
     const auto scene = importer.ReadFile(path, aiProcess_Triangulate |
         aiProcess_JoinIdenticalVertices |
         aiProcess_SortByPType |
         aiProcess_GenSmoothNormals |
-        aiProcess_GenUVCoords|
-        aiProcess_CalcTangentSpace|
-        aiProcess_FixInfacingNormals|
+        aiProcess_GenUVCoords |
+        aiProcess_CalcTangentSpace |
+        aiProcess_FixInfacingNormals |
         aiProcess_ImproveCacheLocality
     );
 
     if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE)
         throw std::runtime_error("Failed to load the mesh.");
-    const auto mesh=scene->mMeshes[0];
+    const auto mesh = scene->mMeshes[0];
     std::vector<char> data;
     {
         std::vector<VertexDesc> buf(mesh->mNumVertices);
@@ -48,10 +48,10 @@ void StaticMesh::convertToBinary(const std::string & path) {
             buf[i].pos = *reinterpret_cast<Point*>(mesh->mVertices + i);
             buf[i].normal = *reinterpret_cast<Vector*>(mesh->mNormals + i);
             buf[i].uv = *reinterpret_cast<UV*>(mesh->mTextureCoords[0] + i);
-            buf[i].tangent = *reinterpret_cast<Vector*>(mesh->mTangents+i);
+            buf[i].tangent = *reinterpret_cast<Vector*>(mesh->mTangents + i);
         }
         const uint64_t vertSize = mesh->mNumVertices;
-        write(data,&vertSize);
+        write(data, &vertSize);
         write(data, buf.data(), buf.size());
     }
     {
@@ -66,15 +66,15 @@ void StaticMesh::convertToBinary(const std::string & path) {
     saveLZ4(path + ".bin", data);
 }
 
-void StaticMesh::loadBinary(const std::string & path) {
+void StaticMesh::loadBinary(const std::string& path) {
     const auto data = loadLZ4(path);
     uint64_t offset = 0;
     uint64_t vertSize;
-    read(data,offset, &vertSize);
+    read(data, offset, &vertSize);
     vert.resize(vertSize);
     read(data, offset, vert.data(), vertSize);
     uint64_t faceSize;
-    read(data,offset, &faceSize);
+    read(data, offset, &faceSize);
     index.resize(faceSize);
     read(data, offset, index.data(), faceSize);
 }

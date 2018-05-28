@@ -73,7 +73,7 @@ static std::vector<std::pair<size_t, size_t>> sortPrimitives(const VertInfo* ver
         return isOverlap(vert[a.x].pos, vert[a.y].pos, vert[a.z].pos,
             vert[b.x].pos, vert[b.y].pos, vert[b.z].pos);
     };
-    const auto canUnion = [index,&testOverlap](const uvec3& cur,const std::pair<size_t,size_t>& set) {
+    const auto canUnion = [index,&testOverlap](const uvec3& cur,const std::pair<size_t, size_t>& set) {
         for (auto i = static_cast<int>(set.second - 1); i >= 0; --i)
             if (testOverlap(index[set.first + i], cur))
                 return false;
@@ -142,7 +142,7 @@ void SoftwareRenderer::render(CommandBuffer& buffer, BuiltinRenderTarget<RGBA8>&
             auto&& idxBuf = list->IdxBuffer;
             const auto idxSize = idxBuf.size() / 3;
             for (auto j = 0; j < idxSize; ++j)
-                idxData[idxOffset + j] = { idxBuf[j * 3], idxBuf[j * 3 + 1], idxBuf[j * 3 + 2] };
+                idxData[idxOffset + j] = {idxBuf[j * 3], idxBuf[j * 3 + 1], idxBuf[j * 3 + 2]};
             auto&& cmdBuffer = list->CmdBuffer;
             for (auto j = 0; j < cmdBuffer.size(); ++j) {
                 auto&& cmd = cmdBuffer[j];
@@ -181,16 +181,16 @@ void SoftwareRenderer::render(CommandBuffer& buffer, BuiltinRenderTarget<RGBA8>&
     printf("draw call %u\n", static_cast<unsigned int>(drawCmd.size()));
     #endif
 
-    for(auto&& cmd:drawCmd) {
+    for (auto&& cmd : drawCmd) {
         const auto vertPtr = vertCore.subSpan(cmd.vertOffset);
         const auto idxPtr = iboCore.subSpan(cmd.idxOffset);
         const auto index = makeIndexDescriptor<SeparateTrianglesWithIndex>(cmd.idxCount, idxPtr);
         TriangleRenderingContext<VertOut> context;
         context.reset(cmd.idxCount, 65536U, false, false);
         renderTriangles<decltype(index), VertOut, BuiltinSamplerRef<float>,
-            FrameBufferInfo, clipShader,emptyTriangleTileClipShader<BuiltinSamplerRef<float>>, 
+            FrameBufferInfo, clipShader, emptyTriangleTileClipShader<BuiltinSamplerRef<float>>,
             EmptyJudge, fragShader>(buffer, vertPtr, index, uni, frameBuffer, renderTarget.size(),
-                0.5f, 1.5f, cmd.scissor, context, {}, CullFace::None);
+            0.5f, 1.5f, cmd.scissor, context, {}, CullFace::None);
     }
 }
 

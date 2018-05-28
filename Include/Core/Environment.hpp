@@ -5,19 +5,22 @@
 
 enum class GraphicsInteroperability {
     None
-#ifdef CAMERA_D3D11_SUPPORT
-    , D3D11
-#endif
-#ifdef CAMERA_OPENGL_SUPPORT
-    , OpenGL
-#endif
+    #ifdef CAMERA_D3D11_SUPPORT
+    ,
+    D3D11
+    #endif
+    #ifdef CAMERA_OPENGL_SUPPORT
+    ,
+    OpenGL
+    #endif
 };
 
 enum class AppType {
-    Online, Offline
+    Online,
+    Offline
 };
 
-class Environment final :public Singletion<Environment> {
+class Environment final : public Singletion<Environment> {
 private:
     friend class Singletion<Environment>;
     Environment();
@@ -34,18 +37,18 @@ public:
     AppType getAppType() const;
     Future submit(std::unique_ptr<CommandBuffer> buffer);
     size_t queueSize() const;
-    std::pair<size_t,size_t> getMemInfo() const;
+    std::pair<size_t, size_t> getMemInfo() const;
     void yield();
     bool isMainThread() const;
     void uninit();
     ~Environment();
 };
 
-class DeviceMonitor final :Uncopyable {
+class DeviceMonitor final : Uncopyable {
 private:
     cudaDeviceProp mProp{};
     int mId;
-    size_t mFree,mTotal;
+    size_t mFree, mTotal, mCallStackSize;
     uintmax_t mTick;
     DeviceMonitor();
     void update();
@@ -57,5 +60,6 @@ public:
     const cudaDeviceProp& getProp() const;
     size_t getMemoryFreeSize() const;
     size_t getMemoryTotalSize() const;
+    void setCallStackSize(size_t size);
     static DeviceMonitor& get();
 };

@@ -13,7 +13,7 @@
 #include <iostream>
 
 static void errorCallBack(const int code, const char* str) {
-    printf("Error:code = %d reason:%s\n",code,str);
+    printf("Error:code = %d reason:%s\n", code, str);
     throw std::runtime_error(str);
 }
 
@@ -54,7 +54,7 @@ static void charCallback(GLFWwindow*, const unsigned int c) {
 }
 
 void APIENTRY glDebugOutput(const GLenum source, const GLenum type, const GLuint id,
-    const GLenum severity, GLsizei, const GLchar *message, const void *) {
+    const GLenum severity, GLsizei, const GLchar* message, const void*) {
     using namespace std;
 
     if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
@@ -63,35 +63,57 @@ void APIENTRY glDebugOutput(const GLenum source, const GLenum type, const GLuint
     cerr << "Debug message (" << id << "): " << message << '\n';
 
     switch (source) {
-    case GL_DEBUG_SOURCE_API:             cerr << "Source: API"; break;
-    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   cerr << "Source: Window System"; break;
-    case GL_DEBUG_SOURCE_SHADER_COMPILER: cerr << "Source: Shader Compiler"; break;
-    case GL_DEBUG_SOURCE_THIRD_PARTY:     cerr << "Source: Third Party"; break;
-    case GL_DEBUG_SOURCE_APPLICATION:     cerr << "Source: Application"; break;
-    case GL_DEBUG_SOURCE_OTHER:           cerr << "Source: Other"; break;
+        case GL_DEBUG_SOURCE_API: cerr << "Source: API";
+            break;
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM: cerr << "Source: Window System";
+            break;
+        case GL_DEBUG_SOURCE_SHADER_COMPILER: cerr << "Source: Shader Compiler";
+            break;
+        case GL_DEBUG_SOURCE_THIRD_PARTY: cerr << "Source: Third Party";
+            break;
+        case GL_DEBUG_SOURCE_APPLICATION: cerr << "Source: Application";
+            break;
+        case GL_DEBUG_SOURCE_OTHER: cerr << "Source: Other";
+            break;
         default: ;
-    } cerr << '\n';
+    }
+    cerr << '\n';
 
     switch (type) {
-    case GL_DEBUG_TYPE_ERROR:               cerr << "Type: Error"; break;
-    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: cerr << "Type: Deprecated Behaviour"; break;
-    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  cerr << "Type: Undefined Behaviour"; break;
-    case GL_DEBUG_TYPE_PORTABILITY:         cerr << "Type: Portability"; break;
-    case GL_DEBUG_TYPE_PERFORMANCE:         cerr << "Type: Performance"; break;
-    case GL_DEBUG_TYPE_MARKER:              cerr << "Type: Marker"; break;
-    case GL_DEBUG_TYPE_PUSH_GROUP:          cerr << "Type: Push Group"; break;
-    case GL_DEBUG_TYPE_POP_GROUP:           cerr << "Type: Pop Group"; break;
-    case GL_DEBUG_TYPE_OTHER:               cerr << "Type: Other"; break;
+        case GL_DEBUG_TYPE_ERROR: cerr << "Type: Error";
+            break;
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: cerr << "Type: Deprecated Behaviour";
+            break;
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: cerr << "Type: Undefined Behaviour";
+            break;
+        case GL_DEBUG_TYPE_PORTABILITY: cerr << "Type: Portability";
+            break;
+        case GL_DEBUG_TYPE_PERFORMANCE: cerr << "Type: Performance";
+            break;
+        case GL_DEBUG_TYPE_MARKER: cerr << "Type: Marker";
+            break;
+        case GL_DEBUG_TYPE_PUSH_GROUP: cerr << "Type: Push Group";
+            break;
+        case GL_DEBUG_TYPE_POP_GROUP: cerr << "Type: Pop Group";
+            break;
+        case GL_DEBUG_TYPE_OTHER: cerr << "Type: Other";
+            break;
         default: ;
-    } cerr << '\n';
+    }
+    cerr << '\n';
 
     switch (severity) {
-    case GL_DEBUG_SEVERITY_HIGH:         cerr << "Severity: high"; break;
-    case GL_DEBUG_SEVERITY_MEDIUM:       cerr << "Severity: medium"; break;
-    case GL_DEBUG_SEVERITY_LOW:          cerr << "Severity: low"; break;
-    case GL_DEBUG_SEVERITY_NOTIFICATION: cerr << "Severity: notification"; break;
+        case GL_DEBUG_SEVERITY_HIGH: cerr << "Severity: high";
+            break;
+        case GL_DEBUG_SEVERITY_MEDIUM: cerr << "Severity: medium";
+            break;
+        case GL_DEBUG_SEVERITY_LOW: cerr << "Severity: low";
+            break;
+        case GL_DEBUG_SEVERITY_NOTIFICATION: cerr << "Severity: notification";
+            break;
         default: ;
-    } cerr << "\n\n" << flush;
+    }
+    cerr << "\n\n" << flush;
 
     if ((type <= GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR || severity <= GL_DEBUG_SEVERITY_MEDIUM)
         && severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
@@ -100,12 +122,13 @@ void APIENTRY glDebugOutput(const GLenum source, const GLenum type, const GLuint
     }
 }
 
-class GLContext final:public Singletion<GLContext> {
+class GLContext final : public Singletion<GLContext> {
 private:
     bool mFlag;
     friend class Singletion<GLContext>;
-    GLContext():mFlag(false) {
-        if (glfwInit()==GLFW_FALSE)
+
+    GLContext(): mFlag(false) {
+        if (glfwInit() == GLFW_FALSE)
             throw std::runtime_error("Failed to initialize glfw.");
         glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
         glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
@@ -115,6 +138,7 @@ private:
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwSetErrorCallback(errorCallBack);
     }
+
 public:
     void makeContext(GLFWwindow* window) {
         thread_local static GLFWwindow* current = nullptr;
@@ -126,18 +150,19 @@ public:
                 glewExperimental = true;
                 if (glewInit() != GLEW_NO_ERROR)
                     throw std::runtime_error("Failed to initialize glew.");
-#ifdef CAMERA_OPENGL_ENABLE_DEBUG_OUTPUT
+                #ifdef CAMERA_OPENGL_ENABLE_DEBUG_OUTPUT
                 glEnable(GL_DEBUG_OUTPUT);
                 glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
                 glDebugMessageCallback(glDebugOutput, nullptr);
-#else
+                #else
                 glDisable(GL_DEBUG_OUTPUT);
                 glDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-#endif
+                #endif
                 mFlag = true;
             }
         }
     }
+
     ~GLContext() {
         glfwTerminate();
     }
@@ -225,13 +250,13 @@ bool GLWindow::update() {
 }
 
 void GLWindow::resize(const uvec2 size) {
-    glfwSetWindowSize(mWindow, size.x,size.y);
+    glfwSetWindowSize(mWindow, size.x, size.y);
 }
 
 uvec2 GLWindow::size() const {
     int w, h;
     glfwGetFramebufferSize(mWindow, &w, &h);
-    return { w,h };
+    return {w, h};
 }
 
 GLWindow::~GLWindow() {
@@ -246,12 +271,14 @@ void GLWindow::newFrame() {
     makeContext();
     auto&& io = ImGui::GetIO();
 
-    int w, h,fw, fh;
+    int w, h, fw, fh;
     glfwGetWindowSize(mWindow, &w, &h);
     glfwGetFramebufferSize(mWindow, &fw, &fh);
-    io.DisplaySize = { static_cast<float>(w),static_cast<float>(h) };
-    io.DisplayFramebufferScale = { w > 0 ? (static_cast<float>(fw) / w) : 0,
-            h > 0 ? (static_cast<float>(fh) / h) : 0 };
+    io.DisplaySize = {static_cast<float>(w), static_cast<float>(h)};
+    io.DisplayFramebufferScale = {
+        w > 0 ? (static_cast<float>(fw) / w) : 0,
+        h > 0 ? (static_cast<float>(fh) / h) : 0
+    };
 
     io.DeltaTime = mCounter.record();
 

@@ -5,18 +5,18 @@
 class BxDFWrapper final {
 private:
     enum class BxDFClassType {
-        SpecularReflection,
-        SpecularTransmission,
-        FresnelSpecular,
-        LambertianReflection,
-        OrenNayar,
-        MicrofacetReflection,
-        MicrofacetTransmission,
-        FresnelBlend
+        SpecularReflection = 0,
+        SpecularTransmission = 1,
+        FresnelSpecular = 2,
+        LambertianReflection = 3,
+        OrenNayar = 4,
+        MicrofacetReflection = 5,
+        MicrofacetTransmission = 6,
+        FresnelBlend = 7
     };
 
     union {
-        char unused{};
+        unsigned char unused{};
         SpecularReflection dataSpecularReflection;
         SpecularTransmission dataSpecularTransmission;
         FresnelSpecular dataFresnelSpecular;
@@ -29,7 +29,7 @@ private:
 
     BxDFClassType mType;
 public:
-    DEVICE BxDFWrapper(): mType(static_cast<BxDFClassType>(15)) {};
+    DEVICE BxDFWrapper(): mType(static_cast<BxDFClassType>(0xff)) {};
 
     DEVICE explicit BxDFWrapper(const SpecularReflection& data)
         : dataSpecularReflection(data), mType(BxDFClassType::SpecularReflection) {}
@@ -55,13 +55,13 @@ public:
     DEVICE explicit BxDFWrapper(const FresnelBlend& data)
         : dataFresnelBlend(data), mType(BxDFClassType::FresnelBlend) {}
 
-    DEVICE BxDFWrapper(const BxDFWrapper& rhs) {
+    BOTH BxDFWrapper(const BxDFWrapper& rhs) {
         memcpy(this, &rhs, sizeof(BxDFWrapper));
     }
 
-    DEVICE BxDFWrapper& operator=(const BxDFWrapper& rhs) {
+    BOTH BxDFWrapper& operator=(const BxDFWrapper& rhs) {
         memcpy(this, &rhs, sizeof(BxDFWrapper));
-    return *this;
+        return *this;
     }
 
     DEVICE float pdf(const Vector& wo, const Vector& wi) const {
