@@ -6,7 +6,7 @@
 #define NOMINMAX
 #include <d3d11.h>
 #include <cuda_d3d11_interop.h>
-#include <IMGUI/imgui.h>
+#include <imgui.h>
 #include <Core/CompileEnd.hpp>
 #include <stdexcept>
 
@@ -152,6 +152,7 @@ D3D11Window::D3D11Window() : mHwnd(nullptr), mInstance(nullptr), mSwapChain(null
 
     createRTV();
 
+    ImGui::CreateContext();
     //keyboard mapping
     auto&& io = ImGui::GetIO();
     io.KeyMap[ImGuiKey_Tab] = VK_TAB;
@@ -319,7 +320,7 @@ void D3D11Window::newFrame() {
     io.KeyAlt = (GetKeyState(VK_MENU) & 0x8000) != 0;
     io.KeySuper = false;
 
-    if (io.WantMoveMouse) {
+    if (io.WantSetMousePos) {
         POINT pos = {static_cast<LONG>(io.MousePos.x), static_cast<LONG>(io.MousePos.y)};
         ClientToScreen(mHwnd, &pos);
         SetCursorPos(pos.x, pos.y);
@@ -331,7 +332,7 @@ void D3D11Window::newFrame() {
 }
 
 D3D11Window::~D3D11Window() {
-    ImGui::Shutdown();
+    ImGui::DestroyContext();
     cleanRTV();
     mSwapChain->Release();
     mDeviceContext->Release();

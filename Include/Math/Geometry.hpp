@@ -107,7 +107,7 @@ class Normal final {
 private:
     Vector mNormal;
 public:
-    BOTH Normal() = default;
+    Normal() = default;
     BOTH explicit Normal(const Vector& dir) : mNormal(normalize(dir)) {}
     BOTH explicit operator Vector() const {
         return mNormal;
@@ -155,6 +155,10 @@ BOTH Normal reorthogonalize(const Normal& normal, const Normal& tangent) {
     const Vector n{normal};
     const Vector t{tangent};
     return Normal(t - dot(t, n) * n);
+}
+
+BOTH Normal faceForward(const Normal& n, const Normal& v) {
+    return dot(n, v) < 0.0f ? -n : n;
 }
 
 struct Ray final {
@@ -220,11 +224,7 @@ public:
         const auto tMax = min3((bounds[!neg.x].x - ray.origin.x) * invDir.x,
             (bounds[!neg.y].y - ray.origin.y) * invDir.y,
             (bounds[!neg.z].z - ray.origin.z) * invDir.z);
-        return (tMin < tMax) & (tMin < tHit) & (tMax > 0.0f);
-    }
-
-    DEVICE bool empty() const {
-        return (mMin.x > mMax.x) | (mMin.y > mMax.y) | (mMin.z > mMax.z);
+        return (tMin <= tMax) & (tMin < tHit) & (tMax > 0.0f);
     }
 };
 
@@ -232,7 +232,7 @@ class Transform final {
 private:
     glm::mat4 mMat, mInv;
 public:
-    BOTH Transform() = default;
+    Transform() = default;
     BOTH Transform(const glm::mat4& mat, const glm::mat4& inv) : mMat(mat), mInv(inv) {}
     BOTH explicit Transform(const glm::mat4& mat) : Transform(mat, inverse(mat)) {}
 
@@ -260,33 +260,42 @@ public:
     }
 
     BOTH Point operator()(const Point& rhs) const {
-        const Vector pos(rhs);
         return {
-            mMat[0][0] * pos.x + mMat[1][0] * pos.y + mMat[2][0] * pos.z + mMat[3][0],
-            mMat[0][1] * pos.x + mMat[1][1] * pos.y + mMat[2][1] * pos.z + mMat[3][1],
-            mMat[0][2] * pos.x + mMat[1][2] * pos.y + mMat[2][2] * pos.z + mMat[3][2]
+            mMat[0][0] * rhs.x + mMat[1][0] * rhs.y + mMat[2][0] * rhs.z + mMat[3][0],
+            mMat[0][1] * rhs.x + mMat[1][1] * rhs.y + mMat[2][1] * rhs.z + mMat[3][1],
+            mMat[0][2] * rhs.x + mMat[1][2] * rhs.y + mMat[2][2] * rhs.z + mMat[3][2]
         };
     }
 
     BOTH Point operator()(const Point& rhs, Vector& err) const {
-        const Vector pos(rhs);
         err = gamma(3) * Vector{
-            fabs(mMat[0][0] * pos.x) + fabs(mMat[1][0] * pos.y) + fabs(mMat[2][0] * pos.z) + fabs(mMat[3][0]),
-            fabs(mMat[0][1] * pos.x) + fabs(mMat[1][1] * pos.y) + fabs(mMat[2][1] * pos.z) + fabs(mMat[3][1]),
-            fabs(mMat[0][2] * pos.x) + fabs(mMat[1][2] * pos.y) + fabs(mMat[2][2] * pos.z) + fabs(mMat[3][2])
+            fabs(mMat[0][0] * rhs.x) + fabs(mMat[1][0] * rhs.y) + fabs(mMat[2][0] * rhs.z) + fabs(mMat[3][0]),
+            fabs(mMat[0][1] * rhs.x) + fabs(mMat[1][1] * rhs.y) + fabs(mMat[2][1] * rhs.z) + fabs(mMat[3][1]),
+            fabs(mMat[0][2] * rhs.x) + fabs(mMat[1][2] * rhs.y) + fabs(mMat[2][2] * rhs.z) + fabs(mMat[3][2])
         };
         return operator()(rhs);
+    }
+
+    BOTH Point operator()(const Point& rhs, const Vector& inErr, Vector& outErr) const {
+        const auto res = operator()(rhs, outErr);
+        outErr += (gamma(3) + 1.0f) * Vector{
+            fabs(mMat[0][0] * inErr.x) + fabs(mMat[0][1] * inErr.y) + fabs(mMat[0][2] * inErr.z),
+            fabs(mMat[1][0] * inErr.x) + fabs(mMat[1][1] * inErr.y) + fabs(mMat[1][2] * inErr.z),
+            fabs(mMat[2][0] * inErr.x) + fabs(mMat[2][1] * inErr.y) + fabs(mMat[2][2] * inErr.z)
+        };
+        return res;
     }
 
     //mat'=mat3(transpose(inverse(mat)))
     BOTH Normal operator()(const Normal& rhs) const {
         const Vector normal(rhs);
-        return makeNormalUnsafe(
-            {
+        return Normal{
+            Vector{
                 mInv[0][0] * normal.x + mInv[0][1] * normal.y + mInv[0][2] * normal.z,
                 mInv[1][0] * normal.x + mInv[1][1] * normal.y + mInv[1][2] * normal.z,
                 mInv[2][0] * normal.x + mInv[2][1] * normal.y + mInv[2][2] * normal.z
-            });
+            }
+        };
     }
 
     BOTH Ray operator()(const Ray& ray) const {

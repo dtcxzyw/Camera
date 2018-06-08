@@ -12,7 +12,7 @@ struct LightWrapper;
 
 class Primitive final {
 private:
-    Transform mTrans;
+    Transform mToObject;
     BvhForTriangleRef* mGeometry;
     MaterialWrapper* mMaterial;
 public:

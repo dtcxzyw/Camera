@@ -3,7 +3,7 @@
 #include <Core/Environment.hpp>
 #include <Interaction/SwapChain.hpp>
 #include <Core/CompileBegin.hpp>
-#include <IMGUI/imgui.h>
+#include <imgui.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <Core/CompileEnd.hpp>
 #include <Interaction/SoftwareRenderer.hpp>
@@ -12,49 +12,52 @@
 using namespace std::chrono_literals;
 
 constexpr auto au = 149597870.7;
-float scalePow =9.35f; //10.8f;
+float scalePow = 9.35f; //10.8f;
 float timeFac = 1.0f;
 int timePow = 0;
 
-class System final:Uncopyable {
+class System final : Uncopyable {
 private:
     struct Planet final {
-        glm::dvec3 pos,vel;
-        double r,mass;
+        glm::dvec3 pos, vel;
+        double r, mass;
     };
+
     std::vector<Planet> mPlanets;
 
     void updateStep(double delta) {
         delta *= timeFac;
         delta *= pow(10.0, timePow);
-        constexpr auto g= 6.67259e-11;
-        for (size_t i = 0; i < mPlanets.size(); ++i){
+        constexpr auto g = 6.67259e-11;
+        for (size_t i = 0; i < mPlanets.size(); ++i) {
             glm::dvec3 acc{};
             for (size_t j = 0; j < mPlanets.size(); ++j)
-                if (i != j){
+                if (i != j) {
                     const auto deltaPos = mPlanets[j].pos - mPlanets[i].pos;
-                    acc += normalize(deltaPos)*(mPlanets[j].mass / length2(deltaPos));
+                    acc += normalize(deltaPos) * (mPlanets[j].mass / length2(deltaPos));
                 }
-            mPlanets[i].vel += acc * (g*delta);
-            mPlanets[i].pos += mPlanets[i].vel*delta;
+            mPlanets[i].vel += acc * (g * delta);
+            mPlanets[i].pos += mPlanets[i].vel * delta;
         }
     }
+
     void check() {
         for (size_t i = 0; i < mPlanets.size(); ++i) {
             for (auto j = i + 1; j < mPlanets.size(); ++j) {
-                const auto deltaPos = glm::dvec3(mPlanets[j].pos) -glm::dvec3(mPlanets[i].pos);
+                const auto deltaPos = glm::dvec3(mPlanets[j].pos) - glm::dvec3(mPlanets[i].pos);
                 const auto dis = glm::length(deltaPos);
                 const auto sr = mPlanets[i].r + mPlanets[j].r;
-                if (dis<sr) {
+                if (dis < sr) {
                     const auto deltaDis = sr - dis;
                     const auto m1 = mPlanets[i].mass, m2 = mPlanets[j].mass;
                     const auto dir = normalize(deltaPos);
-                    mPlanets[i].pos -= dir * (deltaDis*m2 / (m1 + m2));
-                    mPlanets[j].pos += dir * (deltaDis*m1 / (m1 + m2));
+                    mPlanets[i].pos -= dir * (deltaDis * m2 / (m1 + m2));
+                    mPlanets[j].pos += dir * (deltaDis * m1 / (m1 + m2));
                 }
             }
         }
     }
+
 public:
     System() {
         const auto insert = [this](double radius,double mass,double pos,double vel) {
@@ -83,27 +86,29 @@ public:
 
     void update(double delta) {
         constexpr auto step = 2e-6;
-        while(delta>step) {
+        while (delta > step) {
             updateStep(step);
             delta -= step;
         }
         updateStep(delta);
         check();
     }
+
     Span<vec4> getDrawData(CommandBuffer& buffer) {
         const auto fac = pow(0.1, scalePow);
         std::vector<vec4> data(mPlanets.size());
-        for (size_t i = 0; i < mPlanets.size(); ++i){
-            data[i] = { mPlanets[i].pos*fac,fmax(0.1f,mPlanets[i].r*fac) };
+        for (size_t i = 0; i < mPlanets.size(); ++i) {
+            data[i] = {mPlanets[i].pos * fac, fmax(0.1f, mPlanets[i].r * fac)};
         }
         auto buf = buffer.allocBuffer<vec4>(data.size());
-        buffer.memcpy(buf, [holder = std::move(data)](auto&& call){
+        buffer.memcpy(buf, [holder = std::move(data)](auto&& call) {
             call(holder.data());
         });
         return buf;
     }
+
     Vector getPlanetPos(const size_t id) const {
-        return mPlanets[id].pos*pow(0.1, scalePow);
+        return mPlanets[id].pos * pow(0.1, scalePow);
     }
 };
 
@@ -128,7 +133,7 @@ private:
         ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
         ImGui::Text("FOV %.1f ", glm::degrees(mCamera.toFov()));
         ImGui::SliderFloat("focal length", &mCamera.focalLength, 1.0f, 500.0f, "%.1f");
-        ImGui::SliderFloat("scale",&scalePow,0.0f,11.0f);
+        ImGui::SliderFloat("scale", &scalePow, 0.0f, 11.0f);
         ImGui::SliderFloat("time fac", &timeFac, 1.0f, 9.9f);
         ImGui::SliderInt("time pow", &timePow, 0, 10);
         ImGui::End();
@@ -137,14 +142,14 @@ private:
 
     static Uniform getUniform(const Vector earth) {
         static Vector cp = {120.0f, 0.0f, 0.0f};
-        const auto mid = ImGui::IsKeyDown('F') ? earth : Vector { -100000.0f, 0.0f, 0.0f };
+        const auto mid = ImGui::IsKeyDown('F') ? earth : Vector{-100000.0f, 0.0f, 0.0f};
         const auto V = glm::lookAt(cp, mid, {0.0f, 1.0f, 0.0f});
         Uniform u;
         u.V = Transform(V);
         return u;
     }
 
-    using SharedFrame= std::shared_ptr<FrameBuffer>;
+    using SharedFrame = std::shared_ptr<FrameBuffer>;
 
     struct RenderingTask {
         Future future;
@@ -159,7 +164,7 @@ private:
         return t * 1e-9;
     }
 
-    auto addTask(System& system,SharedFrame frame, const uvec2 size) {
+    auto addTask(System& system, SharedFrame frame, const uvec2 size) {
         static auto last = getTime();
         const auto now = getTime();
         const auto converter = mCamera.toRasterPos(size);
@@ -188,11 +193,11 @@ public:
         ImGui::GetIO().WantCaptureKeyboard = true;
 
         auto&& env = Environment::get();
-        env.init(AppType::Online,GraphicsInteroperability::D3D11);
+        env.init(AppType::Online, GraphicsInteroperability::D3D11);
 
         mCamera.near = 1.0f;
         mCamera.far = 250.0f;
-        mCamera.filmGate = { 24.892f, 18.669f };
+        mCamera.filmGate = {24.892f, 18.669f};
         mCamera.mode = PinholeCamera::FitResolutionGate::Overscan;
         mCamera.focalLength = 15.0f;
 
@@ -215,7 +220,7 @@ public:
             {
                 const auto size = window.size();
                 for (auto i = 0; i < queueSize; ++i) {
-                    tasks.push(addTask(system,std::make_shared<FrameBuffer>(), size));
+                    tasks.push(addTask(system, std::make_shared<FrameBuffer>(), size));
                 }
             }
 
@@ -236,10 +241,10 @@ public:
                 }
 
                 const auto tb = Clock::now();
-                tasks.push(addTask(system,std::move(frame), size));
+                tasks.push(addTask(system, std::move(frame), size));
                 const auto te = Clock::now();
                 const auto delta = (te - tb).count() * 1e-6f;
-                printf("build time:%.3f ms\n",delta);
+                printf("build time:%.3f ms\n", delta);
             }
             window.unbindBackBuffer();
         }

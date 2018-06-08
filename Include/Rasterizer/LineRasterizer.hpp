@@ -222,6 +222,6 @@ void renderLines(CommandBuffer& buffer, const Span<VertexInfo<Out>>& vert, const
     cnt.reset();
     ref.reset();
     const auto invnf = 1.0f / (far - near);
-    buffer.callKernel(makeKernelDesc(renderLinesKernel<Out, Uniform, FrameBuffer, fs...>), 
+    buffer.callKernel(makeKernelDesc(renderLinesKernel<Out, Uniform, FrameBuffer, fs...>),
         sortedLines.first, info, sortedLines.second, uniform.get(), frameBuffer.get(), near, invnf, scissor);
 }

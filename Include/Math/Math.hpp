@@ -1,5 +1,7 @@
 #pragma once
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
+#define GLM_FORCE_CTOR_INIT
 #include <Core/CompileBegin.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -41,6 +43,10 @@ constexpr auto maxv = std::numeric_limits<unsigned int>::max();
 
 DEVICEINLINE float max3(const float a, const float b, const float c) {
     return fmax(a, fmax(b, c));
+}
+
+DEVICEINLINE float absMax3(const float a, const float b, const float c) {
+    return max3(fabs(a), fabs(b), fabs(c));
 }
 
 DEVICEINLINE float min3(const float a, const float b, const float c) {

@@ -4,7 +4,7 @@
 #include <map>
 #include <set>
 using namespace std::experimental::filesystem;
-using Map = std::map <std::string, uint64_t>;
+using Map = std::map<std::string, uint64_t>;
 
 //TODO:Include Analysis
 
@@ -27,10 +27,10 @@ Map load(const path& cache) {
     return res;
 }
 
-Map scan(const path& srcPath,const path& cache) {
+Map scan(const path& srcPath, const path& cache) {
     Map res;
     for (auto&& file : recursive_directory_iterator(srcPath))
-        if(file.status().type()==file_type::regular) {
+        if (file.status().type() == file_type::regular) {
             if (file.path().extension() == ".cu")
                 res.emplace(file.path().filename().string(), hash(file.path()));
         }
@@ -42,7 +42,7 @@ Map scan(const path& srcPath,const path& cache) {
 
 constexpr auto line = "------------------------------------------------------";
 
-void clear(const path& projectPath, const path& srcPath, const path& root,const path& cache) {
+void clear(const path& projectPath, const path& srcPath, const path& root, const path& cache) {
     std::cout << line << std::endl;
     const auto project = root / "Projects" / projectPath;
     const auto src = root / srcPath;
@@ -56,11 +56,11 @@ void clear(const path& projectPath, const path& srcPath, const path& root,const 
         const auto it = oldFiles.find(info.first);
         if (it == oldFiles.cend()) {
             std::cout << "Found new file " << info.first << "." << std::endl;
-            toRemove.emplace(info.first+".obj");
+            toRemove.emplace(info.first + ".obj");
         }
         else if (info.second != it->second) {
-            std::cout << "File " << info.first<<" is out of date." << std::endl;
-            toRemove.emplace(info.first+".obj");
+            std::cout << "File " << info.first << " is out of date." << std::endl;
+            toRemove.emplace(info.first + ".obj");
         }
     }
     if (toRemove.empty())std::cout << "Already up to date." << std::endl;

@@ -11,6 +11,6 @@ class CommandBuffer;
 class Integrator : Uncopyable {
 public:
     virtual void render(CommandBuffer& buffer, const SceneDesc& scene, const Transform& cameraTransform,
-        const RayGeneratorWrapper& rayGenerator, FilmTile& filmTile, const uvec2& offset) const = 0;
+        const RayGeneratorWrapper& rayGenerator, FilmTile& filmTile, uvec2 offset, uvec2 dstSize) const = 0;
     virtual ~Integrator() = default;
 };

@@ -1,6 +1,6 @@
 #include <IO/LZ4Binary.hpp>
 #include <Core/CompileBegin.hpp>
-#include <lz4/lz4.h>
+#include <lz4.h>
 #include <Core/CompileEnd.hpp>
 #include <fstream>
 

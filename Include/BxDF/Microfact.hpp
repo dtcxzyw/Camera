@@ -74,7 +74,8 @@ public:
     }
 
     DEVICE float calcLambda(const Vector& w) const {
-        const auto alpha2 = cosPhi(w) * mAlphaX * mAlphaX + sinPhi(w) * mAlphaY * mAlphaY;
+        if (w.z == 0.0f)return 0.0f;
+        const auto alpha2 = cos2Phi(w) * mAlphaX * mAlphaX + sin2Phi(w) * mAlphaY * mAlphaY;
         const auto tan2ThetaH = tan2Theta(w);
         return 0.5f * (-1.0f + sqrt(1.0f + alpha2 * tan2ThetaH));
     }
@@ -148,7 +149,7 @@ public:
 
     DEVICE Spectrum f(const Vector& wo, const Vector& wi) const {
         const auto cosThetaO = absCosTheta(wo), cosThetaI = absCosTheta(wi);
-        if (cosThetaO == 0.0f | cosThetaI == 0.0f | wi == -wo)return Spectrum{};
+        if (cosThetaO == 0.0f | cosThetaI == 0.0f | glm::length2(wi + wo) < 1e-8f)return Spectrum{};
         const auto wh = halfVector(wi, wo);
         const auto fac = mDistribution.calcD(wh) * mDistribution.calcG(wo, wi)
             / (4.0f * cosThetaO * cosThetaI);
@@ -243,7 +244,7 @@ public:
     }
 
     DEVICE Spectrum f(const Vector& wo, const Vector& wi) const {
-        if (wo == -wi)return Spectrum{};
+        if (glm::length2(wo + wi) < 1e-8f)return Spectrum{};
         const auto diffuse = (28.f / (23.f * pi<float>())) * mRd * (Spectrum(1.f) - mRs) *
             (1.0f - pow5(1.0f - 0.5f * absCosTheta(wi))) *
             (1.0f - pow5(1.0f - 0.5f * absCosTheta(wo)));

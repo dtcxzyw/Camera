@@ -22,49 +22,80 @@ using namespace std::chrono_literals;
 struct App final : Uncopyable {
 private:
     PinholeCamera mCamera;
-    std::unique_ptr<BvhForTriangle> mBvh;
-    std::unique_ptr<Constant<BvhForTriangleRef>> mBvhRef;
-    MemorySpan<LightWrapper> mLight;
+    std::vector<std::unique_ptr<BvhForTriangle>> mBvh;
+    std::vector<std::unique_ptr<Constant<BvhForTriangleRef>>> mBvhRef;
+    std::vector<MemorySpan<LightWrapper>> mLight;
     std::unique_ptr<SceneDesc> mScene;
     std::unique_ptr<WhittedIntegrator> mIntegrator;
     MemorySpan<MaterialWrapper> mMaterial;
 public:
+    void addModel(Stream& resLoader, std::vector<Primitive>& primitives,
+        const glm::mat4& trans, const std::string& path, MaterialWrapper* material) {
+        StaticMesh mesh(path);
+        mBvh.emplace_back(std::make_unique<BvhForTriangle>(mesh, 32U, resLoader));
+        mBvhRef.emplace_back(std::make_unique<Constant<BvhForTriangleRef>>());
+        mBvhRef.back()->set(mBvh.back()->getRef(), resLoader);
+        primitives.emplace_back(Primitive{ Transform(trans),mBvhRef.back()->get(),material });
+    }
     void run() {
         auto&& env = Environment::get();
-        env.init();
+        env.init(AppType::Online);
         {
             Stream resLoader;
-            StaticMesh model("Res/cube.obj");
-            mBvh = std::make_unique<BvhForTriangle>(model, 32U, resLoader);
-            mBvhRef = std::make_unique<Constant<BvhForTriangleRef>>();
-            mBvhRef->set(mBvh->getRef(), resLoader);
-            mLight = makeLightWrapper<PointLight>(resLoader, Point{ 0.0f, 10.0f, 0.0f }, Spectrum{ 1.0f });
-            mMaterial = MemorySpan<MaterialWrapper>(1);
-            const TextureMapping2DWrapper mapping{ UVMapping{} };
-            const TextureSampler2DSpectrumWrapper samplerS{ ConstantSampler2DSpectrum{Spectrum{0.5f}} };
-            const TextureSampler2DFloatWrapper samplerF{ ConstantSampler2DFloat{0.0f} };
-            const Texture2DSpectrum textureS{ mapping,samplerS };
-            const Texture2DFloat textureF{ mapping ,samplerF };
-            MaterialWrapper material{ Plastic{textureS,textureS,textureF} };
-            checkError(cudaMemcpyAsync(mMaterial.begin(), &material, sizeof(MaterialWrapper),
-                cudaMemcpyHostToDevice, resLoader.get()));
+            mLight.emplace_back(makeLightWrapper<PointLight>(resLoader, Point{ 3.0f, 3.0f, 3.0f }, 
+                Spectrum{ RGB{30.0f } }));
+            mLight.emplace_back(makeLightWrapper<PointLight>(resLoader, Point{ -3.0f, 3.0f, 3.0f },
+                Spectrum{ RGB{30.0f} }));
+            mMaterial = MemorySpan<MaterialWrapper>(2);
+            const TextureMapping2DWrapper mapping{UVMapping{}};
+            {
+                const TextureSampler2DSpectrumWrapper samplerS{ ConstantSampler2DSpectrum{Spectrum{1.0f}} };
+                const TextureSampler2DFloatWrapper samplerF{ ConstantSampler2DFloat{0.1f} };
+                const Texture2DSpectrum textureS{ mapping, samplerS };
+                const Texture2DFloat textureF{ mapping, samplerF };
+                MaterialWrapper plastic{ Plastic{textureS, textureS, textureF} };
+                checkError(cudaMemcpyAsync(mMaterial.begin(), &plastic, sizeof(MaterialWrapper),
+                    cudaMemcpyHostToDevice, resLoader.get()));
+            }
+            {
+                const TextureSampler2DSpectrumWrapper samplerS{ ConstantSampler2DSpectrum{ Spectrum{RGB{ 0.0f,1.0f,0.0f} } } };
+                const TextureSampler2DFloatWrapper samplerF{ ConstantSampler2DFloat{ 0.5f } };
+                const Texture2DSpectrum textureS{ mapping, samplerS };
+                const Texture2DFloat textureF{ mapping, samplerF };
+                MaterialWrapper plastic{ Plastic{ textureS, textureS, textureF } };
+                checkError(cudaMemcpyAsync(mMaterial.begin() + 1, &plastic, sizeof(MaterialWrapper),
+                    cudaMemcpyHostToDevice, resLoader.get()));
+            }
+
             std::vector<Primitive> primitives;
-            primitives.emplace_back(Transform{}, mBvhRef->get(), mMaterial.begin());
+            const auto cubeMat =glm::scale(glm::rotate(
+                glm::translate(glm::mat4{}, { 0.0f,0.0f,1.0f }), 45.0f, Vector(1.0f)), Vector(1e-3f));
+            addModel(resLoader, primitives, cubeMat, "Res/cube.obj", mMaterial.begin() + 1);
+            const auto objectMat = glm::scale(glm::mat4{}, Vector(5.0f));
+            addModel(resLoader, primitives, objectMat, "Res/dragon.obj", mMaterial.begin());
             std::vector<LightWrapper*> lights;
-            lights.emplace_back(mLight.begin());
+            for (auto&& light : mLight)
+                lights.emplace_back(light.begin());
             mScene = std::make_unique<SceneDesc>(primitives, lights);
             resLoader.sync();
         }
         SequenceGenerator2DWrapper sequenceGenerator{Halton2D{}};
-        const SampleWeightLUT lut(256U, FilterWrapper{TriangleFilter{}});
-        const uvec2 imageSize{2U, 2U};
-        mIntegrator = std::make_unique<WhittedIntegrator>(sequenceGenerator, 1U, 1U);
-        auto res = renderFrame(*mIntegrator, *mScene,
-            Transform(glm::lookAt(Vector{}, Vector{0.0f, 0.0f, -1.0f}, Vector{0.0f, 1.0f, 0.0f})),
+        const SampleWeightLUT lut(64U, FilterWrapper{TriangleFilter{}});
+        const uvec2 imageSize{192U, 108U};
+        mIntegrator = std::make_unique<WhittedIntegrator>(sequenceGenerator, 10U, 100U);
+        const auto beg = Clock::now();
+        const Transform toCamera{
+            glm::lookAt(Vector{0.0f, 0.0f, 2.0f}, Vector{0.0f, 0.0f, 0.0f}, Vector{0.0f, 1.0f, 0.0f})
+        };
+        mCamera.near = 1.0f;
+        auto res = renderFrame(*mIntegrator, *mScene, inverse(toCamera),
             RayGeneratorWrapper(mCamera.getRayGenerator(imageSize)), lut, imageSize);
+        const auto end = Clock::now();
+        const auto t = std::chrono::duration_cast<std::chrono::microseconds>(end - beg).count();
+        printf("%.3lf ms\n", t * 1e-3);
         PinnedBuffer<Spectrum> pixel(res.size());
         cudaMemcpy(pixel.begin(), res.begin(), sizeof(Spectrum) * res.size(), cudaMemcpyDeviceToHost);
-        std::vector<float> pixelFloat(pixel.size()*3);
+        std::vector<float> pixelFloat(pixel.size() * 3);
         for (size_t i = 0; i < pixel.size(); ++i) {
             const auto col = pixel[i].toRGB();
             pixelFloat[i * 3] = col.r;

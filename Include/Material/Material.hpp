@@ -4,25 +4,24 @@
 
 class Bsdf final {
 private:
-    Vector mNormal;
-    Vector mTangent;
-    Vector mBiTangent;
-    Interaction mInteraction;
+    const Interaction mInteraction;
     static constexpr auto maxSize = 4;
     BxDFWrapper mBxDF[maxSize];
     unsigned int mCount;
     float mEta;
     DEVICE Vector toLocal(const Vector& vec) const {
-        return {dot(vec, mTangent), dot(vec, mBiTangent), dot(vec, mNormal)};
+        auto&& shading = mInteraction.shadingGeometry;
+        return {dot(vec, shading.dpdu), dot(vec, shading.dpdv), dot(vec, Vector{shading.normal})};
     }
 
     DEVICE Vector toWorld(const Vector& vec) const {
-        return mat3(mTangent, mBiTangent, mNormal) * vec;
+        auto&& shading = mInteraction.shadingGeometry;
+        return mat3(shading.dpdu, shading.dpdv, Vector(shading.normal)) * vec;
     }
 
     DEVICE float pdfImpl(const Vector& wo, const Vector& wi, const BxDFType pattern) const {
         if (wo.z == 0.0f) return 0.0f;
-        auto pdf = 0.f;
+        auto pdf = 0.0f;
         auto count = 0U;
         for (auto i = 0U; i < mCount; ++i)
             if (mBxDF[i].match(pattern)) {
@@ -35,10 +34,12 @@ private:
     DEVICE Spectrum fImpl(const Vector& wo, const Vector& worldWo,
         const Vector& wi, const Vector& worldWi, const BxDFType pattern) const {
         if (wo.z == 0.0f) return Spectrum{};
-        const auto flags = pattern | (dot(worldWo, mNormal) * dot(worldWi, mNormal) > 0.0f
+        auto&& shading = mInteraction.shadingGeometry;
+        const auto flags = pattern | (dot(worldWo, Vector{shading.normal})
+                                      * dot(worldWi, Vector(shading.normal)) > 0.0f
                                           ? BxDFType::Reflection
                                           : BxDFType::Transmission);
-        Spectrum f;
+        Spectrum f{};
         for (auto i = 0U; i < mCount; ++i)
             if (mBxDF[i].match(flags))
                 f += mBxDF[i].f(wo, wi);
@@ -47,8 +48,7 @@ private:
 
 public:
     DEVICE explicit Bsdf(const Interaction& interaction)
-        : mNormal(interaction.normal), mTangent(interaction.dpdu),
-        mBiTangent(interaction.dpdv), mInteraction(interaction), mCount(0), mEta(1.0f) {}
+        : mInteraction(interaction), mCount(0), mEta(1.0f) {}
 
     DEVICE float getEta() const {
         return mEta;

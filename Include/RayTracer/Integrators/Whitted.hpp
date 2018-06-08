@@ -10,5 +10,5 @@ public:
     WhittedIntegrator(const SequenceGenerator2DWrapper& sequenceGenerator,
         unsigned int maxDepth, unsigned int spp);
     void render(CommandBuffer& buffer, const SceneDesc& scene, const Transform& cameraTransform,
-        const RayGeneratorWrapper& rayGenerator, FilmTile& filmTile, const uvec2& offset) const override;
+        const RayGeneratorWrapper& rayGenerator, FilmTile& filmTile, uvec2 offset, uvec2 dstSize) const override;
 };

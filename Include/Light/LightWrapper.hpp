@@ -3,7 +3,7 @@
 #include <Core/DeviceMemory.hpp>
 
 struct LightWrapper {
-    DEVICE virtual ~LightWrapper() = default;
+    virtual ~LightWrapper() = default;
     DEVICE virtual LightingSample sampleLi(vec2 sample, Point pos) const = 0;
     DEVICE virtual Spectrum le(const Ray& ray) const = 0;
 };

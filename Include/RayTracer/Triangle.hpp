@@ -6,7 +6,7 @@ struct Interaction;
 class TriangleDesc final {
 private:
     DEVICE bool interscet(const Ray& ray, Vector& pa, Vector& pb, Vector& pc,
-        float& t, float& e0, float& e1, float& e2) const;
+        float& t, float& e0, float& e1, float& e2, float tMax) const;
 public:
     unsigned int id;
     VertexDesc a, b, c;

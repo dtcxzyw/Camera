@@ -1,5 +1,4 @@
 #pragma once
-#include <Math/Geometry.hpp>
 #include <Spectrum/SpectrumConfig.hpp>
 
 class FresnelDielectric final {
@@ -68,7 +67,7 @@ public:
         : dielectric(dielectric), mIsDielectric(true) {}
 
     DEVICE explicit FresnelWrapper(const FresnelConductor& conductor)
-        : conductor(conductor), mIsDielectric(true) {}
+        : conductor(conductor), mIsDielectric(false) {}
 
     DEVICE FresnelWrapper(const FresnelWrapper& rhs) {
         memcpy(this, &rhs, sizeof(FresnelWrapper));

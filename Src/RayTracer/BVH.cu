@@ -17,7 +17,7 @@ DEVICE bool BvhForTriangleRef::intersect(const Ray& ray) const {
     const auto invDir = 1.0f / ray.dir;
     const glm::bvec3 neg = {invDir.x < 0.0f, invDir.y < 0.0f, invDir.z < 0.0f};
     while (true) {
-        const auto& node = mNodes[current];
+        auto&& node = mNodes[current];
         if (node.bounds.intersect(ray, ray.tMax, invDir, neg)) {
             if (node.size) {
                 for (auto i = 0U; i < node.size; ++i)
@@ -31,7 +31,7 @@ DEVICE bool BvhForTriangleRef::intersect(const Ray& ray) const {
                 current = node.second;
             }
             else {
-                stack[top++] = node.second + 1;
+                stack[top++] = node.second;
                 ++current;
             }
         }
@@ -50,7 +50,7 @@ DEVICE bool BvhForTriangleRef::intersect(const Ray& ray, float& t, Interaction& 
     const glm::bvec3 neg = {invDir.x < 0.0f, invDir.y < 0.0f, invDir.z < 0.0f};
     auto res = false;
     while (true) {
-        const auto& node = mNodes[current];
+        auto&& node = mNodes[current];
         if (node.bounds.intersect(ray, t, invDir, neg)) {
             if (node.size) {
                 for (auto i = 0U; i < node.size; ++i)
@@ -63,7 +63,7 @@ DEVICE bool BvhForTriangleRef::intersect(const Ray& ray, float& t, Interaction& 
                 current = node.second;
             }
             else {
-                stack[top++] = node.second + 1;
+                stack[top++] = node.second;
                 ++current;
             }
         }
@@ -192,8 +192,7 @@ BuildNode* buildTriangleRecursive(std::vector<BuildNode>& nodePool, const std::v
     return &node;
 }
 
-size_t flattenTree(const BuildNode* node, size_t& offset,
-    PinnedBuffer<BvhNode>& buf) {
+size_t flattenTree(const BuildNode* node, size_t& offset, PinnedBuffer<BvhNode>& buf) {
     auto& self = buf[offset];
     self.bounds = node->bounds;
     const auto off = offset++;

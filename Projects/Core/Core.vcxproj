@@ -73,6 +73,7 @@
     <ClInclude Include="..\..\Include\RayTracer\BVH.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Film.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Integrator.hpp" />
+    <ClInclude Include="..\..\Include\RayTracer\Integrators\Path.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Integrators\Whitted.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\RenderingAPI.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Scene.hpp" />
@@ -113,6 +114,7 @@
     <ClCompile Include="..\..\Src\Interaction\Counter.cpp" />
     <ClCompile Include="..\..\Src\IO\LZ4Binary.cpp" />
     <ClCompile Include="..\..\Src\IO\Model.cpp" />
+    <CudaCompile Include="..\..\Src\RayTracer\Integrators\Path.cu" />
     <CudaCompile Include="..\..\Src\RayTracer\Integrators\Whitted.cu">
       <FileType>Document</FileType>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
@@ -247,7 +249,7 @@
       <Keep>false</Keep>
       <MaxRegCount>64</MaxRegCount>
       <GPUDebugInfo>true</GPUDebugInfo>
-      <GenerateLineInfo>true</GenerateLineInfo>
+      <GenerateLineInfo>false</GenerateLineInfo>
       <Emulation>false</Emulation>
       <HostDebugInfo>true</HostDebugInfo>
       <Runtime>MDd</Runtime>
@@ -261,7 +263,7 @@
     </CudaLink>
     <Lib>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin;$(CUDA_PATH)\lib\x64;$(SolutionDir)ThirdParty\Libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp.lib;glfw3.lib;opengl32.lib;glew32.lib;cudart.lib;cudadevrt.lib;d3d11.lib;imgui.lib;lz4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;cudart.lib;cudadevrt.lib;d3d11.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <PreBuildEvent>
       <Command>
@@ -343,7 +345,7 @@
       <AdditionalDependencies>cudart.lib;cudadevrt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </CudaLink>
     <Lib>
-      <AdditionalDependencies>assimp.lib;glfw3.lib;opengl32.lib;glew32.lib;cudart.lib;cudadevrt.lib;d3d11.lib;imgui.lib;lz4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;cudart.lib;cudadevrt.lib;d3d11.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <Lib>
       <AdditionalLibraryDirectories>$(SolutionDir)Bin;$(CUDA_PATH)\lib\x64;$(SolutionDir)ThirdParty\Libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

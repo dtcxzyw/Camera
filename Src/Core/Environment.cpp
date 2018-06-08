@@ -194,7 +194,7 @@ size_t DeviceMonitor::getMemoryTotalSize() const {
 }
 
 void DeviceMonitor::setCallStackSize(const size_t size) {
-    if(mCallStackSize!=size) {
+    if (mCallStackSize != size) {
         checkError(cudaDeviceSetLimit(cudaLimitStackSize, size));
         mCallStackSize = size;
     }

@@ -6,7 +6,7 @@ private:
     Point mPos;
     Spectrum mIllumination, mPower;
 public:
-    BOTH PointLight() = default;
+    PointLight() = default;
     BOTH PointLight(const Point pos, const Spectrum& illumination)
         : mPos(pos), mIllumination(illumination) {
         mPower = mIllumination * (4.0f * pi<float>());
@@ -40,7 +40,7 @@ private:
     }
 
 public:
-    BOTH SpotLight() = default;
+    SpotLight() = default;
     BOTH SpotLight(const Transform& transform, const Spectrum& illumination,
         const float fallOffStart, const float width) : mPos(transform(Point{})),
         mWorldToLight(inverse(transform)), mIllumination(illumination),

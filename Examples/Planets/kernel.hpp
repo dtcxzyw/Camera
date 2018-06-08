@@ -45,5 +45,5 @@ struct Uniform final {
 };
 
 void kernel(const Span<vec4>& spheres,
-            const Span<Uniform>& uniform, FrameBuffer& fbo,
-            PinholeCamera::RasterPosConverter converter, CommandBuffer& buffer);
+    const Span<Uniform>& uniform, FrameBuffer& fbo,
+    PinholeCamera::RasterPosConverter converter, CommandBuffer& buffer);

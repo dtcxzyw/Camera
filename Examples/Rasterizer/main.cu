@@ -3,7 +3,7 @@
 #include <Core/Environment.hpp>
 #include <Interaction/SwapChain.hpp>
 #include <Core/CompileBegin.hpp>
-#include <IMGUI/imgui.h>
+#include <imgui.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <Core/CompileEnd.hpp>
 #include <Interaction/SoftwareRenderer.hpp>
@@ -54,7 +54,7 @@ private:
         ImGui::Text("triNum: %u\n", *mMc->triContext.triNum);
         ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
         auto&& monitor = DeviceMonitor::get();
-        ImGui::Text("Memory %.1f%", monitor.getMemoryFreeSize()*100.0f / monitor.getMemoryTotalSize());
+        ImGui::Text("Memory %.1f%", monitor.getMemoryFreeSize() * 100.0f / monitor.getMemoryTotalSize());
         ImGui::Text("FOV %.1f ", glm::degrees(mCamera.toFov()));
         ImGui::SliderFloat("focal length", &mCamera.focalLength, 1.0f, 500.0f, "%.1f");
         ImGui::SliderFloat("light", &mLight, 0.0f, 100.0f);

@@ -6,7 +6,7 @@
 #include <Texture/Noise.hpp>
 
 DEVICEINLINE Point toPos(const Point pos, const Uniform& u) {
-    const Vector p{ pos };
+    const Vector p{pos};
     return {p.x * u.mul.x, p.y * u.mul.y, -p.z};
 }
 
@@ -59,7 +59,7 @@ DEVICEINLINE void setModel(unsigned int, ivec2 uv, float z, const OI&, const OI&
 DEVICEINLINE Spectrum shade(const Point p, const Normal N, const Normal X, const Normal Y,
     const Uniform& uniform) {
     const auto sample = uniform.light.sampleLi({}, p);
-    const Normal V{ uniform.cp - p };
+    const Normal V{uniform.cp - p};
     const auto F = disneyBRDF(Normal(sample.wi), V, N, X, Y, uniform.arg);
     const auto ref = reflect(-V, N);
     const auto lc = sample.illumination +
@@ -71,13 +71,13 @@ DEVICEINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, cons
     const OI& ddy, const Uniform& uniform, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
         const Point p = out.get<Pos>();
-        const Normal N{ out.get<Nor>() };
-        Normal X{ out.get<Tangent>() };
+        const Normal N{out.get<Nor>()};
+        Normal X{out.get<Tangent>()};
         const auto Y = cross(X, N);
         X = cross(Y, N);
         const auto octaves = calcOctavesAntiAliased(Vector(ddx.get<Pos>()), Vector(ddy.get<Pos>()));
-        const auto col = marble(Vector(N)*30.0f, 1.0f, 0.8f, octaves) + Spectrum(0.5f);
-        fbo.color.set(uv, { (shade(p,N,X,Y,uniform)*col).toRGB(), 1.0f });
+        const auto col = marble(Vector(N) * 30.0f, 1.0f, 0.8f, octaves) + Spectrum(0.5f);
+        fbo.color.set(uv, {(shade(p, N, X, Y, uniform) * col).toRGB(), 1.0f});
     }
 }
 
@@ -102,7 +102,7 @@ DEVICEINLINE void post(ivec2 NDC, const PostUniform& uni, BuiltinRenderTargetRef
         }
         c = Spectrum(ACES(c.toRGB(), *uni.lum));
     }
-    const RGBA8 color = { clamp(pow(c.toRGB(),RGB(1.0f / 2.2f)), 0.0f, 1.0f) * 255.0f, 255 };
+    const RGBA8 color = {clamp(pow(c.toRGB(), RGB(1.0f / 2.2f)), 0.0f, 1.0f) * 255.0f, 255};
     out.set(NDC, color);
 }
 
@@ -110,7 +110,7 @@ GLOBAL void updateLum(const PostUniform uniform) {
     *uniform.lum = calcLum(uniform.sum->first / (uniform.sum->second + 1));
 }
 
-template <VertShader<VI, OI, Uniform> VertFunc, TriangleClipShader<Uniform> ClipFunc, 
+template <VertShader<VI, OI, Uniform> VertFunc, TriangleClipShader<Uniform> ClipFunc,
     FragmentShader<OI, Uniform, FrameBufferRef>... FragFunc>
 void renderMesh(const StaticMeshData& model, const Span<Uniform>& uniform,
     const Span<FrameBufferRef>& frameBuffer, const uvec2 size,
@@ -123,8 +123,8 @@ void renderMesh(const StaticMeshData& model, const Span<Uniform>& uniform,
         buffer.useAllocated(model.index));
     renderTriangles<decltype(index), OI, Uniform, FrameBufferRef, ClipFunc,
         emptyTriangleTileClipShader<Uniform>, VersionComparer, FragFunc...>(buffer, vert, index,
-            uniform, frameBuffer, size, converter.near, converter.far, scissor, context.triContext, 
-            context.vertCounter.get(), mode);
+        uniform, frameBuffer, size, converter.near, converter.far, scissor, context.triContext,
+        context.vertCounter.get(), mode);
 }
 
 DEVICEINLINE SphereDesc vsSphere(SphereDesc sp, const Uniform& uniform) {
@@ -149,7 +149,7 @@ DEVICEINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, Point p, Vect
         const auto octaves = calcOctavesAntiAliased(u.invCameraTransform(dpdx),
             u.invCameraTransform(dpdy));
         res *= marble(modelDir, 1.0f, 0.5f, octaves) + Spectrum(0.5f);
-        fbo.color.set(uv, { res.toRGB(), 1.0f });
+        fbo.color.set(uv, {res.toRGB(), 1.0f});
     }
 }
 
@@ -158,7 +158,7 @@ void kernel(const StaticMeshData& model, RenderingContext& mc,
     const MemorySpan<SphereDesc>& spheres,
     const Span<Uniform>& uniform, FrameBuffer& fbo, float* lum,
     const PinholeCamera::RasterPosConverter converter, CommandBuffer& buffer) {
-    fbo.colorRT->clear(buffer, vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
+    fbo.colorRT->clear(buffer, vec4{0.0f, 0.0f, 0.0f, 1.0f});
     Buffer2D<unsigned int> depth(buffer, fbo.size);
     depth.clear(0xff);
     const auto frameBuffer = fbo.getData(buffer, depth);
@@ -166,7 +166,7 @@ void kernel(const StaticMeshData& model, RenderingContext& mc,
     renderMesh<VSM, CSM, setModel, drawModel>(model, uniform, frameBuffer, fbo.size,
         converter, CullFace::Back, mc, scissor, buffer);
     renderSpheres<Uniform, FrameBufferRef, vsSphere, setSpherePoint, drawSpherePoint>(buffer,
-        buffer.useAllocated(spheres), uniform, frameBuffer, fbo.size, converter.near, converter.far, 
+        buffer.useAllocated(spheres), uniform, frameBuffer, fbo.size, converter.near, converter.far,
         converter.mul, scissor);
     renderMesh<VS, CS, drawSky>(skybox, uniform, frameBuffer, fbo.size, converter,
         CullFace::Front, sc, scissor, buffer);

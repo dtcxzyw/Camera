@@ -22,7 +22,7 @@ DEVICEINLINE float fresnelSchlickUE4(const float vdh) {
 Artist Friendly Metallic Fresnel(JCGT, 2014)
 http://jcgt.org/published/0003/04/03/
 */
-DEVICEINLINE Spectrum fresnelGulbrandsen(const Spectrum& r, const Spectrum& g, const float u) {
+DEVICEINLINE Spectrum fresnelGulbrandsen(const RGB& r, const RGB& g, const float u) {
     const auto nMin = (1.0f - r) / (1.0f + r);
     const auto sqrtr = sqrt(r);
     const auto nMax = (1.0f + sqrtr) / (1.0f - sqrtr);
@@ -37,7 +37,7 @@ DEVICEINLINE Spectrum fresnelGulbrandsen(const Spectrum& r, const Spectrum& g, c
     const auto smu2 = sum * u2 + 1.0f;
     const auto rs = (sau2 - n2u) / (sau2 + n2u);
     const auto rp = (smu2 - n2u) / (smu2 + n2u);
-    return 0.5f * (rs + rp);
+    return Spectrum{0.5f * (rs + rp)};
 }
 
 //D
@@ -350,7 +350,7 @@ DEVICEINLINE Spectrum mixedBRDF(const Normal L, const Normal V, const Normal N, 
     const auto ndh = dot(N, H);
 
     const auto fd = arg.baseColor * (disneyDiffuse2015(ndl, ndv, ldh, arg.roughness) * (1.0f - arg.metallic));
-    const auto F = fresnelGulbrandsen(arg.baseColor, arg.edgeTint, ldh);
+    const auto F = fresnelGulbrandsen(arg.baseColor.toRGB(), arg.edgeTint.toRGB(), ldh);
     const auto aspect = sqrt(1.0f - arg.anisotropic * 0.9f);
     const auto sqrr = arg.roughness * arg.roughness;
     const auto ax = fmax(0.001f, sqrr / aspect);

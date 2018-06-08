@@ -11,12 +11,12 @@ PinholeCamera::RasterPosConverter PinholeCamera::toRasterPos(const vec2 imageSiz
 }
 
 float PinholeCamera::toFov() const {
-    return 2.0f * atan((filmGate.x * 0.5f) / focalLength);
+    return 2.0f * atan(filmGate.x / (2.0f * focalLength));
 }
 
 PinholeCameraRayGenerator PinholeCamera::getRayGenerator(const vec2 imageSize) const {
-    const auto scale = vec2{1.0f, -1.0f} / calcScale(imageSize);
-    return { lensRadius,focalLength, scale, 2.0f * scale / imageSize };
+    const auto scale = 1.0f / calcScale(imageSize);
+    return {lensRadius, focalLength, scale, vec2{2.0f, -2.0f} * scale / imageSize};
 }
 
 vec2 PinholeCamera::calcScale(const vec2 imageSize) const {

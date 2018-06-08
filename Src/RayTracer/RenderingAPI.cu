@@ -11,10 +11,10 @@ GLOBAL void divWeight(const unsigned int size, Spectrum* pixel, READONLY(float) 
     col = w > 0.0f ? col / w : Spectrum{};
 }
 
-constexpr auto tileSize = 30U;
+constexpr auto tileSize = 128U;
 
 MemorySpan<Spectrum> renderFrame(Integrator& integrator,
-    const SceneDesc& scene, const Transform& cameraTransform,
+    const SceneDesc& scene, const Transform& cameraToWorld,
     const RayGeneratorWrapper& rayGenerator, const SampleWeightLUT& weightLUT,
     const uvec2 size) {
     MemorySpan<Spectrum> pixel(size.x * size.y);
@@ -32,13 +32,16 @@ MemorySpan<Spectrum> renderFrame(Integrator& integrator,
             auto buffer = std::make_unique<CommandBuffer>();
             {
                 const auto tile = std::make_unique<FilmTile>(*buffer, currentTileSize, weightLUT);
-                integrator.render(*buffer, scene, cameraTransform, rayGenerator, *tile, lt);
+                integrator.render(*buffer, scene, cameraToWorld, rayGenerator, *tile, lt, size);
                 tile->merge(pixel, weight, size, lt);
             }
             tasks.emplace_back(Environment::get().submit(std::move(buffer)));
         }
-    for (auto&& task : tasks)
+    auto cnt = 0;
+    for (auto&& task : tasks) {
         task.sync();
+        printf("%.3lf %%\n", 100.0f * (++cnt) / sx / sy);
+    }
     {
         auto buffer = std::make_unique<CommandBuffer>();
         buffer->launchKernelLinear(makeKernelDesc(divWeight), pixel.size(), buffer->useAllocated(pixel),

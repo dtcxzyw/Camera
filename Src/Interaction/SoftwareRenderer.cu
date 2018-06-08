@@ -1,7 +1,7 @@
 #include <Core/Config.hpp>
 #include <Interaction/SoftwareRenderer.hpp>
 #include <Core/CompileBegin.hpp>
-#include <IMGUI/imgui.h>
+#include <imgui.h>
 #include <Core/CompileEnd.hpp>
 #include <Rasterizer/TriangleRasterizer.hpp>
 #include <Core/DataSet.hpp>
@@ -21,9 +21,8 @@ struct VertInfo final {
     ALIGN unsigned int col;
 };
 
-constexpr auto int2Float = 1.0f / 255.0f;
-
 DEVICEINLINE vec4 toRGBA(const unsigned int col) {
+    constexpr auto int2Float = 1.0f / 255.0f;
     return vec4{col & 0xff, (col >> 8) & 0xff, (col >> 16) & 0xff, col >> 24} * int2Float;
 }
 
@@ -44,6 +43,7 @@ DEVICEINLINE bool clipShader(unsigned int, Point&, Point&, Point&,
 
 DEVICEINLINE void fragShader(unsigned int, ivec2 uv, float, const VertOut& in, const VertOut&, const VertOut&,
     const BuiltinSamplerRef<float>& texture, FrameBufferInfo& fbo) {
+    constexpr auto int2Float = 1.0f / 255.0f;
     const auto texAlpha = texture.get(in.get<VertOutAttr::TexCoord>());
     auto src = in.get<VertOutAttr::Color>();
     src.a *= texAlpha;
@@ -201,6 +201,7 @@ void SoftwareRenderer::init(Stream& resLoader) {
     ImGui::GetIO().Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
     mTexture = std::make_unique<BuiltinArray<float>>(uvec2{width, height});
     const auto size = width * height;
+    constexpr auto int2Float = 1.0f / 255.0f;
     PinnedBuffer<float> floatPixels(size);
     for (auto i = 0; i < size; ++i)
         floatPixels[i] = pixels[i] * int2Float;

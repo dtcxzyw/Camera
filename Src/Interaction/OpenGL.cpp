@@ -7,7 +7,7 @@
 #include <Core/CompileBegin.hpp>
 #include <GLFW/glfw3.h>
 #include <cuda_gl_interop.h>
-#include <IMGUI/imgui.h>
+#include <imgui.h>
 #include <Core/CompileEnd.hpp>
 #include <stdexcept>
 #include <iostream>
@@ -177,6 +177,7 @@ GLWindow::GLWindow() : mFBO(0), mWheel(0) {
     glfwSwapInterval(0);
     glGenFramebuffers(1, &mFBO);
 
+    ImGui::CreateContext();
     auto&& io = ImGui::GetIO();
 
     io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;
@@ -261,7 +262,7 @@ uvec2 GLWindow::size() const {
 
 GLWindow::~GLWindow() {
     makeContext();
-    ImGui::Shutdown();
+    ImGui::DestroyContext();
 
     glDeleteFramebuffers(1, &mFBO);
     glfwDestroyWindow(mWindow);
@@ -283,7 +284,7 @@ void GLWindow::newFrame() {
     io.DeltaTime = mCounter.record();
 
     if (glfwGetWindowAttrib(mWindow, GLFW_FOCUSED)) {
-        if (io.WantMoveMouse) {
+        if (io.WantSetMousePos) {
             glfwSetCursorPos(mWindow, io.MousePos.x, io.MousePos.y);
         }
         else {

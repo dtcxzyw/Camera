@@ -10,28 +10,26 @@ private:
 public:
     PinholeCameraRayGenerator(const float lensRadius, const float focalLength,
         const vec2 scale, const vec2 offset)
-        : mLensRadius(lensRadius), mFocalLength(focalLength), mScale(scale), mOffset(offset) {}
+        : mLensRadius(lensRadius * 1e-3f), mFocalLength(focalLength * 1e-3f),
+        mScale(scale), mOffset(offset) {}
 
-    //offset=2.0f*scale/screenSize
     DEVICE Ray sample(const CameraSample& sample, float& weight) const {
-        const auto pRaster = sample.pFilm * 2.0f - 1.0f;
-        const Point pCamera = {pRaster.x * mScale.x, pRaster.y * mScale.y, -1.0f};
-        Ray ray{{}, Vector(pCamera)};
+        const vec2 pRaster = {sample.pFilm.x * 2.0f - 1.0f, sample.pFilm.y * -2.0f + 1.0f};
+        const Vector pCamera{pRaster.x * mScale.x, pRaster.y * mScale.y, -1.0f};
+        Ray ray{{}, pCamera};
+        ray.xOri = ray.yOri = ray.origin;
+        ray.xDir = {ray.dir.x + mOffset.x, ray.dir.y, ray.dir.z};
+        ray.yDir = {ray.dir.x, ray.dir.y + mOffset.y, ray.dir.z};
         if (mLensRadius > 0.0f) {
             const auto pLens = mLensRadius * concentricSampleDisk(sample.pLens);
-            const auto focus = ray(mFocalLength);
             ray.origin = Point{pLens.x, pLens.y, 0.0f};
-            ray.dir = focus - ray.origin;
-            ray.xDir = ray.dir + Vector{mOffset.x * mFocalLength, 0.0f, 0.0f};
-            ray.yDir = ray.dir + Vector{0.0f, mOffset.y * mFocalLength, 0.0f};
+            ray.dir = Point(mFocalLength * ray.dir / glm::length(ray.dir)) - ray.origin;
+            ray.xDir = Point(mFocalLength * ray.xDir / glm::length(ray.xDir)) - ray.origin;
+            ray.yDir = Point(mFocalLength * ray.yDir / glm::length(ray.yDir)) - ray.origin;
         }
-        else {
-            ray.xDir = {ray.dir.x + mOffset.x, ray.dir.y, ray.dir.z};
-            ray.yDir = {ray.dir.x, ray.dir.y + mOffset.y, ray.dir.z};
-        }
-
-        ray.xOri = ray.yOri = ray.origin;
-
+        ray.dir = glm::normalize(ray.dir);
+        ray.xDir = glm::normalize(ray.xDir);
+        ray.yDir = glm::normalize(ray.yDir);
         weight = 1.0f;
         return ray;
     }

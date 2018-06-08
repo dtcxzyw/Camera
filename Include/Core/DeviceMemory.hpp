@@ -47,7 +47,7 @@ class UniquePtr final {
 private:
     DeviceMemoryDesc mPtr;
 public:
-    DEVICE UniquePtr() = default;
+    UniquePtr() = default;
     DEVICE explicit UniquePtr(const DeviceMemoryDesc& ptr) : mPtr(ptr) {}
     DEVICE UniquePtr(UniquePtr&& rhs) noexcept : mPtr(rhs.mPtr) {
         rhs.mPtr = nullptr;
@@ -104,7 +104,7 @@ private:
          return mPtr.viewAs<std::pair<T, unsigned int>>()->second;
     }
 public:
-    DEVICE SharedPtr() = default;
+    SharedPtr() = default;
     DEVICE explicit SharedPtr(const DeviceMemoryDesc& ptr) : mPtr(ptr) {
         count() = 1U;
     }

@@ -67,14 +67,14 @@ public:
 
 using MemoryReleaseFunction = std::function<void(UniqueMemory, size_t)>;
 
-template<typename Func>
+template <typename Func>
 struct KernelDesc final {
     Func func;
     size_t stackSize;
-    KernelDesc(const Func func, const size_t stackSize) :func(func), stackSize(stackSize) {}
+    KernelDesc(const Func func, const size_t stackSize) : func(func), stackSize(stackSize) {}
 };
 
-template<typename Func>
+template <typename Func>
 auto makeKernelDesc(const Func func, const size_t stackSize = 1024U) {
     return KernelDesc<Func>(func, stackSize);
 }
@@ -414,7 +414,7 @@ namespace Impl {
         std::function<void(Stream&)> mClosure;
     public:
         template <typename Func, typename... Args>
-        KernelLaunchLinear(ResourceManager& manager, const KernelDesc<Func> func, 
+        KernelLaunchLinear(ResourceManager& manager, const KernelDesc<Func> func,
             const size_t size, Args ... args) : Operator(manager) {
             mClosure = [=, &manager](Stream& stream) {
                 setCallStackSize(func.stackSize);
