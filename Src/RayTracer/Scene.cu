@@ -46,6 +46,10 @@ DEVICE LightWrapper** SceneRef::end() const {
     return mLights + mLightSize;
 }
 
+DEVICE unsigned int SceneRef::size() const {
+    return mLightSize;
+}
+
 SceneDesc::SceneDesc(const std::vector<Primitive>& priData, const std::vector<LightWrapper*>& light)
     : mPrimitives(upload(priData)), mLights(upload(light)) {}
 

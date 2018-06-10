@@ -19,6 +19,18 @@ using Clock = std::chrono::high_resolution_clock;
 #define NOT_IMPLEMENTED() throw std::logic_error("Not implemented.")
 #define LAUNCH_BOUND __launch_bounds__
 
+#ifdef CAMERA_DEBUG
+#define CHECKFP(expr) \
+    {\
+        const auto val=(expr);\
+        if (!isfinite(val)) {\
+            printf("floating point check failed (value = %f) at %s : %s line %d\n", val, __FILE__, __FUNCTION__, __LINE__); \
+        }\
+    }
+#else
+#define CHECKFP(expr)
+#endif
+
 struct Uncopyable {
     Uncopyable() = default;
     ~Uncopyable() = default;

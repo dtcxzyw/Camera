@@ -1,5 +1,4 @@
 #include <RayTracer/Integrators/Whitted.hpp>
-#include <RayTracer/Scene.hpp>
 #include <Camera/RayGeneratorWrapper.hpp>
 #include <RayTracer/Film.hpp>
 #include <Math/Geometry.hpp>
@@ -8,28 +7,15 @@
 #include <Material/MaterialWrapper.hpp>
 #include <Light/LightWrapper.hpp>
 #include <Material/Material.hpp>
+#include <RayTracer/Integrators/Utilities.hpp>
 
 WhittedIntegrator::WhittedIntegrator(const SequenceGenerator2DWrapper& sequenceGenerator,
     const unsigned int maxDepth, const unsigned int spp)
     : mSequenceGenerator(sequenceGenerator), mMaxDepth(maxDepth), mSpp(spp) {}
 
-struct RenderingContext {
-    const SequenceGenerator2DWrapper sequenceGenerator;
-    const SceneRef scene;
-    unsigned int offset;
+static DEVICE Spectrum Li(RenderingContext& context, const Ray& ray, unsigned int depth);
 
-    DEVICE RenderingContext(const SequenceGenerator2DWrapper& sequenceGenerator,
-        const SceneRef& scene, const unsigned int offset)
-        : sequenceGenerator(sequenceGenerator), scene(scene), offset(offset) {}
-
-    DEVICE vec2 sample() {
-        return sequenceGenerator.sample(++offset);
-    }
-};
-
-DEVICE Spectrum Li(RenderingContext& context, const Ray& ray, unsigned int depth);
-
-DEVICE Spectrum specularReflect(RenderingContext& context, const Ray& ray,
+static DEVICE Spectrum specularReflect(RenderingContext& context, const Ray& ray,
     const Interaction& interaction, const Bsdf& bsdf, const unsigned int depth) {
     constexpr auto type = BxDFType::Reflection | BxDFType::Specular;
     const auto sampleF = bsdf.sampleF(Vector{interaction.wo}, context.sample(), type);
@@ -68,7 +54,7 @@ DEVICE Spectrum specularReflect(RenderingContext& context, const Ray& ray,
     return Spectrum{};
 }
 
-DEVICE Spectrum specularTransmit(RenderingContext& context, const Ray& ray,
+static DEVICE Spectrum specularTransmit(RenderingContext& context, const Ray& ray,
     const Interaction& interaction, const Bsdf& bsdf, const unsigned int depth) {
     constexpr auto type = BxDFType::Transmission | BxDFType::Specular;
     const auto sampleF = bsdf.sampleF(Vector{interaction.wo}, context.sample(), type);
@@ -114,13 +100,13 @@ DEVICE Spectrum specularTransmit(RenderingContext& context, const Ray& ray,
     return Spectrum{};
 }
 
-DEVICE Spectrum Li(RenderingContext& context, const Ray& ray, const unsigned int depth) {
+static DEVICE Spectrum Li(RenderingContext& context, const Ray& ray, const unsigned int depth) {
     Interaction interaction;
     if (context.scene.intersect(ray, interaction)) {
         interaction.prepare(ray);
         Bsdf bsdf(interaction);
         interaction.material->computeScatteringFunctions(bsdf);
-        Spectrum L{};
+        auto L = interaction.le(Vector{interaction.wo});
         for (auto&& light : context.scene) {
             const auto sample = light->sampleLi(context.sample(), interaction.pos);
             if (sample.illumination.lum() > 0.0f & sample.pdf > 0.0f
@@ -143,7 +129,7 @@ DEVICE Spectrum Li(RenderingContext& context, const Ray& ray, const unsigned int
     return L;
 }
 
-GLOBAL void renderKernel(const RayGeneratorWrapper rayGenerator,
+static GLOBAL void renderKernel(const RayGeneratorWrapper rayGenerator,
     const Transform toWorld, const vec2 offset,
     const SequenceGenerator2DWrapper sequenceGenerator, const unsigned int seqOffset,
     FilmTileRef dst, const unsigned int maxDepth, const SceneRef scene, const unsigned int spp,
@@ -156,9 +142,9 @@ GLOBAL void renderKernel(const RayGeneratorWrapper rayGenerator,
     const auto tilePos = vec2{blockIdx.x, blockIdx.y} + context.sample();
     const CameraSample sample{(offset + tilePos) * invDstSize, context.sample()};
     float weight;
-    const auto ray = toWorld(rayGenerator.sample(sample, weight));
+    const auto ray = rayGenerator.sample(sample, weight);
     if (weight > 0.0f) {
-        dst.add(tilePos, Li(context, ray, maxDepth) * weight);
+        dst.add(tilePos, Li(context, toWorld(ray), maxDepth) * weight);
     }
 }
 
@@ -170,9 +156,17 @@ void WhittedIntegrator::render(CommandBuffer& buffer, const SceneDesc& scene, co
         sizeof(SequenceGenerator2DWrapper) + sizeof(SceneRef) + sizeof(RenderingContext) +
         sizeof(CameraSample) + sizeof(Spectrum) + 128U;
     constexpr auto liStack = sizeof(Interaction) + sizeof(Bsdf) + sizeof(Ray) + sizeof(BxDFSample);
-    buffer.launchKernelDim(makeKernelDesc(renderKernel, baseStack + liStack * (mMaxDepth + 3)),
-        dim3{size.x, size.y, calcBlockSize(mSpp, blockSize)},
-        dim3{std::min(blockSize, mSpp)}, rayGenerator, cameraToWorld, static_cast<vec2>(offset),
-        mSequenceGenerator, offset.x << 16 | offset.y, filmTile.toRef(), mMaxDepth, scene.toRef(),
-        mSpp, 1.0f / vec2(dstSize));
+    const auto stackSize = baseStack + liStack * (mMaxDepth + 3);
+    const auto maxLaunchSize = std::min(blockSize, static_cast<unsigned int>(
+        (DeviceMonitor::get().getMemoryFreeSize() * 4 / 5) / (stackSize * size.x * size.y)));
+    auto todo = mSpp;
+    while (todo) {
+        const auto current = std::min(todo, maxLaunchSize);
+        todo -= current;
+        buffer.launchKernelDim(makeKernelDesc(renderKernel, stackSize),
+            dim3{size.x, size.y, calcBlockSize(current, blockSize)},
+            dim3{std::min(blockSize, current)}, rayGenerator, cameraToWorld, static_cast<vec2>(offset),
+            mSequenceGenerator, todo * (offset.x << 16 | offset.y), filmTile.toRef(), mMaxDepth,
+            scene.toRef(), current, 1.0f / vec2(dstSize));
+    }
 }

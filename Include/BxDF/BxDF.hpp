@@ -54,7 +54,7 @@ DEVICEINLINE float cos2Theta(const Vector& v) {
 }
 
 DEVICEINLINE float sin2Theta(const Vector& v) {
-    return 1.0f - cos2Theta(v);
+    return fmax(0.0f, 1.0f - cos2Theta(v));
 }
 
 DEVICEINLINE float sinTheta(const Vector& v) {
@@ -71,7 +71,7 @@ DEVICEINLINE float tanTheta(const Vector& v) {
 
 DEVICEINLINE float cosPhi(const Vector& v) {
     const auto sinThetaV = sinTheta(v);
-    return sinThetaV == 0.0f ? 1.0f : v.x / sinThetaV;
+    return sinThetaV == 0.0f ? 1.0f : clamp(v.x / sinThetaV, -1.0f, 1.0f);
 }
 
 DEVICEINLINE float cos2Phi(const Vector& v) {
@@ -80,7 +80,7 @@ DEVICEINLINE float cos2Phi(const Vector& v) {
 
 DEVICEINLINE float sinPhi(const Vector& v) {
     const auto sinThetaV = sinTheta(v);
-    return sinThetaV == 0.0f ? 0.0f : v.y / sinThetaV;
+    return sinThetaV == 0.0f ? 0.0f : clamp(v.y / sinThetaV, -1.0f, 1.0f);
 }
 
 DEVICEINLINE float sin2Phi(const Vector& v) {

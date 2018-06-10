@@ -74,6 +74,7 @@
     <ClInclude Include="..\..\Include\RayTracer\Film.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Integrator.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Integrators\Path.hpp" />
+    <ClInclude Include="..\..\Include\RayTracer\Integrators\Utilities.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Integrators\Whitted.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\RenderingAPI.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Scene.hpp" />
@@ -114,7 +115,9 @@
     <ClCompile Include="..\..\Src\Interaction\Counter.cpp" />
     <ClCompile Include="..\..\Src\IO\LZ4Binary.cpp" />
     <ClCompile Include="..\..\Src\IO\Model.cpp" />
+    <CudaCompile Include="..\..\Src\Material\Material.cu" />
     <CudaCompile Include="..\..\Src\RayTracer\Integrators\Path.cu" />
+    <CudaCompile Include="..\..\Src\RayTracer\Integrators\Utilities.cu" />
     <CudaCompile Include="..\..\Src\RayTracer\Integrators\Whitted.cu">
       <FileType>Document</FileType>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>

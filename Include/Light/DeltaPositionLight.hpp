@@ -12,18 +12,22 @@ public:
         mPower = mIllumination * (4.0f * pi<float>());
     }
 
-    BOTH LightingSample sampleLi(const vec2, const Point pos) const {
+    DEVICE LightingSample sampleLi(const vec2, const Point pos) const {
         const auto delta = mPos - pos;
         const auto invDis2 = 1.0f / length2(delta);
         return {delta * sqrt(invDis2), mIllumination * invDis2, mPos};
     }
 
-    BOTH Spectrum le(const Ray& ray) const {
+    DEVICE Spectrum le(const Ray&) const {
         return Spectrum{};
     }
 
     BOTH Spectrum power() const {
         return mPower;
+    }
+
+    DEVICE bool isDelta() const {
+        return true;
     }
 };
 
@@ -33,7 +37,7 @@ private:
     Transform mWorldToLight;
     Spectrum mIllumination, mPower;
     float mFallOffStart, mWidth, mInvLen;
-    BOTH float fallOff(const float cosTheta) const {
+    DEVICE float fallOff(const float cosTheta) const {
         const auto k = clamp((cosTheta - mWidth) * mInvLen, 0.0f, 1.0f);
         const auto k2 = k * k;
         return k2 * k2;
@@ -49,18 +53,22 @@ public:
         mInvLen = 1.0f / (mFallOffStart - mWidth);
     }
 
-    BOTH LightingSample sampleLi(const vec2, const Point pos) const {
+    DEVICE LightingSample sampleLi(const vec2, const Point pos) const {
         const auto delta = mPos - pos;
         const auto invDis2 = 1.0f / length2(delta);
         const auto wi = delta * sqrt(invDis2);
         return {wi, mIllumination * invDis2 * fallOff(mWorldToLight(wi).z), mPos};
     }
 
-    BOTH Spectrum le(const Ray& ray) const {
+    DEVICE Spectrum le(const Ray&) const {
         return Spectrum{};
     }
 
     BOTH Spectrum power() const {
         return mPower;
+    }
+
+    DEVICE bool isDelta() const {
+        return true;
     }
 };

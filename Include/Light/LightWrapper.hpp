@@ -6,6 +6,7 @@ struct LightWrapper {
     virtual ~LightWrapper() = default;
     DEVICE virtual LightingSample sampleLi(vec2 sample, Point pos) const = 0;
     DEVICE virtual Spectrum le(const Ray& ray) const = 0;
+    DEVICE virtual bool isDelta() const = 0;
 };
 
 namespace Impl {
@@ -23,6 +24,10 @@ namespace Impl {
 
         DEVICE Spectrum le(const Ray& ray) const override {
             return mLight.le(ray);
+        }
+
+        DEVICE bool isDelta() const override {
+            return mLight.isDelta();
         }
     };
 }

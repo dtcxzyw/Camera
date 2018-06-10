@@ -36,7 +36,7 @@ DEVICE bool TriangleDesc::interscet(const Ray& ray, Vector& pa, Vector& pb, Vect
     const auto deltaX = gamma(5) * maxXt;
     const auto maxYt = absMax3(pa.y, pb.y, pc.y);
     const auto deltaY = gamma(5) * maxYt;
-    const auto maxZt = absMax3(pa.z, pb.z, pc.z)*fabs(sz);
+    const auto maxZt = absMax3(pa.z, pb.z, pc.z) * fabs(sz);
     const auto deltaZ = gamma(3) * maxZt;
     const auto deltaE = 2.0f * (gamma(2) * maxXt * maxYt + deltaY * maxXt + deltaX * maxYt);
     const auto maxE = absMax3(e0, e1, e2);
@@ -52,7 +52,7 @@ DEVICE bool TriangleDesc::interscet(const Ray& ray, Vector& pa, Vector& pb, Vect
 DEVICE TriangleDesc::TriangleDesc(const unsigned id, const VertexDesc& a, const VertexDesc& b,
     const VertexDesc& c): id(id), a(a), b(b), c(c) {}
 
-DEVICE void defaultCoordinateSystem(const Vector& n,Vector& t,Vector& b) {
+DEVICE void defaultCoordinateSystem(const Vector& n, Vector& t, Vector& b) {
     if (fabs(n.x) > fabs(n.y))
         t = Vector(-n.z, 0.0f, n.x) / std::sqrt(n.x * n.x + n.z * n.z);
     else
@@ -65,7 +65,7 @@ DEVICE bool TriangleDesc::intersect(const Ray& ray, float& tHit, Interaction& in
     float t, e0, e1, e2;
     if (interscet(ray, pa, pb, pc, t, e0, e1, e2, tHit)) {
         interaction.pos = a.pos * e0 + b.pos * e1 + c.pos * e2;
-        interaction.pError = gamma(7)*Vector(
+        interaction.pError = gamma(7) * Vector(
             (fabs(e0 * pa.x) + fabs(e1 * pb.x) + fabs(e2 * pc.x)),
             (fabs(e0 * pa.y) + fabs(e1 * pb.y) + fabs(e2 * pc.y)),
             (fabs(e0 * pa.z) + fabs(e1 * pb.z) + fabs(e2 * pc.z))
@@ -75,7 +75,7 @@ DEVICE bool TriangleDesc::intersect(const Ray& ray, float& tHit, Interaction& in
         interaction.uv = a.uv * e0 + b.uv * e1 + c.uv * e2;
         interaction.id = id;
         const auto duvac = a.uv - c.uv, duvbc = b.uv - c.uv;
-        const auto det = duvac.x*duvbc.y - duvbc.x*duvac.y;
+        const auto det = duvac.x * duvbc.y - duvbc.x * duvac.y;
         auto&& local = interaction.localGeometry;
         auto&& shading = interaction.shadingGeometry;
         if (fabs(det) > 1e-8f) {
@@ -103,11 +103,11 @@ DEVICE bool TriangleDesc::intersect(const Ray& ray, float& tHit, Interaction& in
         }
         {
             local.normal = faceForward(Normal(cross(local.dpdu, local.dpdv)), shading.normal);
-            shading.normal = Normal{ a.normal * e0 + b.normal * e1 + c.normal * e2 };
-            const Normal tangent{ a.tangent * e0 + b.tangent * e1 + c.normal * e2 };
+            shading.normal = Normal{a.normal * e0 + b.normal * e1 + c.normal * e2};
+            const Normal tangent{a.tangent * e0 + b.tangent * e1 + c.tangent * e2};
             const auto biTangent = cross(tangent, shading.normal);
-            shading.dpdu = Vector{ cross(biTangent, shading.normal) };
-            shading.dpdv = Vector{ biTangent };
+            shading.dpdu = Vector{cross(biTangent, shading.normal)};
+            shading.dpdv = Vector{biTangent};
         }
 
         tHit = t;

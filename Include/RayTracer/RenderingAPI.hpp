@@ -11,4 +11,5 @@ class SampleWeightLUT;
 
 MemorySpan<Spectrum> renderFrame(Integrator& integrator,
     const SceneDesc& scene, const Transform& cameraTransform,
-    const RayGeneratorWrapper& rayGenerator, const SampleWeightLUT& weightLUT, uvec2 size);
+    const RayGeneratorWrapper& rayGenerator, const SampleWeightLUT& weightLUT, uvec2 size,
+    unsigned int tileSize);

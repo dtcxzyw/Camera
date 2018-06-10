@@ -309,6 +309,9 @@
     <ClInclude Include="..\..\Include\RayTracer\Integrators\Path.hpp">
       <Filter>RayTracer\Integrators</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\RayTracer\Integrators\Utilities.hpp">
+      <Filter>RayTracer\Integrators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\IO\Model.cpp">
@@ -393,6 +396,12 @@
     </CudaCompile>
     <CudaCompile Include="..\..\Src\RayTracer\Integrators\Path.cu">
       <Filter>RayTracer\Integrators</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\RayTracer\Integrators\Utilities.cu">
+      <Filter>RayTracer\Integrators</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Material\Material.cu">
+      <Filter>Material</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

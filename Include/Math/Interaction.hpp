@@ -1,6 +1,7 @@
 #pragma once
 #include <Math/Geometry.hpp>
 #include <Math/EFloat.hpp>
+#include <Spectrum/SpectrumConfig.hpp>
 
 class MaterialWrapper;
 
@@ -91,10 +92,15 @@ struct Interaction final {
         constexpr auto shadowDis = 1.0f - 1e-5f;
         const auto d = dst - pos;
         const auto ori = calcOffsetOrigin(d);
-        return Ray{ ori, d, shadowDis };
+        return Ray{ori, d, shadowDis};
     }
 
     DEVICE Ray spawnRay(const Vector& w) const {
         return Ray{calcOffsetOrigin(w), w};
+    }
+
+    DEVICE Spectrum le(const Vector& w) const {
+        //TODO:Area Light
+        return Spectrum{};
     }
 };

@@ -70,14 +70,19 @@ public:
         const auto cos4Theta = cos2Theta(wh) * cos2Theta(wh);
         const auto e = (cos2Phi(wh) / (mAlphaX * mAlphaX) + sin2Phi(wh) / (mAlphaY * mAlphaY)) *
             tan2ThetaH;
-        return one_over_pi<float>() / (mAlphaX * mAlphaY * cos4Theta * (1 + e) * (1 + e));
+        const auto res = one_over_pi<float>() / (mAlphaX * mAlphaY * cos4Theta * (1 + e) * (1 + e));
+        CHECKFP(res);
+        return res;
     }
 
     DEVICE float calcLambda(const Vector& w) const {
         if (w.z == 0.0f)return 0.0f;
         const auto alpha2 = cos2Phi(w) * mAlphaX * mAlphaX + sin2Phi(w) * mAlphaY * mAlphaY;
         const auto tan2ThetaH = tan2Theta(w);
-        return 0.5f * (-1.0f + sqrt(1.0f + alpha2 * tan2ThetaH));
+        if (isinf(tan2ThetaH))return 0.0f;
+        const auto res = 0.5f * (-1.0f + sqrt(1.0f + alpha2 * tan2ThetaH));
+        CHECKFP(res);
+        return res;
     }
 
     DEVICE Vector sampleWh(const Vector& wo, const vec2 sample) const {

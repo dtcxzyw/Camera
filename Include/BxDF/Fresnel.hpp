@@ -18,7 +18,9 @@ public:
             ti = cosThetaT * etaI, tt = cosThetaT * etaT;
         const auto a = (ti - it) / (ti + it);
         const auto b = (ii - tt) / (ii + tt);
-        return 0.5f * (a * a + b * b);
+        const auto res = 0.5f * (a * a + b * b);
+        CHECKFP(res);
+        return res;
     }
 };
 
@@ -50,7 +52,9 @@ public:
         const auto t4 = t2 * sinThetaI2;
         const auto rp = rs * (t3 - t4) / (t3 + t4);
 
-        return 0.5f * (rp + rs);
+        const auto res = 0.5f * (rp + rs);
+        CHECKFP(res.lum());
+        return res;
     }
 };
 

@@ -33,6 +33,7 @@ public:
     DEVICE bool intersect(const Ray& ray, Interaction& interaction) const;
     DEVICE LightWrapper** begin() const;
     DEVICE LightWrapper** end() const;
+    DEVICE unsigned int size() const;
 };
 
 class SceneDesc final {

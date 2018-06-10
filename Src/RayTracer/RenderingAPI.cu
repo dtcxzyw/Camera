@@ -11,12 +11,10 @@ GLOBAL void divWeight(const unsigned int size, Spectrum* pixel, READONLY(float) 
     col = w > 0.0f ? col / w : Spectrum{};
 }
 
-constexpr auto tileSize = 128U;
-
 MemorySpan<Spectrum> renderFrame(Integrator& integrator,
     const SceneDesc& scene, const Transform& cameraToWorld,
     const RayGeneratorWrapper& rayGenerator, const SampleWeightLUT& weightLUT,
-    const uvec2 size) {
+    const uvec2 size, const unsigned int tileSize) {
     MemorySpan<Spectrum> pixel(size.x * size.y);
     pixel.memset();
     MemorySpan<float> weight(size.x * size.y);
