@@ -5,6 +5,7 @@
 class Bsdf final {
 private:
     const Interaction mInteraction;
+    const Vector mNormal, mTangent, mBiTangent, mLocalNormal;
     static constexpr auto maxSize = 4;
     BxDFWrapper mBxDF[maxSize];
     unsigned int mCount;

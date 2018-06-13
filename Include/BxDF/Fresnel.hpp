@@ -7,15 +7,19 @@ private:
 public:
     DEVICE FresnelDielectric(const float etaI, const float etaT) : mEtaI(etaI), mEtaT(etaT) {}
     DEVICE float f(float cosThetaI) const {
+        cosThetaI = clamp(cosThetaI, -1.0f, 1.0f);
         auto etaI = mEtaI, etaT = mEtaT;
-        if (cosThetaI < 0.0f) {
+        if (cosThetaI <= 0.0f) {
             cosThetaI = -cosThetaI;
             cudaSwap(etaI, etaT);
         }
-        const auto sinThetaT = fmin(1.0f, etaI / etaT * sqrt(1.0f - cosThetaI * cosThetaI));
-        const auto cosThetaT = sqrt(1.0f - sinThetaT * sinThetaT);
-        const auto ii = cosThetaI * etaI, it = cosThetaI * etaT,
-            ti = cosThetaT * etaI, tt = cosThetaT * etaT;
+        const auto sinThetaT = etaI / etaT * sqrt(fmax(0.0f, 1.0f - cosThetaI * cosThetaI));
+
+        if (sinThetaT >= 1.0f)return 1.0f;
+
+        const auto cosThetaT = sqrt(fmax(0.0f, 1.0f - sinThetaT * sinThetaT));
+        const auto ii = etaI * cosThetaI, it = etaI * cosThetaT,
+            ti = etaT * cosThetaI, tt = etaT * cosThetaT;
         const auto a = (ti - it) / (ti + it);
         const auto b = (ii - tt) / (ii + tt);
         const auto res = 0.5f * (a * a + b * b);

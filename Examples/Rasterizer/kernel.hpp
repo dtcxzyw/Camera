@@ -20,7 +20,7 @@ enum OutInfo {
     TexCoord
 };
 
-using OI = Args<VAR(Pos, Point), VAR(Nor, Vector), VAR(Tangent, Vector)>;
+using OI = Args<VAR(Pos, Point), VAR(Nor, Normal), VAR(Tangent, Normal)>;
 
 struct FrameBufferRef final {
     BuiltinRenderTargetRef<RGBA> color;

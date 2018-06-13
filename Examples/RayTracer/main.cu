@@ -48,7 +48,7 @@ public:
                 Spectrum{RGB{10.0f, 20.0f, 30.0f}}));
             mLight.emplace_back(makeLightWrapper<PointLight>(resLoader, Point{-3.0f, 3.0f, 3.0f},
                 Spectrum{RGB{30.0f, 20.0f, 10.0f}}));
-            mMaterial = MemorySpan<MaterialWrapper>(2);
+            mMaterial = MemorySpan<MaterialWrapper>(3);
             const TextureMapping2DWrapper mapping{UVMapping{}};
             {
                 const TextureSampler2DSpectrumWrapper samplerS{ConstantSampler2DSpectrum{Spectrum{1.0f}}};
@@ -60,10 +60,10 @@ public:
                     cudaMemcpyHostToDevice, resLoader.get()));
             }
             {
-                const TextureSampler2DSpectrumWrapper samplerR{ConstantSampler2DSpectrum{Spectrum{0.0f}}};
-                const TextureSampler2DSpectrumWrapper samplerT{ConstantSampler2DSpectrum{Spectrum{1.0f}}};
-                const TextureSampler2DFloatWrapper index{ConstantSampler2DFloat{1.5f}};
-                const TextureSampler2DFloatWrapper roughness{ConstantSampler2DFloat{0.0f}};
+                const TextureSampler2DSpectrumWrapper samplerR{ConstantSampler2DSpectrum{Spectrum{0.2f}}};
+                const TextureSampler2DSpectrumWrapper samplerT{ConstantSampler2DSpectrum{Spectrum{0.8f}}};
+                const TextureSampler2DFloatWrapper index{ ConstantSampler2DFloat{1.01f} };
+                const TextureSampler2DFloatWrapper roughness{ ConstantSampler2DFloat{0.0f} };
                 const Texture2DSpectrum textureR{mapping, samplerR};
                 const Texture2DSpectrum textureT{mapping, samplerT};
                 const Texture2DFloat indexT{mapping, index};
@@ -72,13 +72,21 @@ public:
                 checkError(cudaMemcpyAsync(mMaterial.begin() + 1, &glass, sizeof(MaterialWrapper),
                     cudaMemcpyHostToDevice, resLoader.get()));
             }
+            {
+                const TextureSampler2DSpectrumWrapper samplerS{ ConstantSampler2DSpectrum{ Spectrum{ 1.0f } } };
+                const TextureSampler2DFloatWrapper samplerF{ ConstantSampler2DFloat{ 0.01f } };
+                const Texture2DSpectrum textureS{ mapping, samplerS };
+                const Texture2DFloat textureF{ mapping, samplerF };
+                MaterialWrapper metal{ Metal{ textureS, textureS, textureF,textureF } };
+                checkError(cudaMemcpyAsync(mMaterial.begin() + 2, &metal, sizeof(MaterialWrapper),
+                    cudaMemcpyHostToDevice, resLoader.get()));
+            }
 
             std::vector<Primitive> primitives;
-            const auto cubeMat = glm::scale(glm::rotate(
-                glm::translate(glm::mat4{}, {0.0f, 0.0f, 1.0f}), 45.0f, Vector(1.0f)), Vector(1e-3f));
-            addModel(resLoader, primitives, cubeMat, "Res/cube.obj", mMaterial.begin() + 1);
+            const auto sphereMat = glm::translate(glm::mat4{}, { -0.25f, 0.2f, 2.0f })* glm::scale(glm::mat4{}, Vector(1e-3f));
+            addModel(resLoader, primitives, sphereMat, "Res/sphere.obj", mMaterial.begin() + 1);
             const auto objectMat = glm::scale(glm::mat4{}, Vector(5.0f));
-            addModel(resLoader, primitives, objectMat, "Res/dragon.obj", mMaterial.begin());
+            addModel(resLoader, primitives, objectMat, "Res/dragon.obj", mMaterial.begin() + 2);
             std::vector<LightWrapper*> lights;
             for (auto&& light : mLight)
                 lights.emplace_back(light.begin());
@@ -87,15 +95,21 @@ public:
         }
         SequenceGenerator2DWrapper sequenceGenerator{Halton2D{}};
         const SampleWeightLUT lut(64U, FilterWrapper{TriangleFilter{}});
-        const uvec2 imageSize{1920U, 1080U};
-        mIntegrator = std::make_unique<PathIntegrator>(sequenceGenerator, 10U, 1024U, 256U);
-        const auto beg = Clock::now();
+        const uvec2 imageSize{ 1920U, 1080U };
+        mIntegrator = std::make_unique<PathIntegrator>(sequenceGenerator, 20U, 16U, 256U);
+
         const Transform toCamera{
-            glm::lookAt(Vector{0.0f, 0.0f, 2.0f}, Vector{0.0f, 0.0f, 0.0f}, Vector{0.0f, 1.0f, 0.0f})
+            glm::lookAt(Vector{ 0.0f,0.0f,3.0f  }, Vector{ 0.0f, 0.0f, 0.0f }, Vector{ 0.0f, 1.0f, 0.0f })
         };
-        mCamera.near = 1.0f;
+
+        mCamera.lensRadius = 2.0f;
+        mCamera.focalDistance = 3.0f;
+        mCamera.fov = 55.0f;
+
+        const auto beg = Clock::now();
+
         auto res = renderFrame(*mIntegrator, *mScene, inverse(toCamera),
-            RayGeneratorWrapper(mCamera.getRayGenerator(imageSize)), lut, imageSize, 32U);
+            RayGeneratorWrapper(mCamera.getRayGenerator(imageSize)), lut, imageSize, 128U);
         const auto end = Clock::now();
         const auto t = std::chrono::duration_cast<std::chrono::microseconds>(end - beg).count();
         printf("%.3lf ms\n", t * 1e-3);
@@ -108,7 +122,7 @@ public:
             pixelFloat[i * 3] = col.r;
             pixelFloat[i * 3 + 1] = col.g;
             pixelFloat[i * 3 + 2] = col.b;
-            valid &= (isfinite(pixel[i].lum()));
+            valid &= isfinite(pixel[i].lum());
         }
         saveHdr("output.hdr", pixelFloat.data(), imageSize);
         if (!valid)printf("The image is invalid.");

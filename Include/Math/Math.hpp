@@ -21,6 +21,7 @@ using glm::max;
 using glm::min;
 using glm::clamp;
 using glm::mix;
+using glm::normalize;
 
 using glm::pi;
 using glm::epsilon;

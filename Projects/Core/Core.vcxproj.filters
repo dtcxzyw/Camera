@@ -16,9 +16,6 @@
     <Filter Include="RayTracer">
       <UniqueIdentifier>{7028f743-4946-4801-ac62-23e81bcdbe13}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Scene">
-      <UniqueIdentifier>{02e18c51-ac76-4382-a724-e00e0a85c5fd}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Rasterizer">
       <UniqueIdentifier>{76de8573-926b-496c-8836-7485698092e8}</UniqueIdentifier>
     </Filter>
@@ -68,9 +65,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp">
       <Filter>Sampler</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Scene\ECS.hpp">
-      <Filter>Scene</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Interaction\SwapChain.hpp">
       <Filter>Interaction</Filter>
@@ -316,9 +310,6 @@
   <ItemGroup>
     <ClCompile Include="..\..\Src\IO\Model.cpp">
       <Filter>IO</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Scene\ECS.cpp">
-      <Filter>Scene</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Interaction\OpenGL.cpp">
       <Filter>Interaction</Filter>

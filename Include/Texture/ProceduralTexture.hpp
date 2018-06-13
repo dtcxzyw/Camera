@@ -1,5 +1,4 @@
 #pragma once
-#include <Math/Geometry.hpp>
 #include <Spectrum/SpectrumConfig.hpp>
 
 DEVICEINLINE Spectrum uv(const vec2 uv) {

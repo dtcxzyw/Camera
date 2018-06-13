@@ -8,13 +8,12 @@ class MaterialWrapper;
 struct Geometry {
     Normal normal;
     Vector dpdu, dpdv;
-    Vector dndu, dndv;
+    Normal dndu, dndv;
 
     DEVICE void apply(const Transform& toWorld) {
-        normal = toWorld(normal);
+        normal = normalize(toWorld(normal));
         dpdu = toWorld(dpdu), dpdv = toWorld(dpdv);
-        dndu = Vector(toWorld(makeNormalUnsafe(dndu)));
-        dndv = Vector(toWorld(makeNormalUnsafe(dndv)));
+        dndu = toWorld(dndu), dndv = toWorld(dndv);
     }
 };
 
@@ -22,7 +21,7 @@ struct Interaction final {
     Transform toWorld;
 
     Point pos;
-    Normal wo;
+    Vector wo;
     Vector pError;
 
     Geometry localGeometry;
@@ -39,11 +38,12 @@ struct Interaction final {
         Vector err;
         pos = toWorld(pos, pError, err);
         pError = err;
-        wo = toWorld(wo);
+        wo = normalize(toWorld(wo));
         localGeometry.apply(toWorld);
         shadingGeometry.apply(toWorld);
+        shadingGeometry.normal = faceForward(shadingGeometry.normal, localGeometry.normal);
 
-        const Vector n{localGeometry.normal};
+        const Vector n{ localGeometry.normal };
         const auto d = dot(n, Vector{pos});
         const auto tx = (d - dot(n, Vector{ray.xOri})) / dot(n, ray.xDir);
         const auto ty = (d - dot(n, Vector{ray.xOri})) / dot(n, ray.yDir);
@@ -77,6 +77,8 @@ struct Interaction final {
         const auto d = dot(abs(n), pError);
         auto offset = d * n;
         if (dot(w, n) < 0.0f) offset = -offset;
+        return pos + offset;
+        /*
         auto po = pos + offset;
         #pragma unroll
         for (auto i = 0; i < 3; ++i) {
@@ -86,6 +88,7 @@ struct Interaction final {
                 po[i] = nextFloatDown(po[i]);
         }
         return po;
+        */
     }
 
     DEVICE Ray spawnTo(const Point& dst) const {

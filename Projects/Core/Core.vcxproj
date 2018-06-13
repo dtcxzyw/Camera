@@ -83,7 +83,6 @@
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp" />
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator1DWrapper.hpp" />
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator2DWrapper.hpp" />
-    <ClInclude Include="..\..\Include\Scene\ECS.hpp" />
     <ClInclude Include="..\..\Include\Spectrum\RGBSpectrum.hpp" />
     <ClInclude Include="..\..\Include\Spectrum\SpectrumConfig.hpp" />
     <ClInclude Include="..\..\Include\Texture\Filter.hpp" />
@@ -126,7 +125,6 @@
     <CudaCompile Include="..\..\Src\RayTracer\Film.cu">
       <FileType>Document</FileType>
     </CudaCompile>
-    <ClCompile Include="..\..\Src\Scene\ECS.cpp" />
     <ClCompile Include="..\..\Src\Interaction\D3D11.cpp">
       <FileType>Document</FileType>
     </ClCompile>

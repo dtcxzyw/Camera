@@ -55,8 +55,8 @@ private:
         ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
         auto&& monitor = DeviceMonitor::get();
         ImGui::Text("Memory %.1f%", monitor.getMemoryFreeSize() * 100.0f / monitor.getMemoryTotalSize());
-        ImGui::Text("FOV %.1f ", glm::degrees(mCamera.toFov()));
-        ImGui::SliderFloat("focal length", &mCamera.focalLength, 1.0f, 500.0f, "%.1f");
+        ImGui::Text("focal length %.1f ", mCamera.toFocalLength());
+        ImGui::SliderFloat("fov", &mCamera.fov, 1.0f, 120.0f, "%.1f");
         ImGui::SliderFloat("light", &mLight, 0.0f, 100.0f);
         ImGui::SliderFloat("lightRadius", &mR, 0.0f, 40.0f);
         mColor = clamp(mColor, RGB(0.01f), RGB(0.999f));
@@ -125,7 +125,7 @@ private:
     auto addTask(SharedFrame frame, const uvec2 size, float* lum) {
         static auto last = getTime();
         const auto now = getTime();
-        const auto converter = mCamera.toRasterPos(size);
+        const auto converter = mCamera.toRasterPos(size, 1.0f, 200.0f);
         auto buffer = std::make_unique<CommandBuffer>();
         if (frame->size != size) {
             mMc->triContext.reset(mModel->index.size(), 65536U, false, enableTriCache);
@@ -167,8 +167,6 @@ public:
 
         auto&& env = Environment::get();
         env.init(AppType::Online, GraphicsInteroperability::D3D11);
-        mCamera.near = 1.0f;
-        mCamera.far = 200.0f;
 
         {
             Stream resLoader;

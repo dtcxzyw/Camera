@@ -64,6 +64,19 @@ public:
         return *this;
     }
 
+    DEVICE BxDFType getType() const {
+        switch (mType) {
+            case BxDFClassType::SpecularReflection: return dataSpecularReflection.getType();
+            case BxDFClassType::SpecularTransmission: return dataSpecularTransmission.getType();
+            case BxDFClassType::FresnelSpecular: return dataFresnelSpecular.getType();
+            case BxDFClassType::LambertianReflection: return dataLambertianReflection.getType();
+            case BxDFClassType::OrenNayar: return dataOrenNayar.getType();
+            case BxDFClassType::MicrofacetReflection: return dataMicrofacetReflection.getType();
+            case BxDFClassType::MicrofacetTransmission: return dataMicrofacetTransmission.getType();
+            case BxDFClassType::FresnelBlend: return dataFresnelBlend.getType();
+        }
+    }
+
     DEVICE float pdf(const Vector& wo, const Vector& wi) const {
         switch (mType) {
             case BxDFClassType::SpecularReflection: return dataSpecularReflection.pdf(wo, wi);

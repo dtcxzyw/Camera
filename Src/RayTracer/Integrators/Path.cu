@@ -12,8 +12,7 @@
 PathIntegrator::PathIntegrator(const SequenceGenerator2DWrapper& sequenceGenerator,
     const unsigned int maxDepth, const unsigned int spp, const unsigned int launchSpp)
     : mSequenceGenerator(sequenceGenerator), mMaxDepth(maxDepth), mSpp(spp),
-    mLaunchSpp(std::min(launchSpp,
-        static_cast<unsigned int>(DeviceMonitor::get().getProp().maxThreadsPerBlock))) {}
+    mLaunchSpp(launchSpp) {}
 
 static DEVICE Spectrum Li(RenderingContext& context, Ray ray, const unsigned int maxDepth) {
     Spectrum L{}, beta{1.0f};
@@ -40,11 +39,11 @@ static DEVICE Spectrum Li(RenderingContext& context, Ray ray, const unsigned int
         L += beta * uniformSampleOneLight(context, interaction, bsdf);
         const auto sampleF = bsdf.sampleF(-ray.dir, context.sample());
         if (sampleF.f.lum() <= 0.0f | sampleF.pdf <= 0.0f)break;
-        beta *= sampleF.f * (fabs(dot(sampleF.wi, interaction.shadingGeometry.normal)) / sampleF.pdf);
+        beta *= sampleF.f * (fabs(dot(sampleF.wi, Vector{ interaction.shadingGeometry.normal })) / sampleF.pdf);
         specularBounce = static_cast<bool>(sampleF.type & BxDFType::Specular);
-        ray = interaction.spawnRay(Vector{sampleF.wi});
+        ray = interaction.spawnRay(sampleF.wi);
         if (bounceCount > 3) {
-            const auto q = fmax(0.05f, 1.0f - beta.lum());
+            const auto q = fmax(0.05f, 1.0f - beta.maxComp());
             if (context.sample().x < q)break;
             beta /= 1.0f - q;
         }

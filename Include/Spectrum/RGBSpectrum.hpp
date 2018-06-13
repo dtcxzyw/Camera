@@ -41,7 +41,11 @@ public:
     #undef OPFLOAT
 
     BOTH float lum() const {
-        return glm::luminosity(mVal);
+        return dot(mVal,RGB{ 0.212671f, 0.715160f, 0.072169f });
+    }
+
+    DEVICE float maxComp() const {
+        return max3(mVal.x, mVal.y, mVal.z);
     }
 
     BOTH RGB toRGB() const {

@@ -7,15 +7,24 @@ BOTH float gamma(const int n) {
     return x / (1.0f - x);
 }
 
+//TODO:next float
+
 BOTH float nextFloatDown(const float val) {
+    return val;
+    /*
     const auto bit = *reinterpret_cast<const unsigned int*>(&val) - 1;
     return *reinterpret_cast<const float*>(&bit);
+    */
 }
 
 BOTH float nextFloatUp(const float val) {
+    return val;
+    /*
     const auto bit = *reinterpret_cast<const unsigned int*>(&val) + 1;
     return *reinterpret_cast<const float*>(&bit);
+    */
 }
+
 
 class EFloat final {
 private:

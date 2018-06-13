@@ -21,7 +21,7 @@ public:
         const auto kr = mKr.sample(bsdf.getInteraction());
         const auto kt = mKt.sample(bsdf.getInteraction());
         if (isSpecular) {
-            if (kr.lum() > 0.0f & kt.lum() > 0.0f)
+            if (kr.lum() > 0.0f | kt.lum() > 0.0f)
                 bsdf.add(FresnelSpecular(kr, kt, 1.0f, eta, mode));
         }
         else {

@@ -11,7 +11,7 @@ DEVICE Spectrum estimateDirect(RenderingContext& context, const Interaction& int
     const Bsdf& bsdf, const LightWrapper& light) {
     Spectrum L{};
     const auto sample = light.sampleLi(context.sample(), interaction.pos);
-    const auto absDot = fabs(dot(sample.wi, interaction.shadingGeometry.normal));
+    const auto absDot = fabs(dot(sample.wi, Vector{ interaction.shadingGeometry.normal }));
     //sample light
     if (sample.illumination.lum() > 0.0f & sample.pdf > 0.0f) {
         const auto f = bsdf.f(Vector{interaction.wo}, Vector{sample.wi}) * sample.illumination;

@@ -32,13 +32,13 @@ BOTH bool matchPattern(const BxDFType pattern) {
 }
 
 struct BxDFSample final {
-    Normal wi;
+    Vector wi;
     float pdf;
     Spectrum f;
     BxDFType type;
     DEVICE BxDFSample() : pdf(0.0f), type(static_cast<BxDFType>(0)) {}
     DEVICE BxDFSample(const Vector& wi, const Spectrum& f, const BxDFType type, const float pdf = 1.0f)
-        : wi(makeNormalUnsafe(wi)), pdf(pdf), f(f), type(type) {}
+        : wi(wi), pdf(pdf), f(f), type(type) {}
 };
 
 DEVICEINLINE float cosTheta(const Vector& v) {
@@ -89,6 +89,10 @@ DEVICEINLINE float sin2Phi(const Vector& v) {
 
 template <typename T>
 struct BxDFHelper {
+
+    DEVICE BxDFType getType() const {
+        return T::type;
+    }
 
     DEVICE bool match(const BxDFType pattern) const {
         return matchPattern<T::type>(pattern);
@@ -180,7 +184,7 @@ public:
         if (sample.x < f) {
             const Vector wi = {-wo.x, -wo.y, wo.z};
             return {
-                wi, f * mReflection / absCosTheta(wi),
+                wi, mReflection*(f / absCosTheta(wi)),
                 BxDFType::Reflection | BxDFType::Specular, f
             };
         }

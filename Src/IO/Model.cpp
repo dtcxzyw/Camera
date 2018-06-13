@@ -46,9 +46,9 @@ void StaticMesh::convertToBinary(const std::string& path) {
         std::vector<VertexDesc> buf(mesh->mNumVertices);
         for (auto i = 0U; i < mesh->mNumVertices; ++i) {
             buf[i].pos = *reinterpret_cast<Point*>(mesh->mVertices + i);
-            buf[i].normal = *reinterpret_cast<Vector*>(mesh->mNormals + i);
+            buf[i].normal = *reinterpret_cast<Normal*>(mesh->mNormals + i);
+            buf[i].tangent = *reinterpret_cast<Normal*>(mesh->mTangents + i);
             buf[i].uv = *reinterpret_cast<UV*>(mesh->mTextureCoords[0] + i);
-            buf[i].tangent = *reinterpret_cast<Vector*>(mesh->mTangents + i);
         }
         const uint64_t vertSize = mesh->mNumVertices;
         write(data, &vertSize);

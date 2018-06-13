@@ -291,6 +291,5 @@ __pycache__/
 Docs/
 
 # Camera
-ThirdParty/
 *.exe
 *.cucache

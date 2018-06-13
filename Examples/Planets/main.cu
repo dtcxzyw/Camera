@@ -131,8 +131,8 @@ private:
         ImGui::SetWindowSize({500, 200});
         ImGui::SetWindowFontScale(1.5f);
         ImGui::Text("FPS %.1f ", ImGui::GetIO().Framerate);
-        ImGui::Text("FOV %.1f ", glm::degrees(mCamera.toFov()));
-        ImGui::SliderFloat("focal length", &mCamera.focalLength, 1.0f, 500.0f, "%.1f");
+        ImGui::Text("focal length %.1f ", mCamera.toFocalLength());
+        ImGui::SliderFloat("fov", &mCamera.fov, 1.0f, 120.0f, "%.1f");
         ImGui::SliderFloat("scale", &scalePow, 0.0f, 11.0f);
         ImGui::SliderFloat("time fac", &timeFac, 1.0f, 9.9f);
         ImGui::SliderInt("time pow", &timePow, 0, 10);
@@ -167,7 +167,7 @@ private:
     auto addTask(System& system, SharedFrame frame, const uvec2 size) {
         static auto last = getTime();
         const auto now = getTime();
-        const auto converter = mCamera.toRasterPos(size);
+        const auto converter = mCamera.toRasterPos(size, 1.0f, 250.0f);
         auto buffer = std::make_unique<CommandBuffer>();
         frame->resize(size);
         {
@@ -194,12 +194,6 @@ public:
 
         auto&& env = Environment::get();
         env.init(AppType::Online, GraphicsInteroperability::D3D11);
-
-        mCamera.near = 1.0f;
-        mCamera.far = 250.0f;
-        mCamera.filmGate = {24.892f, 18.669f};
-        mCamera.mode = PinholeCamera::FitResolutionGate::Overscan;
-        mCamera.focalLength = 15.0f;
 
         {
             Stream resLoader;

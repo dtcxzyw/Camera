@@ -70,7 +70,7 @@ DEVICE bool TriangleDesc::intersect(const Ray& ray, float& tHit, Interaction& in
             (fabs(e0 * pa.y) + fabs(e1 * pb.y) + fabs(e2 * pc.y)),
             (fabs(e0 * pa.z) + fabs(e1 * pb.z) + fabs(e2 * pc.z))
         );
-        interaction.wo = Normal(-ray.dir);
+        interaction.wo = normalize(-ray.dir);
         const auto dpac = a.pos - c.pos, dpbc = b.pos - c.pos;
         interaction.uv = a.uv * e0 + b.uv * e1 + c.uv * e2;
         interaction.id = id;
@@ -88,23 +88,29 @@ DEVICE bool TriangleDesc::intersect(const Ray& ray, float& tHit, Interaction& in
             {
                 const auto dnac = a.normal - c.normal;
                 const auto dnbc = b.normal - c.normal;
-                shading.dndu = (duvbc.y * dnac - duvac.y * dnbc) * invDet;
-                shading.dndv = (duvac.x * dnbc - duvbc.x * dnac) * invDet;
+                shading.dndu = (dnac*duvbc.y - dnbc * duvac.y) * invDet;
+                shading.dndv = (dnbc*duvac.x - dnac * duvbc.x) * invDet;
             }
         }
         else {
             const auto n = cross(pc - pa, pb - pa);
-            if (length2(n) == 0.0f)return false;
+            if (glm::length2(n) == 0.0f)return false;
             defaultCoordinateSystem(glm::normalize(n), local.dpdu, local.dpdv);
             local.dndu = local.dndv = {};
             const auto dn = cross(Vector(c.normal - a.normal), Vector(b.normal - a.normal));
             if (glm::length2(dn) == 0.0f)shading.dndu = shading.dndv = {};
-            else defaultCoordinateSystem(dn, shading.dndu, shading.dndv);
+            else {
+                Vector dndu, dndv;
+                defaultCoordinateSystem(normalize(dn), dndu, dndv);
+                shading.dndu = Normal(dndu);
+                shading.dndv = Normal(dndv);
+            }
         }
         {
-            local.normal = faceForward(Normal(cross(local.dpdu, local.dpdv)), shading.normal);
-            shading.normal = Normal{a.normal * e0 + b.normal * e1 + c.normal * e2};
-            const Normal tangent{a.tangent * e0 + b.tangent * e1 + c.tangent * e2};
+            local.normal = faceForward(Normal(normalize(cross(local.dpdu, local.dpdv))), 
+                shading.normal);
+            shading.normal = normalize(Normal{ a.normal * e0 + b.normal * e1 + c.normal * e2 });
+            const Normal tangent{ normalize(a.tangent * e0 + b.tangent * e1 + c.tangent * e2) };
             const auto biTangent = cross(tangent, shading.normal);
             shading.dpdu = Vector{cross(biTangent, shading.normal)};
             shading.dpdv = Vector{biTangent};

@@ -4,16 +4,16 @@
 #include <Math/EFloat.hpp>
 
 BOTH Vector faceForward(const Vector& n, const Vector& v) {
-    return glm::dot(n, v) < 0.0f ? -n : n;
+    return dot(n, v) < 0.0f ? -n : n;
 }
 
 BOTH Vector halfVector(const Vector& in, const Vector& out) {
-    return glm::normalize(in + out);
+    return normalize(in + out);
 }
 
 BOTH bool refract(const Vector& in, const Vector& normal, const float eta, Vector& out) {
-    const auto cosThetaI = glm::dot(in, normal);
-    const auto sin2ThetaT = eta * eta * (1.0f - cosThetaI * cosThetaI);
+    const auto cosThetaI = dot(in, normal);
+    const auto sin2ThetaT = eta * eta * fmax(0.0f, 1.0f - cosThetaI * cosThetaI);
     if (sin2ThetaT >= 1.0f)return false;
     const auto cosThetaT = sqrt(1.0f - sin2ThetaT);
     out = (eta * cosThetaI - cosThetaT) * normal - eta * in;
@@ -108,53 +108,50 @@ private:
     Vector mNormal;
 public:
     Normal() = default;
-    BOTH explicit Normal(const Vector& dir) : mNormal(normalize(dir)) {}
+    BOTH explicit Normal(const Vector& dir) : mNormal(dir) {}
     BOTH explicit operator Vector() const {
         return mNormal;
     }
 
-    BOTH Vector operator*(const float rhs) const {
-        return mNormal * rhs;
+    BOTH Normal operator*(const float rhs) const {
+        return Normal(mNormal * rhs);
     }
 
-    BOTH Normal operator-() const;
+    BOTH Normal operator-() const {
+        return Normal{ -mNormal };
+    }
+
     BOTH float operator[](const int i) const {
         return mNormal[i];
     }
+
+    BOTH Normal operator+(const Normal& rhs) const {
+        return Normal{ mNormal + rhs.mNormal };
+    }
+
+    BOTH Normal operator-(const Normal& rhs) const {
+        return Normal{ mNormal - rhs.mNormal };
+    }
 };
 
-BOTH Normal makeNormalUnsafe(const Vector& dir) {
-    return *reinterpret_cast<const Normal*>(&dir);
-}
-
-BOTH Normal Normal::operator-() const {
-    return makeNormalUnsafe(-mNormal);
+BOTH Normal normalize(const Normal& a) {
+    return Normal{ normalize(Vector{a}) };
 }
 
 BOTH Normal halfVector(const Normal& a, const Normal& b) {
-    return Normal{Vector{a} + Vector{b}};
+    return Normal{ normalize(a) + normalize(b) };
 }
 
 BOTH float dot(const Normal& a, const Normal& b) {
     return dot(Vector{a}, Vector{b});
 }
 
+BOTH Normal reflect(const Normal& a,const Normal& b) {
+    return Normal{ glm::reflect(Vector{ a }, Vector{ b }) };
+}
+
 BOTH Normal cross(const Normal& a, const Normal& b) {
     return Normal{cross(Vector{a}, Vector{b})};
-}
-
-BOTH Normal crossUnsafe(const Normal& a, const Normal& b) {
-    return makeNormalUnsafe(cross(Vector{a}, Vector{b}));
-}
-
-BOTH Normal reflect(const Normal& in, const Normal& normal) {
-    return makeNormalUnsafe(glm::reflect(Vector(in), Vector(normal)));
-}
-
-BOTH Normal reorthogonalize(const Normal& normal, const Normal& tangent) {
-    const Vector n{normal};
-    const Vector t{tangent};
-    return Normal(t - dot(t, n) * n);
 }
 
 BOTH Normal faceForward(const Normal& n, const Normal& v) {
@@ -242,7 +239,7 @@ public:
 
     BOTH Transform& operator*=(const Transform& rhs) {
         mMat *= rhs.mMat;
-        mInv *= rhs.mInv;
+        mInv = rhs.mInv*mInv;
         return *this;
     }
 
@@ -318,7 +315,7 @@ public:
 
 struct VertexDesc final {
     Point pos;
-    Vector normal;
-    Vector tangent;
+    Normal normal;
+    Normal tangent;
     vec2 uv;
 };
