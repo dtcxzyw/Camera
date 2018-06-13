@@ -59,20 +59,20 @@ DEVICEINLINE void setModel(unsigned int, ivec2 uv, float z, const OI&, const OI&
 DEVICEINLINE Spectrum shade(const Point p, const Normal N, const Normal X, const Normal Y,
     const Uniform& uniform) {
     const auto sample = uniform.light.sampleLi({}, p);
-    const Normal V{ normalize(uniform.cp - p) };
+    const Normal V{normalize(uniform.cp - p)};
     const auto F = disneyBRDF(Normal(normalize(sample.wi)), V, N, X, Y, uniform.arg);
     const auto ref = reflect(-V, N);
     const auto lc = sample.illumination +
         Spectrum(uniform.sampler.getCubeMap(Vector(ref)));
-    return lc * F * fabs(dot(Vector{ N }, sample.wi));
+    return lc * F * fabs(dot(Vector{N}, sample.wi));
 }
 
 DEVICEINLINE void drawModel(unsigned int, ivec2 uv, float z, const OI& out, const OI& ddx,
     const OI& ddy, const Uniform& uniform, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
         const Point p = out.get<Pos>();
-        const Normal N{ normalize(out.get<Nor>()) };
-        Normal X{ normalize(out.get<Tangent>()) };
+        const Normal N{normalize(out.get<Nor>())};
+        Normal X{normalize(out.get<Tangent>())};
         const auto Y = cross(X, N);
         X = cross(Y, N);
         const auto octaves = calcOctavesAntiAliased(Vector(ddx.get<Pos>()), Vector(ddy.get<Pos>()));
@@ -140,7 +140,7 @@ DEVICEINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, Point p, Vect
     bool inSphere, Vector dpdx, Vector dpdy, const Uniform& u, FrameBufferRef& fbo) {
     if (fbo.depth.get(uv) == static_cast<unsigned int>(z * maxdu)) {
         const auto pos = u.invCameraTransform(p);
-        const auto modelDir = u.invCameraTransform(Normal{ dir });
+        const auto modelDir = u.invCameraTransform(Normal{dir});
         const Normal normalizedDir = modelDir * invr;
         const auto N = calcSphereNormal(normalizedDir, inSphere);
         const auto Y = calcSphereBiTangent(N);
@@ -148,7 +148,7 @@ DEVICEINLINE void drawSpherePoint(unsigned int, ivec2 uv, float z, Point p, Vect
         auto res = shade(pos, N, X, Y, u);
         const auto octaves = calcOctavesAntiAliased(u.invCameraTransform(dpdx),
             u.invCameraTransform(dpdy));
-        res *= marble(Vector{ modelDir }, 1.0f, 0.5f, octaves) + Spectrum(0.5f);
+        res *= marble(Vector{modelDir}, 1.0f, 0.5f, octaves) + Spectrum(0.5f);
         fbo.color.set(uv, {res.toRGB(), 1.0f});
     }
 }

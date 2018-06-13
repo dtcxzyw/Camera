@@ -201,9 +201,6 @@
     <ClInclude Include="..\..\Include\Camera\BuiltinParameter.hpp">
       <Filter>Camera</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Sampler\Samping.hpp">
-      <Filter>Sampler</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\RayTracer\Scene.hpp">
       <Filter>RayTracer</Filter>
     </ClInclude>
@@ -306,6 +303,24 @@
     <ClInclude Include="..\..\Include\RayTracer\Integrators\Utilities.hpp">
       <Filter>RayTracer\Integrators</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Sampler\Sampling.hpp">
+      <Filter>Sampler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Light\InfiniteAreaLight.hpp">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Light\DistantLight.hpp">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Material\Mirror.hpp">
+      <Filter>Material</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Material\Matte.hpp">
+      <Filter>Material</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Material\Substrate.hpp">
+      <Filter>Material</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\IO\Model.cpp">
@@ -393,6 +408,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\Src\Material\Material.cu">
       <Filter>Material</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Sampler\Sampling.cu">
+      <Filter>Sampler</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

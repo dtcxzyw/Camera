@@ -88,8 +88,8 @@ DEVICE bool TriangleDesc::intersect(const Ray& ray, float& tHit, Interaction& in
             {
                 const auto dnac = a.normal - c.normal;
                 const auto dnbc = b.normal - c.normal;
-                shading.dndu = (dnac*duvbc.y - dnbc * duvac.y) * invDet;
-                shading.dndv = (dnbc*duvac.x - dnac * duvbc.x) * invDet;
+                shading.dndu = (dnac * duvbc.y - dnbc * duvac.y) * invDet;
+                shading.dndv = (dnbc * duvac.x - dnac * duvbc.x) * invDet;
             }
         }
         else {
@@ -107,10 +107,10 @@ DEVICE bool TriangleDesc::intersect(const Ray& ray, float& tHit, Interaction& in
             }
         }
         {
-            local.normal = faceForward(Normal(normalize(cross(local.dpdu, local.dpdv))), 
+            local.normal = faceForward(Normal(normalize(cross(local.dpdu, local.dpdv))),
                 shading.normal);
-            shading.normal = normalize(Normal{ a.normal * e0 + b.normal * e1 + c.normal * e2 });
-            const Normal tangent{ normalize(a.tangent * e0 + b.tangent * e1 + c.tangent * e2) };
+            shading.normal = normalize(Normal{a.normal * e0 + b.normal * e1 + c.normal * e2});
+            const Normal tangent{normalize(a.tangent * e0 + b.tangent * e1 + c.tangent * e2)};
             const auto biTangent = cross(tangent, shading.normal);
             shading.dpdu = Vector{cross(biTangent, shading.normal)};
             shading.dpdv = Vector{biTangent};

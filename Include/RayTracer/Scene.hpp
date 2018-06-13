@@ -8,8 +8,6 @@ class BvhForTriangleRef;
 struct Interaction;
 struct LightWrapper;
 
-//triangles only
-
 class Primitive final {
 private:
     Transform mToObject;

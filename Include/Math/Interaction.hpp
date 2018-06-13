@@ -43,7 +43,7 @@ struct Interaction final {
         shadingGeometry.apply(toWorld);
         shadingGeometry.normal = faceForward(shadingGeometry.normal, localGeometry.normal);
 
-        const Vector n{ localGeometry.normal };
+        const Vector n{localGeometry.normal};
         const auto d = dot(n, Vector{pos});
         const auto tx = (d - dot(n, Vector{ray.xOri})) / dot(n, ray.xDir);
         const auto ty = (d - dot(n, Vector{ray.xOri})) / dot(n, ray.yDir);

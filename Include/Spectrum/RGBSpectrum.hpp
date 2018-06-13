@@ -41,7 +41,7 @@ public:
     #undef OPFLOAT
 
     BOTH float lum() const {
-        return dot(mVal,RGB{ 0.212671f, 0.715160f, 0.072169f });
+        return dot(mVal, RGB{0.212671f, 0.715160f, 0.072169f});
     }
 
     DEVICE float maxComp() const {

@@ -58,6 +58,16 @@ struct Point final {
         return res += rhs;
     }
 
+    BOTH Point& operator-=(const Vector& rhs) {
+        pos -= rhs;
+        return *this;
+    }
+
+    BOTH Point operator-(const Vector& rhs) const {
+        auto res = *this;
+        return res -= rhs;
+    }
+
     BOTH Vector operator-(const Point& rhs) const {
         return pos - rhs.pos;
     }
@@ -118,7 +128,7 @@ public:
     }
 
     BOTH Normal operator-() const {
-        return Normal{ -mNormal };
+        return Normal{-mNormal};
     }
 
     BOTH float operator[](const int i) const {
@@ -126,28 +136,28 @@ public:
     }
 
     BOTH Normal operator+(const Normal& rhs) const {
-        return Normal{ mNormal + rhs.mNormal };
+        return Normal{mNormal + rhs.mNormal};
     }
 
     BOTH Normal operator-(const Normal& rhs) const {
-        return Normal{ mNormal - rhs.mNormal };
+        return Normal{mNormal - rhs.mNormal};
     }
 };
 
 BOTH Normal normalize(const Normal& a) {
-    return Normal{ normalize(Vector{a}) };
+    return Normal{normalize(Vector{a})};
 }
 
 BOTH Normal halfVector(const Normal& a, const Normal& b) {
-    return Normal{ normalize(a) + normalize(b) };
+    return Normal{normalize(a) + normalize(b)};
 }
 
 BOTH float dot(const Normal& a, const Normal& b) {
     return dot(Vector{a}, Vector{b});
 }
 
-BOTH Normal reflect(const Normal& a,const Normal& b) {
-    return Normal{ glm::reflect(Vector{ a }, Vector{ b }) };
+BOTH Normal reflect(const Normal& a, const Normal& b) {
+    return Normal{glm::reflect(Vector{a}, Vector{b})};
 }
 
 BOTH Normal cross(const Normal& a, const Normal& b) {
@@ -239,7 +249,7 @@ public:
 
     BOTH Transform& operator*=(const Transform& rhs) {
         mMat *= rhs.mMat;
-        mInv = rhs.mInv*mInv;
+        mInv = rhs.mInv * mInv;
         return *this;
     }
 

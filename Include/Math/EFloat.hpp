@@ -25,7 +25,6 @@ BOTH float nextFloatUp(const float val) {
     */
 }
 
-
 class EFloat final {
 private:
     float mLow, mHigh;

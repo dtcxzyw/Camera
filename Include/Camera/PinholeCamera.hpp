@@ -1,7 +1,7 @@
 #pragma once
 #include <Math/Geometry.hpp>
 #include <Camera/CamereSample.hpp>
-#include <Sampler/Samping.hpp>
+#include <Sampler/Sampling.hpp>
 
 class PinholeCameraRayGenerator final : RayGeneratorTag {
 private:
@@ -18,8 +18,8 @@ public:
         const Vector pCamera{pRaster.x * mScale.x, pRaster.y * mScale.y, -1.0f};
         Ray ray{{}, pCamera};
         ray.xOri = ray.yOri = ray.origin;
-        ray.xDir = { ray.dir.x + mOffset.x, ray.dir.y, ray.dir.z };
-        ray.yDir = { ray.dir.x, ray.dir.y + mOffset.y, ray.dir.z };
+        ray.xDir = {ray.dir.x + mOffset.x, ray.dir.y, ray.dir.z};
+        ray.yDir = {ray.dir.x, ray.dir.y + mOffset.y, ray.dir.z};
         if (mLensRadius > 0.0f) {
             const auto pLens = mLensRadius * concentricSampleDisk(sample.pLens);
             ray.origin = Point{pLens.x, pLens.y, 0.0f};
@@ -46,7 +46,7 @@ public:
     } mode;
 
     float focalDistance; //in m
-    float lensRadius; //in mm
+    float lensRadius;    //in mm
     float fov;
     vec2 filmGate; //in mm
 

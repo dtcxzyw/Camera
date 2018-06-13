@@ -55,6 +55,14 @@ std::shared_ptr<BuiltinCubeMap<RGBA>> loadCubeMap(const std::function<std::strin
     return res;
 }
 
+std::pair<std::vector<float>, uvec2> loadDistribution2D(const std::string& path) {
+    stbi_set_flip_vertically_on_load(true);
+    int w, h, channel;
+    const ImageHolder image(stbi_loadf(path.c_str(), &w, &h, &channel, STBI_grey));
+    if (!image)throw std::runtime_error(stbi_failure_reason());
+    return std::make_pair(std::vector<float>{image.get(), image.get() + w * h}, uvec2{w, h});
+}
+
 void saveHdr(const std::string& path, const float* pixel, const uvec2 size) {
     const auto res = stbi_write_hdr(path.c_str(), size.x, size.y, 3, pixel);
     if (res == 0)throw std::runtime_error("Failed to save.");

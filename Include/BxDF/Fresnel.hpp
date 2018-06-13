@@ -62,26 +62,33 @@ public:
     }
 };
 
+class FresnelNoOp final {};
+
 class FresnelWrapper final {
 private:
     union {
+        FresnelNoOp noOp;
         FresnelDielectric dielectric;
         FresnelConductor conductor;
     };
 
-    bool mIsDielectric;
+    bool mIsDielectric, mIsConstant;
 public:
     DEVICE explicit FresnelWrapper(const FresnelDielectric& dielectric)
-        : dielectric(dielectric), mIsDielectric(true) {}
+        : dielectric(dielectric), mIsDielectric(true), mIsConstant(false) {}
 
     DEVICE explicit FresnelWrapper(const FresnelConductor& conductor)
-        : conductor(conductor), mIsDielectric(false) {}
+        : conductor(conductor), mIsDielectric(false), mIsConstant(false) {}
+
+    DEVICE explicit FresnelWrapper(const FresnelNoOp& fresnel)
+        : noOp(fresnel), mIsDielectric(true), mIsConstant(true) {}
 
     DEVICE FresnelWrapper(const FresnelWrapper& rhs) {
         memcpy(this, &rhs, sizeof(FresnelWrapper));
     }
 
     DEVICE Spectrum f(const float cosThetaI) const {
-        return mIsDielectric ? Spectrum(dielectric.f(cosThetaI)) : conductor.f(cosThetaI);
+        if (mIsConstant)return Spectrum{1.0f};
+        return mIsDielectric ? Spectrum{dielectric.f(cosThetaI)} : conductor.f(cosThetaI);
     }
 };

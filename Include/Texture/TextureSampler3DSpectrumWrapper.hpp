@@ -42,7 +42,8 @@ public:
 
     DEVICE Spectrum sample(const TextureMapping3DInfo& info) const {
         switch (mType) {
-            case TextureSampler3DSpectrumClassType::ConstantSampler3DSpectrum: return dataConstantSampler3DSpectrum.sample(info);
+            case TextureSampler3DSpectrumClassType::ConstantSampler3DSpectrum: return dataConstantSampler3DSpectrum.
+                    sample(info);
             case TextureSampler3DSpectrumClassType::CheckBoard3DSampler: return dataCheckBoard3DSampler.sample(info);
             case TextureSampler3DSpectrumClassType::MarbleSampler: return dataMarbleSampler.sample(info);
         }

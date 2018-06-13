@@ -47,13 +47,18 @@
     <ClInclude Include="..\..\Include\IO\Model.hpp" />
     <ClInclude Include="..\..\Include\IO\Video.hpp" />
     <ClInclude Include="..\..\Include\Light\DeltaPositionLight.hpp" />
+    <ClInclude Include="..\..\Include\Light\DistantLight.hpp" />
+    <ClInclude Include="..\..\Include\Light\InfiniteAreaLight.hpp" />
     <ClInclude Include="..\..\Include\Light\LightingSample.hpp" />
     <ClInclude Include="..\..\Include\Light\LightWrapper.hpp" />
     <ClInclude Include="..\..\Include\Material\Glass.hpp" />
     <ClInclude Include="..\..\Include\Material\Material.hpp" />
     <ClInclude Include="..\..\Include\Material\MaterialWrapper.hpp" />
+    <ClInclude Include="..\..\Include\Material\Matte.hpp" />
     <ClInclude Include="..\..\Include\Material\Metal.hpp" />
+    <ClInclude Include="..\..\Include\Material\Mirror.hpp" />
     <ClInclude Include="..\..\Include\Material\Plastic.hpp" />
+    <ClInclude Include="..\..\Include\Material\Substrate.hpp" />
     <ClInclude Include="..\..\Include\Math\EFloat.hpp" />
     <ClInclude Include="..\..\Include\Math\Geometry.hpp" />
     <ClInclude Include="..\..\Include\Math\Interaction.hpp" />
@@ -79,7 +84,7 @@
     <ClInclude Include="..\..\Include\RayTracer\RenderingAPI.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Scene.hpp" />
     <ClInclude Include="..\..\Include\RayTracer\Triangle.hpp" />
-    <ClInclude Include="..\..\Include\Sampler\Samping.hpp" />
+    <ClInclude Include="..\..\Include\Sampler\Sampling.hpp" />
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator.hpp" />
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator1DWrapper.hpp" />
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator2DWrapper.hpp" />
@@ -140,6 +145,7 @@
     <CudaCompile Include="..\..\Src\RayTracer\RenderingAPI.cu" />
     <CudaCompile Include="..\..\Src\RayTracer\Scene.cu" />
     <CudaCompile Include="..\..\Src\RayTracer\Triangle.cu" />
+    <CudaCompile Include="..\..\Src\Sampler\Sampling.cu" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\Src\IO\Image.cu">

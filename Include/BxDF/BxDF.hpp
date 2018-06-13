@@ -2,7 +2,7 @@
 #include <Math/Geometry.hpp>
 #include <Spectrum/SpectrumConfig.hpp>
 #include <BxDF/Fresnel.hpp>
-#include <Sampler/Samping.hpp>
+#include <Sampler/Sampling.hpp>
 
 enum class BxDFType {
     Reflection = 1,
@@ -184,7 +184,7 @@ public:
         if (sample.x < f) {
             const Vector wi = {-wo.x, -wo.y, wo.z};
             return {
-                wi, mReflection*(f / absCosTheta(wi)),
+                wi, mReflection * (f / absCosTheta(wi)),
                 BxDFType::Reflection | BxDFType::Specular, f
             };
         }

@@ -39,7 +39,7 @@ static DEVICE Spectrum Li(RenderingContext& context, Ray ray, const unsigned int
         L += beta * uniformSampleOneLight(context, interaction, bsdf);
         const auto sampleF = bsdf.sampleF(-ray.dir, context.sample());
         if (sampleF.f.lum() <= 0.0f | sampleF.pdf <= 0.0f)break;
-        beta *= sampleF.f * (fabs(dot(sampleF.wi, Vector{ interaction.shadingGeometry.normal })) / sampleF.pdf);
+        beta *= sampleF.f * (fabs(dot(sampleF.wi, Vector{interaction.shadingGeometry.normal})) / sampleF.pdf);
         specularBounce = static_cast<bool>(sampleF.type & BxDFType::Specular);
         ray = interaction.spawnRay(sampleF.wi);
         if (bounceCount > 3) {

@@ -47,8 +47,8 @@ public:
             Stream resLoader;
             mLight.emplace_back(makeLightWrapper<PointLight>(resLoader, Point{3.0f, 3.0f, 3.0f},
                 Spectrum{RGB{10.0f, 20.0f, 30.0f}}));
-            mLight.emplace_back(makeLightWrapper<PointLight>(resLoader, Point{-3.0f, 3.0f, 3.0f},
-                Spectrum{RGB{30.0f, 20.0f, 10.0f}}));
+            mLight.emplace_back(makeLightWrapper<PointLight>(resLoader, Point{ -3.0f, 3.0f, 3.0f },
+                Spectrum{ RGB{ 30.0f, 20.0f, 10.0f } }));
             mMaterial = MemorySpan<MaterialWrapper>(3);
             const TextureMapping2DWrapper mapping{UVMapping{}};
             {
@@ -56,15 +56,15 @@ public:
                 const TextureSampler2DFloatWrapper samplerF{ConstantSampler2DFloat{0.1f}};
                 const Texture2DSpectrum textureS{mapping, samplerS};
                 const Texture2DFloat textureF{mapping, samplerF};
-                MaterialWrapper plastic{Subtrate{textureS, textureS, textureF, textureF}};
+                MaterialWrapper plastic{ Subtrate{ textureS,textureS,textureF,textureF} };
                 checkError(cudaMemcpyAsync(mMaterial.begin(), &plastic, sizeof(MaterialWrapper),
                     cudaMemcpyHostToDevice, resLoader.get()));
             }
             {
                 const TextureSampler2DSpectrumWrapper samplerR{ConstantSampler2DSpectrum{Spectrum{0.2f}}};
                 const TextureSampler2DSpectrumWrapper samplerT{ConstantSampler2DSpectrum{Spectrum{0.8f}}};
-                const TextureSampler2DFloatWrapper index{ConstantSampler2DFloat{1.01f}};
-                const TextureSampler2DFloatWrapper roughness{ConstantSampler2DFloat{0.0f}};
+                const TextureSampler2DFloatWrapper index{ ConstantSampler2DFloat{1.01f} };
+                const TextureSampler2DFloatWrapper roughness{ ConstantSampler2DFloat{0.0f} };
                 const Texture2DSpectrum textureR{mapping, samplerR};
                 const Texture2DSpectrum textureT{mapping, samplerT};
                 const Texture2DFloat indexT{mapping, index};
@@ -74,23 +74,21 @@ public:
                     cudaMemcpyHostToDevice, resLoader.get()));
             }
             {
-                const TextureSampler2DSpectrumWrapper samplerS{ConstantSampler2DSpectrum{Spectrum{1.0f}}};
-                const TextureSampler2DFloatWrapper samplerF{ConstantSampler2DFloat{0.01f}};
-                const Texture2DSpectrum textureS{mapping, samplerS};
-                const Texture2DFloat textureF{mapping, samplerF};
-                MaterialWrapper metal{Metal{textureS, textureS, textureF, textureF}};
+                const TextureSampler2DSpectrumWrapper samplerS{ ConstantSampler2DSpectrum{ Spectrum{ 1.0f } } };
+                const TextureSampler2DFloatWrapper samplerF{ ConstantSampler2DFloat{ 0.01f } };
+                const Texture2DSpectrum textureS{ mapping, samplerS };
+                const Texture2DFloat textureF{ mapping, samplerF };
+                MaterialWrapper metal{ Metal{ textureS, textureS, textureF,textureF } };
                 checkError(cudaMemcpyAsync(mMaterial.begin() + 2, &metal, sizeof(MaterialWrapper),
                     cudaMemcpyHostToDevice, resLoader.get()));
             }
 
             std::vector<Primitive> primitives;
-            const auto sphereMat = glm::translate(glm::mat4{}, {-0.25f, 0.2f, 2.0f}) * glm::scale(glm::mat4{},
-                Vector(1e-3f));
+            const auto sphereMat = glm::translate(glm::mat4{}, { -0.25f, 0.2f, 2.0f })* glm::scale(glm::mat4{}, Vector(1e-3f));
             addModel(resLoader, primitives, sphereMat, "Res/sphere.obj", mMaterial.begin() + 1);
             const auto objectMat = glm::scale(glm::mat4{}, Vector(5.0f));
             addModel(resLoader, primitives, objectMat, "Res/dragon.obj", mMaterial.begin() + 2);
-            const auto boxMat = glm::translate(glm::mat4{}, {0.0f, 2.2f, 2.5f}) * glm::scale(glm::mat4{},
-                Vector(3.1e-2f));
+            const auto boxMat = glm::translate(glm::mat4{}, { 0.0f,2.2f,2.5f })* glm::scale(glm::mat4{}, Vector(3.1e-2f));
             addModel(resLoader, primitives, boxMat, "Res/cube.obj", mMaterial.begin());
             std::vector<LightWrapper*> lights;
             for (auto&& light : mLight)
@@ -100,11 +98,11 @@ public:
         }
         SequenceGenerator2DWrapper sequenceGenerator{Halton2D{}};
         const SampleWeightLUT lut(64U, FilterWrapper{TriangleFilter{}});
-        const uvec2 imageSize{1920U, 1080U};
+        const uvec2 imageSize{ 1920U, 1080U };
         mIntegrator = std::make_unique<PathIntegrator>(sequenceGenerator, 20U, 1024U, 256U);
 
         const Transform toCamera{
-            glm::lookAt(Vector{0.0f, 0.0f, 3.0f}, Vector{0.0f, 0.0f, 0.0f}, Vector{0.0f, 1.0f, 0.0f})
+            glm::lookAt(Vector{ 0.0f,0.0f,3.0f  }, Vector{ 0.0f, 0.0f, 0.0f }, Vector{ 0.0f, 1.0f, 0.0f })
         };
 
         mCamera.lensRadius = 2.0f;

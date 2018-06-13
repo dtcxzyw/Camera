@@ -21,7 +21,7 @@ static DEVICE Spectrum specularReflect(RenderingContext& context, const Ray& ray
     const auto sampleF = bsdf.sampleF(Vector{interaction.wo}, context.sample(), type);
 
     auto&& shading = interaction.shadingGeometry;
-    const auto idn = dot(sampleF.wi, Vector{ shading.normal });
+    const auto idn = dot(sampleF.wi, Vector{shading.normal});
 
     if (sampleF.pdf > 0.0f & sampleF.f.lum() > 0.0f & idn != 0.0f) {
         auto newRay = interaction.spawnRay(Vector{sampleF.wi});
@@ -37,16 +37,16 @@ static DEVICE Spectrum specularReflect(RenderingContext& context, const Ray& ray
                 shading.dndv * interaction.duvdy.t
             };
 
-            const auto dwodx = -ray.xDir - Vector{ interaction.wo };
-            const auto dwody = -ray.yDir - Vector{ interaction.wo };
+            const auto dwodx = -ray.xDir - Vector{interaction.wo};
+            const auto dwody = -ray.yDir - Vector{interaction.wo};
 
-            const auto dDNdx = dot(dwodx, Vector{ shading.normal }) + dot(interaction.wo, Vector{ dndx });
-            const auto dDNdy = dot(dwody, Vector{ shading.normal }) + dot(interaction.wo, Vector{ dndy });
+            const auto dDNdx = dot(dwodx, Vector{shading.normal}) + dot(interaction.wo, Vector{dndx});
+            const auto dDNdy = dot(dwody, Vector{shading.normal}) + dot(interaction.wo, Vector{dndy});
 
-            const auto k = dot(interaction.wo, Vector{ shading.normal });
+            const auto k = dot(interaction.wo, Vector{shading.normal});
 
-            newRay.xDir = Vector{ sampleF.wi } -dwodx + Vector{ (dndx * k + shading.normal * dDNdx) }*2.0f;
-            newRay.yDir = Vector{ sampleF.wi } -dwody + Vector{ (dndy * k + shading.normal * dDNdy) }*2.0f;
+            newRay.xDir = Vector{sampleF.wi} - dwodx + Vector{(dndx * k + shading.normal * dDNdx)} * 2.0f;
+            newRay.yDir = Vector{sampleF.wi} - dwody + Vector{(dndy * k + shading.normal * dDNdy)} * 2.0f;
         }
 
         return sampleF.f * Li(context, newRay, depth) * fabs(idn) / sampleF.pdf;
@@ -60,16 +60,15 @@ static DEVICE Spectrum specularTransmit(RenderingContext& context, const Ray& ra
     const auto sampleF = bsdf.sampleF(Vector{interaction.wo}, context.sample(), type);
 
     auto&& shading = interaction.shadingGeometry;
-    const auto idn = dot(sampleF.wi, Vector{ shading.normal });
+    const auto idn = dot(sampleF.wi, Vector{shading.normal});
 
     if (sampleF.pdf > 0.0f & sampleF.f.lum() > 0.0f & idn != 0.0f) {
         auto newRay = interaction.spawnRay(Vector{sampleF.wi});
         newRay.xOri = interaction.pos + interaction.dpdx;
         newRay.yOri = interaction.pos + interaction.dpdy;
         {
-            const auto odn = dot(interaction.wo, Vector{ shading.normal });
-            const auto eta = odn < 0.0f ?
-                1.0f / bsdf.getEta() : bsdf.getEta();
+            const auto odn = dot(interaction.wo, Vector{shading.normal});
+            const auto eta = odn < 0.0f ? 1.0f / bsdf.getEta() : bsdf.getEta();
 
             const Normal dndx{
                 shading.dndu * interaction.duvdx.s +
@@ -81,19 +80,19 @@ static DEVICE Spectrum specularTransmit(RenderingContext& context, const Ray& ra
                 shading.dndv * interaction.duvdy.t
             };
 
-            const auto dwodx = -ray.xDir - Vector{ interaction.wo };
-            const auto dwody = -ray.yDir - Vector{ interaction.wo };
+            const auto dwodx = -ray.xDir - Vector{interaction.wo};
+            const auto dwody = -ray.yDir - Vector{interaction.wo};
 
-            const auto dDNdx = dot(dwodx, Vector{ shading.normal }) + dot(interaction.wo, Vector{ dndx });
-            const auto dDNdy = dot(dwody, Vector{ shading.normal }) + dot(interaction.wo, Vector{ dndy });
+            const auto dDNdx = dot(dwodx, Vector{shading.normal}) + dot(interaction.wo, Vector{dndx});
+            const auto dDNdy = dot(dwody, Vector{shading.normal}) + dot(interaction.wo, Vector{dndy});
 
             const auto mu = eta * -odn - idn;
             const auto k = (eta - (eta * eta * -odn) / idn);
             const auto dmudx = k * dDNdx;
             const auto dmudy = k * dDNdy;
 
-            newRay.xDir = Vector{ sampleF.wi } +eta * dwodx - Vector{ (dndx * mu + shading.normal * dmudx) };
-            newRay.yDir = Vector{ sampleF.wi } +eta * dwody - Vector{ (dndy * mu + shading.normal * dmudy) };
+            newRay.xDir = Vector{sampleF.wi} + eta * dwodx - Vector{(dndx * mu + shading.normal * dmudx)};
+            newRay.yDir = Vector{sampleF.wi} + eta * dwody - Vector{(dndy * mu + shading.normal * dmudy)};
         }
 
         return sampleF.f * Li(context, newRay, depth) * fabs(idn) / sampleF.pdf;
@@ -115,7 +114,7 @@ static DEVICE Spectrum Li(RenderingContext& context, const Ray& ray, const unsig
                 const auto f = bsdf.f(Vector{interaction.wo}, Vector{sample.wi});
                 if (f.lum() > 0.0f)
                     L += f * sample.illumination
-                    * (fabs(dot(sample.wi, Vector{ interaction.shadingGeometry.normal })) / sample.pdf);
+                        * (fabs(dot(sample.wi, Vector{interaction.shadingGeometry.normal})) / sample.pdf);
             }
         }
         if (depth > 1) {

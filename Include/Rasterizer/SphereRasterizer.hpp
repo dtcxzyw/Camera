@@ -39,7 +39,7 @@ DEVICEINLINE Normal calcSphereNormal(const Normal& normal, const bool inSphere) 
 }
 
 DEVICEINLINE Normal calcSphereBiTangent(const Normal& normal) {
-    const auto left = cross(Normal{ Vector{0.0f, 1.0f, 0.0f} }, normal);
+    const auto left = cross(Normal{Vector{0.0f, 1.0f, 0.0f}}, normal);
     return cross(left, normal);
 }
 
