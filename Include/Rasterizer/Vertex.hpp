@@ -23,7 +23,7 @@ DEVICEINLINE VertexInfo<Out> lerpZ(VertexInfo<Out> a, VertexInfo<Out> b, float z
 }
 
 template <typename Vert, typename Out, typename Uniform, VertShader<Vert, Out, Uniform> vs>
-GLOBAL void calcVertexKernel(const unsigned int size, READONLY(Vert) in,
+GLOBAL void calcVertexKernel(const uint32_t size, READONLY(Vert) in,
     READONLY(Uniform) u, VertexInfo<Out>* res) {
     const auto id = getId();
     if (id >= size)return;

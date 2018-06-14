@@ -3,9 +3,9 @@
 #include <utility>
 #include <Core/Environment.hpp>
 #include <Core/CommandBuffer.hpp>
-#include <Core/CompileBegin.hpp>
+#include <Core/IncludeBegin.hpp>
 #include <concurrentqueue.h>
-#include <Core/CompileEnd.hpp>
+#include <Core/IncludeEnd.hpp>
 
 StreamContext& DispatchSystem::getStream() {
     return *std::min_element(mStreams.begin(), mStreams.end());
@@ -36,7 +36,7 @@ void DispatchSystem::update() {
         if (task.first)stream.set(std::move(task));
         else {
             #ifdef CAMERA_HUNGRY_REPORT
-            printf("DispatchSystem %u is hungry!\n", static_cast<unsigned int>(mIndex));
+            printf("DispatchSystem %u is hungry!\n", static_cast<uint32_t>(mIndex));
             #endif
             if (mYield)std::this_thread::sleep_for(1ms);
         }

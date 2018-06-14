@@ -3,7 +3,7 @@
 
 namespace Impl {
     template <typename T>
-    GLOBAL void updateCache(const unsigned int size, T* address) {
+    GLOBAL void updateCache(const uint32_t size, T* address) {
         const auto id = getId();
         if (id >= size)return;
         address[id] <<= 1;
@@ -21,12 +21,12 @@ public:
         : mAddress(address), mBegin(begin), mEnd(end) {}
 
     DEVICEINLINE RenderingCacheBlockRef() {}
-    DEVICEINLINE bool query(const unsigned int id) const {
+    DEVICEINLINE bool query(const uint32_t id) const {
         auto ptr = mAddress + id;
         return (mBegin <= ptr & ptr < mEnd) | (*ptr);
     }
 
-    DEVICEINLINE void record(const unsigned int id) const {
+    DEVICEINLINE void record(const uint32_t id) const {
         mAddress[id] = std::numeric_limits<T>::max();
     }
 };
@@ -60,7 +60,7 @@ class RenderingCache final : Uncopyable {
 private:
     MemorySpan<T> mData;
     std::queue<RenderingCacheBlock<T>> mBlocks;
-    unsigned int mBlockSize;
+    uint32_t mBlockSize;
     bool mShouldReset;
 public:
     using Block = RenderingCacheBlock<T>;

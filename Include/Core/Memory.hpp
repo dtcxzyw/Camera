@@ -61,11 +61,15 @@ public:
         #endif
     }
 
-    T* begin() const {
+    T* begin() const noexcept {
         return reinterpret_cast<T*>(mMem.get()) + mBegin;
     }
 
-    T* end() const {
+    T* data() const noexcept {
+        return begin();
+    }
+
+    T* end() const noexcept {
         return reinterpret_cast<T*>(mMem.get()) + mEnd;
     }
 
@@ -85,7 +89,7 @@ public:
         return res;
     }
 
-    void memset(const int mask = 0) {
+    void memset(const int mask = 0) const {
         cudaMemset(begin(), mask, (mEnd - mBegin) * sizeof(T));
     }
 };
@@ -110,6 +114,10 @@ public:
 
     T* begin() const noexcept {
         return reinterpret_cast<T*>(mMemory.get());
+    }
+
+    T* data() const noexcept {
+        return begin();
     }
 
     T* end() const noexcept {

@@ -24,17 +24,20 @@ DEVICEINLINE Vector cosineSampleHemisphere(const vec2 p) {
     return {d.x, d.y, sqrt(1.0f - d.x * d.x - d.y * d.y)};
 }
 
+BOTH float computeCdf(const float* func, float* cdf, uint32_t size);
+
 class Distribution1DRef final {
 private:
     READONLY(float) mCdf;
     READONLY(float) mFunc;
-    unsigned int mSize;
+    uint32_t mSize;
     float mInvLength, mInvSum;
 public:
-    Distribution1DRef(const float* cdf, const float* func, unsigned int size, float sum);
+    Distribution1DRef() = default;
+    BOTH Distribution1DRef(const float* cdf, const float* func, uint32_t size, float sum);
     DEVICE float sampleContinuous(float sample, float& pdf, int& pos) const;
     DEVICE int sampleDiscrete(float sample, float& pdf) const;
-    DEVICE float f(unsigned int pos) const;
+    DEVICE float f(uint32_t pos) const;
     DEVICE float getInvSum() const;
 };
 
@@ -43,7 +46,7 @@ private:
     MemorySpan<float> mCdf, mFunc;
     float mSum;
 public:
-    Distribution1D(const float* val, unsigned int size);
+    Distribution1D(const float* val, uint32_t size);
     Distribution1DRef toRef() const;
     float getSum() const;
 };

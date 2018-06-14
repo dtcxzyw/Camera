@@ -5,10 +5,10 @@
 class WhittedIntegrator final : public Integrator {
 private:
     SequenceGenerator2DWrapper mSequenceGenerator;
-    unsigned int mMaxDepth, mSpp;
+    uint32_t mMaxDepth, mSpp;
 public:
     WhittedIntegrator(const SequenceGenerator2DWrapper& sequenceGenerator,
-        unsigned int maxDepth, unsigned int spp);
+        uint32_t maxDepth, uint32_t spp);
     void render(CommandBuffer& buffer, const SceneDesc& scene, const Transform& cameraTransform,
         const RayGeneratorWrapper& rayGenerator, FilmTile& filmTile, uvec2 offset, uvec2 dstSize) const override;
 };

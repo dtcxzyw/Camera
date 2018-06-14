@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <IO/Model.hpp>
 
-DEVICE TriangleDesc BvhForTriangleRef::makeTriangleDesc(const unsigned int id) const {
+DEVICE TriangleDesc BvhForTriangleRef::makeTriangleDesc(const uint32_t id) const {
     const auto ref = mIndex[id];
     return {ref.id, mVertex[ref.a], mVertex[ref.b], mVertex[ref.c]};
 }
@@ -12,8 +12,8 @@ BvhForTriangleRef::BvhForTriangleRef(const MemorySpan<BvhNode>& nodes,
     : mNodes(nodes.begin()), mIndex(index.begin()), mVertex(vertex.begin()) {}
 
 DEVICE bool BvhForTriangleRef::intersect(const Ray& ray) const {
-    unsigned int top = 0, current = 0;
-    unsigned int stack[64];
+    uint32_t top = 0, current = 0;
+    uint32_t stack[64];
     const auto invDir = 1.0f / ray.dir;
     const glm::bvec3 neg = {invDir.x < 0.0f, invDir.y < 0.0f, invDir.z < 0.0f};
     while (true) {
@@ -44,8 +44,8 @@ DEVICE bool BvhForTriangleRef::intersect(const Ray& ray) const {
 }
 
 DEVICE bool BvhForTriangleRef::intersect(const Ray& ray, float& t, Interaction& interaction) const {
-    unsigned int top = 0, current = 0;
-    unsigned int stack[64];
+    uint32_t top = 0, current = 0;
+    uint32_t stack[64];
     const auto invDir = 1.0f / ray.dir;
     const glm::bvec3 neg = {invDir.x < 0.0f, invDir.y < 0.0f, invDir.z < 0.0f};
     auto res = false;
@@ -78,16 +78,16 @@ DEVICE bool BvhForTriangleRef::intersect(const Ray& ray, float& t, Interaction& 
 struct BuildNode final {
     Bounds bounds;
     BuildNode* child[2];
-    unsigned int axis, offset, size;
+    uint32_t axis, offset, size;
 
-    void setLeaf(const unsigned int off, const unsigned int siz, const Bounds& b) {
+    void setLeaf(const uint32_t off, const uint32_t siz, const Bounds& b) {
         bounds = b;
         child[0] = child[1] = nullptr;
         offset = off;
         size = siz;
     }
 
-    void setInterior(const unsigned int axisId, BuildNode* cl, BuildNode* cr) {
+    void setInterior(const uint32_t axisId, BuildNode* cl, BuildNode* cr) {
         axis = axisId;
         size = 0;
         bounds = cl->bounds | cr->bounds;
@@ -97,11 +97,11 @@ struct BuildNode final {
 };
 
 struct PrimitiveInfo final {
-    unsigned int id;
+    uint32_t id;
     Bounds bounds;
     Point centroid;
 
-    PrimitiveInfo(const unsigned int id, const Bounds& bounds) : id(id), bounds(bounds),
+    PrimitiveInfo(const uint32_t id, const Bounds& bounds) : id(id), bounds(bounds),
         centroid(mix(bounds[0], bounds[1], 0.5f)) {}
 };
 
@@ -140,20 +140,20 @@ BuildNode* buildTriangleRecursive(std::vector<BuildNode>& nodePool, const std::v
             else {
                 constexpr auto bucketSize = 16U;
                 struct Bucket final {
-                    unsigned int count;
+                    uint32_t count;
                     Bounds bounds;
                     Bucket() : count(0) {}
                 } buckets[bucketSize];
                 const auto offset = centroidBounds[0];
                 const auto inv = 1.0f / (centroidBounds[1] - centroidBounds[0]);
                 for (auto i = begin; i < end; ++i) {
-                    unsigned int p = bucketSize * ((info[i].centroid - offset) * inv)[axis];
+                    uint32_t p = bucketSize * ((info[i].centroid - offset) * inv)[axis];
                     p = clamp(p, 0U, bucketSize - 1U);
                     ++buckets[p].count;
                     buckets[p].bounds |= info[i].bounds;
                 }
                 auto minCost = std::numeric_limits<float>::max();
-                unsigned int splitPos;
+                uint32_t splitPos;
                 for (auto i = 0U; i < bucketSize - 1U; ++i) {
                     Bounds partBounds[2];
                     size_t partCount[2] = {};
@@ -173,7 +173,7 @@ BuildNode* buildTriangleRecursive(std::vector<BuildNode>& nodePool, const std::v
                 if (size > maxPrim || minCost < leafCost) {
                     mid = std::partition(info.begin() + begin, info.begin() + end,
                         [=](const PrimitiveInfo& prim) {
-                            unsigned int p = bucketSize * ((prim.centroid - offset) * inv)[axis];
+                            uint32_t p = bucketSize * ((prim.centroid - offset) * inv)[axis];
                             p = clamp(p, 0U, bucketSize - 1U);
                             return p <= splitPos;
                         }) - info.begin();
@@ -221,7 +221,7 @@ BvhForTriangle::BvhForTriangle(const StaticMesh& mesh, const size_t maxPrim, Str
     for (const auto idx : index) {
         const auto pa = vertex[idx.x].pos, pb = vertex[idx.y].pos, pc = vertex[idx.z].pos;
         Bounds bounds{min(pa, min(pb, pc)), max(pa, max(pb, pc))};
-        primitive.emplace_back(static_cast<unsigned int>(primitive.size()), bounds);
+        primitive.emplace_back(static_cast<uint32_t>(primitive.size()), bounds);
     }
     std::vector<TriangleRef> ordered;
     ordered.reserve(index.size());

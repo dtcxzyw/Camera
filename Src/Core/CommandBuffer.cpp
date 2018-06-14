@@ -79,17 +79,17 @@ namespace Impl {
         : DeviceMemoryInstance(size), mPtr(nullptr) {}
 
     ConstantMemory::~ConstantMemory() {
-        if (mPtr)constantFree(mPtr, static_cast<unsigned int>(mSize));
+        if (mPtr)constantFree(mPtr, static_cast<uint32_t>(mSize));
     }
 
     void* ConstantMemory::get() {
-        if (mPtr == nullptr)mPtr = constantAlloc(static_cast<unsigned int>(mSize));
+        if (mPtr == nullptr)mPtr = constantAlloc(static_cast<uint32_t>(mSize));
         return mPtr;
     }
 
     void ConstantMemory::set(const void* src, const size_t begin, const size_t end, Stream& stream) {
         constantSet(static_cast<unsigned char*>(get()) + begin, src,
-            static_cast<unsigned int>(end - begin), stream.get());
+            static_cast<uint32_t>(end - begin), stream.get());
     }
 
     AllocatedMemory::AllocatedMemory(const MemorySpan<unsigned char>& ref)
@@ -162,16 +162,16 @@ namespace Impl {
 
     LaunchSize::LaunchSize(const Span<unsigned>& ptr) : mHelper(ptr), mRef(ptr) {}
 
-    SpanHelper<unsigned int> LaunchSize::get() const {
+    SpanHelper<uint32_t> LaunchSize::get() const {
         return mHelper;
     }
 
-    void LaunchSize::download(unsigned int& dst, CommandBuffer& buffer) const {
+    void LaunchSize::download(uint32_t& dst, CommandBuffer& buffer) const {
         auto&& manager = buffer.getResourceManager();
         auto id = mHelper;
         buffer.pushOperator([id, &manager, &dst](Id, ResourceManager&, Stream& stream) {
             checkError(cudaMemcpyAsync(&dst, cast(id, manager),
-                sizeof(unsigned int), cudaMemcpyDeviceToHost, stream.get()));
+                sizeof(uint32_t), cudaMemcpyDeviceToHost, stream.get()));
         });
     }
 

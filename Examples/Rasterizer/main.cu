@@ -2,10 +2,10 @@
 #include <IO/Image.hpp>
 #include <Core/Environment.hpp>
 #include <Interaction/SwapChain.hpp>
-#include <Core/CompileBegin.hpp>
+#include <Core/IncludeBegin.hpp>
 #include <imgui.h>
 #include <glm/gtc/matrix_transform.hpp>
-#include <Core/CompileEnd.hpp>
+#include <Core/IncludeEnd.hpp>
 #include <Interaction/SoftwareRenderer.hpp>
 #include <Interaction/D3D11.hpp>
 

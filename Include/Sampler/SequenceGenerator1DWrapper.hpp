@@ -33,7 +33,7 @@ public:
         return *this;
     }
 
-    DEVICE float sample(const unsigned int index) const {
+    DEVICE float sample(const uint32_t index) const {
         switch (mType) {
             case SequenceGenerator1DClassType::RadicalInverse: return dataRadicalInverse.sample(index);
             case SequenceGenerator1DClassType::Sobol1D: return dataSobol1D.sample(index);

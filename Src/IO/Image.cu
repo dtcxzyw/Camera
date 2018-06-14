@@ -1,10 +1,10 @@
 #include <IO/Image.hpp>
-#include <Core/CompileBegin.hpp>
+#include <Core/IncludeBegin.hpp>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
-#include <Core/CompileEnd.hpp>
+#include <Core/IncludeEnd.hpp>
 
 struct ImageDeleter final {
     void operator()(float* ptr) const {

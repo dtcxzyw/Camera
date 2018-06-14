@@ -2,11 +2,11 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_CTOR_INIT
-#include <Core/CompileBegin.hpp>
+#include <Core/IncludeBegin.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/norm.hpp>
-#include <Core/CompileEnd.hpp>
+#include <Core/IncludeEnd.hpp>
 #include <Core/Common.hpp>
 
 using glm::vec2;
@@ -40,7 +40,7 @@ using RGB8 = glm::tvec3<unsigned char>;
 using RGBA8 = glm::tvec4<unsigned char>;
 using A8 = unsigned char;
 
-constexpr auto maxv = std::numeric_limits<unsigned int>::max();
+constexpr auto maxv = std::numeric_limits<uint32_t>::max();
 
 DEVICEINLINE float max3(const float a, const float b, const float c) {
     return fmax(a, fmax(b, c));

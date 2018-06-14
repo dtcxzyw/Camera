@@ -19,11 +19,11 @@ enum class TransportMode {
 };
 
 BOTH BxDFType operator&(const BxDFType a, const BxDFType b) {
-    return static_cast<BxDFType>(static_cast<unsigned int>(a) & static_cast<unsigned int>(b));
+    return static_cast<BxDFType>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
 }
 
 constexpr BOTH BxDFType operator|(const BxDFType a, const BxDFType b) {
-    return static_cast<BxDFType>(static_cast<unsigned int>(a) | static_cast<unsigned int>(b));
+    return static_cast<BxDFType>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
 }
 
 template <BxDFType Type>

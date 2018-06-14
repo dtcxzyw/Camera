@@ -52,10 +52,8 @@ public:
 
     DEVICE Spectrum sample(const TextureMapping2DInfo& info) const {
         switch (mType) {
-            case TextureSampler2DSpectrumClassType::ConstantSampler2DSpectrum: return dataConstantSampler2DSpectrum.
-                    sample(info);
-            case TextureSampler2DSpectrumClassType::TextureMapSpectrumSampler: return dataTextureMapSpectrumSampler.
-                    sample(info);
+            case TextureSampler2DSpectrumClassType::ConstantSampler2DSpectrum: return dataConstantSampler2DSpectrum.sample(info);
+            case TextureSampler2DSpectrumClassType::TextureMapSpectrumSampler: return dataTextureMapSpectrumSampler.sample(info);
             case TextureSampler2DSpectrumClassType::UVSampler: return dataUVSampler.sample(info);
             case TextureSampler2DSpectrumClassType::CheckBoardSampler: return dataCheckBoardSampler.sample(info);
             case TextureSampler2DSpectrumClassType::PolkaDotsSampler: return dataPolkaDotsSampler.sample(info);

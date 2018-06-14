@@ -3,7 +3,7 @@
 #include <RayTracer/Film.hpp>
 #include <Core/Environment.hpp>
 
-GLOBAL void divWeight(const unsigned int size, Spectrum* pixel, READONLY(float) weight) {
+GLOBAL void divWeight(const uint32_t size, Spectrum* pixel, READONLY(float) weight) {
     const auto id = getId();
     if (id >= size)return;
     const auto w = weight[id];
@@ -14,7 +14,7 @@ GLOBAL void divWeight(const unsigned int size, Spectrum* pixel, READONLY(float) 
 MemorySpan<Spectrum> renderFrame(Integrator& integrator,
     const SceneDesc& scene, const Transform& cameraToWorld,
     const RayGeneratorWrapper& rayGenerator, const SampleWeightLUT& weightLUT,
-    const uvec2 size, const unsigned int tileSize) {
+    const uvec2 size, const uint32_t tileSize) {
     MemorySpan<Spectrum> pixel(size.x * size.y);
     pixel.memset();
     MemorySpan<float> weight(size.x * size.y);

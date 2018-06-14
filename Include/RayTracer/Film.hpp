@@ -8,7 +8,7 @@ class FilmTileRef final {
 private:
     Spectrum* mPixel;
     float* mWeightSum;
-    unsigned int mWidth;
+    uint32_t mWidth;
     BuiltinSamplerRef<float> mWeightLUT;
 public:
     FilmTileRef(Spectrum* pixel, float* weightSum,
@@ -22,7 +22,7 @@ private:
     std::shared_ptr<BuiltinSampler<float>> mSampler;
     void cookTable(const FilterWrapper& filter);
 public:
-    explicit SampleWeightLUT(unsigned int tableSize, const FilterWrapper& filter);
+    explicit SampleWeightLUT(uint32_t tableSize, const FilterWrapper& filter);
     BuiltinSamplerRef<float> toRef() const;
 };
 

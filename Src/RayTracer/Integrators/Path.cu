@@ -10,11 +10,11 @@
 #include <RayTracer/Integrators/Utilities.hpp>
 
 PathIntegrator::PathIntegrator(const SequenceGenerator2DWrapper& sequenceGenerator,
-    const unsigned int maxDepth, const unsigned int spp, const unsigned int launchSpp)
+    const uint32_t maxDepth, const uint32_t spp, const uint32_t launchSpp)
     : mSequenceGenerator(sequenceGenerator), mMaxDepth(maxDepth), mSpp(spp),
     mLaunchSpp(launchSpp) {}
 
-static DEVICE Spectrum Li(RenderingContext& context, Ray ray, const unsigned int maxDepth) {
+static DEVICE Spectrum Li(RenderingContext& context, Ray ray, const uint32_t maxDepth) {
     Spectrum L{}, beta{1.0f};
     auto specularBounce = false;
     for (auto bounceCount = 0;; ++bounceCount) {
@@ -53,8 +53,8 @@ static DEVICE Spectrum Li(RenderingContext& context, Ray ray, const unsigned int
 
 static GLOBAL void renderKernel(const RayGeneratorWrapper rayGenerator,
     const Transform toWorld, const vec2 offset,
-    const SequenceGenerator2DWrapper sequenceGenerator, const unsigned int seqOffset,
-    FilmTileRef dst, const unsigned int maxDepth, const SceneRef scene, const unsigned int spp,
+    const SequenceGenerator2DWrapper sequenceGenerator, const uint32_t seqOffset,
+    FilmTileRef dst, const uint32_t maxDepth, const SceneRef scene, const uint32_t spp,
     const vec2 invDstSize) {
     const auto pid = blockIdx.z * blockIdx.z + threadIdx.x;
     if (pid >= spp)return;
@@ -72,7 +72,7 @@ static GLOBAL void renderKernel(const RayGeneratorWrapper rayGenerator,
 
 void PathIntegrator::render(CommandBuffer& buffer, const SceneDesc& scene, const Transform& cameraToWorld,
     const RayGeneratorWrapper& rayGenerator, FilmTile& filmTile, const uvec2 offset, const uvec2 dstSize) const {
-    const unsigned int blockSize = DeviceMonitor::get().getProp().maxThreadsPerBlock;
+    const uint32_t blockSize = DeviceMonitor::get().getProp().maxThreadsPerBlock;
     const auto size = filmTile.size();
     constexpr auto stackSize = 2048U;
     auto todo = mSpp;

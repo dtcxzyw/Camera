@@ -18,7 +18,7 @@ DEVICEINLINE SphereDesc calcCameraSphere(const Transform& transform, const Spher
 }
 
 template <typename Uniform, SphereVertShader<Uniform> Func>
-GLOBAL void calcCameraSpheres(const unsigned int size, READONLY(SphereDesc) in,
+GLOBAL void calcCameraSpheres(const uint32_t size, READONLY(SphereDesc) in,
     SphereDesc* out, READONLY(Uniform) uniform) {
     const auto id = getId();
     if (id >= size)return;
@@ -65,17 +65,17 @@ DEVICEINLINE vec2 calcSphereTextureDerivative(const Normal& normal, const Vector
 }
 
 struct STRUCT_ALIGN SphereInfo final {
-    unsigned int id;
+    uint32_t id;
     SphereDesc info;
     float c;
 };
 
 struct SphereProcessingResult final {
-    Span<unsigned int> offset;
+    Span<uint32_t> offset;
     Span<SphereInfo> info;
     Span<TileRef> ref;
 
-    SphereProcessingResult(const Span<unsigned int>& off,
+    SphereProcessingResult(const Span<uint32_t>& off,
         const Span<SphereInfo>& sphereInfo, const Span<TileRef>& sphereRef)
         : offset(off), info(sphereInfo), ref(sphereRef) {}
 };
@@ -101,7 +101,7 @@ DEVICEINLINE vec2 raster2NDC(const vec2 p, const float ihx, const float ihy) {
 
 //in camera pos
 template <typename Uniform, typename FrameBuffer>
-using SphereFragmentShader = void(*)(unsigned int id, ivec2 uv, float z, Point pos, Vector dir,
+using SphereFragmentShader = void(*)(uint32_t id, ivec2 uv, float z, Point pos, Vector dir,
     float invr, bool inSphere, Vector dpdx, Vector dpdy, const Uniform& uniform, FrameBuffer& frameBuffer);
 
 //2,4,8,16,32
@@ -143,7 +143,7 @@ GLOBAL void drawMicroS(READONLY(SphereInfo) info, READONLY(TileRef) idx,
 template <typename Uniform, typename FrameBuffer,
     SphereFragmentShader<Uniform, FrameBuffer> Func,
     SphereFragmentShader<Uniform, FrameBuffer>... Then>
-DEVICEINLINE void applySFS(unsigned int* offset, SphereInfo* info, TileRef* idx, Uniform* uniform,
+DEVICEINLINE void applySFS(uint32_t* offset, SphereInfo* info, TileRef* idx, Uniform* uniform,
     FrameBuffer* frameBuffer, const float near, const float far, const float invnf,
     const vec2 invMul, const vec2 invHsiz) {
     #pragma unroll
@@ -165,12 +165,12 @@ DEVICEINLINE void applySFS(unsigned int* offset, SphereInfo* info, TileRef* idx,
 }
 
 template <typename Uniform, typename FrameBuffer>
-DEVICEINLINE void applySFS(unsigned int*, SphereInfo*, TileRef*, Uniform*, FrameBuffer*,
+DEVICEINLINE void applySFS(uint32_t*, SphereInfo*, TileRef*, Uniform*, FrameBuffer*,
     const float, const float, const float, const vec2, const vec2) {}
 
 template <typename Uniform, typename FrameBuffer,
     SphereFragmentShader<Uniform, FrameBuffer>... FragShader>
-GLOBAL void renderSpheresKernel(unsigned int* offset, SphereInfo* tri, TileRef* idx,
+GLOBAL void renderSpheresKernel(uint32_t* offset, SphereInfo* tri, TileRef* idx,
     Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float far,
     const float invnf, const vec2 invmul, const vec2 invHsiz) {
     applySFS<Uniform, FrameBuffer, FragShader...>(offset, tri, idx, uniform, frameBuffer, near, far,

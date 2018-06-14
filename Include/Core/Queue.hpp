@@ -1,23 +1,21 @@
 #pragma once
 #include <Core/CommandBuffer.hpp>
-#include <Core/CompileBegin.hpp>
-#include <device_atomic_functions.h>
-#include <Core/CompileEnd.hpp>
+#include <Core/DeviceFunctions.hpp>
 
 template <typename T>
 class QueueRef final {
 private:
     T* mAddress;
-    unsigned int* mCnt;
+    uint32_t* mCnt;
 public:
-    QueueRef(T* address, unsigned int* cnt): mAddress(address), mCnt(cnt) {}
+    QueueRef(T* address, uint32_t* cnt): mAddress(address), mCnt(cnt) {}
     DEVICEINLINE void push(T val) {
-        constexpr auto maxv = std::numeric_limits<unsigned int>::max();
-        mAddress[atomicInc(mCnt, maxv)] = val;
+        constexpr auto maxv = std::numeric_limits<uint32_t>::max();
+        mAddress[deviceAtomicInc(mCnt, maxv)] = val;
     }
 
-    DEVICEINLINE void push(T* val, unsigned int cnt) {
-        const auto base = atomicAdd(mCnt, cnt);
+    DEVICEINLINE void push(T* val, uint32_t cnt) {
+        const auto base = deviceAtomicAdd(mCnt, cnt);
         for (auto i = 0; i < cnt; ++i)
             mAddress[base + i] = val[i];
     }
@@ -27,10 +25,10 @@ template <typename T>
 class Queue final : Uncopyable {
 private:
     Span<T> mData;
-    Span<unsigned int> mCnt;
+    Span<uint32_t> mCnt;
 public:
     Queue(CommandBuffer& buffer, const size_t size)
-        : mData(buffer.allocBuffer<T>(size)), mCnt(buffer.allocBuffer<unsigned int>()) {
+        : mData(buffer.allocBuffer<T>(size)), mCnt(buffer.allocBuffer<uint32_t>()) {
         buffer.memset(mCnt);
     }
 
@@ -44,10 +42,5 @@ public:
 
     auto data() const {
         return mData;
-    }
-
-    void earlyRelease() {
-        mData.earlyRelease();
-        mCnt.earlyRelease();
     }
 };

@@ -23,9 +23,9 @@ public:
         if (mLensRadius > 0.0f) {
             const auto pLens = mLensRadius * concentricSampleDisk(sample.pLens);
             ray.origin = Point{pLens.x, pLens.y, 0.0f};
-            ray.dir = Point(mFocalDistance * ray.dir) - ray.origin;
-            ray.xDir = Point(mFocalDistance * ray.xDir) - ray.origin;
-            ray.yDir = Point(mFocalDistance * ray.yDir) - ray.origin;
+            ray.dir = Point{ mFocalDistance * ray.dir } - ray.origin;
+            ray.xDir = Point{ mFocalDistance * ray.xDir } -ray.origin;
+            ray.yDir = Point{ mFocalDistance * ray.yDir } -ray.origin;
         }
 
         ray.dir = normalize(ray.dir);

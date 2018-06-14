@@ -9,9 +9,9 @@
 #include <Light/DistantLight.hpp>
 #include <Spectrum/SpectrumConfig.hpp>
 #include <RayTracer/RenderingAPI.hpp>
-#include <Core/CompileBegin.hpp>
+#include <Core/IncludeBegin.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <Core/CompileEnd.hpp>
+#include <Core/IncludeEnd.hpp>
 #include <RayTracer/Film.hpp>
 #include <Camera/RayGeneratorWrapper.hpp>
 #include <IO/Image.hpp>
@@ -49,16 +49,14 @@ public:
                 Spectrum{RGB{10.0f, 20.0f, 30.0f}}));
             mLight.emplace_back(makeLightWrapper<PointLight>(resLoader, Point{-3.0f, 3.0f, 3.0f},
                 Spectrum{RGB{30.0f, 20.0f, 10.0f}}));
-            mMaterial = MemorySpan<MaterialWrapper>(3);
             const TextureMapping2DWrapper mapping{UVMapping{}};
+            std::vector<MaterialWrapper> materials;
             {
                 const TextureSampler2DSpectrumWrapper samplerS{ConstantSampler2DSpectrum{Spectrum{1.0f}}};
                 const TextureSampler2DFloatWrapper samplerF{ConstantSampler2DFloat{0.1f}};
                 const Texture2DSpectrum textureS{mapping, samplerS};
                 const Texture2DFloat textureF{mapping, samplerF};
-                MaterialWrapper plastic{Subtrate{textureS, textureS, textureF, textureF}};
-                checkError(cudaMemcpyAsync(mMaterial.begin(), &plastic, sizeof(MaterialWrapper),
-                    cudaMemcpyHostToDevice, resLoader.get()));
+                materials.emplace_back(Subtrate{ textureS, textureS, textureF, textureF });
             }
             {
                 const TextureSampler2DSpectrumWrapper samplerR{ConstantSampler2DSpectrum{Spectrum{0.2f}}};
@@ -69,19 +67,16 @@ public:
                 const Texture2DSpectrum textureT{mapping, samplerT};
                 const Texture2DFloat indexT{mapping, index};
                 const Texture2DFloat roughnessT{mapping, roughness};
-                MaterialWrapper glass{Glass{textureR, textureT, indexT, roughnessT, roughnessT}};
-                checkError(cudaMemcpyAsync(mMaterial.begin() + 1, &glass, sizeof(MaterialWrapper),
-                    cudaMemcpyHostToDevice, resLoader.get()));
+                materials.emplace_back(Glass{ textureR, textureT, indexT, roughnessT, roughnessT });
             }
             {
                 const TextureSampler2DSpectrumWrapper samplerS{ConstantSampler2DSpectrum{Spectrum{1.0f}}};
                 const TextureSampler2DFloatWrapper samplerF{ConstantSampler2DFloat{0.01f}};
                 const Texture2DSpectrum textureS{mapping, samplerS};
                 const Texture2DFloat textureF{mapping, samplerF};
-                MaterialWrapper metal{Metal{textureS, textureS, textureF, textureF}};
-                checkError(cudaMemcpyAsync(mMaterial.begin() + 2, &metal, sizeof(MaterialWrapper),
-                    cudaMemcpyHostToDevice, resLoader.get()));
+                materials.emplace_back(Metal{ textureS, textureS, textureF, textureF });
             }
+            mMaterial = upload(materials);
 
             std::vector<Primitive> primitives;
             const auto sphereMat = glm::translate(glm::mat4{}, {-0.25f, 0.2f, 2.0f}) * glm::scale(glm::mat4{},

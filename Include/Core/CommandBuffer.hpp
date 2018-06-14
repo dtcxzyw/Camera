@@ -312,12 +312,12 @@ namespace Impl {
 
     class LaunchSize final {
     private:
-        SpanHelper<unsigned int> mHelper;
-        Span<unsigned int> mRef;
+        SpanHelper<uint32_t> mHelper;
+        Span<uint32_t> mRef;
     public:
-        explicit LaunchSize(const Span<unsigned int>& ptr);
-        SpanHelper<unsigned int> get() const;
-        void download(unsigned int& dst, CommandBuffer& buffer) const;
+        explicit LaunchSize(const Span<uint32_t>& ptr);
+        SpanHelper<uint32_t> get() const;
+        void download(uint32_t& dst, CommandBuffer& buffer) const;
     };
 
     template <typename T>

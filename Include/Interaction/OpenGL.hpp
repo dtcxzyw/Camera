@@ -10,7 +10,7 @@ class GLFWwindow;
 class GLWindow final : public Singletion<GLWindow> {
 private:
     GLFWwindow* mWindow;
-    unsigned int mFBO;
+    uint32_t mFBO;
     float mWheel;
     bool mPressed[3]{};
     Counter mCounter;
@@ -19,7 +19,7 @@ private:
     friend void scrollCallback(GLFWwindow*, double, double y);
     void makeContext() const;
 public:
-    void enumDevices(int* buf, unsigned int* count) const;
+    void enumDevices(int* buf, uint32_t* count) const;
 
     GLWindow();
     //void present(GLImage& image);

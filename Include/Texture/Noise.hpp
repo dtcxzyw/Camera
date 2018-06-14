@@ -1,10 +1,10 @@
 #pragma once
 #include <Core/Common.hpp>
 #include <Math/Math.hpp>
-#include <Core/CompileBegin.hpp>
+#include <Core/IncludeBegin.hpp>
 #include <glm/gtc/noise.hpp>
 #include <glm/gtx/spline.hpp>
-#include <Core/CompileEnd.hpp>
+#include <Core/IncludeEnd.hpp>
 
 DEVICEINLINE bool polkaDots(const vec2 uv, const float radius) {
     const auto cell = floor(uv + 0.5f);

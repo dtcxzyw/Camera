@@ -1,14 +1,14 @@
 #pragma once
 #include <Core/Common.hpp>
 #include <Math/Geometry.hpp>
-#include <Core/CompileBegin.hpp>
+#include <Core/IncludeBegin.hpp>
 #include <device_functions.h>
-#include <Core/CompileEnd.hpp>
+#include <Core/IncludeEnd.hpp>
 #include <Spectrum/SpectrumConfig.hpp>
 
 //F
 DEVICEINLINE float fresnelSchlick(const float d) {
-    auto x = saturate(1.0f - d);
+    auto x = deviceSaturate(1.0f - d);
     auto x2 = x * x;
     return x * x2 * x2;
 }
@@ -245,7 +245,7 @@ DEVICEINLINE Spectrum UE4BRDF(const Normal L, const Normal V, const Normal N, co
 
     //specular
     const auto aspect = sqrt(1.0f - arg.anisotropy * 0.9f);
-    const auto alpha = saturate(arg.roughness * arg.roughness + 0.5f * ratio);
+    const auto alpha = deviceSaturate(arg.roughness * arg.roughness + 0.5f * ratio);
     const auto ax = fmax(0.001f, alpha / aspect);
     const auto ay = fmax(0.001f, alpha * aspect);
     const auto D = DGTR2Aniso(ndh, ax, ay, dot(X, H), dot(Y, H));
@@ -292,7 +292,7 @@ struct FrostbiteBRDFArg final {
 DEVICEINLINE float calcFv(const float r) {
     constexpr auto a = 0.2281399812785982f, b = -0.22673613288218408f
         , c = 0.20285923208572978f, d = -0.03326308048214361f;
-    return saturate(((a * r + b) * r + c) * r + d);
+    return deviceSaturate(((a * r + b) * r + c) * r + d);
 }
 
 DEVICEINLINE Spectrum frostbiteBRDF(const Normal L, const Normal V, const Normal N,

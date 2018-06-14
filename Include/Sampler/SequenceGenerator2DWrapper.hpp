@@ -33,7 +33,7 @@ public:
         return *this;
     }
 
-    DEVICE vec2 sample(const unsigned int index) const {
+    DEVICE vec2 sample(const uint32_t index) const {
         switch (mType) {
             case SequenceGenerator2DClassType::Halton2D: return dataHalton2D.sample(index);
             case SequenceGenerator2DClassType::Sobol2D: return dataSobol2D.sample(index);

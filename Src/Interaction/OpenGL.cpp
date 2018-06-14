@@ -1,14 +1,14 @@
 #include <Core/Config.hpp>
 #ifdef CAMERA_OPENGL_SUPPORT
-#include <Core/CompileBegin.hpp>
+#include <Core/IncludeBegin.hpp>
 #include <GL/glew.h>
-#include <Core/CompileEnd.hpp>
+#include <Core/IncludeEnd.hpp>
 #include <Interaction/OpenGL.hpp>
-#include <Core/CompileBegin.hpp>
+#include <Core/IncludeBegin.hpp>
 #include <GLFW/glfw3.h>
 #include <cuda_gl_interop.h>
 #include <imgui.h>
-#include <Core/CompileEnd.hpp>
+#include <Core/IncludeEnd.hpp>
 #include <stdexcept>
 #include <iostream>
 
@@ -47,7 +47,7 @@ static void keyCallback(GLFWwindow*, const int key, int, const int action, int) 
     io.KeySuper = io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
 }
 
-static void charCallback(GLFWwindow*, const unsigned int c) {
+static void charCallback(GLFWwindow*, const uint32_t c) {
     auto&& io = ImGui::GetIO();
     if (c > 0 && c < 0x10000)
         io.AddInputCharacter(static_cast<unsigned short>(c));

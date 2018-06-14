@@ -4,9 +4,9 @@
 
 namespace Impl {
     constexpr auto blockNum = 512U, blockSize = 32U;
-    void* constantAlloc(unsigned int size);
-    void constantFree(void* address, unsigned int size);
-    void constantSet(void* dest, const void* src, unsigned int size, cudaStream_t stream);
+    void* constantAlloc(uint32_t size);
+    void constantFree(void* address, uint32_t size);
+    void constantSet(void* dest, const void* src, uint32_t size, cudaStream_t stream);
 }
 
 template <typename T>

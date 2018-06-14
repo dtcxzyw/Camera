@@ -45,7 +45,7 @@ DEVICE Bsdf::Bsdf(const Interaction& interaction)
     mCount(0),
     mEta(1.0f) {}
 
-DEVICE unsigned int Bsdf::match(const BxDFType type) const {
+DEVICE uint32_t Bsdf::match(const BxDFType type) const {
     auto res = 0U;
     for (auto i = 0U; i < mCount; ++i)
         res += mBxDF[i].match(type);
@@ -63,7 +63,7 @@ DEVICE Spectrum Bsdf::f(const Vector& worldWo, const Vector& worldWi, const BxDF
 DEVICE BxDFSample Bsdf::sampleF(const Vector& worldWo, const vec2 sample, const BxDFType pattern) const {
     const auto count = match(pattern);
     if (count == 0) return {};
-    const auto nth = min(static_cast<unsigned int>(sample.x * count), count - 1U);
+    const auto nth = min(static_cast<uint32_t>(sample.x * count), count - 1U);
 
     auto id = 0U;
     for (auto i = 0U, cur = 0U; i < mCount; ++i)

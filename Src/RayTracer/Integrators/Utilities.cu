@@ -46,6 +46,6 @@ DEVICE Spectrum uniformSampleOneLight(RenderingContext& context, const Interacti
     const Bsdf& bsdf) {
     const auto size = context.scene.size();
     if (size == 0)return Spectrum{};
-    const auto id = min(static_cast<unsigned int>(context.sample().x * size), size - 1);
+    const auto id = min(static_cast<uint32_t>(context.sample().x * size), size - 1);
     return size * estimateDirect(context, interaction, bsdf, **(context.scene.begin() + id));
 }

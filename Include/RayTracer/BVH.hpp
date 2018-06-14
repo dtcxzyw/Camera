@@ -6,8 +6,8 @@ struct BvhNode {
     Bounds bounds;
 
     union {
-        unsigned int offset;
-        unsigned int second;
+        uint32_t offset;
+        uint32_t second;
     };
 
     unsigned short axis, size;
@@ -18,7 +18,7 @@ private:
     READONLY(BvhNode) mNodes;
     READONLY(TriangleRef) mIndex;
     READONLY(VertexDesc) mVertex;
-    DEVICE TriangleDesc makeTriangleDesc(unsigned int id) const;
+    DEVICE TriangleDesc makeTriangleDesc(uint32_t id) const;
 public:
     BvhForTriangleRef(const MemorySpan<BvhNode>& nodes,
         const MemorySpan<TriangleRef>& index, const MemorySpan<VertexDesc>& vertex);

@@ -24,11 +24,11 @@ using OI = Args<VAR(Pos, Point), VAR(Nor, Normal), VAR(Tangent, Normal)>;
 
 struct FrameBufferRef final {
     BuiltinRenderTargetRef<RGBA> color;
-    Buffer2DRef<unsigned int> depth;
+    Buffer2DRef<uint32_t> depth;
     uvec2 fsize;
     FrameBufferRef() = default;
 
-    FrameBufferRef(const FrameBufferRef& rhs, const Buffer2DRef<unsigned int> buf) {
+    FrameBufferRef(const FrameBufferRef& rhs, const Buffer2DRef<uint32_t> buf) {
         color = rhs.color;
         depth = buf;
         fsize = rhs.fsize;
@@ -59,7 +59,7 @@ struct FrameBuffer final {
     }
 
     Span<FrameBufferRef> getData(CommandBuffer& buffer,
-        Buffer2D<unsigned int>& depth) const {
+        Buffer2D<uint32_t>& depth) const {
         auto dataRef = buffer.allocConstant<FrameBufferRef>();
         auto&& manager = buffer.getResourceManager();
         buffer.memcpy(dataRef, [this,&manager, depthRef= depth.toBuffer()](auto call) {
@@ -86,9 +86,9 @@ struct Uniform final {
 struct PostUniform final {
     ALIGN FrameBufferRef in;
     ALIGN float* lum;
-    ALIGN std::pair<float, unsigned int>* sum;
+    ALIGN std::pair<float, uint32_t>* sum;
 
-    PostUniform(const FrameBufferRef buf, float* clum, std::pair<float, unsigned int>* cnt)
+    PostUniform(const FrameBufferRef buf, float* clum, std::pair<float, uint32_t>* cnt)
         : in(buf), lum(clum), sum(cnt) {}
 };
 

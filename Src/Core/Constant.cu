@@ -7,7 +7,7 @@
 namespace Impl {
     __constant__ unsigned char memory[blockNum * blockSize];
 
-    using uint = unsigned int;
+    using uint = uint32_t;
     using u8 = unsigned char;
 
     class SegTree final {
@@ -103,20 +103,20 @@ namespace Impl {
         return static_cast<unsigned char*>(address);
     }
 
-    void* constantAlloc(const unsigned int size) {
+    void* constantAlloc(const uint32_t size) {
         const auto req = calcBlockSize(size, blockSize);
         const auto off = getPool().allocSpace(req);
         if (off == 0)return nullptr;
         return getAddress() + (off - 1) * blockSize;
     }
 
-    void constantFree(void* address, const unsigned int size) {
+    void constantFree(void* address, const uint32_t size) {
         const auto req = calcBlockSize(size, blockSize);
         const auto off = (static_cast<unsigned char*>(address) - getAddress()) / blockSize + 1;
         getPool().returnSpace(off, req);
     }
 
-    void constantSet(void* dest, const void* src, const unsigned int size, const cudaStream_t stream) {
+    void constantSet(void* dest, const void* src, const uint32_t size, const cudaStream_t stream) {
         const auto offset = static_cast<unsigned char*>(dest) - getAddress();
         if (std::memcmp(memory + offset, src, size) != 0) {
             std::memcpy(memory + offset, src, size);

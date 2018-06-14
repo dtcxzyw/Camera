@@ -1,42 +1,40 @@
 #pragma once
 #include <Rasterizer/Vertex.hpp>
 #include <Rasterizer/Shared.hpp>
-#include <Core/CompileBegin.hpp>
-#include <math_functions.h>
-#include <Core/CompileEnd.hpp>
 #include <Rasterizer/Tile.hpp>
+#include <Core/DeviceFunctions.hpp>
 
 ///@see <a href="https://www.khronos.org/registry/OpenGL/specs/gl/glspec46.compatibility.pdf">OpenGL 4.6 API Specification, Section 10.1 Primitive Types</a>
 
 class TriangleStrips final {
 public:
-    static auto size(const unsigned int vertSize) {
+    static auto size(const uint32_t vertSize) {
         return vertSize - 2;
     }
 
-    DEVICEINLINE uvec3 operator[](const unsigned int off) const {
+    DEVICEINLINE uvec3 operator[](const uint32_t off) const {
         return {off, off + 1, off + 2};
     }
 };
 
 class TriangleFans final {
 public:
-    static auto size(const unsigned int vertSize) {
+    static auto size(const uint32_t vertSize) {
         return vertSize - 2;
     }
 
-    DEVICEINLINE uvec3 operator[](const unsigned int off) const {
+    DEVICEINLINE uvec3 operator[](const uint32_t off) const {
         return {0, off + 1, off + 2};
     }
 };
 
 class SeparateTriangles final {
 public:
-    static auto size(const unsigned int faceSize) {
+    static auto size(const uint32_t faceSize) {
         return faceSize;
     }
 
-    DEVICEINLINE uvec3 operator[](const unsigned int off) const {
+    DEVICEINLINE uvec3 operator[](const uint32_t off) const {
         const auto base = off * 3;
         return {base, base + 1, base + 2};
     }
@@ -48,18 +46,18 @@ private:
 public:
     explicit SeparateTrianglesWithIndex(READONLY(uvec3) idx): mPtr(idx) {}
 
-    static auto size(const unsigned int faceSize) {
+    static auto size(const uint32_t faceSize) {
         return faceSize;
     }
 
-    DEVICEINLINE auto operator[](const unsigned int off) const {
+    DEVICEINLINE auto operator[](const uint32_t off) const {
         return mPtr[off];
     }
 };
 
 template <typename Out>
 struct STRUCT_ALIGN TriangleVert final {
-    unsigned int id;
+    uint32_t id;
     VertexInfo<Out> vert[3];
 };
 
@@ -78,7 +76,7 @@ template <typename Out>
 struct STRUCT_ALIGN Triangle final {
     Vector invz;
     mat3 w;
-    unsigned int id, type;
+    uint32_t id, type;
     Out out[3];
 };
 
@@ -90,16 +88,16 @@ enum class CullFace {
 
 template <typename Out>
 struct TriangleProcessingArgs final {
-    unsigned int* cnt;
+    uint32_t* cnt;
     Triangle<Out>* info;
     TileRef* out;
     vec4 scissor;
     vec2 hsiz;
     int mode;
-    unsigned int maxSize;
+    uint32_t maxSize;
 
-    TriangleProcessingArgs(unsigned int* iCnt, Triangle<Out>* iInfo, TileRef* iOut,
-        const vec4 iScissor, const vec2 iHsiz, const int iMode, const unsigned int iMaxSize)
+    TriangleProcessingArgs(uint32_t* iCnt, Triangle<Out>* iInfo, TileRef* iOut,
+        const vec4 iScissor, const vec2 iHsiz, const int iMode, const uint32_t iMaxSize)
         : cnt(iCnt), info(iInfo), out(iOut), scissor(iScissor), hsiz(iHsiz), mode(iMode), maxSize(iMaxSize) {}
 };
 
@@ -132,8 +130,8 @@ DEVICEINLINE void calcTriangleInfo(const TriangleVert<Out>& tri, const TriangleP
         TileRef ref;
         ref.size = calcTileSize(rect);
         ref.rect = rect;
-        atomicInc(args.cnt + ref.size, maxv);
-        ref.id = atomicInc(args.cnt + 6, maxv);
+        deviceAtomicInc(args.cnt + ref.size, maxv);
+        ref.id = deviceAtomicInc(args.cnt + 6, maxv);
         if (ref.id >= args.maxSize)return;
         args.out[ref.id] = ref;
         args.info[ref.id] = res;
@@ -218,10 +216,10 @@ DEVICEINLINE void clipTriangle(const TriangleVert<Out>& tri, const float z, cons
 }
 
 template <typename Uniform>
-using TriangleClipShader = bool(*)(unsigned int id, Point& pa, Point& pb, Point& pc, const Uniform& uniform);
+using TriangleClipShader = bool(*)(uint32_t id, Point& pa, Point& pb, Point& pc, const Uniform& uniform);
 
 template <typename Index, typename Out, typename Uniform, TriangleClipShader<Uniform> Func>
-GLOBAL void processTrianglesKernel(const unsigned int size,READONLY(VertexInfo<Out>) vert,
+GLOBAL void processTrianglesKernel(const uint32_t size,READONLY(VertexInfo<Out>) vert,
     Index index,READONLY(Uniform) uniform, const float near, const float far,
     TriangleProcessingArgs<Out> args) {
     const auto id = getId();
@@ -256,7 +254,7 @@ DEVICEINLINE bool calcWeight(const mat3 w0, const int type, const vec2 p, const 
 }
 
 template <typename Out, typename Uniform, typename FrameBuffer>
-using FragmentShader = void(*)(unsigned int id, ivec2 uv, float z, const Out& in,
+using FragmentShader = void(*)(uint32_t id, ivec2 uv, float z, const Out& in,
     const Out& ddx, const Out& ddy, const Uniform& uniform, FrameBuffer& frameBuffer);
 
 //2,4,8,16,32
@@ -285,7 +283,7 @@ GLOBAL void drawMicroT(READONLY(Triangle<Out>) info,READONLY(TileRef) idx,
 
 template <typename Out, typename Uniform, typename FrameBuffer,
     FragmentShader<Out, Uniform, FrameBuffer> Func, FragmentShader<Out, Uniform, FrameBuffer>... Then>
-DEVICEINLINE void applyTFS(unsigned int* offset, Triangle<Out>* tri, TileRef* idx, Uniform* uniform,
+DEVICEINLINE void applyTFS(uint32_t* offset, Triangle<Out>* tri, TileRef* idx, Uniform* uniform,
     FrameBuffer* frameBuffer, const float near, const float invnf, const vec2 samplePoint) {
     #pragma unroll
     for (auto i = 0; i < 5; ++i) {
@@ -305,12 +303,12 @@ DEVICEINLINE void applyTFS(unsigned int* offset, Triangle<Out>* tri, TileRef* id
 }
 
 template <typename Out, typename Uniform, typename FrameBuffer>
-DEVICEINLINE void applyTFS(unsigned int*, Triangle<Out>*, TileRef*, Uniform*, FrameBuffer*,
+DEVICEINLINE void applyTFS(uint32_t*, Triangle<Out>*, TileRef*, Uniform*, FrameBuffer*,
     float, float, vec2) {}
 
 template <typename Out, typename Uniform, typename FrameBuffer,
     FragmentShader<Out, Uniform, FrameBuffer>... FragShader>
-GLOBAL void renderTrianglesKernel(unsigned int* offset, Triangle<Out>* tri, TileRef* idx,
+GLOBAL void renderTrianglesKernel(uint32_t* offset, Triangle<Out>* tri, TileRef* idx,
     Uniform* uniform, FrameBuffer* frameBuffer, const float near, const float invnf,
     const vec2 samplePoint) {
     applyTFS<Out, Uniform, FrameBuffer, FragShader...>(offset, tri, idx, uniform, frameBuffer, near, invnf,
@@ -340,29 +338,29 @@ DEVICEINLINE bool triangleTileClipShader(const TileRef& ref, const Uniform& uni,
 
 template <typename Out>
 struct CachedTriangleProcessingResult final {
-    MemorySpan<unsigned int> cnt;
+    MemorySpan<uint32_t> cnt;
     MemorySpan<Triangle<Out>> info;
     MemorySpan<TileRef> idx;
-    unsigned int maxSize;
+    uint32_t maxSize;
 };
 
 template <typename Out>
 struct TriangleProcessingResult final {
-    Span<unsigned int> cnt;
+    Span<uint32_t> cnt;
     Span<Triangle<Out>> info;
     Span<TileRef> idx;
-    unsigned int maxSize;
+    uint32_t maxSize;
     bool useCache;
 
-    TriangleProcessingResult(const Span<unsigned int>& cnt, const Span<Triangle<Out>>& info,
-        const Span<TileRef>& idx, const unsigned int maxSize, const bool useCache)
+    TriangleProcessingResult(const Span<uint32_t>& cnt, const Span<Triangle<Out>>& info,
+        const Span<TileRef>& idx, const uint32_t maxSize, const bool useCache)
         : cnt(cnt), info(info), idx(idx), maxSize(maxSize), useCache(useCache) {}
 };
 
 template <typename Out, typename Judge = EmptyJudge>
 struct TriangleRenderingContext final : Uncopyable {
-    unsigned int baseSize, renderCount;
-    PinnedBuffer<unsigned int> triNum;
+    uint32_t baseSize, renderCount;
+    PinnedBuffer<uint32_t> triNum;
     bool enableSelfAdaptiveAllocation;
 
     using JudgeType = And<EqualComparer<vec4>, Judge>;
@@ -373,11 +371,11 @@ struct TriangleRenderingContext final : Uncopyable {
     TriangleRenderingContext() : baseSize(0), renderCount(0), triNum(1),
         enableSelfAdaptiveAllocation(false), enableCache(false) {}
 
-    unsigned int calcBufferSize(const unsigned int maxv) const {
+    uint32_t calcBufferSize(const uint32_t maxv) const {
         return baseSize + std::min(*triNum + (*triNum >> 3), maxv);
     }
 
-    void reset(const unsigned int size, const unsigned int base,
+    void reset(const uint32_t size, const uint32_t base,
         const bool SAA, const bool cache) {
         *triNum = size;
         baseSize = base;
@@ -418,11 +416,11 @@ auto processTriangles(CommandBuffer& buffer,
     MemoryReleaseFunction func;
     if (context.enableCache) {
         func = [=](UniqueMemory memory, size_t memSize) {
-            newCache->cnt = MemorySpan<unsigned int>{std::move(memory), memSize};
+            newCache->cnt = MemorySpan<uint32_t>{std::move(memory), memSize};
         };
     }
     //5+ext+cnt=7
-    auto cnt = buffer.allocBuffer<unsigned int>(7, std::move(func));
+    auto cnt = buffer.allocBuffer<uint32_t>(7, std::move(func));
     buffer.memset(cnt);
     if (context.enableCache) {
         func = [=](UniqueMemory memory, size_t memSize) {
@@ -437,7 +435,7 @@ auto processTriangles(CommandBuffer& buffer,
     }
     auto idx = buffer.allocBuffer<TileRef>(psiz, std::move(func));
     const auto hfsize = static_cast<vec2>(size) * 0.5f;
-    const unsigned int maxSize = std::min(info.maxSize(), idx.maxSize());
+    const uint32_t maxSize = std::min(info.maxSize(), idx.maxSize());
     if (context.enableCache)newCache->maxSize = maxSize;
     buffer.launchKernelLinear(
         makeKernelDesc(processTrianglesKernel<IndexDesc::IndexType, Out, Uniform, ClipShader>),

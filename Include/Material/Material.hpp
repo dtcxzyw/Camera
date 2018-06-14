@@ -8,7 +8,7 @@ private:
     const Vector mNormal, mTangent, mBiTangent, mLocalNormal;
     static constexpr auto maxSize = 4;
     BxDFWrapper mBxDF[maxSize];
-    unsigned int mCount;
+    uint32_t mCount;
     float mEta;
     DEVICE Vector toLocal(const Vector& vec) const;
 
@@ -35,7 +35,7 @@ public:
         mBxDF[mCount++] = BxDFWrapper{bxDF};
     }
 
-    DEVICE unsigned int match(BxDFType type) const;
+    DEVICE uint32_t match(BxDFType type) const;
 
     DEVICE float pdf(const Vector& worldWo, const Vector& worldWi, BxDFType pattern
         = BxDFType::All) const;

@@ -19,8 +19,8 @@ DEVICE bool Primitive::intersect(const Ray& ray, float& tHit, Interaction& inter
     return false;
 }
 
-SceneRef::SceneRef(Primitive* primitives, const unsigned int priSize,
-    LightWrapper** light, const unsigned int lightSize)
+SceneRef::SceneRef(Primitive* primitives, const uint32_t priSize,
+    LightWrapper** light, const uint32_t lightSize)
     : mPrimitives(primitives), mPrimitiveSize(priSize), mLights(light), mLightSize(lightSize) {}
 
 DEVICE bool SceneRef::intersect(const Ray& ray) const {
@@ -46,7 +46,7 @@ DEVICE LightWrapper** SceneRef::end() const {
     return mLights + mLightSize;
 }
 
-DEVICE unsigned int SceneRef::size() const {
+DEVICE uint32_t SceneRef::size() const {
     return mLightSize;
 }
 

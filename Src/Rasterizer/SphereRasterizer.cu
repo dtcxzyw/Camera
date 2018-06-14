@@ -1,7 +1,5 @@
 #include <Rasterizer/SphereRasterizer.hpp>
-#include <Core/CompileBegin.hpp>
-#include <device_atomic_functions.h>
-#include <Core/CompileEnd.hpp>
+#include <Core/DeviceFunctions.hpp>
 
 DEVICEINLINE bool cmpMin(const float a, const float b) {
     return a < b;
@@ -46,8 +44,8 @@ DEVICEINLINE bool calcSphereRange(const vec4& sphere, const float near, const fl
     return true;
 }
 
-GLOBAL void processSphereInfoKernel(const unsigned int size, READONLY(SphereDesc) in, SphereInfo* info,
-    TileRef* ref, unsigned int* cnt, const vec4 scissor, const vec2 hsiz,
+GLOBAL void processSphereInfoKernel(const uint32_t size, READONLY(SphereDesc) in, SphereInfo* info,
+    TileRef* ref, uint32_t* cnt, const vec4 scissor, const vec2 hsiz,
     const float near, const float far, const vec2 mul) {
     const auto id = getId();
     if (id >= size)return;
@@ -62,8 +60,8 @@ GLOBAL void processSphereInfoKernel(const unsigned int size, READONLY(SphereDesc
     };
     if (rect.x < rect.y & rect.z < rect.w) {
         const auto tsiz = calcTileSize(rect);
-        atomicInc(cnt + tsiz, maxv);
-        const auto wpos = atomicInc(cnt + 6, maxv);
+        deviceAtomicInc(cnt + tsiz, maxv);
+        const auto wpos = deviceAtomicInc(cnt + 6, maxv);
         ref[wpos].id = wpos;
         ref[wpos].size = tsiz;
         ref[wpos].rect = rect;
@@ -77,7 +75,7 @@ GLOBAL void processSphereInfoKernel(const unsigned int size, READONLY(SphereDesc
 SphereProcessingResult processSphereInfo(CommandBuffer& buffer, const Span<SphereDesc>& spheres,
     const vec4 scissor, const vec2 hsiz, const float near, const float far,
     const vec2 mul) {
-    auto cnt = buffer.allocBuffer<unsigned int>(7);
+    auto cnt = buffer.allocBuffer<uint32_t>(7);
     buffer.memset(cnt);
     const auto info = buffer.allocBuffer<SphereInfo>(spheres.size());
     auto ref = buffer.allocBuffer<TileRef>(spheres.size());

@@ -1,7 +1,7 @@
 #include <Core/DeviceMemory.hpp>
 //TODO: memory pool
 
-DEVICE DeviceMemoryDesc alloc(const unsigned int size) {
+DEVICE DeviceMemoryDesc alloc(const uint32_t size) {
     DeviceMemoryDesc res;
     res.ptr = malloc(size);
     res.size = size;

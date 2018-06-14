@@ -88,6 +88,10 @@ struct Point final {
         return Point{mix(lhs.pos, rhs.pos, w)};
     }
 
+    BOTH friend Point mix(const Point& lhs, const Point& rhs, const Vector& w) {
+        return Point{ mix(lhs.pos, rhs.pos, w) };
+    }
+
     BOTH friend Point min(const Point& lhs, const Point& rhs) {
         return Point{min(lhs.pos, rhs.pos)};
     }
@@ -209,6 +213,10 @@ public:
         return *this = operator&(rhs);
     }
 
+    BOTH Point corner(const int id) const {
+        return Point{ operator[](id & 1).x, operator[](id & 2).y, operator[](id & 4).z };
+    }
+
     BOTH float area() const {
         const auto delta = mMax - mMin;
         return 2.0f * (delta.x * delta.y + delta.x * delta.z + delta.y * delta.z);
@@ -218,8 +226,8 @@ public:
         return id ? mMax : mMin;
     }
 
-    BOTH Point corner(const int id) const {
-        return Point{operator[](id & 1).x, operator[](id & 2).y, operator[](id & 4).z};
+    BOTH Point lerp(const Vector& w) const {
+        return mix(mMin, mMax, w);
     }
 
     DEVICE bool intersect(const Ray& ray, const float tHit, const Vector& invDir,

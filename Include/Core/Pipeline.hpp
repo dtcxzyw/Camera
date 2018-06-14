@@ -4,7 +4,7 @@
 #include <Math/Math.hpp>
 
 template <typename Func, typename... Args>
-DEVICEINLINE void launchLinear(Func func, unsigned int block, unsigned int size, Args ... args) {
+DEVICEINLINE void launchLinear(Func func, uint32_t block, uint32_t size, Args ... args) {
     if (size)func << <calcBlockSize(size, block), min(block, size)>> >(size, args...);
 }
 
@@ -13,7 +13,7 @@ class Event;
 class Stream final : Uncopyable {
 private:
     cudaStream_t mStream{};
-    unsigned int mMaxThread;
+    uint32_t mMaxThread;
 public:
     Stream();
     ~Stream();
@@ -23,7 +23,7 @@ public:
     cudaError_t query() const;
 
     template <typename Func, typename... Args>
-    void launchLinear(Func func, unsigned int size, Args ... args) {
+    void launchLinear(Func func, uint32_t size, Args ... args) {
         if (size) {
             func <<<calcBlockSize(size, mMaxThread),min(mMaxThread, size), 0, mStream >>>(size, args...);
             checkError();
@@ -36,7 +36,7 @@ public:
         checkError();
     }
 
-    unsigned int getMaxBlockSize() const {
+    uint32_t getMaxBlockSize() const {
         return mMaxThread;
     }
 

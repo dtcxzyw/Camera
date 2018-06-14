@@ -4,9 +4,9 @@
 template <typename Vert, typename Uniform>
 using GeometryShader = void(*)(Vert* in, const Uniform& uniform, QueueRef<Vert> queue);
 
-template <unsigned int In, typename Index, typename Vert, typename Uniform,
+template <uint32_t In, typename Index, typename Vert, typename Uniform,
     GeometryShader<Vert, Uniform> Func>
-GLOBAL void genPrimitiveKernel(const unsigned int size,READONLY(Vert) vert, Index idx,
+GLOBAL void genPrimitiveKernel(const uint32_t size,READONLY(Vert) vert, Index idx,
     READONLY(Uniform) uniform, QueueRef<Vert> queue) {
     const auto id = getId();
     if (id >= size)return;
@@ -15,10 +15,10 @@ GLOBAL void genPrimitiveKernel(const unsigned int size,READONLY(Vert) vert, Inde
     Func(in, *uniform, queue);
 }
 
-template <unsigned int In, unsigned int Out, typename Index, typename Vert, typename Uniform
+template <uint32_t In, uint32_t Out, typename Index, typename Vert, typename Uniform
     , GeometryShader<Vert, Uniform> Func>
 auto genPrimitive(CommandBuffer& buffer, const Span<Vert>& vert, Index idx
-    , const Span<Uniform>& uniform, unsigned int outSize = 0U) {
+    , const Span<Uniform>& uniform, uint32_t outSize = 0U) {
     if (outSize == 0U)outSize = idx.size();
     outSize *= Out;
     Queue<Vert> out(buffer, outSize);

@@ -22,16 +22,16 @@ public:
 class SceneRef final {
 private:
     READONLY(Primitive) mPrimitives;
-    unsigned int mPrimitiveSize;
+    uint32_t mPrimitiveSize;
     LightWrapper** mLights;
-    unsigned int mLightSize;
+    uint32_t mLightSize;
 public:
-    SceneRef(Primitive* primitives, unsigned int priSize, LightWrapper** light, unsigned int lightSize);
+    SceneRef(Primitive* primitives, uint32_t priSize, LightWrapper** light, uint32_t lightSize);
     DEVICE bool intersect(const Ray& ray) const;
     DEVICE bool intersect(const Ray& ray, Interaction& interaction) const;
     DEVICE LightWrapper** begin() const;
     DEVICE LightWrapper** end() const;
-    DEVICE unsigned int size() const;
+    DEVICE uint32_t size() const;
 };
 
 class SceneDesc final {

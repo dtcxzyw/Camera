@@ -1,9 +1,6 @@
 #pragma once
 #include  <Math/Math.hpp>
 #include <Core/CommandBuffer.hpp>
-#include <Core/CompileBegin.hpp>
-#include <device_atomic_functions.h>
-#include <Core/CompileEnd.hpp>
 
 template <typename T>
 class Buffer2DRef final {

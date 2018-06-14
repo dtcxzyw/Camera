@@ -1,12 +1,13 @@
 #include <Rasterizer/LineRasterizer.hpp>
+#include <Core/DeviceFunctions.hpp>
 
-DEVICEINLINE void cutLine(LineRef ref, unsigned int* cnt, LineRef* out) {
+DEVICEINLINE void cutLine(LineRef ref, uint32_t* cnt, LineRef* out) {
     const auto offset = ref.range.x;
     const auto invdis = 1.0f / ref.len;
     const auto mul = ref.range.y * invdis;
     constexpr auto step = 1024.0f, invstep = 1.0f / step;
-    const auto refCnt = ceil(ref.len * invstep);
-    auto base = atomicAdd(cnt, refCnt);
+    const uint32_t refCnt = ceil(ref.len * invstep);
+    auto base = deviceAtomicAdd(cnt, refCnt);
     for (auto i = 0; i < refCnt; ++i) {
         const auto x = step * i;
         const auto y = fmin(ref.len, x + step);
@@ -16,16 +17,16 @@ DEVICEINLINE void cutLine(LineRef ref, unsigned int* cnt, LineRef* out) {
     }
 }
 
-GLOBAL void emitLine(const unsigned int size, unsigned int* cnt,
-    READONLY(unsigned int) offset, const LineRef* in, LineRef* out) {
+GLOBAL void emitLine(const uint32_t size, uint32_t* cnt,
+    READONLY(uint32_t) offset, const LineRef* in, LineRef* out) {
     const auto id = getId();
     if (id >= size)return;
     const auto ref = in[id];
     if (ref.size == 11)cutLine(ref, cnt + 10, out + offset[10]);
-    else out[offset[ref.size] + atomicInc(cnt + ref.size, maxv)] = ref;
+    else out[offset[ref.size] + deviceAtomicInc(cnt + ref.size, maxv)] = ref;
 }
 
-GLOBAL void sortLinesKernel(unsigned int* cnt, unsigned int* offset, unsigned int* tmp,
+GLOBAL void sortLinesKernel(uint32_t* cnt, uint32_t* offset, uint32_t* tmp,
     LineRef* ref, LineRef* out) {
     offset[0] = 0;
     #pragma unroll
@@ -38,12 +39,12 @@ GLOBAL void sortLinesKernel(unsigned int* cnt, unsigned int* offset, unsigned in
     offset[11] = offset[10] + tmp[10];
 }
 
-std::pair<Span<unsigned int>, Span<LineRef>> sortLines(CommandBuffer& buffer,
-    const Span<unsigned int>& cnt,
+std::pair<Span<uint32_t>, Span<LineRef>> sortLines(CommandBuffer& buffer,
+    const Span<uint32_t>& cnt,
     const Span<LineRef>& ref) {
     auto sortedIdx = buffer.allocBuffer<LineRef>(ref.size() * 2U + 2048U);
-    auto tmp = buffer.allocBuffer<unsigned int>(11);
-    auto offset = buffer.allocBuffer<unsigned int>(12);
+    auto tmp = buffer.allocBuffer<uint32_t>(11);
+    auto offset = buffer.allocBuffer<uint32_t>(12);
     buffer.callKernel(makeKernelDesc(sortLinesKernel), cnt, offset, tmp, ref, sortedIdx);
     return {offset, sortedIdx};
 }

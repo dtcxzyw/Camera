@@ -1,8 +1,9 @@
 #pragma once
 #include <Core/Common.hpp>
-#include <Core/CompileBegin.hpp>
+#include <Core/IncludeBegin.hpp>
 #include <glm/gtx/color_space.hpp>
-#include <Core/CompileEnd.hpp>
+#include <Core/IncludeEnd.hpp>
+#include <Core/DeviceFunctions.hpp>
 
 class RGBSpectrum final {
 private:
@@ -57,9 +58,9 @@ public:
     }
 
     DEVICE void atomicAdd(const RGBSpectrum& rhs) {
-        ::atomicAdd(&mVal.x, rhs.mVal.x);
-        ::atomicAdd(&mVal.y, rhs.mVal.y);
-        ::atomicAdd(&mVal.z, rhs.mVal.z);
+        deviceAtomicAdd(&mVal.x, rhs.mVal.x);
+        deviceAtomicAdd(&mVal.y, rhs.mVal.y);
+        deviceAtomicAdd(&mVal.z, rhs.mVal.z);
     }
 };
 

@@ -1,8 +1,8 @@
 #include <Core/Config.hpp>
 #include <Interaction/SoftwareRenderer.hpp>
-#include <Core/CompileBegin.hpp>
+#include <Core/IncludeBegin.hpp>
 #include <imgui.h>
-#include <Core/CompileEnd.hpp>
+#include <Core/IncludeEnd.hpp>
 #include <Rasterizer/TriangleRasterizer.hpp>
 #include <Core/DataSet.hpp>
 #include <Rasterizer/IndexDescriptor.hpp>
@@ -18,10 +18,10 @@ using VertOut = Args<VAR(VertOutAttr::TexCoord, vec2), VAR(VertOutAttr::Color, R
 struct VertInfo final {
     ALIGN vec2 pos;
     ALIGN vec2 uv;
-    ALIGN unsigned int col;
+    ALIGN uint32_t col;
 };
 
-DEVICEINLINE vec4 toRGBA(const unsigned int col) {
+DEVICEINLINE vec4 toRGBA(const uint32_t col) {
     constexpr auto int2Float = 1.0f / 255.0f;
     return vec4{col & 0xff, (col >> 8) & 0xff, (col >> 16) & 0xff, col >> 24} * int2Float;
 }
@@ -36,12 +36,12 @@ struct FrameBufferInfo {
     BuiltinRenderTargetRef<RGBA8> color;
 };
 
-DEVICEINLINE bool clipShader(unsigned int, Point&, Point&, Point&,
+DEVICEINLINE bool clipShader(uint32_t, Point&, Point&, Point&,
     const BuiltinSamplerRef<float>&) {
     return true;
 }
 
-DEVICEINLINE void fragShader(unsigned int, ivec2 uv, float, const VertOut& in, const VertOut&, const VertOut&,
+DEVICEINLINE void fragShader(uint32_t, ivec2 uv, float, const VertOut& in, const VertOut&, const VertOut&,
     const BuiltinSamplerRef<float>& texture, FrameBufferInfo& fbo) {
     constexpr auto int2Float = 1.0f / 255.0f;
     const auto texAlpha = texture.get(in.get<VertOutAttr::TexCoord>());
@@ -178,7 +178,7 @@ void SoftwareRenderer::render(CommandBuffer& buffer, BuiltinRenderTarget<RGBA8>&
     const auto iboCore = Span<uvec3>{ibo};
 
     #ifdef CAMERA_SOFTWARE_RENDERER_COUNT_DRAWCALL
-    printf("draw call %u\n", static_cast<unsigned int>(drawCmd.size()));
+    printf("draw call %u\n", static_cast<uint32_t>(drawCmd.size()));
     #endif
 
     for (auto&& cmd : drawCmd) {

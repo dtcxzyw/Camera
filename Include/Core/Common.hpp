@@ -1,9 +1,9 @@
 #pragma once
 #include <Core/Config.hpp>
-#include <Core/CompileBegin.hpp>
+#include <Core/IncludeBegin.hpp>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
-#include <Core/CompileEnd.hpp>
+#include <Core/IncludeEnd.hpp>
 #include <chrono>
 
 using Clock = std::chrono::high_resolution_clock;
@@ -15,7 +15,7 @@ using Clock = std::chrono::high_resolution_clock;
 #define GLOBAL __global__
 #define ALIGN __align__(TRANSFER_ALIGN)
 #define STRUCT_ALIGN __align__(CACHE_ALIGN)
-#define READONLY(type) const type* __restrict__ const
+#define READONLY(type) const type* __restrict__
 #define NOT_IMPLEMENTED() throw std::logic_error("Not implemented.")
 #define LAUNCH_BOUND __launch_bounds__
 
@@ -66,7 +66,7 @@ BOTH auto calcBlockSize(const T a, const T b) {
     return (a + b - 1) / b;
 }
 
-DEVICEINLINE unsigned int getId() {
+DEVICEINLINE uint32_t getId() {
     return blockIdx.x * blockDim.x + threadIdx.x;
 }
 

@@ -3,12 +3,12 @@
 #include <Rasterizer/Shared.hpp>
 
 template <typename Out, typename Uniform, typename FrameBuffer>
-using FSFP = void(*)(unsigned int id, ivec2 uv, float z, const Out& in,
+using FSFP = void(*)(uint32_t id, ivec2 uv, float z, const Out& in,
     const Uniform& uniform, FrameBuffer& frameBuffer);
 
 template <typename Out, typename Uniform, typename FrameBuffer,
     PosConverter<Uniform> toPos, FSFP<Out, Uniform, FrameBuffer> fs>
-GLOBAL void drawPointHelperKernel(const unsigned int size, READONLY(VertexInfo<Out>) vert,
+GLOBAL void drawPointHelperKernel(const uint32_t size, READONLY(VertexInfo<Out>) vert,
     READONLY(Uniform) uniform, FrameBuffer* frameBuffer, const vec4 scissor,
     const float near, const float invnf, const vec2 hfsize) {
     const auto id = getId();

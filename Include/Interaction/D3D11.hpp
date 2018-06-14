@@ -42,7 +42,7 @@ private:
     cudaArray_t getBackBuffer();
 public:
     void reset(uvec2 fsiz);
-    void enumDevices(int* buf, unsigned int* count) const;
+    void enumDevices(int* buf, uint32_t* count) const;
 
     void bindBackBuffer(cudaStream_t stream);
     void unbindBackBuffer();

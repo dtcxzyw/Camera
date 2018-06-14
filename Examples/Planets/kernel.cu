@@ -6,7 +6,7 @@ DEVICEINLINE SphereDesc vsSphere(SphereDesc sp, const Uniform& uniform) {
     return calcCameraSphere(uniform.V, sp);
 }
 
-DEVICEINLINE void drawSpherePoint(unsigned int id, ivec2 uv, float, Point, Vector, float,
+DEVICEINLINE void drawSpherePoint(uint32_t id, ivec2 uv, float, Point, Vector, float,
     bool, Vector, Vector, const Uniform&, FrameBufferRef& fbo) {
     fbo.color.set(uv, {(id + 1) / 10.0f, 1.0f, 1.0f, 1.0f});
 }

@@ -126,12 +126,6 @@
     <ClInclude Include="..\..\Include\Core\Common.hpp">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Core\CompileBegin.hpp">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Core\CompileEnd.hpp">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Core\Config.hpp">
       <Filter>Core</Filter>
     </ClInclude>
@@ -321,6 +315,18 @@
     <ClInclude Include="..\..\Include\Material\Substrate.hpp">
       <Filter>Material</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Light\LightDistribution.hpp">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\IncludeBegin.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\IncludeEnd.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Core\DeviceFunctions.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\IO\Model.cpp">
@@ -410,6 +416,12 @@
       <Filter>Material</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\Src\Sampler\Sampling.cu">
+      <Filter>Sampler</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Light\LightDistribution.cu">
+      <Filter>Light</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Sampler\SequenceGenerator.cu">
       <Filter>Sampler</Filter>
     </CudaCompile>
   </ItemGroup>

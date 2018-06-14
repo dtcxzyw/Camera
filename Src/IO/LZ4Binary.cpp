@@ -1,7 +1,7 @@
 #include <IO/LZ4Binary.hpp>
-#include <Core/CompileBegin.hpp>
+#include <Core/IncludeBegin.hpp>
 #include <lz4.h>
-#include <Core/CompileEnd.hpp>
+#include <Core/IncludeEnd.hpp>
 #include <fstream>
 
 std::vector<char> loadLZ4(const std::string& path) {

@@ -6,10 +6,10 @@
 struct RenderingContext {
     const SequenceGenerator2DWrapper sequenceGenerator;
     const SceneRef scene;
-    unsigned int offset;
+    uint32_t offset;
 
     DEVICE RenderingContext(const SequenceGenerator2DWrapper& sequenceGenerator,
-        const SceneRef& scene, const unsigned int offset)
+        const SceneRef& scene, const uint32_t offset)
         : sequenceGenerator(sequenceGenerator), scene(scene), offset(offset) {}
 
     DEVICE vec2 sample() {

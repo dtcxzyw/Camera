@@ -4,13 +4,11 @@
 class PointLight final {
 private:
     Point mPos;
-    Spectrum mIllumination, mPower;
+    Spectrum mIllumination;
 public:
     PointLight() = default;
     BOTH PointLight(const Point pos, const Spectrum& illumination)
-        : mPos(pos), mIllumination(illumination) {
-        mPower = mIllumination * (4.0f * pi<float>());
-    }
+        : mPos(pos), mIllumination(illumination) {}
 
     DEVICE LightingSample sampleLi(const vec2, const Point pos) const {
         const auto delta = mPos - pos;
@@ -22,10 +20,6 @@ public:
         return Spectrum{};
     }
 
-    BOTH Spectrum power() const {
-        return mPower;
-    }
-
     DEVICE bool isDelta() const {
         return true;
     }
@@ -35,7 +29,7 @@ class SpotLight final {
 private:
     Point mPos;
     Transform mWorldToLight;
-    Spectrum mIllumination, mPower;
+    Spectrum mIllumination;
     float mFallOffStart, mWidth, mInvLen;
     DEVICE float fallOff(const float cosTheta) const {
         const auto k = clamp((cosTheta - mWidth) * mInvLen, 0.0f, 1.0f);
@@ -49,7 +43,6 @@ public:
         const float fallOffStart, const float width) : mPos(transform(Point{})),
         mWorldToLight(inverse(transform)), mIllumination(illumination),
         mFallOffStart(cos(glm::radians(fallOffStart))), mWidth(cos(glm::radians(width))) {
-        mPower = mIllumination * (2.0f * pi<float>() * (1.0f - 0.5f * (mFallOffStart + mWidth)));
         mInvLen = 1.0f / (mFallOffStart - mWidth);
     }
 
@@ -62,10 +55,6 @@ public:
 
     DEVICE Spectrum le(const Ray&) const {
         return Spectrum{};
-    }
-
-    BOTH Spectrum power() const {
-        return mPower;
     }
 
     DEVICE bool isDelta() const {

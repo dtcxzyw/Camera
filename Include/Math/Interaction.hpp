@@ -28,7 +28,7 @@ struct Interaction final {
     Geometry shadingGeometry;
 
     vec2 uv;
-    unsigned int id; //for ptex
+    uint32_t id; //for ptex
     MaterialWrapper* material;
 
     Vector dpdx, dpdy;

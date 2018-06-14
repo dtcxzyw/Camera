@@ -1,9 +1,10 @@
 #include <RayTracer/Film.hpp>
 #include <Core/CommandBuffer.hpp>
 #include <Core/Environment.hpp>
+#include <Core/DeviceFunctions.hpp>
 
-GLOBAL void cookKernel(const unsigned int size, BuiltinRenderTargetRef<float> dst,
-    FilterWrapper filter, const unsigned int width) {
+GLOBAL void cookKernel(const uint32_t size, BuiltinRenderTargetRef<float> dst,
+    FilterWrapper filter, const uint32_t width) {
     const auto id = getId();
     if (id >= size)return;
     const ivec2 pos = {id / width, id % width};
@@ -18,7 +19,7 @@ void SampleWeightLUT::cookTable(const FilterWrapper& filter) {
     Environment::get().submit(std::move(buffer)).sync();
 }
 
-SampleWeightLUT::SampleWeightLUT(const unsigned int tableSize, const FilterWrapper& filter) :
+SampleWeightLUT::SampleWeightLUT(const uint32_t tableSize, const FilterWrapper& filter) :
     mArray(std::make_shared<BuiltinArray<float>>(vec2{tableSize, tableSize})),
     mSampler(std::make_shared<BuiltinSampler<float>>(mArray->get(), cudaAddressModeMirror)) {
     cookTable(filter);
@@ -40,7 +41,7 @@ DEVICE void FilmTileRef::add(const vec2 pos, const Spectrum& spectrum) {
             const auto weight = mWeightLUT.get({cx + 0.5f - pos.x, cy + 0.5f - pos.y});
             const auto id = (cy + 1) * mWidth + (cx + 1);
             mPixel[id].atomicAdd(spectrum * weight);
-            atomicAdd(&mWeightSum[id], weight);
+            deviceAtomicAdd(&mWeightSum[id], weight);
         }
 }
 
@@ -52,8 +53,8 @@ FilmTile::FilmTile(CommandBuffer& buffer, const uvec2 size, const SampleWeightLU
     buffer.memset(mWeight);
 }
 
-GLOBAL void mergeTile(const unsigned int size, READONLY(Spectrum) ip, READONLY(float) iw,
-    Spectrum* op, float* ow, const unsigned int widthSrc, const unsigned int widthDst,
+GLOBAL void mergeTile(const uint32_t size, READONLY(Spectrum) ip, READONLY(float) iw,
+    Spectrum* op, float* ow, const uint32_t widthSrc, const uint32_t widthDst,
     const uvec2 offset, const uvec2 dstSize) {
     const auto id = getId();
     if (id >= size)return;
@@ -63,7 +64,7 @@ GLOBAL void mergeTile(const unsigned int size, READONLY(Spectrum) ip, READONLY(f
         const auto idSrc = py * widthSrc + px;
         const auto idDst = p.y * widthDst + p.x;
         op[idDst].atomicAdd(ip[idSrc]);
-        atomicAdd(&ow[idDst], iw[idSrc]);
+        deviceAtomicAdd(&ow[idDst], iw[idSrc]);
     }
 }
 

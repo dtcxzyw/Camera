@@ -8,16 +8,16 @@ private:
     DEVICE bool interscet(const Ray& ray, Vector& pa, Vector& pb, Vector& pc,
         float& t, float& e0, float& e1, float& e2, float tMax) const;
 public:
-    unsigned int id;
+    uint32_t id;
     VertexDesc a, b, c;
 
-    DEVICE TriangleDesc(unsigned int id, const VertexDesc& a, const VertexDesc& b,
+    DEVICE TriangleDesc(uint32_t id, const VertexDesc& a, const VertexDesc& b,
         const VertexDesc& c);
     DEVICE bool intersect(const Ray& ray, float& tHit, Interaction& interaction) const;
     DEVICE bool intersect(const Ray& ray) const;
 };
 
 struct TriangleRef final {
-    unsigned int id, a, b, c;
-    TriangleRef(unsigned int id, unsigned int a, unsigned int b, unsigned int c);
+    uint32_t id, a, b, c;
+    TriangleRef(uint32_t id, uint32_t a, uint32_t b, uint32_t c);
 };

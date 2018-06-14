@@ -6,7 +6,7 @@
 
 struct DeviceMemoryDesc final {
     void* ptr;
-    unsigned int size;
+    uint32_t size;
     DEVICE DeviceMemoryDesc() : ptr(nullptr), size(0) {}
 
     template <typename T>
@@ -20,7 +20,7 @@ struct DeviceMemoryDesc final {
     }
 };
 
-DEVICE DeviceMemoryDesc alloc(unsigned int size);
+DEVICE DeviceMemoryDesc alloc(uint32_t size);
 DEVICE void free(DeviceMemoryDesc desc);
 
 /*
@@ -100,8 +100,8 @@ template<typename T>
 class SharedPtr final {
 private:
     DeviceMemoryDesc mPtr;
-    unsigned int& count() {
-         return mPtr.viewAs<std::pair<T, unsigned int>>()->second;
+    uint32_t& count() {
+         return mPtr.viewAs<std::pair<T, uint32_t>>()->second;
     }
 public:
     SharedPtr() = default;
@@ -114,13 +114,13 @@ public:
     }
 
     DEVICE SharedPtr(const SharedPtr& rhs) : mPtr(rhs.mPtr) {
-        if (this != &rhs)atomicInc(&count(), maxv);
+        if (this != &rhs)deviceAtomicInc(&count(), maxv);
     }
 
     DEVICE SharedPtr& operator=(const SharedPtr& rhs) {
         if (this != &rhs) {
             mPtr = rhs.mPtr;
-            atomicInc(&count(), maxv);
+            deviceAtomicInc(&count(), maxv);
         }
         return *this;
     }
@@ -161,7 +161,7 @@ public:
 
 template <typename T, typename... Args>
 DEVICEINLINE SharedPtr<T> makeSharedPtr(Args&&... args) {
-    auto desc = alloc(sizeof(unsigned int) + sizeof(T));
+    auto desc = alloc(sizeof(uint32_t) + sizeof(T));
     new(desc.ptr) T(forward<Args>(args)...);
     return SharedPtr<T>(desc);
 }
@@ -170,9 +170,9 @@ template <typename T>
 class VectorDevice final {
 private:
     DeviceMemoryDesc mData;
-    unsigned int mSize, mBufferSize;
+    uint32_t mSize, mBufferSize;
 public:
-    DEVICE explicit VectorDevice(const unsigned int size = 0U)
+    DEVICE explicit VectorDevice(const uint32_t size = 0U)
         : mData(alloc(sizeof(T)*size)), mSize(size), mBufferSize(size) {}
 
     DEVICE VectorDevice(const VectorDevice&) = delete;
@@ -190,19 +190,19 @@ public:
         return *this;
     }
 
-    DEVICE const T& operator[](const unsigned int i) const {
+    DEVICE const T& operator[](const uint32_t i) const {
         return mData.viewAs<T>()[i];
     }
 
-    DEVICE T& operator[](const unsigned int i) {
+    DEVICE T& operator[](const uint32_t i) {
         return mData.viewAs<T>()[i];
     }
 
-    DEVICE unsigned int size() const {
+    DEVICE uint32_t size() const {
         return mSize;
     }
 
-    DEVICE void reserve(const unsigned int size) {
+    DEVICE void reserve(const uint32_t size) {
         const auto ptr = alloc(size * sizeof(T));
         memcpy(ptr.ptr, mData.ptr, sizeof(T)*mSize);
         free(mData);

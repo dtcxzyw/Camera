@@ -12,7 +12,7 @@ BOTH float gamma(const int n) {
 BOTH float nextFloatDown(const float val) {
     return val;
     /*
-    const auto bit = *reinterpret_cast<const unsigned int*>(&val) - 1;
+    const auto bit = *reinterpret_cast<const uint32_t*>(&val) - 1;
     return *reinterpret_cast<const float*>(&bit);
     */
 }
@@ -20,7 +20,7 @@ BOTH float nextFloatDown(const float val) {
 BOTH float nextFloatUp(const float val) {
     return val;
     /*
-    const auto bit = *reinterpret_cast<const unsigned int*>(&val) + 1;
+    const auto bit = *reinterpret_cast<const uint32_t*>(&val) + 1;
     return *reinterpret_cast<const float*>(&bit);
     */
 }

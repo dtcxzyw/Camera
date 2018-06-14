@@ -2,12 +2,12 @@
 #include <Core/Environment.hpp>
 #ifdef CAMERA_D3D11_SUPPORT
 #include <Interaction/D3D11.hpp>
-#include <Core/CompileBegin.hpp>
+#include <Core/IncludeBegin.hpp>
 #define NOMINMAX
 #include <d3d11.h>
 #include <cuda_d3d11_interop.h>
 #include <imgui.h>
-#include <Core/CompileEnd.hpp>
+#include <Core/IncludeEnd.hpp>
 #include <stdexcept>
 
 static LRESULT setEvent(HWND hwnd, const UINT msg, const WPARAM wParam,
@@ -219,7 +219,7 @@ void D3D11Window::reset(const uvec2 fsiz) {
     }
 }
 
-void D3D11Window::enumDevices(int* buf, unsigned int* count) const {
+void D3D11Window::enumDevices(int* buf, uint32_t* count) const {
     checkError(cudaD3D11GetDevices(count, buf, 256,
         mDevice, cudaD3D11DeviceListAll));
 }
