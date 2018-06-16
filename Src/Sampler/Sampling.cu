@@ -3,13 +3,18 @@
 
 BOTH float computeCdf(const float* func, float* cdf, const uint32_t size) {
     cdf[0] = 0.0f;
-    auto fac = 1.0f / size;
+    const auto fac = 1.0f / size;
     for (auto i = 0U; i < size; ++i)
         cdf[i + 1] = cdf[i] + func[i] * fac;
     const auto sum = cdf[size];
-    if (sum != 0.0f) fac = 1.0f / sum;
-    for (auto i = 1U; i <= size; ++i)
-        cdf[i] *= fac;
+    if (sum > 0.0f) {
+        const auto k = 1.0f / sum;
+        for (auto i = 1U; i <= size; ++i)
+            cdf[i] *= k;
+    }
+    else {
+        for (auto i = 1U; i <= size; ++i)cdf[i] = i * fac;
+    }
     return sum;
 }
 
@@ -23,8 +28,8 @@ static DEVICE int find(const float* array, const int size, const float x) {
     auto l = 0, r = size - 1, res = -1;
     while (l <= r) {
         const auto mid = (l + r) >> 1;
-        if (array[mid] <= x)r = mid - 1, res = mid;
-        else l = mid + 1;
+        if (array[mid] <= x)l = mid + 1, res = mid;
+        else r = mid - 1;
     }
     return res;
 }

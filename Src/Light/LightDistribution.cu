@@ -38,7 +38,7 @@ DEVICE void LightDistribution::computeDistribution(const SceneRef& scene, const 
 
     cdf = new float[scene.size() + 1];
     const auto sum = computeCdf(func, cdf, scene.size());
-    distribution = Distribution1DRef(cdf, func, scene.size() + 1, sum);
+    distribution = Distribution1DRef{ cdf, func, scene.size() + 1, sum };
     fIag = 0;
 }
 
@@ -52,7 +52,7 @@ LightDistributionCacheRef::LightDistributionCacheRef(LightDistribution* distribu
     mBase(bounds[0]), mInvOffset(1.0f / (bounds[1] - bounds[0])),
     mScale((bounds[1] - bounds[0]) / static_cast<Vector>(size)) {}
 
-DEVICE uint64_t encode(const uint64_t packedPos, const uint32_t size) {
+DEVICE uint32_t encode(const uint64_t packedPos, const uint32_t size) {
     auto hash = packedPos;
     hash ^= (hash >> 31);
     hash *= 0x7fb5d329728ea185;
@@ -72,17 +72,16 @@ DEVICE const LightDistribution* LightDistributionCacheRef::lookUp(const SceneRef
     const auto packedPos = static_cast<uint64_t>(posi.x) << 40 | static_cast<uint64_t>(posi.y) << 20 | posi.z;
     auto id = encode(packedPos, mCacheSize);
     auto step = 1U;
-    for (auto i = 0; i < 4; ++i) {
+    while (true) {
         auto&& dist = mDistributions[id];
         if (dist.packedPos == packedPos) {
-            if (dist.fIag)return nullptr;
-            //For avoiding to deadlock with threads in the same warp, we return nullptr.
+            if (dist.fIag)continue;//for avoiding to deadlock
             return &dist;
         }
         if (deviceCompareAndSwap(&dist.packedPos, static_cast<uint64_t>(-1), packedPos) == -1) {
             const auto p0 = mBase + static_cast<Vector>(posi)*mScale;
             const auto p1 = p0 + mScale;
-            dist.computeDistribution(scene, Bounds(p0, p1));
+            dist.computeDistribution(scene, Bounds{ p0, p1 });
             return &dist;
         }
         {
@@ -90,7 +89,6 @@ DEVICE const LightDistribution* LightDistributionCacheRef::lookUp(const SceneRef
             ++step;
         }
     }
-    return nullptr;
 }
 
 LightDistributionCache::LightDistributionCache(const Bounds& bounds,
@@ -107,7 +105,7 @@ LightDistributionCache::LightDistributionCache(const Bounds& bounds,
 
 static GLOBAL void destoryDistribution(const uint32_t size, LightDistribution* distribution) {
     const auto id = getId();
-    if (id<size & distribution[id].fIag == 0) {
+    if (id<size && distribution[id].fIag == 0) {
         delete[] distribution[id].func;
         delete[] distribution[id].cdf;
     }

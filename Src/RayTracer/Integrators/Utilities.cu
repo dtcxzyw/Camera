@@ -1,6 +1,7 @@
 #include <RayTracer/Integrators/Utilities.hpp>
 #include <Light/LightWrapper.hpp>
 #include <Math/Interaction.hpp>
+#include <Light/LightDistribution.hpp>
 
 DEVICEINLINE float powerHeuristic(const float f, const float g) {
     const auto f2 = f * f, g2 = g * g;
@@ -43,9 +44,18 @@ DEVICE Spectrum estimateDirect(RenderingContext& context, const Interaction& int
 }
 
 DEVICE Spectrum uniformSampleOneLight(RenderingContext& context, const Interaction& interaction,
-    const Bsdf& bsdf) {
+    const Bsdf& bsdf, const LightDistribution* distribution) {
     const auto size = context.scene.size();
     if (size == 0)return Spectrum{};
-    const auto id = min(static_cast<uint32_t>(context.sample().x * size), size - 1);
-    return size * estimateDirect(context, interaction, bsdf, **(context.scene.begin() + id));
+    unsigned int id;
+    float invPdf;
+    const auto sample = context.sample().x;
+    if (distribution) {
+        float pdf;
+        id = distribution->chooseOneLight(sample, pdf);
+        if (pdf <= 0.0f)return Spectrum{};
+        invPdf = 1.0f / pdf;
+    }
+    else id = min(static_cast<uint32_t>(sample * size), size - 1), invPdf = size;
+    return estimateDirect(context, interaction, bsdf, *context.scene.begin()[id]) *invPdf;
 }

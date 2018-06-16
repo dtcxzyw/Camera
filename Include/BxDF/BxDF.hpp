@@ -18,7 +18,7 @@ enum class TransportMode {
     Importance
 };
 
-BOTH BxDFType operator&(const BxDFType a, const BxDFType b) {
+constexpr BOTH BxDFType operator&(const BxDFType a, const BxDFType b) {
     return static_cast<BxDFType>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
 }
 

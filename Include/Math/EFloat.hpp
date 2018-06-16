@@ -2,14 +2,14 @@
 #include <Core/Common.hpp>
 #include <Math/Math.hpp>
 
-BOTH float gamma(const int n) {
+inline BOTH float gamma(const int n) {
     const auto x = n * (epsilon<float>() * 0.5f);
     return x / (1.0f - x);
 }
 
 //TODO:next float
 
-BOTH float nextFloatDown(const float val) {
+inline BOTH float nextFloatDown(const float val) {
     return val;
     /*
     const auto bit = *reinterpret_cast<const uint32_t*>(&val) - 1;
@@ -17,7 +17,7 @@ BOTH float nextFloatDown(const float val) {
     */
 }
 
-BOTH float nextFloatUp(const float val) {
+inline BOTH float nextFloatUp(const float val) {
     return val;
     /*
     const auto bit = *reinterpret_cast<const uint32_t*>(&val) + 1;
@@ -96,15 +96,15 @@ public:
     }
 };
 
-BOTH EFloat makeEFloat(const float val, const float err) {
+inline BOTH EFloat makeEFloat(const float val, const float err) {
     return {nextFloatDown(val - err), nextFloatUp(val + err)};
 }
 
-BOTH EFloat sqrt(const EFloat val) {
+inline BOTH EFloat sqrt(const EFloat val) {
     return {nextFloatDown(val.lowerBound()), nextFloatUp(val.upperBound())};
 }
 
-BOTH EFloat abs(const EFloat val) {
+inline BOTH EFloat abs(const EFloat val) {
     if (val.lowerBound() >= 0.0f)return val;
     if (val.upperBound() >= 0.0f)return {0.0f, fmax(-val.lowerBound(), val.upperBound())};
     return {-val.upperBound(), -val.lowerBound()};

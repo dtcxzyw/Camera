@@ -5,6 +5,8 @@
 
 class SceneRef;
 
+//TODO:Power Distribution for Global + Sampled Distribution for Important Volume
+
 struct LightDistribution final {
     float *cdf, *func;
     Distribution1DRef distribution;

@@ -65,7 +65,7 @@ public:
 };
 
 #define OPFLOAT(op) \
-    BOTH RGBSpectrum operator##op(const float lhs,const RGBSpectrum& rhs) {\
+    inline BOTH RGBSpectrum operator##op(const float lhs,const RGBSpectrum& rhs) {\
         return RGBSpectrum(lhs)##op##rhs;\
     }
 OPFLOAT(+)
@@ -74,6 +74,6 @@ OPFLOAT(*)
 OPFLOAT(/ )
 #undef OPFLOAT
 
-BOTH RGBSpectrum mix(const RGBSpectrum& a, const RGBSpectrum& b, const float w) {
+inline BOTH RGBSpectrum mix(const RGBSpectrum& a, const RGBSpectrum& b, const float w) {
     return a + (b - a) * w;
 }

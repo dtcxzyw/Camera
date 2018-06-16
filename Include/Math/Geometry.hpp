@@ -3,15 +3,15 @@
 #include <Math/Math.hpp>
 #include <Math/EFloat.hpp>
 
-BOTH Vector faceForward(const Vector& n, const Vector& v) {
+inline BOTH Vector faceForward(const Vector& n, const Vector& v) {
     return dot(n, v) < 0.0f ? -n : n;
 }
 
-BOTH Vector halfVector(const Vector& in, const Vector& out) {
+inline BOTH Vector halfVector(const Vector& in, const Vector& out) {
     return normalize(in + out);
 }
 
-BOTH bool refract(const Vector& in, const Vector& normal, const float eta, Vector& out) {
+inline BOTH bool refract(const Vector& in, const Vector& normal, const float eta, Vector& out) {
     const auto cosThetaI = dot(in, normal);
     const auto sin2ThetaT = eta * eta * fmax(0.0f, 1.0f - cosThetaI * cosThetaI);
     if (sin2ThetaT >= 1.0f)return false;
@@ -20,12 +20,12 @@ BOTH bool refract(const Vector& in, const Vector& normal, const float eta, Vecto
     return true;
 }
 
-BOTH int maxDim(const Vector& vec) {
+inline BOTH int maxDim(const Vector& vec) {
     const auto vecAbs = abs(vec);
     return vecAbs.x > vecAbs.y ? (vecAbs.x > vecAbs.z ? 0 : 2) : (vecAbs.y > vecAbs.z ? 1 : 2);
 }
 
-BOTH Vector permute(const Vector& vec, const int x, const int y, const int z) {
+inline BOTH Vector permute(const Vector& vec, const int x, const int y, const int z) {
     return {vec[x], vec[y], vec[z]};
 }
 
@@ -148,27 +148,27 @@ public:
     }
 };
 
-BOTH Normal normalize(const Normal& a) {
+inline BOTH Normal normalize(const Normal& a) {
     return Normal{normalize(Vector{a})};
 }
 
-BOTH Normal halfVector(const Normal& a, const Normal& b) {
+inline BOTH Normal halfVector(const Normal& a, const Normal& b) {
     return Normal{normalize(a) + normalize(b)};
 }
 
-BOTH float dot(const Normal& a, const Normal& b) {
+inline BOTH float dot(const Normal& a, const Normal& b) {
     return dot(Vector{a}, Vector{b});
 }
 
-BOTH Normal reflect(const Normal& a, const Normal& b) {
+inline BOTH Normal reflect(const Normal& a, const Normal& b) {
     return Normal{glm::reflect(Vector{a}, Vector{b})};
 }
 
-BOTH Normal cross(const Normal& a, const Normal& b) {
+inline BOTH Normal cross(const Normal& a, const Normal& b) {
     return Normal{cross(Vector{a}, Vector{b})};
 }
 
-BOTH Normal faceForward(const Normal& n, const Normal& v) {
+inline BOTH Normal faceForward(const Normal& n, const Normal& v) {
     return dot(n, v) < 0.0f ? -n : n;
 }
 
@@ -196,7 +196,7 @@ public:
         mMax(Vector{-std::numeric_limits<float>::max()}) {}
 
     BOTH explicit Bounds(const Point& pos) : mMin(pos), mMax(pos) {}
-    BOTH Bounds(const Point& min, const Point& max) : mMin(min), mMax(max) {}
+    BOTH Bounds(const Point& a, const Point& b) : mMin(min(a, b)), mMax(max(a, b)) {}
     BOTH Bounds operator|(const Bounds& rhs) const {
         return {min(mMin, rhs.mMin), max(mMax, rhs.mMax)};
     }
@@ -323,10 +323,11 @@ public:
     }
 
     BOTH Bounds operator()(const Bounds& bounds) const {
-        const Bounds a(bounds.corner(0), bounds.corner(1));
-        const Bounds b(bounds.corner(2), bounds.corner(3));
-        const Bounds c(bounds.corner(4), bounds.corner(5));
-        const Bounds d(bounds.corner(6), bounds.corner(7));
+        auto&& trans = *this;
+        const Bounds a(trans(bounds.corner(0)), trans(bounds.corner(1)));
+        const Bounds b(trans(bounds.corner(2)), trans(bounds.corner(3)));
+        const Bounds c(trans(bounds.corner(4)), trans(bounds.corner(5)));
+        const Bounds d(trans(bounds.corner(6)), trans(bounds.corner(7)));
         return a | b | c | d;
     }
 };

@@ -36,12 +36,14 @@ static DEVICE Spectrum Li(RenderingContext& context, Ray ray, const uint32_t max
         interaction.material->computeScatteringFunctions(bsdf);
         //TODO:skip medium boundaries
         { }
-        L += beta * uniformSampleOneLight(context, interaction, bsdf);
+        L += beta * uniformSampleOneLight(context, interaction, bsdf,
+            context.scene.lookUp(interaction.pos));
         const auto sampleF = bsdf.sampleF(-ray.dir, context.sample());
         if (sampleF.f.lum() <= 0.0f | sampleF.pdf <= 0.0f)break;
         beta *= sampleF.f * (fabs(dot(sampleF.wi, Vector{interaction.shadingGeometry.normal})) / sampleF.pdf);
         specularBounce = static_cast<bool>(sampleF.type & BxDFType::Specular);
         ray = interaction.spawnRay(sampleF.wi);
+        //TODO:BSSRDF
         if (bounceCount > 3) {
             const auto q = fmax(0.05f, 1.0f - beta.maxComp());
             if (context.sample().x < q)break;

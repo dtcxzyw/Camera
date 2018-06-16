@@ -11,7 +11,7 @@ using Clock = std::chrono::high_resolution_clock;
 #define DEVICE __device__
 #define DEVICEINLINE inline DEVICE
 #define HOST __host__
-#define BOTH DEVICEINLINE HOST
+#define BOTH DEVICE HOST
 #define GLOBAL __global__
 #define ALIGN __align__(TRANSFER_ALIGN)
 #define STRUCT_ALIGN __align__(CACHE_ALIGN)

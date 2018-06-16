@@ -90,7 +90,12 @@ public:
             std::vector<LightWrapper*> lights;
             for (auto&& light : mLight)
                 lights.emplace_back(light.begin());
-            mScene = std::make_unique<SceneDesc>(primitives, lights);
+
+            const Transform trans(boxMat);
+            const Point p0{ -100.0f,-100.0f,-100.0f };
+            const Point p1{ 100.0f,100.0f,100.0f };
+            mScene = std::make_unique<SceneDesc>(primitives, lights, trans(Bounds{ p0,p1 }), 32U);
+
             resLoader.sync();
         }
         SequenceGenerator2DWrapper sequenceGenerator{Halton2D{}};
@@ -125,8 +130,9 @@ public:
             valid &= isfinite(pixel[i].lum());
         }
         saveHdr("output.hdr", pixelFloat.data(), imageSize);
-        if (!valid)printf("The image is invalid.");
+        if (!valid)printf("The image is invalid.\n");
         system("pause");
+        mScene.reset();
         env.uninit();
     }
 };

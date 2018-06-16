@@ -18,4 +18,4 @@ struct RenderingContext {
 };
 
 DEVICE Spectrum uniformSampleOneLight(RenderingContext& context, const Interaction& interaction,
-    const Bsdf& bsdf);
+    const Bsdf& bsdf,const LightDistribution* distribution);
