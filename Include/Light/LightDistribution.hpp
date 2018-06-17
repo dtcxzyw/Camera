@@ -24,12 +24,12 @@ private:
     Point mBase;
     Vector mInvOffset, mScale;
 public:
-    LightDistributionCacheRef(LightDistribution* distribution, uint32_t cacheSize, uvec3 size, 
+    LightDistributionCacheRef(LightDistribution* distribution, uint32_t cacheSize, uvec3 size,
         const Bounds& bounds);
-    DEVICE const LightDistribution* lookUp(const SceneRef& scene,const Point& worldPos) const;
+    DEVICE const LightDistribution* lookUp(const SceneRef& scene, const Point& worldPos) const;
 };
 
-class LightDistributionCache final :Uncopyable {
+class LightDistributionCache final : Uncopyable {
 private:
     MemorySpan<LightDistribution> mDistributions;
     uvec3 mSize;

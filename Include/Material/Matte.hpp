@@ -12,7 +12,7 @@ public:
 
     DEVICE void computeScatteringFunctions(Bsdf& bsdf, TransportMode) const {
         const auto kd = mKd.sample(bsdf.getInteraction());
-        if (kd.lum() > 0.0f) {
+        if (kd.y() > 0.0f) {
             const auto sigma = mSigma.sample(bsdf.getInteraction());
             if (sigma)bsdf.add(OrenNayar{kd, sigma});
             else bsdf.add(LambertianReflection{kd});

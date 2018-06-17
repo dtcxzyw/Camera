@@ -46,6 +46,9 @@
     <Filter Include="RayTracer\Integrators">
       <UniqueIdentifier>{5b9e57d7-3477-4202-9e53-c5bdc5383552}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Light\Shapes">
+      <UniqueIdentifier>{b14af5d8-dda6-40f3-afc7-6fbf68cbf878}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Include\Interaction\OpenGL.hpp">
@@ -163,9 +166,6 @@
       <Filter>Spectrum</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Light\DeltaPositionLight.hpp">
-      <Filter>Light</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Include\Light\LightingSample.hpp">
       <Filter>Light</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\IO\LZ4Binary.hpp">
@@ -327,6 +327,24 @@
     <ClInclude Include="..\..\Include\Core\DeviceFunctions.hpp">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Light\Light.hpp">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Spectrum\SpectrumShared.hpp">
+      <Filter>Spectrum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Light\DiffuseAreaLight.hpp">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Light\Shapes\ShapeShared.hpp">
+      <Filter>Light\Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Light\Shapes\Sphere.hpp">
+      <Filter>Light\Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Light\Shapes\ShapeWrapper.hpp">
+      <Filter>Light\Shapes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\IO\Model.cpp">
@@ -423,6 +441,12 @@
     </CudaCompile>
     <CudaCompile Include="..\..\Src\Sampler\SequenceGenerator.cu">
       <Filter>Sampler</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Light\InfiniteAreaLight.cu">
+      <Filter>Light</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Math\Interaction.cu">
+      <Filter>Math</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

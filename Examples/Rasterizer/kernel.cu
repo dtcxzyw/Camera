@@ -59,7 +59,9 @@ DEVICEINLINE void setModel(uint32_t, ivec2 uv, float z, const OI&, const OI&, co
 
 DEVICEINLINE Spectrum shade(const Point p, const Normal N, const Normal X, const Normal Y,
     const Uniform& uniform) {
-    const auto sample = uniform.light.sampleLi({}, p);
+    Interaction it;
+    it.pos = p;
+    const auto sample = uniform.light.sampleLi({}, it);
     const Normal V{normalize(uniform.cp - p)};
     const auto F = disneyBRDF(Normal(normalize(sample.wi)), V, N, X, Y, uniform.arg);
     const auto ref = reflect(-V, N);
@@ -96,7 +98,7 @@ DEVICEINLINE void drawPoint(uint32_t, ivec2 uv, float z, const OI&,
 DEVICEINLINE void post(ivec2 NDC, const PostUniform& uni, BuiltinRenderTargetRef<RGBA8> out) {
     Spectrum c(uni.in.color.get(NDC));
     if (uni.in.depth.get(NDC) < 0xffffffff) {
-        const auto lum = c.lum();
+        const auto lum = c.y();
         if (lum > 0.0f) {
             deviceAtomicAdd(&uni.sum->first, log(lum));
             deviceAtomicInc(&uni.sum->second, maxv);

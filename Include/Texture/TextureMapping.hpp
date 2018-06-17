@@ -21,7 +21,7 @@ public:
     explicit UVMapping(const vec2 scale = {1.0f, 1.0f}, const vec2 offset = {0.0f, 0.0f})
         : mScale(scale), mOffset(offset) {}
 
-    DEVICE TextureMapping2DInfo map(const Interaction& interaction) const {
+    DEVICE TextureMapping2DInfo map(const SurfaceInteraction& interaction) const {
         return {interaction.uv * mScale + mOffset, interaction.duvdx * mScale, interaction.duvdy * mScale};
     }
 };
@@ -47,7 +47,7 @@ private:
 
 public:
     explicit SphericalMapping(const Transform& transform) : mTransform(transform) {}
-    DEVICE TextureMapping2DInfo map(const Interaction& interaction) const {
+    DEVICE TextureMapping2DInfo map(const SurfaceInteraction& interaction) const {
         const auto uv = sphere(interaction.pos);
         constexpr auto delta = 0.1f, fac = 1.0f / delta;
         return {
@@ -67,7 +67,7 @@ private:
 
 public:
     explicit CylindricalMapping(const Transform& transform) : mTransform(transform) {}
-    DEVICE TextureMapping2DInfo map(const Interaction& interaction) const {
+    DEVICE TextureMapping2DInfo map(const SurfaceInteraction& interaction) const {
         const auto uv = cylinder(interaction.pos);
         constexpr auto delta = 0.1f, fac = 1.0f / delta;
         return {
@@ -86,7 +86,7 @@ public:
     PlanarMapping(const Transform& transform, const Vector& s, const Vector& t, const vec2 offset)
         : mTransform(transform), mS(s), mT(t), mOffset(offset) {}
 
-    DEVICE TextureMapping2DInfo map(const Interaction& interaction) const {
+    DEVICE TextureMapping2DInfo map(const SurfaceInteraction& interaction) const {
         const Vector p(interaction.pos);
         return {
             mOffset + vec2{dot(p, mS), dot(p, mT)},
@@ -101,7 +101,7 @@ private:
     Transform mTransform;
 public:
     explicit TextureMapping3D(const Transform& transform) : mTransform(transform) {}
-    DEVICE TextureMapping3DInfo map(const Interaction& interaction) const {
+    DEVICE TextureMapping3DInfo map(const SurfaceInteraction& interaction) const {
         return {
             Vector(mTransform(interaction.pos)), mTransform(interaction.dpdx),
             mTransform(interaction.dpdy)

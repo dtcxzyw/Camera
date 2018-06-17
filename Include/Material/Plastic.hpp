@@ -18,7 +18,7 @@ public:
 
         //specular
         const auto ks = mKs.sample(bsdf.getInteraction());
-        if (ks.lum() > 0.0f) {
+        if (ks.y() > 0.0f) {
             const FresnelWrapper fresnel{FresnelDielectric{1.5f, 1.0f}};
             const auto roughness = mRoughness.sample(bsdf.getInteraction());
             const MicrofactDistributionWrapper distribution{

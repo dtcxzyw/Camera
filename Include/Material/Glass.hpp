@@ -21,18 +21,18 @@ public:
         const auto kr = mKr.sample(bsdf.getInteraction());
         const auto kt = mKt.sample(bsdf.getInteraction());
         if (isSpecular) {
-            if (kr.lum() > 0.0f | kt.lum() > 0.0f)
+            if (kr.y() > 0.0f | kt.y() > 0.0f)
                 bsdf.add(FresnelSpecular(kr, kt, 1.0f, eta, mode));
         }
         else {
             const MicrofactDistributionWrapper distribution{
                 TrowbridgeReitzDistribution{roughnessX, roughnessY}
             };
-            if (kr.lum() > 0.0f) {
+            if (kr.y() > 0.0f) {
                 const FresnelWrapper fresnel{FresnelDielectric{1.0f, eta}};
                 bsdf.add(MicrofacetReflection{kr, fresnel, distribution});
             }
-            if (kt.lum() > 0.0f) {
+            if (kt.y() > 0.0f) {
                 bsdf.add(MicrofacetTransmission{kt, 1.0f, eta, distribution, mode});
             }
         }

@@ -57,7 +57,7 @@ public:
         const auto rp = rs * (t3 - t4) / (t3 + t4);
 
         const auto res = 0.5f * (rp + rs);
-        CHECKFP(res.lum());
+        CHECKFP(res.y());
         return res;
     }
 };

@@ -17,5 +17,5 @@ struct RenderingContext {
     }
 };
 
-DEVICE Spectrum uniformSampleOneLight(RenderingContext& context, const Interaction& interaction,
-    const Bsdf& bsdf,const LightDistribution* distribution);
+DEVICE Spectrum uniformSampleOneLight(RenderingContext& context, const SurfaceInteraction& interaction,
+    const Bsdf& bsdf, const LightDistribution* distribution);

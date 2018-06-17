@@ -123,6 +123,10 @@ public:
         return mSize;
     }
 
+    uint32_t maxLevel() const {
+        return mLevel;
+    }
+
     cudaMipmappedArray_t get() const {
         return mArray;
     }

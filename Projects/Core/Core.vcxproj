@@ -48,11 +48,15 @@
     <ClInclude Include="..\..\Include\IO\Model.hpp" />
     <ClInclude Include="..\..\Include\IO\Video.hpp" />
     <ClInclude Include="..\..\Include\Light\DeltaPositionLight.hpp" />
+    <ClInclude Include="..\..\Include\Light\DiffuseAreaLight.hpp" />
     <ClInclude Include="..\..\Include\Light\DistantLight.hpp" />
     <ClInclude Include="..\..\Include\Light\InfiniteAreaLight.hpp" />
     <ClInclude Include="..\..\Include\Light\LightDistribution.hpp" />
-    <ClInclude Include="..\..\Include\Light\LightingSample.hpp" />
+    <ClInclude Include="..\..\Include\Light\Light.hpp" />
     <ClInclude Include="..\..\Include\Light\LightWrapper.hpp" />
+    <ClInclude Include="..\..\Include\Light\Shapes\ShapeShared.hpp" />
+    <ClInclude Include="..\..\Include\Light\Shapes\ShapeWrapper.hpp" />
+    <ClInclude Include="..\..\Include\Light\Shapes\Sphere.hpp" />
     <ClInclude Include="..\..\Include\Material\Glass.hpp" />
     <ClInclude Include="..\..\Include\Material\Material.hpp" />
     <ClInclude Include="..\..\Include\Material\MaterialWrapper.hpp" />
@@ -92,6 +96,7 @@
     <ClInclude Include="..\..\Include\Sampler\SequenceGenerator2DWrapper.hpp" />
     <ClInclude Include="..\..\Include\Spectrum\RGBSpectrum.hpp" />
     <ClInclude Include="..\..\Include\Spectrum\SpectrumConfig.hpp" />
+    <ClInclude Include="..\..\Include\Spectrum\SpectrumShared.hpp" />
     <ClInclude Include="..\..\Include\Texture\Filter.hpp" />
     <ClInclude Include="..\..\Include\Texture\FilterWrapper.hpp" />
     <ClInclude Include="..\..\Include\Texture\Noise.hpp" />
@@ -121,8 +126,10 @@
     <ClCompile Include="..\..\Src\Interaction\Counter.cpp" />
     <ClCompile Include="..\..\Src\IO\LZ4Binary.cpp" />
     <ClCompile Include="..\..\Src\IO\Model.cpp" />
+    <CudaCompile Include="..\..\Src\Light\InfiniteAreaLight.cu" />
     <CudaCompile Include="..\..\Src\Light\LightDistribution.cu" />
     <CudaCompile Include="..\..\Src\Material\Material.cu" />
+    <CudaCompile Include="..\..\Src\Math\Interaction.cu" />
     <CudaCompile Include="..\..\Src\RayTracer\Integrators\Path.cu" />
     <CudaCompile Include="..\..\Src\RayTracer\Integrators\Utilities.cu" />
     <CudaCompile Include="..\..\Src\RayTracer\Integrators\Whitted.cu">
@@ -266,7 +273,7 @@
       <Runtime>MDd</Runtime>
     </CudaCompile>
     <CudaLink>
-      <PerformDeviceLink>true</PerformDeviceLink>
+      <PerformDeviceLink>false</PerformDeviceLink>
       <GPUDebugInfo>true</GPUDebugInfo>
       <Optimization>Od</Optimization>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -274,7 +281,7 @@
     </CudaLink>
     <Lib>
       <AdditionalLibraryDirectories>$(CUDA_PATH)/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;d3d11.lib;cudadevrt.lib;cudart.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;d3d11.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <PreBuildEvent>
       <Command>
@@ -351,12 +358,12 @@
     </CudaLink>
     <CudaLink>
       <Optimization>O2</Optimization>
-      <PerformDeviceLink>true</PerformDeviceLink>
+      <PerformDeviceLink>false</PerformDeviceLink>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </CudaLink>
     <Lib>
-      <AdditionalDependencies>opengl32.lib;d3d11.lib;cudadevrt.lib;cudart.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;d3d11.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <Lib>
       <AdditionalLibraryDirectories>$(CUDA_PATH)/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

@@ -26,7 +26,7 @@ private:
     PinholeCamera mCamera;
     std::vector<std::unique_ptr<BvhForTriangle>> mBvh;
     std::vector<std::unique_ptr<Constant<BvhForTriangleRef>>> mBvhRef;
-    std::vector<MemorySpan<LightWrapper>> mLight;
+    std::vector<LightWrapper> mLight;
     std::unique_ptr<SceneDesc> mScene;
     std::unique_ptr<PathIntegrator> mIntegrator;
     MemorySpan<MaterialWrapper> mMaterial;
@@ -45,10 +45,12 @@ public:
         env.init(AppType::Online);
         {
             Stream resLoader;
-            mLight.emplace_back(makeLightWrapper<PointLight>(resLoader, Point{3.0f, 3.0f, 3.0f},
-                Spectrum{RGB{10.0f, 20.0f, 30.0f}}));
-            mLight.emplace_back(makeLightWrapper<PointLight>(resLoader, Point{-3.0f, 3.0f, 3.0f},
-                Spectrum{RGB{30.0f, 20.0f, 10.0f}}));
+            {
+                mLight.emplace_back(PointLight(Point{ 3.0f, 3.0f, 3.0f }, Spectrum{ RGB{10.0f, 20.0f, 30.0f} }));
+                mLight.emplace_back(PointLight(Point{ -3.0f, 3.0f, 3.0f }, Spectrum{ RGB{30.0f, 20.0f, 10.0f} }));
+                const Sphere sphere{ Transform{glm::translate(glm::mat4{},Vector{0.0f,0.5f,0.0f})},0.2f };
+                mLight.emplace_back(DiffuseAreaLight{ Spectrum{0.1f},ShapeWrapper{sphere} });
+            }
             const TextureMapping2DWrapper mapping{UVMapping{}};
             std::vector<MaterialWrapper> materials;
             {
@@ -56,7 +58,7 @@ public:
                 const TextureSampler2DFloatWrapper samplerF{ConstantSampler2DFloat{0.1f}};
                 const Texture2DSpectrum textureS{mapping, samplerS};
                 const Texture2DFloat textureF{mapping, samplerF};
-                materials.emplace_back(Subtrate{ textureS, textureS, textureF, textureF });
+                materials.emplace_back(Subtrate{textureS, textureS, textureF, textureF});
             }
             {
                 const TextureSampler2DSpectrumWrapper samplerR{ConstantSampler2DSpectrum{Spectrum{0.2f}}};
@@ -67,14 +69,14 @@ public:
                 const Texture2DSpectrum textureT{mapping, samplerT};
                 const Texture2DFloat indexT{mapping, index};
                 const Texture2DFloat roughnessT{mapping, roughness};
-                materials.emplace_back(Glass{ textureR, textureT, indexT, roughnessT, roughnessT });
+                materials.emplace_back(Glass{textureR, textureT, indexT, roughnessT, roughnessT});
             }
             {
                 const TextureSampler2DSpectrumWrapper samplerS{ConstantSampler2DSpectrum{Spectrum{1.0f}}};
                 const TextureSampler2DFloatWrapper samplerF{ConstantSampler2DFloat{0.01f}};
                 const Texture2DSpectrum textureS{mapping, samplerS};
                 const Texture2DFloat textureF{mapping, samplerF};
-                materials.emplace_back(Metal{ textureS, textureS, textureF, textureF });
+                materials.emplace_back(Metal{textureS, textureS, textureF, textureF});
             }
             mMaterial = upload(materials);
 
@@ -87,21 +89,22 @@ public:
             const auto boxMat = glm::translate(glm::mat4{}, {0.0f, 2.2f, 2.5f}) * glm::scale(glm::mat4{},
                 Vector(3.1e-2f));
             addModel(resLoader, primitives, boxMat, "Res/cube.obj", mMaterial.begin());
-            std::vector<LightWrapper*> lights;
-            for (auto&& light : mLight)
-                lights.emplace_back(light.begin());
 
             const Transform trans(boxMat);
-            const Point p0{ -100.0f,-100.0f,-100.0f };
-            const Point p1{ 100.0f,100.0f,100.0f };
-            mScene = std::make_unique<SceneDesc>(primitives, lights, trans(Bounds{ p0,p1 }), 32U);
+            const Point p0{-100.0f, -100.0f, -100.0f};
+            const Point p1{100.0f, 100.0f, 100.0f};
+            const auto worldBound = trans(Bounds{ p0, p1 });
+            const auto sphere = worldBound.boundingSphere();
+            for (auto&& light : mLight)
+                light.preprocess(sphere.first, sphere.second);
+            mScene = std::make_unique<SceneDesc>(primitives, mLight, worldBound, 32U);
 
             resLoader.sync();
         }
         SequenceGenerator2DWrapper sequenceGenerator{Halton2D{}};
         const SampleWeightLUT lut(64U, FilterWrapper{TriangleFilter{}});
         const uvec2 imageSize{1920U, 1080U};
-        mIntegrator = std::make_unique<PathIntegrator>(sequenceGenerator, 20U, 1024U, 256U);
+        mIntegrator = std::make_unique<PathIntegrator>(sequenceGenerator, 20U, 16U, 256U);
 
         const Transform toCamera{
             glm::lookAt(Vector{0.0f, 0.0f, 3.0f}, Vector{0.0f, 0.0f, 0.0f}, Vector{0.0f, 1.0f, 0.0f})
@@ -123,11 +126,14 @@ public:
         std::vector<float> pixelFloat(pixel.size() * 3);
         auto valid = true;
         for (size_t i = 0; i < pixel.size(); ++i) {
-            const auto col = pixel[i].toRGB();
+            auto col = pixel[i].toRGB();
+            if (!isfinite(pixel[i].y())) {
+                valid = false;
+                col = { 0.0f,1.0f,0.0f };
+            }
             pixelFloat[i * 3] = col.r;
             pixelFloat[i * 3 + 1] = col.g;
             pixelFloat[i * 3 + 2] = col.b;
-            valid &= isfinite(pixel[i].lum());
         }
         saveHdr("output.hdr", pixelFloat.data(), imageSize);
         if (!valid)printf("The image is invalid.\n");

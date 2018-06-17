@@ -4,7 +4,7 @@
 
 class Bsdf final {
 private:
-    const Interaction mInteraction;
+    const SurfaceInteraction& mInteraction;
     const Vector mNormal, mTangent, mBiTangent, mLocalNormal;
     static constexpr auto maxSize = 4;
     BxDFWrapper mBxDF[maxSize];
@@ -20,7 +20,7 @@ private:
         const Vector& wi, const Vector& worldWi, BxDFType pattern) const;
 
 public:
-    DEVICE explicit Bsdf(const Interaction& interaction);
+    DEVICE explicit Bsdf(const SurfaceInteraction& interaction);
 
     DEVICE float getEta() const {
         return mEta;
@@ -46,7 +46,7 @@ public:
     DEVICE BxDFSample sampleF(const Vector& worldWo, vec2 sample,
         BxDFType pattern = BxDFType::All) const;
 
-    DEVICE const Interaction& getInteraction() const {
+    DEVICE const SurfaceInteraction& getInteraction() const {
         return mInteraction;
     }
 };

@@ -43,7 +43,7 @@ public:
         return *this;
     }
 
-    DEVICE TextureMapping2DInfo map(const Interaction& interaction) const {
+    DEVICE TextureMapping2DInfo map(const SurfaceInteraction& interaction) const {
         switch (mType) {
             case TextureMapping2DClassType::UVMapping: return dataUVMapping.map(interaction);
             case TextureMapping2DClassType::SphericalMapping: return dataSphericalMapping.map(interaction);

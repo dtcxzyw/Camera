@@ -52,15 +52,7 @@ DEVICE bool TriangleDesc::interscet(const Ray& ray, Vector& pa, Vector& pb, Vect
 DEVICE TriangleDesc::TriangleDesc(const unsigned id, const VertexDesc& a, const VertexDesc& b,
     const VertexDesc& c): id(id), a(a), b(b), c(c) {}
 
-DEVICE void defaultCoordinateSystem(const Vector& n, Vector& t, Vector& b) {
-    if (fabs(n.x) > fabs(n.y))
-        t = Vector(-n.z, 0.0f, n.x) / std::sqrt(n.x * n.x + n.z * n.z);
-    else
-        t = Vector(0.0f, n.z, -n.y) / std::sqrt(n.y * n.y + n.z * n.z);
-    b = cross(n, t);
-}
-
-DEVICE bool TriangleDesc::intersect(const Ray& ray, float& tHit, Interaction& interaction) const {
+DEVICE bool TriangleDesc::intersect(const Ray& ray, float& tHit, SurfaceInteraction& interaction) const {
     Vector pa, pb, pc;
     float t, e0, e1, e2;
     if (interscet(ray, pa, pb, pc, t, e0, e1, e2, tHit)) {

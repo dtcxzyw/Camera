@@ -38,7 +38,7 @@ DEVICE Spectrum Bsdf::fImpl(const Vector& wo, const Vector& worldWo, const Vecto
     return f;
 }
 
-DEVICE Bsdf::Bsdf(const Interaction& interaction)
+DEVICE Bsdf::Bsdf(const SurfaceInteraction& interaction)
     : mInteraction(interaction), mNormal(interaction.shadingGeometry.normal),
     mTangent(normalize(interaction.shadingGeometry.dpdu)),
     mBiTangent(cross(mNormal, mTangent)), mLocalNormal(interaction.localGeometry.normal),

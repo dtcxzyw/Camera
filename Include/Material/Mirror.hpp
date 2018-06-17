@@ -10,7 +10,7 @@ public:
 
     DEVICE void computeScatteringFunctions(Bsdf& bsdf, TransportMode) const {
         const auto reflection = mR.sample(bsdf.getInteraction());
-        if (reflection.lum() > 0.0f)
+        if (reflection.y() > 0.0f)
             bsdf.add(SpecularReflection{reflection, FresnelWrapper{FresnelNoOp{}}});
     }
 };

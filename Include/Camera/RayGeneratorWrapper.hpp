@@ -28,7 +28,7 @@ public:
         return *this;
     }
 
-    DEVICE Ray sample(const CameraSample& sample, float& weight) const {
+    DEVICE RayDifferential sample(const CameraSample& sample, float& weight) const {
         switch (mType) {
             case RayGeneratorClassType::PinholeCameraRayGenerator: return dataPinholeCameraRayGenerator.sample(sample, weight);
         }

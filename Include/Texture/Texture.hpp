@@ -15,7 +15,7 @@ public:
     explicit Texture2DFloat(const TextureMapping2DWrapper& mapping,
         const TextureSampler2DFloatWrapper& sampler) : mMapping(mapping), mSampler(sampler) {}
 
-    DEVICE float sample(const Interaction& interaction) const {
+    DEVICE float sample(const SurfaceInteraction& interaction) const {
         return mSampler.sample(mMapping.map(interaction));
     }
 };
@@ -29,7 +29,7 @@ public:
         const TextureSampler2DSpectrumWrapper& sampler)
         : mMapping(mapping), mSampler(sampler) {}
 
-    DEVICE Spectrum sample(const Interaction& interaction) const {
+    DEVICE Spectrum sample(const SurfaceInteraction& interaction) const {
         return mSampler.sample(mMapping.map(interaction));
     }
 };
@@ -42,7 +42,7 @@ public:
     explicit Texture3DFloat(const TextureMapping3D& mapping,
         const TextureSampler3DFloatWrapper& sampler) : mMapping(mapping), mSampler(sampler) {}
 
-    DEVICE float sample(const Interaction& interaction) const {
+    DEVICE float sample(const SurfaceInteraction& interaction) const {
         return mSampler.sample(mMapping.map(interaction));
     }
 };
@@ -56,7 +56,7 @@ public:
         const TextureSampler3DSpectrumWrapper& sampler)
         : mMapping(mapping), mSampler(sampler) {}
 
-    DEVICE Spectrum sample(const Interaction& interaction) const {
+    DEVICE Spectrum sample(const SurfaceInteraction& interaction) const {
         return mSampler.sample(mMapping.map(interaction));
     }
 };

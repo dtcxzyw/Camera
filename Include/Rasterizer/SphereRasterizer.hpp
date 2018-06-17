@@ -7,7 +7,7 @@ struct SphereDesc final {
     Point pos;
     float radius;
     SphereDesc() = default;
-    BOTH SphereDesc(const Point& pos, const float radius) : pos(pos), radius(radius) {}
+    BOTH    SphereDesc(const Point& pos, const float radius) : pos(pos), radius(radius) {}
 };
 
 template <typename Uniform>

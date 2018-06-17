@@ -24,6 +24,17 @@ DEVICEINLINE Vector cosineSampleHemisphere(const vec2 p) {
     return {d.x, d.y, sqrt(1.0f - d.x * d.x - d.y * d.y)};
 }
 
+DEVICEINLINE Vector uniformSampleSphere(const vec2 p) {
+    const auto z = 1.0f - 2.0f * p.x;
+    const auto r = sqrt(fmax(0.0f, 1.0f - z * z));
+    const auto phi = two_pi<float>() * p.y;
+    return {r * cos(phi), r * sin(phi), z};
+}
+
+DEVICEINLINE float uniformConePdf(const float cosThetaMax) {
+    return one_over_two_pi<float>() / (1 - cosThetaMax);
+}
+
 BOTH float computeCdf(const float* func, float* cdf, uint32_t size);
 
 class Distribution1DRef final {
@@ -34,7 +45,7 @@ private:
     float mInvLength, mInvSum;
 public:
     Distribution1DRef() = default;
-    BOTH Distribution1DRef(const float* cdf, const float* func, uint32_t size, float sum);
+    BOTH    Distribution1DRef(const float* cdf, const float* func, uint32_t size, float sum);
     DEVICE float sampleContinuous(float sample, float& pdf, int& pos) const;
     DEVICE int sampleDiscrete(float sample, float& pdf) const;
     DEVICE float f(uint32_t pos) const;
@@ -59,7 +70,7 @@ private:
 public:
     Distribution2DRef(const Distribution1DRef* refs, uvec2 size);
     DEVICE vec2 sampleContinuous(vec2 sample, float& pdf) const;
-    DEVICE float pdf(vec2 sample) const;
+    DEVICE float pdf(vec2 pos) const;
 };
 
 class Distribution2D final {

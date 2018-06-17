@@ -77,4 +77,15 @@ DEVICEINLINE void cudaSwap(T& a, T& b) {
     b = c;
 }
 
+template<typename Dst, typename Src>
+BOTH Dst binCast(const Src val) {
+    static_assert(sizeof(Dst) == sizeof(Src),"");
+    union {
+        Src src;
+        Dst dst;
+    } cast;
+    cast.src = val;
+    return cast.dst;
+}
+
 struct Empty final {};

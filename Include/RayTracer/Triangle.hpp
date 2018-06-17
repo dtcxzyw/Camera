@@ -1,7 +1,7 @@
 #pragma once
 #include <Math/Geometry.hpp>
 
-struct Interaction;
+struct SurfaceInteraction;
 
 class TriangleDesc final {
 private:
@@ -13,7 +13,7 @@ public:
 
     DEVICE TriangleDesc(uint32_t id, const VertexDesc& a, const VertexDesc& b,
         const VertexDesc& c);
-    DEVICE bool intersect(const Ray& ray, float& tHit, Interaction& interaction) const;
+    DEVICE bool intersect(const Ray& ray, float& tHit, SurfaceInteraction& interaction) const;
     DEVICE bool intersect(const Ray& ray) const;
 };
 

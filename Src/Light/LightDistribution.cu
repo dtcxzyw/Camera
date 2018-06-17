@@ -11,12 +11,13 @@ DEVICE void LightDistribution::computeDistribution(const SceneRef& scene, const 
     func = new float[scene.size()];
     constexpr auto sampleNum = 64U;
     for (auto i = 0; i < sampleNum; ++i) {
-        const auto pos = bounds.lerp({ radicalInverse2(i), halton3(i), halton5(i) });
-        const vec2 sample = { halton7(i),halton11(i) };
+        Interaction isect;
+        isect.pos = bounds.lerp({radicalInverse2(i), halton3(i), halton5(i)});
+        const vec2 sample = {halton7(i), halton11(i)};
         for (auto j = 0; j < scene.size(); ++j) {
-            const auto ls = scene.begin()[j]->sampleLi(sample, pos);
+            const auto ls = scene[j].sampleLi(sample, isect);
             if (ls.pdf > 0.0f) {
-                const auto lum = ls.illumination.lum();
+                const auto lum = ls.illumination.y();
                 /*
                  *TODO:trace shadow rays
                 if (lum > 0.0f) {
@@ -32,23 +33,23 @@ DEVICE void LightDistribution::computeDistribution(const SceneRef& scene, const 
     auto acc = 0.0f;
     for (auto i = 0; i < scene.size(); ++i)
         acc += func[i];
-    const auto minv = acc == 0.0f ? 1.0f : acc / (scene.size()*sampleNum)*1e-3f;
+    const auto minv = acc == 0.0f ? 1.0f : acc / (scene.size() * sampleNum) * 1e-3f;
     for (auto i = 0; i < scene.size(); ++i)
         func[i] = fmax(func[i], minv);
 
     cdf = new float[scene.size() + 1];
     const auto sum = computeCdf(func, cdf, scene.size());
-    distribution = Distribution1DRef{ cdf, func, scene.size() + 1, sum };
+    distribution = Distribution1DRef{cdf, func, scene.size() + 1, sum};
     fIag = 0;
 }
 
-DEVICE int LightDistribution::chooseOneLight(const float sample,float& pdf) const {
+DEVICE int LightDistribution::chooseOneLight(const float sample, float& pdf) const {
     return distribution.sampleDiscrete(sample, pdf);
 }
 
 LightDistributionCacheRef::LightDistributionCacheRef(LightDistribution* distribution,
     const uint32_t cacheSize, const uvec3 size, const Bounds& bounds)
-    : mDistributions(distribution), mCacheSize(cacheSize), mSize(size), 
+    : mDistributions(distribution), mCacheSize(cacheSize), mSize(size),
     mBase(bounds[0]), mInvOffset(1.0f / (bounds[1] - bounds[0])),
     mScale((bounds[1] - bounds[0]) / static_cast<Vector>(size)) {}
 
@@ -62,9 +63,9 @@ DEVICE uint32_t encode(const uint64_t packedPos, const uint32_t size) {
     return hash % size;
 }
 
-DEVICE const LightDistribution* LightDistributionCacheRef::lookUp(const SceneRef& scene, 
+DEVICE const LightDistribution* LightDistributionCacheRef::lookUp(const SceneRef& scene,
     const Point& worldPos) const {
-    const auto pos = (worldPos - mBase)*mInvOffset;
+    const auto pos = (worldPos - mBase) * mInvOffset;
     uvec3 posi;
     #pragma unroll
     for (auto i = 0; i < 3; ++i)
@@ -75,13 +76,13 @@ DEVICE const LightDistribution* LightDistributionCacheRef::lookUp(const SceneRef
     while (true) {
         auto&& dist = mDistributions[id];
         if (dist.packedPos == packedPos) {
-            if (dist.fIag)continue;//for avoiding to deadlock
+            if (dist.fIag)continue; //for avoiding to deadlock
             return &dist;
         }
         if (deviceCompareAndSwap(&dist.packedPos, static_cast<uint64_t>(-1), packedPos) == -1) {
-            const auto p0 = mBase + static_cast<Vector>(posi)*mScale;
+            const auto p0 = mBase + static_cast<Vector>(posi) * mScale;
             const auto p1 = p0 + mScale;
-            dist.computeDistribution(scene, Bounds{ p0, p1 });
+            dist.computeDistribution(scene, Bounds{p0, p1});
             return &dist;
         }
         {
@@ -105,7 +106,7 @@ LightDistributionCache::LightDistributionCache(const Bounds& bounds,
 
 static GLOBAL void destoryDistribution(const uint32_t size, LightDistribution* distribution) {
     const auto id = getId();
-    if (id<size && distribution[id].fIag == 0) {
+    if (id < size && distribution[id].fIag == 0) {
         delete[] distribution[id].func;
         delete[] distribution[id].cdf;
     }
@@ -119,5 +120,5 @@ LightDistributionCache::~LightDistributionCache() {
 }
 
 LightDistributionCacheRef LightDistributionCache::toRef() const {
-    return { mDistributions.begin() ,static_cast<uint32_t>(mDistributions.size()), mSize,mBounds };
+    return {mDistributions.begin(), static_cast<uint32_t>(mDistributions.size()), mSize, mBounds};
 }

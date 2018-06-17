@@ -43,7 +43,7 @@ DEVICE bool BvhForTriangleRef::intersect(const Ray& ray) const {
     return false;
 }
 
-DEVICE bool BvhForTriangleRef::intersect(const Ray& ray, float& t, Interaction& interaction) const {
+DEVICE bool BvhForTriangleRef::intersect(const Ray& ray, float& t, SurfaceInteraction& interaction) const {
     uint32_t top = 0, current = 0;
     uint32_t stack[64];
     const auto invDir = 1.0f / ray.dir;

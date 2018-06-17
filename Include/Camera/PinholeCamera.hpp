@@ -13,19 +13,19 @@ public:
         : mLensRadius(lensRadius * 1e-3f), mFocalDistance(focalDistance),
         mScale(scale), mOffset(offset) {}
 
-    DEVICE Ray sample(const CameraSample& sample, float& weight) const {
+    DEVICE RayDifferential sample(const CameraSample& sample, float& weight) const {
         const vec2 pRaster = {sample.pFilm.x * 2.0f - 1.0f, sample.pFilm.y * -2.0f + 1.0f};
         const Vector pCamera{pRaster.x * mScale.x, pRaster.y * mScale.y, -1.0f};
-        Ray ray{{}, pCamera};
+        RayDifferential ray{{}, pCamera};
         ray.xOri = ray.yOri = ray.origin;
         ray.xDir = {ray.dir.x + mOffset.x, ray.dir.y, ray.dir.z};
         ray.yDir = {ray.dir.x, ray.dir.y + mOffset.y, ray.dir.z};
         if (mLensRadius > 0.0f) {
             const auto pLens = mLensRadius * concentricSampleDisk(sample.pLens);
             ray.origin = Point{pLens.x, pLens.y, 0.0f};
-            ray.dir = Point{ mFocalDistance * ray.dir } - ray.origin;
-            ray.xDir = Point{ mFocalDistance * ray.xDir } -ray.origin;
-            ray.yDir = Point{ mFocalDistance * ray.yDir } -ray.origin;
+            ray.dir = Point{mFocalDistance * ray.dir} - ray.origin;
+            ray.xDir = Point{mFocalDistance * ray.xDir} - ray.origin;
+            ray.yDir = Point{mFocalDistance * ray.yDir} - ray.origin;
         }
 
         ray.dir = normalize(ray.dir);

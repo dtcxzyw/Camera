@@ -159,7 +159,7 @@ DEVICEINLINE Spectrum disneyBRDF(const Normal L, const Normal V, const Normal N,
     const auto ndh = dot(N, H);
 
     //sheen
-    const auto lum = arg.baseColor.lum();
+    const auto lum = arg.baseColor.y();
     const auto ctint = arg.baseColor * (1.0f / lum);
     const auto cspec = mix(arg.specular * 0.08f * mix(Spectrum(1.0f), ctint, arg.specularTint), arg.baseColor,
         arg.metallic);
@@ -227,7 +227,7 @@ DEVICEINLINE Spectrum UE4BRDF(const Normal L, const Normal V, const Normal N, co
     const auto ndh = dot(N, H);
 
     //sheen
-    const auto lum = arg.baseColor.lum();
+    const auto lum = arg.baseColor.y();
     const auto ctint = arg.baseColor * (1.0f - lum);
     const auto cspec = mix(arg.cavity * 0.08f * ctint, arg.baseColor, arg.metallic);
     const auto fh = fresnelSchlickUE4(ldh);

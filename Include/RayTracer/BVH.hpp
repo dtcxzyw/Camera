@@ -23,7 +23,7 @@ public:
     BvhForTriangleRef(const MemorySpan<BvhNode>& nodes,
         const MemorySpan<TriangleRef>& index, const MemorySpan<VertexDesc>& vertex);
     DEVICE bool intersect(const Ray& ray) const;
-    DEVICE bool intersect(const Ray& ray, float& t, Interaction& interaction) const;
+    DEVICE bool intersect(const Ray& ray, float& t, SurfaceInteraction& interaction) const;
 };
 
 class StaticMesh;

@@ -4,13 +4,14 @@
 #include <glm/gtx/color_space.hpp>
 #include <Core/IncludeEnd.hpp>
 #include <Core/DeviceFunctions.hpp>
+#include <Spectrum/SpectrumShared.hpp>
 
 class RGBSpectrum final {
 private:
     RGB mVal;
 public:
-    BOTH explicit RGBSpectrum(const float v = 0.f) : mVal(v) {}
-    BOTH explicit RGBSpectrum(const RGB& v) : mVal(v) {}
+    BOTH    explicit RGBSpectrum(const float v = 0.0f) : mVal(v) {}
+    BOTH    explicit RGBSpectrum(const RGB& v, SpectrumType = SpectrumType::Reflectance) : mVal(v) {}
     #define OPVEC(op) \
     BOTH RGBSpectrum& operator##op##=(const RGBSpectrum& rhs) {\
         mVal op##= rhs.mVal;\
@@ -41,7 +42,7 @@ public:
     OPFLOAT(/ )
     #undef OPFLOAT
 
-    BOTH float lum() const {
+    BOTH    float y() const {
         return dot(mVal, RGB{0.212671f, 0.715160f, 0.072169f});
     }
 
@@ -49,11 +50,11 @@ public:
         return max3(mVal.x, mVal.y, mVal.z);
     }
 
-    BOTH RGB toRGB() const {
+    BOTH    RGB toRGB() const {
         return mVal;
     }
 
-    BOTH friend RGBSpectrum sqrt(const RGBSpectrum& col) {
+    BOTH    friend RGBSpectrum sqrt(const RGBSpectrum& col) {
         return RGBSpectrum{glm::sqrt(col.mVal)};
     }
 

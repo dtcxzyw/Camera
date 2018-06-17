@@ -13,40 +13,44 @@ WhittedIntegrator::WhittedIntegrator(const SequenceGenerator2DWrapper& sequenceG
     const uint32_t maxDepth, const uint32_t spp)
     : mSequenceGenerator(sequenceGenerator), mMaxDepth(maxDepth), mSpp(spp) {}
 
-static DEVICE Spectrum Li(RenderingContext& context, const Ray& ray, uint32_t depth);
+static DEVICE Spectrum Li(RenderingContext& context, const RayDifferential& ray, uint32_t depth);
 
-static DEVICE Spectrum specularReflect(RenderingContext& context, const Ray& ray,
-    const Interaction& interaction, const Bsdf& bsdf, const uint32_t depth) {
+static DEVICE Spectrum specularReflect(RenderingContext& context, const RayDifferential& ray,
+    const SurfaceInteraction& interaction, const Bsdf& bsdf, const uint32_t depth) {
     constexpr auto type = BxDFType::Reflection | BxDFType::Specular;
     const auto sampleF = bsdf.sampleF(Vector{interaction.wo}, context.sample(), type);
 
     auto&& shading = interaction.shadingGeometry;
     const auto idn = dot(sampleF.wi, Vector{shading.normal});
 
-    if (sampleF.pdf > 0.0f & sampleF.f.lum() > 0.0f & idn != 0.0f) {
-        auto newRay = interaction.spawnRay(Vector{sampleF.wi});
-        newRay.xOri = interaction.pos + interaction.dpdx;
-        newRay.yOri = interaction.pos + interaction.dpdy;
-        {
-            const Normal dndx{
-                shading.dndu * interaction.duvdx.s +
-                shading.dndv * interaction.duvdx.t
-            };
-            const Normal dndy{
-                shading.dndu * interaction.duvdy.s +
-                shading.dndv * interaction.duvdy.t
-            };
+    if (sampleF.pdf > 0.0f & sampleF.f.y() > 0.0f & idn != 0.0f) {
+        RayDifferential newRay{ interaction.spawnRay(Vector{sampleF.wi}) };
 
-            const auto dwodx = -ray.xDir - Vector{interaction.wo};
-            const auto dwody = -ray.yDir - Vector{interaction.wo};
+        if (ray.hasDifferentials) {
+            newRay.xOri = interaction.pos + interaction.dpdx;
+            newRay.yOri = interaction.pos + interaction.dpdy;
+            {
+                const Normal dndx{
+                    shading.dndu * interaction.duvdx.s +
+                    shading.dndv * interaction.duvdx.t
+                };
+                const Normal dndy{
+                    shading.dndu * interaction.duvdy.s +
+                    shading.dndv * interaction.duvdy.t
+                };
 
-            const auto dDNdx = dot(dwodx, Vector{shading.normal}) + dot(interaction.wo, Vector{dndx});
-            const auto dDNdy = dot(dwody, Vector{shading.normal}) + dot(interaction.wo, Vector{dndy});
+                const auto dwodx = -ray.xDir - Vector{ interaction.wo };
+                const auto dwody = -ray.yDir - Vector{ interaction.wo };
 
-            const auto k = dot(interaction.wo, Vector{shading.normal});
+                const auto dDNdx = dot(dwodx, Vector{ shading.normal }) + dot(interaction.wo, Vector{ dndx });
+                const auto dDNdy = dot(dwody, Vector{ shading.normal }) + dot(interaction.wo, Vector{ dndy });
 
-            newRay.xDir = Vector{sampleF.wi} - dwodx + Vector{(dndx * k + shading.normal * dDNdx)} * 2.0f;
-            newRay.yDir = Vector{sampleF.wi} - dwody + Vector{(dndy * k + shading.normal * dDNdy)} * 2.0f;
+                const auto k = dot(interaction.wo, Vector{ shading.normal });
+
+                newRay.xDir = Vector{ sampleF.wi } -dwodx + Vector{ (dndx * k + shading.normal * dDNdx) } *2.0f;
+                newRay.yDir = Vector{ sampleF.wi } -dwody + Vector{ (dndy * k + shading.normal * dDNdy) } *2.0f;
+            }
+            newRay.hasDifferentials = true;
         }
 
         return sampleF.f * Li(context, newRay, depth) * fabs(idn) / sampleF.pdf;
@@ -54,45 +58,48 @@ static DEVICE Spectrum specularReflect(RenderingContext& context, const Ray& ray
     return Spectrum{};
 }
 
-static DEVICE Spectrum specularTransmit(RenderingContext& context, const Ray& ray,
-    const Interaction& interaction, const Bsdf& bsdf, const uint32_t depth) {
+static DEVICE Spectrum specularTransmit(RenderingContext& context, const RayDifferential& ray,
+    const SurfaceInteraction& interaction, const Bsdf& bsdf, const uint32_t depth) {
     constexpr auto type = BxDFType::Transmission | BxDFType::Specular;
     const auto sampleF = bsdf.sampleF(Vector{interaction.wo}, context.sample(), type);
 
     auto&& shading = interaction.shadingGeometry;
     const auto idn = dot(sampleF.wi, Vector{shading.normal});
 
-    if (sampleF.pdf > 0.0f & sampleF.f.lum() > 0.0f & idn != 0.0f) {
-        auto newRay = interaction.spawnRay(Vector{sampleF.wi});
-        newRay.xOri = interaction.pos + interaction.dpdx;
-        newRay.yOri = interaction.pos + interaction.dpdy;
-        {
-            const auto odn = dot(interaction.wo, Vector{shading.normal});
-            const auto eta = odn < 0.0f ? 1.0f / bsdf.getEta() : bsdf.getEta();
+    if (sampleF.pdf > 0.0f & sampleF.f.y() > 0.0f & idn != 0.0f) {
+        RayDifferential newRay{ interaction.spawnRay(Vector{sampleF.wi}) };
+        if (ray.hasDifferentials) {
+            newRay.xOri = interaction.pos + interaction.dpdx;
+            newRay.yOri = interaction.pos + interaction.dpdy;
+            {
+                const auto odn = dot(interaction.wo, Vector{ shading.normal });
+                const auto eta = odn < 0.0f ? 1.0f / bsdf.getEta() : bsdf.getEta();
 
-            const Normal dndx{
-                shading.dndu * interaction.duvdx.s +
-                shading.dndv * interaction.duvdx.t
-            };
+                const Normal dndx{
+                    shading.dndu * interaction.duvdx.s +
+                    shading.dndv * interaction.duvdx.t
+                };
 
-            const Normal dndy{
-                shading.dndu * interaction.duvdy.s +
-                shading.dndv * interaction.duvdy.t
-            };
+                const Normal dndy{
+                    shading.dndu * interaction.duvdy.s +
+                    shading.dndv * interaction.duvdy.t
+                };
 
-            const auto dwodx = -ray.xDir - Vector{interaction.wo};
-            const auto dwody = -ray.yDir - Vector{interaction.wo};
+                const auto dwodx = -ray.xDir - Vector{ interaction.wo };
+                const auto dwody = -ray.yDir - Vector{ interaction.wo };
 
-            const auto dDNdx = dot(dwodx, Vector{shading.normal}) + dot(interaction.wo, Vector{dndx});
-            const auto dDNdy = dot(dwody, Vector{shading.normal}) + dot(interaction.wo, Vector{dndy});
+                const auto dDNdx = dot(dwodx, Vector{ shading.normal }) + dot(interaction.wo, Vector{ dndx });
+                const auto dDNdy = dot(dwody, Vector{ shading.normal }) + dot(interaction.wo, Vector{ dndy });
 
-            const auto mu = eta * -odn - idn;
-            const auto k = (eta - (eta * eta * -odn) / idn);
-            const auto dmudx = k * dDNdx;
-            const auto dmudy = k * dDNdy;
+                const auto mu = eta * -odn - idn;
+                const auto k = (eta - (eta * eta * -odn) / idn);
+                const auto dmudx = k * dDNdx;
+                const auto dmudy = k * dDNdy;
 
-            newRay.xDir = Vector{sampleF.wi} + eta * dwodx - Vector{(dndx * mu + shading.normal * dmudx)};
-            newRay.yDir = Vector{sampleF.wi} + eta * dwody - Vector{(dndy * mu + shading.normal * dmudy)};
+                newRay.xDir = Vector{ sampleF.wi } +eta * dwodx - Vector{ (dndx * mu + shading.normal * dmudx) };
+                newRay.yDir = Vector{ sampleF.wi } +eta * dwody - Vector{ (dndy * mu + shading.normal * dmudy) };
+            }
+            newRay.hasDifferentials = true;
         }
 
         return sampleF.f * Li(context, newRay, depth) * fabs(idn) / sampleF.pdf;
@@ -100,19 +107,20 @@ static DEVICE Spectrum specularTransmit(RenderingContext& context, const Ray& ra
     return Spectrum{};
 }
 
-static DEVICE Spectrum Li(RenderingContext& context, const Ray& ray, const uint32_t depth) {
-    Interaction interaction;
+static DEVICE Spectrum Li(RenderingContext& context, const RayDifferential& ray, 
+    const uint32_t depth) {
+    SurfaceInteraction interaction;
     if (context.scene.intersect(ray, interaction)) {
-        interaction.prepare(ray);
+        interaction.computeDifferentials(ray);
         Bsdf bsdf(interaction);
         interaction.material->computeScatteringFunctions(bsdf);
         auto L = interaction.le(Vector{interaction.wo});
         for (auto&& light : context.scene) {
-            const auto sample = light->sampleLi(context.sample(), interaction.pos);
-            if (sample.illumination.lum() > 0.0f & sample.pdf > 0.0f
+            const auto sample = light.sampleLi(context.sample(), interaction);
+            if (sample.illumination.y() > 0.0f & sample.pdf > 0.0f
                 & !context.scene.intersect(interaction.spawnTo(sample.src))) {
                 const auto f = bsdf.f(Vector{interaction.wo}, Vector{sample.wi});
-                if (f.lum() > 0.0f)
+                if (f.y() > 0.0f)
                     L += f * sample.illumination
                         * (fabs(dot(sample.wi, Vector{interaction.shadingGeometry.normal})) / sample.pdf);
             }
@@ -125,7 +133,7 @@ static DEVICE Spectrum Li(RenderingContext& context, const Ray& ray, const uint3
     }
     Spectrum L{};
     for (auto&& light : context.scene)
-        L += light->le(ray);
+        L += light.le(ray);
     return L;
 }
 
@@ -155,7 +163,7 @@ void WhittedIntegrator::render(CommandBuffer& buffer, const SceneDesc& scene, co
     constexpr auto baseStack = sizeof(RayGeneratorWrapper) + sizeof(Transform) +
         sizeof(SequenceGenerator2DWrapper) + sizeof(SceneRef) + sizeof(RenderingContext) +
         sizeof(CameraSample) + sizeof(Spectrum) + 128U;
-    constexpr auto liStack = sizeof(Interaction) + sizeof(Bsdf) + sizeof(Ray) + sizeof(BxDFSample);
+    constexpr auto liStack = sizeof(Interaction) + sizeof(Bsdf) + sizeof(RayDifferential) + sizeof(BxDFSample);
     const auto stackSize = baseStack + liStack * (mMaxDepth + 3);
     const auto maxLaunchSize = std::min(blockSize, static_cast<uint32_t>(
         (DeviceMonitor::get().getMemoryFreeSize() * 4 / 5) / (stackSize * size.x * size.y)));

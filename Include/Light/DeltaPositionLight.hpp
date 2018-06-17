@@ -1,23 +1,21 @@
 #pragma once
-#include <Light/LightingSample.hpp>
+#include <Light/Light.hpp>
+#include <Math/Interaction.hpp>
 
-class PointLight final {
+class PointLight final : public LightTag {
 private:
     Point mPos;
     Spectrum mIllumination;
 public:
     PointLight() = default;
-    BOTH PointLight(const Point pos, const Spectrum& illumination)
+
+    PointLight(const Point pos, const Spectrum& illumination)
         : mPos(pos), mIllumination(illumination) {}
 
-    DEVICE LightingSample sampleLi(const vec2, const Point pos) const {
-        const auto delta = mPos - pos;
+    DEVICE LightingSample sampleLi(const vec2, const Interaction& interaction) const {
+        const auto delta = mPos - interaction.pos;
         const auto invDis2 = 1.0f / length2(delta);
         return {delta * sqrt(invDis2), mIllumination * invDis2, mPos};
-    }
-
-    DEVICE Spectrum le(const Ray&) const {
-        return Spectrum{};
     }
 
     DEVICE bool isDelta() const {
@@ -25,7 +23,7 @@ public:
     }
 };
 
-class SpotLight final {
+class SpotLight final : public LightTag {
 private:
     Point mPos;
     Transform mWorldToLight;
@@ -39,22 +37,19 @@ private:
 
 public:
     SpotLight() = default;
-    BOTH SpotLight(const Transform& transform, const Spectrum& illumination,
+
+    SpotLight(const Transform& transform, const Spectrum& illumination,
         const float fallOffStart, const float width) : mPos(transform(Point{})),
         mWorldToLight(inverse(transform)), mIllumination(illumination),
         mFallOffStart(cos(glm::radians(fallOffStart))), mWidth(cos(glm::radians(width))) {
         mInvLen = 1.0f / (mFallOffStart - mWidth);
     }
 
-    DEVICE LightingSample sampleLi(const vec2, const Point pos) const {
-        const auto delta = mPos - pos;
+    DEVICE LightingSample sampleLi(const vec2, const Interaction& interaction) const {
+        const auto delta = mPos - interaction.pos;
         const auto invDis2 = 1.0f / length2(delta);
         const auto wi = delta * sqrt(invDis2);
         return {wi, mIllumination * invDis2 * fallOff(mWorldToLight(wi).z), mPos};
-    }
-
-    DEVICE Spectrum le(const Ray&) const {
-        return Spectrum{};
     }
 
     DEVICE bool isDelta() const {

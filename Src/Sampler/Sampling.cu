@@ -90,9 +90,9 @@ DEVICE vec2 Distribution2DRef::sampleContinuous(const vec2 sample, float& pdf) c
     return {x, y};
 }
 
-DEVICE float Distribution2DRef::pdf(const vec2 sample) const {
-    const auto x = min(static_cast<uint32_t>(sample.x * mSize.x), mSize.x - 1);
-    const auto y = min(static_cast<uint32_t>(sample.y * mSize.y), mSize.y - 1);
+DEVICE float Distribution2DRef::pdf(const vec2 pos) const {
+    const auto x = min(static_cast<uint32_t>(pos.x * mSize.x), mSize.x - 1);
+    const auto y = min(static_cast<uint32_t>(pos.y * mSize.y), mSize.y - 1);
     return mRefs[y].f(x) * mLines->getInvSum();
 }
 

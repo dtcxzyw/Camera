@@ -15,7 +15,7 @@ public:
     DEVICE void computeScatteringFunctions(Bsdf& bsdf, TransportMode) const {
         const auto kd = mKd.sample(bsdf.getInteraction());
         const auto ks = mKs.sample(bsdf.getInteraction());
-        if (kd.lum() > 0.0f | ks.lum() > 0.0f) {
+        if (kd.y() > 0.0f | ks.y() > 0.0f) {
             const auto roughnessX = mRoughnessX.sample(bsdf.getInteraction());
             const auto roughnessY = mRoughnessY.sample(bsdf.getInteraction());
             const MicrofactDistributionWrapper distribution{
