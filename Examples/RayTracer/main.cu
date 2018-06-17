@@ -49,7 +49,7 @@ public:
                 mLight.emplace_back(PointLight(Point{ 3.0f, 3.0f, 3.0f }, Spectrum{ RGB{10.0f, 20.0f, 30.0f} }));
                 mLight.emplace_back(PointLight(Point{ -3.0f, 3.0f, 3.0f }, Spectrum{ RGB{30.0f, 20.0f, 10.0f} }));
                 const Sphere sphere{ Transform{glm::translate(glm::mat4{},Vector{0.0f,0.5f,0.0f})},0.2f };
-                mLight.emplace_back(DiffuseAreaLight{ Spectrum{0.1f},ShapeWrapper{sphere} });
+                mLight.emplace_back(DiffuseAreaLight{ Spectrum{3.0f},ShapeWrapper{sphere} });
             }
             const TextureMapping2DWrapper mapping{UVMapping{}};
             std::vector<MaterialWrapper> materials;
@@ -97,14 +97,14 @@ public:
             const auto sphere = worldBound.boundingSphere();
             for (auto&& light : mLight)
                 light.preprocess(sphere.first, sphere.second);
-            mScene = std::make_unique<SceneDesc>(primitives, mLight, worldBound, 32U);
+            mScene = std::make_unique<SceneDesc>(primitives, mLight, worldBound, 64U);
 
             resLoader.sync();
         }
         SequenceGenerator2DWrapper sequenceGenerator{Halton2D{}};
         const SampleWeightLUT lut(64U, FilterWrapper{TriangleFilter{}});
         const uvec2 imageSize{1920U, 1080U};
-        mIntegrator = std::make_unique<PathIntegrator>(sequenceGenerator, 20U, 16U, 256U);
+        mIntegrator = std::make_unique<PathIntegrator>(sequenceGenerator, 20U, 1024U, 256U);
 
         const Transform toCamera{
             glm::lookAt(Vector{0.0f, 0.0f, 3.0f}, Vector{0.0f, 0.0f, 0.0f}, Vector{0.0f, 1.0f, 0.0f})

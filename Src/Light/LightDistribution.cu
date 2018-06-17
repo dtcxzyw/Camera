@@ -7,15 +7,18 @@
 #include <Sampler/SequenceGenerator.hpp>
 #include <Light/LightWrapper.hpp>
 
+//TODO:memory pool
+
 DEVICE void LightDistribution::computeDistribution(const SceneRef& scene, const Bounds& bounds) {
     func = new float[scene.size()];
-    constexpr auto sampleNum = 64U;
+    constexpr auto sampleNum = 128U;
     for (auto i = 0; i < sampleNum; ++i) {
         Interaction isect;
         isect.pos = bounds.lerp({radicalInverse2(i), halton3(i), halton5(i)});
         const vec2 sample = {halton7(i), halton11(i)};
         for (auto j = 0; j < scene.size(); ++j) {
             const auto ls = scene[j].sampleLi(sample, isect);
+
             if (ls.pdf > 0.0f) {
                 const auto lum = ls.illumination.y();
                 /*

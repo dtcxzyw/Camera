@@ -23,7 +23,7 @@ public:
             return LightingSample{};
         }
         const auto wi = normalize(pSpape.pos - isect.pos);
-        return LightingSample{wi, emitL(isect, -wi), pSpape.pos, pdf};
+        return LightingSample{wi, emitL(pSpape, -wi), pSpape.pos, pdf};
     }
 
     DEVICE float pdfLi(const Interaction& isect, const Vector& wi) const {

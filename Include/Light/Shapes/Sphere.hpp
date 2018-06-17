@@ -47,16 +47,19 @@ public:
         : ShapeHelper(trans, reverseOri), mRadius(radius),
         mZMin(clamp(fmin(zMin, zMax), -radius, radius)),
         mZMax(clamp(fmax(zMin, zMax), -radius, radius)),
-        mThetaMin(acos(clamp(fmin(zMin, zMax) / radius, -1.0f, 1.0f))),
-        mThetaMax(acos(clamp(fmax(zMin, zMax) / radius, -1.0f, 1.0f))),
+        mThetaMin(acos(clamp(fmin(mZMin, mZMax) / radius, -1.0f, 1.0f))),
+        mThetaMax(acos(clamp(fmax(mZMin, mZMax) / radius, -1.0f, 1.0f))),
         mPhiMax(glm::radians(clamp(phiMax, 0.0f, 360.0f))), mRadius2(radius * radius),
-        mCenter(trans(Point{})), mInvArea(1.0f / (mPhiMax * mRadius * (mZMax - mZMin))) {}
+        mInvArea(1.0f / (mPhiMax * mRadius * (mZMax - mZMin))), mCenter(trans(Point{})) {
+        if (isinf(mInvArea))mInvArea = 0.0f;
+    }
 
     DEVICE Interaction sample(const vec2 sample, float& pdf) const {
-        const Point pObj{mRadius * uniformSampleSphere(sample)};
+        Point pObj{mRadius * uniformSampleSphere(sample)};
         Interaction it;
         it.localGeometry.normal = normalize(toWorld(Normal{Vector{pObj}}));
         if (reverseOri) it.localGeometry.normal = -it.localGeometry.normal;
+        pObj = pObj * (mRadius / length2(Vector{ pObj }));
         it.pos = toWorld(pObj);
         pdf = mInvArea;
         return it;
@@ -76,19 +79,21 @@ public:
             return intr;
         }
 
-        const auto wc = normalize(mCenter - isect.pos);
+        const auto delta = mCenter - isect.pos;
+        const auto length2 = glm::length2(delta);
+        const auto dc = sqrt(length2);
+        const auto wc = delta * (1.0f / dc);
         Vector wcX, wcY;
         defaultCoordinateSystem(wc, wcX, wcY);
 
-        const auto sinThetaMax2 = mRadius2 / distance2(isect.pos, mCenter);
+        const auto sinThetaMax2 = mRadius2 / length2;
         const auto cosThetaMax = sqrt(fmax(0.0f, 1.0f - sinThetaMax2));
         const auto cosTheta = 1.0f - sample.x + sample.x * cosThetaMax;
         const auto sinTheta = sqrt(fmax(0.0f, 1.0f - cosTheta * cosTheta));
         const auto phi = sample.y * two_pi<float>();
 
-        const auto dc = distance(isect.pos, mCenter);
-        const auto ds = dc * cosTheta - sqrt(fmax(0.0f, mRadius2 - dc * dc * sinTheta * sinTheta));
-        const auto cosAlpha = (dc * dc + mRadius2 - ds * ds) / (2 * dc * mRadius);
+        const auto ds = dc * cosTheta - sqrt(fmax(0.0f, mRadius2 - length2 * sinTheta * sinTheta));
+        const auto cosAlpha = (length2 + mRadius2 - ds * ds) / (2 * dc * mRadius);
         const auto sinAlpha = sqrt(fmax(0.0f, 1.0f - cosAlpha * cosAlpha));
 
         const auto nWorld = sphericalDirection(sinAlpha, cosAlpha, phi, -wcX, -wcY, -wc);
