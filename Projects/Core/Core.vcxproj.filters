@@ -315,9 +315,6 @@
     <ClInclude Include="..\..\Include\Material\Substrate.hpp">
       <Filter>Material</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Include\Light\LightDistribution.hpp">
-      <Filter>Light</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Include\Core\IncludeBegin.hpp">
       <Filter>Core</Filter>
     </ClInclude>
@@ -344,6 +341,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Include\Light\Shapes\ShapeWrapper.hpp">
       <Filter>Light\Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Camera\RealisticCamera.hpp">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Light\LightDistribution.hpp">
+      <Filter>Light</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -436,9 +439,6 @@
     <CudaCompile Include="..\..\Src\Sampler\Sampling.cu">
       <Filter>Sampler</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\Src\Light\LightDistribution.cu">
-      <Filter>Light</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\Src\Sampler\SequenceGenerator.cu">
       <Filter>Sampler</Filter>
     </CudaCompile>
@@ -447,6 +447,12 @@
     </CudaCompile>
     <CudaCompile Include="..\..\Src\Math\Interaction.cu">
       <Filter>Math</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Camera\RealisticCamera.cu">
+      <Filter>Camera</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\Src\Light\LightDistribution.cu">
+      <Filter>Light</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

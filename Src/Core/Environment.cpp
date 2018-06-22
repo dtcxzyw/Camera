@@ -14,6 +14,11 @@ static void setDevice(const int id, const AppType app, const std::vector<int>& d
     checkError(cudaSetDeviceFlags(schedule));
     checkError(cudaSetDeviceFlags(cudaDeviceLmemResizeToMax));
     checkError(cudaSetDevice(id));
+#ifndef CAMERA_DEBUG
+    checkError(cudaDeviceSetLimit(cudaLimitPrintfFifoSize, 0));
+#endif
+    checkError(cudaDeviceSetLimit(cudaLimitDevRuntimeSyncDepth, 2));
+    checkError(cudaDeviceSetLimit(cudaLimitMallocHeapSize, 1 << 29));
     for (auto&& dev : devices)
         if (dev != id)
             checkError(cudaDeviceEnablePeerAccess(id, 0));

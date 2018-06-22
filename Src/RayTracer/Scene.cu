@@ -39,12 +39,12 @@ DEVICE bool SceneRef::intersect(const Ray& ray) const {
 DEVICE bool SceneRef::intersect(const Ray& ray, SurfaceInteraction& interaction) const {
     auto tHit = ray.tMax;
     auto flag = false;
-    Transform toWorld;
     for (auto i = 0U; i < mLightSize; ++i)
         if(mLights[i].intersect(ray, tHit, interaction)) {
             interaction.areaLight = mLights + i;
             flag = true;
         }
+    Transform toWorld;
     auto shouldTransform = false;
     for (auto i = 0U; i < mPrimitiveSize; ++i)
         if(mPrimitives[i].intersect(ray, tHit, interaction, toWorld)) {
@@ -72,8 +72,13 @@ DEVICE uint32_t SceneRef::size() const {
     return mLightSize;
 }
 
-DEVICE const LightDistribution* SceneRef::lookUp(const Point& pos) const {
-    return mDistribution ? mDistribution->lookUp(*this, pos) : nullptr;
+DEVICE LightDistribution SceneRef::lookUp(const Point& pos) const {
+    //if (mDistribution)return mDistribution->lookUp(*this, pos);
+    LightDistribution distribution= mDistribution->lookUp(*this, pos);
+    distribution.size = mLightSize;
+    distribution.end = mLightSize - 1;
+    distribution.invSize = 1.0f / mLightSize;
+    return distribution;
 }
 
 SceneDesc::SceneDesc(const std::vector<Primitive>& priData,
@@ -81,7 +86,8 @@ SceneDesc::SceneDesc(const std::vector<Primitive>& priData,
     const unsigned int lightDistributionVoxels)
     : mPrimitives(upload(priData)), mLights(upload(light)), mBounds(bounds) {
     if (lightDistributionVoxels && light.size() > 1) {
-        mDistribution = std::make_unique<LightDistributionCache>(bounds, lightDistributionVoxels);
+        mDistribution = std::make_unique<LightDistributionCache>(bounds, lightDistributionVoxels,
+            light.size());
         LightDistributionCacheRef ref[1] = {mDistribution->toRef()};
         mDistributionRef = upload(ref);
     }

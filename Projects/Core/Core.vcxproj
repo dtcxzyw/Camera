@@ -21,6 +21,7 @@
     <ClInclude Include="..\..\Include\Camera\CamereSample.hpp" />
     <ClInclude Include="..\..\Include\Camera\PinholeCamera.hpp" />
     <ClInclude Include="..\..\Include\Camera\RayGeneratorWrapper.hpp" />
+    <ClInclude Include="..\..\Include\Camera\RealisticCamera.hpp" />
     <ClInclude Include="..\..\Include\Core\DeviceFunctions.hpp" />
     <ClInclude Include="..\..\Include\Core\Buffer2D.hpp" />
     <ClInclude Include="..\..\Include\Core\Builtin.hpp" />
@@ -126,6 +127,7 @@
     <ClCompile Include="..\..\Src\Interaction\Counter.cpp" />
     <ClCompile Include="..\..\Src\IO\LZ4Binary.cpp" />
     <ClCompile Include="..\..\Src\IO\Model.cpp" />
+    <CudaCompile Include="..\..\Src\Camera\RealisticCamera.cu" />
     <CudaCompile Include="..\..\Src\Light\InfiniteAreaLight.cu" />
     <CudaCompile Include="..\..\Src\Light\LightDistribution.cu" />
     <CudaCompile Include="..\..\Src\Material\Material.cu" />

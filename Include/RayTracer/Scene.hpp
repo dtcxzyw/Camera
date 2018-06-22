@@ -2,14 +2,12 @@
 #include <Math/Geometry.hpp>
 #include <Core/Memory.hpp>
 #include <vector>
+#include <Light/LightDistribution.hpp>
 
 class MaterialWrapper;
 class BvhForTriangleRef;
 struct SurfaceInteraction;
 class LightWrapper;
-class LightDistributionCache;
-class LightDistributionCacheRef;
-struct LightDistribution;
 
 class Primitive final {
 private:
@@ -39,7 +37,7 @@ public:
     DEVICE LightWrapper* end() const;
     DEVICE LightWrapper& operator[](uint32_t id) const;
     DEVICE uint32_t size() const;
-    DEVICE const LightDistribution* lookUp(const Point& pos) const;
+    DEVICE LightDistribution lookUp(const Point& pos) const;
 };
 
 class SceneDesc final {

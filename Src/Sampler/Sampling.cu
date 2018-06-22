@@ -25,7 +25,7 @@ static std::pair<MemorySpan<float>, float> computeCdf(const float* val, const ui
 }
 
 static DEVICE int find(const float* array, const int size, const float x) {
-    auto l = 0, r = size - 1, res = -1;
+    auto l = 0, r = size - 2, res = 0;
     while (l <= r) {
         const auto mid = (l + r) >> 1;
         if (array[mid] <= x)l = mid + 1, res = mid;

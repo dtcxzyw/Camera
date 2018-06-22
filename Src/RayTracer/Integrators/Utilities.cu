@@ -54,18 +54,12 @@ DEVICE Spectrum estimateDirect(RenderingContext& context, const SurfaceInteracti
 }
 
 DEVICE Spectrum uniformSampleOneLight(RenderingContext& context, const SurfaceInteraction& interaction,
-    const Bsdf& bsdf, const LightDistribution* distribution) {
+    const Bsdf& bsdf, const LightDistribution& distribution) {
     const auto size = context.scene.size();
     if (size == 0)return Spectrum{};
-    unsigned int id;
-    float invPdf;
     const auto sample = context.sample().x;
-    if (distribution) {
-        float pdf;
-        id = distribution->chooseOneLight(sample, pdf);
-        if (pdf <= 0.0f)return Spectrum{};
-        invPdf = 1.0f / pdf;
-    }
-    else id = min(static_cast<uint32_t>(sample * size), size - 1), invPdf = size;
-    return estimateDirect(context, interaction, bsdf, context.scene[id]) * invPdf;
+    float pdf;
+    const auto id = distribution.chooseOneLight(sample, pdf);
+    if (pdf <= 0.0f)return Spectrum{};
+    return estimateDirect(context, interaction, bsdf, context.scene[id]) *(1.0f / pdf);
 }

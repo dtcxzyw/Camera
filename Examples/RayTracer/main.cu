@@ -5,8 +5,6 @@
 #include <Camera/PinholeCamera.hpp>
 #include <RayTracer/BVH.hpp>
 #include <Light/LightWrapper.hpp>
-#include <Light/DeltaPositionLight.hpp>
-#include <Light/DistantLight.hpp>
 #include <Spectrum/SpectrumConfig.hpp>
 #include <RayTracer/RenderingAPI.hpp>
 #include <Core/IncludeBegin.hpp>
@@ -46,10 +44,12 @@ public:
         {
             Stream resLoader;
             {
-                mLight.emplace_back(PointLight(Point{ 3.0f, 3.0f, 3.0f }, Spectrum{ RGB{10.0f, 20.0f, 30.0f} }));
-                mLight.emplace_back(PointLight(Point{ -3.0f, 3.0f, 3.0f }, Spectrum{ RGB{30.0f, 20.0f, 10.0f} }));
-                const Sphere sphere{ Transform{glm::translate(glm::mat4{},Vector{0.0f,0.5f,0.0f})},0.2f };
-                mLight.emplace_back(DiffuseAreaLight{ Spectrum{3.0f},ShapeWrapper{sphere} });
+                const auto addLight = [&](const Vector& trans, const float radius, const Spectrum& emit) {
+                    const Sphere sphere{ Transform{ glm::translate(glm::mat4{},trans) },radius };
+                    mLight.emplace_back(DiffuseAreaLight{ emit,ShapeWrapper{ sphere } });
+                };
+                addLight({ -1.2f,0.7f,0.3f }, 0.1f, Spectrum{ RGB{10.0f,20.0f,30.0f} });
+                addLight({ 1.2f,0.7f,0.3f }, 0.1f, Spectrum{ RGB{30.0f,20.0f,10.0f} });
             }
             const TextureMapping2DWrapper mapping{UVMapping{}};
             std::vector<MaterialWrapper> materials;
@@ -103,8 +103,8 @@ public:
         }
         SequenceGenerator2DWrapper sequenceGenerator{Halton2D{}};
         const SampleWeightLUT lut(64U, FilterWrapper{TriangleFilter{}});
-        const uvec2 imageSize{1920U, 1080U};
-        mIntegrator = std::make_unique<PathIntegrator>(sequenceGenerator, 20U, 1024U, 256U);
+        const uvec2 imageSize{1U, 1U};
+        mIntegrator = std::make_unique<PathIntegrator>(sequenceGenerator, 20U, 1U, 256U);
 
         const Transform toCamera{
             glm::lookAt(Vector{0.0f, 0.0f, 3.0f}, Vector{0.0f, 0.0f, 0.0f}, Vector{0.0f, 1.0f, 0.0f})

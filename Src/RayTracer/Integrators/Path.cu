@@ -90,7 +90,7 @@ void PathIntegrator::render(CommandBuffer& buffer, const SceneDesc& scene, const
     const RayGeneratorWrapper& rayGenerator, FilmTile& filmTile, const uvec2 offset, const uvec2 dstSize) const {
     const uint32_t blockSize = DeviceMonitor::get().getProp().maxThreadsPerBlock;
     const auto size = filmTile.size();
-    constexpr auto stackSize = 2048U;
+    constexpr auto stackSize = 4096U;
     auto todo = mSpp;
     while (todo) {
         const auto current = std::min(todo, mLaunchSpp);
